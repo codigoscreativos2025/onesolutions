@@ -27,7 +27,11 @@ function MapClickHandler({ onClick }: { onClick: () => void }) {
   return null;
 }
 
-export default function MapView() {
+export default function MapView({
+  center,
+}: {
+  center?: [number, number] | null;
+}) {
   const { data: session } = useSession();
   const [parcels, setParcels] = useState<Parcel[]>([]);
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
@@ -83,13 +87,14 @@ export default function MapView() {
     );
   }
 
-  const position: [number, number] = [28.385, -81.365];
+  const defaultPosition: [number, number] = [28.385, -81.365];
 
   return (
     <>
       <MapContainer
-        center={position}
-        zoom={16}
+        key={center ? `${center[0]}-${center[1]}` : "default"}
+        center={center || defaultPosition}
+        zoom={center ? 18 : 16}
         scrollWheelZoom={true}
         className="w-full h-full"
       >
