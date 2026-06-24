@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import {
@@ -46,6 +47,7 @@ interface Closer {
 export default function VisitPage() {
   const params = useParams();
   const router = useRouter();
+  const { data: session } = useSession();
   const locale = params.locale as string;
   const parcelId = params.parcelId as string;
 
@@ -67,6 +69,9 @@ export default function VisitPage() {
   const [selectedSlotId, setSelectedSlotId] = useState("");
   const [selectedCloserId, setSelectedCloserId] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const isClosingMode =
+    session?.user?.role === "CLOSER" && visit?.stage === "PROPOSAL_ACCEPTED";
 
   useEffect(() => {
     fetchData();
@@ -128,11 +133,37 @@ export default function VisitPage() {
   };
 
   const handleProposal = async () => {
-    if (!phone || !billFile || !selectedSlotId || !selectedCloserId || !visit) {
+    if (!visit) return;
+
+    setSaving(true);
+
+    if (isClosingMode) {
+      if (billFile) {
+        const formData = new FormData();
+        formData.append("file", billFile);
+        await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+      }
+
+      await fetch(`/api/visits/${visit.id}/close`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          notes: clientName,
+        }),
+      });
+
+      setSaving(false);
+      router.push(`/${locale}/chat`);
       return;
     }
 
-    setSaving(true);
+    if (!phone || !billFile || !selectedSlotId || !selectedCloserId) {
+      setSaving(false);
+      return;
+    }
 
     const formData = new FormData();
     formData.append("file", billFile);
@@ -343,13 +374,15 @@ export default function VisitPage() {
           <div className="flex items-center gap-2 text-primary">
             <CheckCircle className="w-5 h-5" />
             <h4 className="font-semibold uppercase tracking-wider text-sm">
-              Nueva Oportunidad
+              {isClosingMode ? "Cerrar Proyecto" : "Nueva Oportunidad"}
             </h4>
           </div>
 
           <div className="space-y-3">
             <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-              Paso 1: Subir Recibo de Luz
+              {isClosingMode
+                ? "Adjuntar documento (opcional)"
+                : "Paso 1: Subir Recibo de Luz"}
             </label>
             <label className="w-full h-32 border-2 border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center bg-surface-container-lowest hover:bg-primary/5 transition-colors cursor-pointer group">
               <Upload className="w-8 h-8 text-on-surface-variant group-hover:text-primary" />
@@ -372,101 +405,123 @@ export default function VisitPage() {
             )}
           </div>
 
-          <div className="space-y-3">
-            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-              Paso 2: Información de Contacto
-            </label>
-            <div className="relative">
-              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Número de teléfono"
-                className="w-full h-12 pl-12 pr-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
-              />
+          {!isClosingMode && (
+            <div className="space-y-3">
+              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                Paso 2: Información de Contacto
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Número de teléfono"
+                  className="w-full h-12 pl-12 pr-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
+                />
+              </div>
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
+                <input
+                  type="text"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  placeholder="Nombre del cliente"
+                  className="w-full h-12 pl-12 pr-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
+                />
+              </div>
             </div>
-            <div className="relative">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
-              <input
-                type="text"
+          )}
+
+          {!isClosingMode && (
+            <div className="space-y-3">
+              <div className="flex justify-between items-end">
+                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                  Paso 3: Agendar con Closer
+                </label>
+                <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded uppercase font-bold">
+                  Slots Disponibles
+                </span>
+              </div>
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                {closers.map((closer) =>
+                  closer.slots.map((slot) => (
+                    <div
+                      key={slot.id}
+                      onClick={() => {
+                        setSelectedSlotId(String(slot.id));
+                        setSelectedCloserId(String(closer.id));
+                      }}
+                      className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
+                        selectedSlotId === String(slot.id)
+                          ? "border-primary bg-primary/5"
+                          : "border-glass-border hover:border-primary/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant font-bold text-sm">
+                          {closer.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-on-surface">
+                            {closer.name}
+                          </p>
+                          <p className="text-xs text-on-surface-variant">
+                            {new Date(slot.startAt).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      <ChevronRight
+                        className={`w-5 h-5 transition-transform ${
+                          selectedSlotId === String(slot.id)
+                            ? "text-primary translate-x-1"
+                            : "text-primary"
+                        }`}
+                      />
+                    </div>
+                  ))
+                )}
+                {closers.every((c) => c.slots.length === 0) && (
+                  <p className="text-center text-on-surface-variant py-4">
+                    No hay slots disponibles
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {isClosingMode && (
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                Notas de cierre
+              </label>
+              <textarea
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
-                placeholder="Nombre del cliente"
-                className="w-full h-12 pl-12 pr-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
+                className="w-full min-h-[120px] bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none rounded-xl p-4 resize-none text-on-surface"
+                placeholder="Detalles del cierre..."
               />
             </div>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex justify-between items-end">
-              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                Paso 3: Agendar con Closer
-              </label>
-              <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded uppercase font-bold">
-                Slots Disponibles
-              </span>
-            </div>
-            <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-              {closers.map((closer) =>
-                closer.slots.map((slot) => (
-                  <div
-                    key={slot.id}
-                    onClick={() => {
-                      setSelectedSlotId(String(slot.id));
-                      setSelectedCloserId(String(closer.id));
-                    }}
-                    className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
-                      selectedSlotId === String(slot.id)
-                        ? "border-primary bg-primary/5"
-                        : "border-glass-border hover:border-primary/50"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant font-bold text-sm">
-                        {closer.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                          .slice(0, 2)
-                          .toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-on-surface">
-                          {closer.name}
-                        </p>
-                        <p className="text-xs text-on-surface-variant">
-                          {new Date(slot.startAt).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                    <ChevronRight
-                      className={`w-5 h-5 transition-transform ${
-                        selectedSlotId === String(slot.id)
-                          ? "text-primary translate-x-1"
-                          : "text-primary"
-                      }`}
-                    />
-                  </div>
-                ))
-              )}
-              {closers.every((c) => c.slots.length === 0) && (
-                <p className="text-center text-on-surface-variant py-4">
-                  No hay slots disponibles
-                </p>
-              )}
-            </div>
-          </div>
+          )}
 
           <Button
             onClick={handleProposal}
             disabled={
-              !phone || !billFile || !selectedSlotId || !selectedCloserId || saving
+              isClosingMode
+                ? saving
+                : !phone || !billFile || !selectedSlotId || !selectedCloserId || saving
             }
             className="w-full h-14 uppercase tracking-widest"
           >
             {saving ? (
               <Loader2 className="w-5 h-5 animate-spin" />
+            ) : isClosingMode ? (
+              "Cerrar Proyecto"
             ) : (
               "Confirmar Cita"
             )}
