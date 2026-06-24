@@ -1,0 +1,147 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String
+  password  String
+  role      String   @default("SETTER")
+  phone     String?
+  avatarUrl String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  // Relación closer -> setters
+  closerId Int?
+  closer   User?  @relation("CloserToSetters", fields: [closerId], references: [id])
+  setters  User[] @relation("CloserToSetters")
+
+  parcelsTaken   Parcel[]       @relation("ParcelSetter")
+  visitsAsSetter Visit[]        @relation("VisitSetter")
+  visitsAsCloser Visit[]        @relation("VisitCloser")
+  slots          CloserSlot[]
+  messages       ChatMessage[]
+  notifications  Notification[]
+}
+
+model CloserSlot {
+  id        Int      @id @default(autoincrement())
+  closerId  Int
+  closer    User     @relation(fields: [closerId], references: [id], onDelete: Cascade)
+  startAt   DateTime
+  endAt     DateTime
+  isBooked  Boolean  @default(false)
+  isWorkday Boolean  @default(true)
+  visitId   Int?     @unique
+  visit     Visit?   @relation(fields: [visitId], references: [id])
+}
+
+model Parcel {
+  id          String       @id @default(uuid())
+  externalId  String?      @unique
+  address     String
+  ownerName   String?
+  geometry    String
+  territory   String       @default("Florida")
+  status      String       @default("AVAILABLE")
+  metadata    String?      // JSON con datos extra (roofAge, utility, solarPotential)
+
+  setterId Int?
+  setter   User?   @relation("ParcelSetter", fields: [setterId], references: [id])
+
+  visits Visit[]
+}
+
+model Visit {
+  id          Int        @id @default(autoincrement())
+  parcelId    String
+  parcel      Parcel     @relation(fields: [parcelId], references: [id])
+  setterId    Int
+  setter      User       @relation("VisitSetter", fields: [setterId], references: [id])
+  closerId    Int?
+  closer      User?      @relation("VisitCloser", fields: [closerId], references: [id])
+  stage       String     @default("IN_PROGRESS")
+  outcome     String?
+  scheduledAt DateTime?
+  completedAt DateTime?
+  notes       String?
+  createdAt   DateTime   @default(now())
+
+  objections VisitObjection[]
+  bill       Bill?
+  chatRoom   ChatRoom?
+  slot       CloserSlot?
+}
+
+model Objection {
+  id       Int    @id @default(autoincrement())
+  key      String @unique
+  name     String
+  nameEn   String?
+  color    String @default("#fb7800")
+  isActive Boolean @default(true)
+
+  visits VisitObjection[]
+}
+
+model VisitObjection {
+  visitId     Int
+  objectionId Int
+  visit       Visit     @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  objection   Objection @relation(fields: [objectionId], references: [id], onDelete: Cascade)
+  notes       String?
+
+  @@id([visitId, objectionId])
+}
+
+model Bill {
+  id         Int     @id @default(autoincrement())
+  visitId    Int     @unique
+  visit      Visit   @relation(fields: [visitId], references: [id])
+  imageUrl   String
+  phone      String
+  clientName String?
+  notes      String?
+}
+
+model ChatRoom {
+  id        Int      @id @default(autoincrement())
+  visitId   Int      @unique
+  visit     Visit    @relation(fields: [visitId], references: [id])
+  createdAt DateTime @default(now())
+  messages  ChatMessage[]
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  roomId    Int
+  room      ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  body      String
+  fileUrl   String?
+  fileName  String?
+  createdAt DateTime @default(now())
+  isRead    Boolean  @default(false)
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+
