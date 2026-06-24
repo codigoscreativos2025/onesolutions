@@ -2,10 +2,10 @@
 set -e
 
 echo "Running database migrations..."
-prisma db push --accept-data-loss
+prisma db push --skip-generate --accept-data-loss
 
 echo "Seeding database..."
-prisma db seed
+tsx prisma/seed.ts
 
 echo "Starting application..."
 node server.js
