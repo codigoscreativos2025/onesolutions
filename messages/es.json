@@ -14,6 +14,7 @@
   "nav": {
     "map": "Mapa",
     "dashboard": "Dashboard",
+    "calendar": "Calendario",
     "ranking": "Ranking",
     "chat": "Chat",
     "admin": "Admin"

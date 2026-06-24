@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Map, LayoutDashboard, Trophy, MessageSquare, Shield } from "lucide-react";
+import { Map, LayoutDashboard, Trophy, MessageSquare, Shield, Calendar } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 export function BottomNav() {
@@ -16,6 +16,7 @@ export function BottomNav() {
   const navItems = [
     { key: "map", href: "/map", icon: Map },
     { key: "dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { key: "calendar", href: "/calendar", icon: Calendar },
     { key: "ranking", href: "/ranking", icon: Trophy },
     { key: "chat", href: "/chat", icon: MessageSquare },
   ];
