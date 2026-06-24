@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import {
   DoorOpen,
   PersonStanding,
@@ -119,12 +120,12 @@ export default function DashboardPage() {
           <h2 className="font-headline text-lg font-bold text-on-surface">
             Citas Recientes
           </h2>
-          <button
-            onClick={() => router.push(`/${locale}/calendar`)}
+          <Link
+            href="/calendar"
             className="text-sm text-primary font-medium flex items-center gap-1"
           >
             Ver todas <ChevronRight className="w-4 h-4" />
-          </button>
+          </Link>
         </div>
 
         {appointments.length === 0 ? (

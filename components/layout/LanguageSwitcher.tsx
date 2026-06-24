@@ -1,7 +1,8 @@
 "use client";
 
-import { useParams, usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { Globe } from "lucide-react";
+import { useParams } from "next/navigation";
 
 export function LanguageSwitcher() {
   const router = useRouter();
@@ -11,9 +12,7 @@ export function LanguageSwitcher() {
 
   const switchLocale = () => {
     const newLocale = currentLocale === "es" ? "en" : "es";
-    const newPathname = pathname.replace(`/${currentLocale}`, `/${newLocale}`);
-    router.push(newPathname);
-    router.refresh();
+    router.replace(pathname, { locale: newLocale });
   };
 
   return (

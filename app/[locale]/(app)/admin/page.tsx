@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Users, MessageSquareWarning, BarChart3, MessageCircle } from "lucide-react";
 
 export default async function AdminPage({
