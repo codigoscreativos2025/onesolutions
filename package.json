@@ -30,7 +30,8 @@
     "react": "^18",
     "react-dom": "^18",
     "react-leaflet": "^4.2.1",
-    "tailwind-merge": "^3.6.0"
+    "tailwind-merge": "^3.6.0",
+    "uuid": "^14.0.1"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
@@ -39,6 +40,7 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/react-leaflet": "^2.8.3",
+    "@types/uuid": "^10.0.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
     "postcss": "^8",

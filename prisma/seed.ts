@@ -45,6 +45,41 @@ async function main() {
     },
   });
 
+  // Slots de prueba para el closer
+  await prisma.closerSlot.deleteMany({
+    where: { closerId: closer.id },
+  });
+
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  const slots = [
+    { dayOffset: 0, hour: 10, workday: true },
+    { dayOffset: 0, hour: 14, workday: true },
+    { dayOffset: 0, hour: 16, workday: true },
+    { dayOffset: 1, hour: 9, workday: true },
+    { dayOffset: 1, hour: 11, workday: true },
+    { dayOffset: 1, hour: 15, workday: true },
+    { dayOffset: 2, hour: 10, workday: true },
+  ];
+
+  for (const slot of slots) {
+    const startAt = new Date(now);
+    startAt.setDate(startAt.getDate() + slot.dayOffset);
+    startAt.setHours(slot.hour, 0, 0, 0);
+    const endAt = new Date(startAt);
+    endAt.setHours(startAt.getHours() + 1);
+
+    await prisma.closerSlot.create({
+      data: {
+        closerId: closer.id,
+        startAt,
+        endAt,
+        isWorkday: slot.workday,
+      },
+    });
+  }
+
   // Objeciones de ejemplo
   const objections = [
     { key: "high-price", name: "Precio elevado", nameEn: "High price", color: "#fb7800" },
