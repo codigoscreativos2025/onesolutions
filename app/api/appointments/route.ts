@@ -22,7 +22,7 @@ export async function GET() {
       },
       orderBy: { createdAt: "desc" },
       include: {
-        parcel: true,
+        parcel: { select: { id: true, address: true } },
         setter: { select: { name: true } },
         closer: { select: { name: true } },
         bill: true,
@@ -39,7 +39,7 @@ export async function GET() {
       },
       orderBy: { createdAt: "desc" },
       include: {
-        parcel: true,
+        parcel: { select: { id: true, address: true } },
         setter: { select: { name: true } },
         closer: { select: { name: true } },
         bill: true,
@@ -57,7 +57,7 @@ export async function GET() {
       },
       orderBy: { createdAt: "desc" },
       include: {
-        parcel: true,
+        parcel: { select: { id: true, address: true } },
         setter: { select: { name: true } },
         closer: { select: { name: true } },
         bill: true,

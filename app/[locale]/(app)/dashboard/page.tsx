@@ -1,24 +1,166 @@
-import { auth } from "@/auth";
+"use client";
 
-export default async function DashboardPage() {
-  const session = await auth();
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { useParams, useRouter } from "next/navigation";
+import {
+  DoorOpen,
+  PersonStanding,
+  Handshake,
+  MessageSquareWarning,
+  TrendingUp,
+  Calendar,
+  ChevronRight,
+} from "lucide-react";
+
+interface Metrics {
+  doorsKnocked: number;
+  leadsGenerated: number;
+  projectsClosed: number;
+  objectionsCount: number;
+  appointments: number;
+  teamGoal: number;
+}
+
+interface Appointment {
+  id: number;
+  parcel: { id: string; address: string };
+  setter: { name: string };
+  closer?: { name: string };
+  stage: string;
+  slot?: { startAt: string };
+}
+
+export default function DashboardPage() {
+  const { data: session } = useSession();
+  const params = useParams();
+  const router = useRouter();
+  const locale = params.locale as string;
+
+  const [metrics, setMetrics] = useState<Metrics | null>(null);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const [metricsRes, appointmentsRes] = await Promise.all([
+        fetch("/api/metrics"),
+        fetch("/api/appointments"),
+      ]);
+      const metricsData = await metricsRes.json();
+      const appointmentsData = await appointmentsRes.json();
+      setMetrics(metricsData);
+      setAppointments(appointmentsData.slice(0, 5));
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const role = session?.user?.role;
+  const isAdmin = role === "ADMIN";
 
   return (
     <div className="space-y-6">
       <section className="mb-6">
+        <span className="inline-block px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-wider mb-2">
+          {isAdmin ? "Admin" : role === "CLOSER" ? "Closer" : "Setter"}
+        </span>
         <h1 className="font-headline text-2xl font-bold text-on-surface">
-          Dashboard
+          Hola, {session?.user?.name}
         </h1>
         <p className="text-on-surface-variant">
-          Bienvenido, {session?.user?.name}
+          Este es tu resumen de actividad
         </p>
       </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <MetricCard title="Puertas Tocadas" value="42" trend="+12%" />
-        <MetricCard title="Leads Generados" value="8" trend="+4" />
-        <MetricCard title="Proyectos Cerrados" value="3" trend="Target Met" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <MetricCard
+          title="Puertas Tocadas"
+          value={metrics?.doorsKnocked || 0}
+          icon={DoorOpen}
+          color="primary"
+        />
+        <MetricCard
+          title="Leads Generados"
+          value={metrics?.leadsGenerated || 0}
+          icon={PersonStanding}
+          color="secondary"
+        />
+        <MetricCard
+          title="Proyectos Cerrados"
+          value={metrics?.projectsClosed || 0}
+          icon={Handshake}
+          color="primary"
+        />
+        <MetricCard
+          title="Objeciones"
+          value={metrics?.objectionsCount || 0}
+          icon={MessageSquareWarning}
+          color="secondary"
+        />
       </div>
+
+      <section className="glass-panel rounded-2xl p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="font-headline text-lg font-bold text-on-surface">
+            Citas Recientes
+          </h2>
+          <button
+            onClick={() => router.push(`/${locale}/calendar`)}
+            className="text-sm text-primary font-medium flex items-center gap-1"
+          >
+            Ver todas <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        {appointments.length === 0 ? (
+          <p className="text-on-surface-variant text-center py-8">
+            No tienes citas recientes
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {appointments.map((apt) => (
+              <div
+                key={apt.id}
+                className="flex items-center justify-between p-4 rounded-xl border border-glass-border hover:border-primary/50 transition-colors cursor-pointer"
+                onClick={() => router.push(`/${locale}/visit/${apt.parcel.id || ""}`)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-on-surface">
+                      {apt.parcel.address}
+                    </p>
+                    <p className="text-xs text-on-surface-variant">
+                      {apt.slot
+                        ? new Date(apt.slot.startAt).toLocaleString()
+                        : "Sin fecha"}
+                      {role === "CLOSER" && ` • Setter: ${apt.setter.name}`}
+                    </p>
+                  </div>
+                </div>
+                <StatusIcon stage={apt.stage} />
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }
@@ -26,28 +168,49 @@ export default async function DashboardPage() {
 function MetricCard({
   title,
   value,
-  trend,
+  icon: Icon,
+  color,
 }: {
   title: string;
-  value: string;
-  trend: string;
+  value: number;
+  icon: React.ElementType;
+  color: "primary" | "secondary";
 }) {
   return (
-    <div className="glass-panel p-6 rounded-2xl flex flex-col justify-between min-h-[140px]">
+    <div className="glass-panel p-5 rounded-2xl flex flex-col justify-between min-h-[130px] group hover:border-primary/40 transition-all">
       <div className="flex justify-between items-start">
-        <div className="bg-primary/10 p-3 rounded-xl text-primary">
-          <span className="font-bold">OS</span>
+        <div
+          className={`p-3 rounded-xl ${
+            color === "primary" ? "bg-primary/10 text-primary" : "bg-secondary/10 text-secondary"
+          }`}
+        >
+          <Icon className="w-5 h-5" />
         </div>
-        <span className="text-sm text-primary font-medium">{trend}</span>
+        <TrendingUp className="w-4 h-4 text-primary" />
       </div>
       <div className="mt-4">
-        <h3 className="text-on-surface-variant text-sm uppercase tracking-wider font-semibold">
+        <h3 className="text-on-surface-variant text-xs uppercase tracking-wider font-semibold">
           {title}
         </h3>
-        <p className="font-display text-4xl font-bold text-on-surface mt-1">
+        <p className="font-display text-3xl font-bold text-on-surface mt-1">
           {value}
         </p>
       </div>
     </div>
+  );
+}
+
+function StatusIcon({ stage }: { stage: string }) {
+  if (stage === "CLOSED") {
+    return (
+      <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase">
+        Cerrado
+      </span>
+    );
+  }
+  return (
+    <span className="px-2 py-1 bg-secondary/10 text-secondary rounded-full text-xs font-bold uppercase">
+      Pendiente
+    </span>
   );
 }
