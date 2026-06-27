@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/Button";
 import { DoorOpen, X, User } from "lucide-react";
 
@@ -36,9 +36,7 @@ export function ParcelSheet({
   userRole,
   userId,
 }: ParcelSheetProps) {
-  const params = useParams();
   const router = useRouter();
-  const locale = params.locale as string;
 
   if (!parcel) return null;
 
@@ -52,45 +50,42 @@ export function ParcelSheet({
       await onClaim(parcel.id);
     }
     onVisitStarted();
-    router.push(`/${locale}/visit/${parcel.id}`);
+    router.push(`/visit/${parcel.id}`);
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-[60] glass-panel border-t border-glass-border rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col max-h-[70vh] animate-slide-up">
-      <div
-        className="w-12 h-1 bg-outline-variant rounded-full mx-auto my-3 cursor-pointer"
-        onClick={onClose}
-      />
-      <div className="px-5 pb-24 overflow-y-auto">
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <StatusBadge status={parcel.status} />
-              {parcel.setter && (
-                <span className="text-on-surface-variant text-xs">
-                  • {parcel.setter.name}
-                </span>
-              )}
-            </div>
-            <h2 className="font-headline text-xl font-bold text-on-surface">
-              {parcel.address}
-            </h2>
-            {parcel.ownerName && (
-              <p className="text-on-surface-variant flex items-center gap-1 mt-1">
-                <User className="w-4 h-4" />
-                {parcel.ownerName}
-              </p>
-            )}
-          </div>
-          <button
-            onClick={onClose}
-            className="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center active:scale-90"
-          >
-            <X className="w-5 h-5" />
-          </button>
+    <div className="fixed inset-y-0 right-0 z-[60] w-full sm:w-96 glass-panel border-l border-glass-border shadow-[-10px_0_40px_rgba(0,0,0,0.1)] flex flex-col max-h-screen sm:max-h-none animate-slide-in-right">
+      <div className="flex justify-between items-center p-4 border-b border-glass-border">
+        <div className="flex items-center gap-2">
+          <StatusBadge status={parcel.status} />
+          {parcel.setter && (
+            <span className="text-on-surface-variant text-xs">
+              • {parcel.setter.name}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={onClose}
+          className="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center active:scale-90"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-5 space-y-6">
+        <div>
+          <h2 className="font-headline text-xl font-bold text-on-surface mb-2">
+            {parcel.address}
+          </h2>
+          {parcel.ownerName && (
+            <p className="text-on-surface-variant flex items-center gap-2">
+              <User className="w-4 h-4" />
+              {parcel.ownerName}
+            </p>
+          )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="grid grid-cols-2 gap-3">
           {metadata.roofAge && (
             <InfoCard label="Edad del techo" value={metadata.roofAge} />
           )}
@@ -113,21 +108,11 @@ export function ParcelSheet({
         </div>
 
         {!isAvailable && !isTakenByMe && parcel.setter && (
-          <div className="p-4 rounded-xl bg-secondary/10 border border-secondary/20 mb-4">
+          <div className="p-4 rounded-xl bg-secondary/10 border border-secondary/20">
             <p className="text-sm text-secondary font-medium">
               Esta parcela ya fue tomada por {parcel.setter.name}
             </p>
           </div>
-        )}
-
-        {isSetter && (isAvailable || isTakenByMe) && parcel.status !== "CUSTOMER" && (
-          <Button
-            onClick={handleKnockDoor}
-            className="w-full h-14 text-lg uppercase tracking-widest"
-          >
-            <DoorOpen className="w-6 h-6" />
-            {isAvailable ? "Tocar Puerta" : "Continuar Visita"}
-          </Button>
         )}
 
         {parcel.status === "CUSTOMER" && (
@@ -138,6 +123,18 @@ export function ParcelSheet({
           </div>
         )}
       </div>
+
+      {isSetter && (isAvailable || isTakenByMe) && parcel.status !== "CUSTOMER" && (
+        <div className="p-4 border-t border-glass-border">
+          <Button
+            onClick={handleKnockDoor}
+            className="w-full h-14 text-lg uppercase tracking-widest"
+          >
+            <DoorOpen className="w-6 h-6" />
+            {isAvailable ? "Tocar Puerta" : "Continuar Visita"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

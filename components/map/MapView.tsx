@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Polygon, useMapEvent } from "react-leaflet";
+import { MapContainer, TileLayer, Polygon } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { ParcelSheet } from "./ParcelSheet";
 import { useSession } from "next-auth/react";
@@ -20,11 +20,6 @@ interface Parcel {
     outcome?: string;
     setter?: { id: number; name: string };
   }[];
-}
-
-function MapClickHandler({ onClick }: { onClick: () => void }) {
-  useMapEvent("click", onClick);
-  return null;
 }
 
 export default function MapView({
@@ -102,7 +97,6 @@ export default function MapView({
           attribution='&copy; Google Maps'
           url="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
         />
-        <MapClickHandler onClick={() => setSelectedParcel(null)} />
         {parcels.map((parcel) => {
           let geometry;
           try {
@@ -124,13 +118,25 @@ export default function MapView({
               pathOptions={{
                 color: getParcelColor(parcel.status),
                 fillColor: getParcelColor(parcel.status),
-                fillOpacity: parcel.status === "AVAILABLE" ? 0.25 : 0.45,
-                weight: 2,
+                fillOpacity: parcel.status === "AVAILABLE" ? 0.35 : 0.55,
+                weight: 4,
               }}
               eventHandlers={{
                 click: (e) => {
                   e.originalEvent.stopPropagation();
+                  e.originalEvent.preventDefault();
                   setSelectedParcel(parcel);
+                },
+                mouseover: (e) => {
+                  e.target.setStyle({ weight: 6, fillOpacity: 0.7 });
+                  document.body.style.cursor = "pointer";
+                },
+                mouseout: (e) => {
+                  e.target.setStyle({
+                    weight: 4,
+                    fillOpacity: parcel.status === "AVAILABLE" ? 0.35 : 0.55,
+                  });
+                  document.body.style.cursor = "default";
                 },
               }}
             />
