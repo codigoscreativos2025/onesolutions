@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { useParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -21,9 +20,7 @@ interface Objection {
 
 export default function AdminObjectionsPage() {
   const { data: session } = useSession();
-  const params = useParams();
   const router = useRouter();
-  const locale = params.locale as string;
 
   const [objections, setObjections] = useState<Objection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,11 +36,11 @@ export default function AdminObjectionsPage() {
 
   useEffect(() => {
     if (session?.user?.role !== "ADMIN") {
-      router.push(`/${locale}/dashboard`);
+      router.push("/dashboard");
       return;
     }
     fetchObjections();
-  }, [session, locale, router]);
+  }, [session, router]);
 
   const fetchObjections = async () => {
     try {

@@ -49,7 +49,6 @@ export default function VisitPage() {
   const params = useParams();
   const router = useRouter();
   const { data: session } = useSession();
-  const locale = params.locale as string;
   const parcelId = params.parcelId as string;
 
   const [visit, setVisit] = useState<Visit | null>(null);
@@ -113,7 +112,7 @@ export default function VisitPage() {
     });
 
     setSaving(false);
-    router.push(`/${locale}/map`);
+    router.push("/map");
   };
 
   const handleObjection = async () => {
@@ -130,7 +129,7 @@ export default function VisitPage() {
     });
 
     setSaving(false);
-    router.push(`/${locale}/map`);
+    router.push("/map");
   };
 
   const handleProposal = async () => {
@@ -157,7 +156,7 @@ export default function VisitPage() {
       });
 
       setSaving(false);
-      router.push(`/${locale}/chat`);
+      router.push("/chat");
       return;
     }
 
@@ -187,7 +186,7 @@ export default function VisitPage() {
     });
 
     setSaving(false);
-    router.push(`/${locale}/map`);
+    router.push("/map");
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -219,7 +218,7 @@ export default function VisitPage() {
         <Button
           variant="outline"
           className="mt-4"
-          onClick={() => router.push(`/${locale}/map`)}
+          onClick={() => router.push("/map")}
         >
           Volver al mapa
         </Button>
@@ -231,7 +230,7 @@ export default function VisitPage() {
     <div className="space-y-6 pb-8">
       <header className="flex items-center gap-3">
         <button
-          onClick={() => router.push(`/${locale}/map`)}
+          onClick={() => router.push("/map")}
           className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container-high transition-colors"
         >
           <ArrowLeft className="w-5 h-5 text-primary" />

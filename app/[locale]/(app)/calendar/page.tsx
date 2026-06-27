@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { useParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -23,9 +22,7 @@ interface Slot {
 
 export default function CalendarPage() {
   const { data: session } = useSession();
-  const params = useParams();
   const router = useRouter();
-  const locale = params.locale as string;
 
   const [slots, setSlots] = useState<Slot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,11 +34,11 @@ export default function CalendarPage() {
 
   useEffect(() => {
     if (session?.user?.role === "SETTER") {
-      router.push(`/${locale}/dashboard`);
+      router.push("/dashboard");
       return;
     }
     fetchSlots();
-  }, [session, locale, router]);
+  }, [session, router]);
 
   const fetchSlots = async () => {
     try {

@@ -2,15 +2,13 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { DoorOpen, Mail, Lock, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const t = useTranslations("login");
   const router = useRouter();
-  const params = useParams();
-  const locale = params.locale as string;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,14 +24,14 @@ export default function LoginPage() {
       email,
       password,
       redirect: false,
-      callbackUrl: `/${locale}/dashboard`,
+      callbackUrl: "/dashboard",
     });
 
     if (result?.error) {
       setError(t("error"));
       setLoading(false);
     } else {
-      router.push(`/${locale}/dashboard`);
+      router.push("/dashboard");
       router.refresh();
     }
   };

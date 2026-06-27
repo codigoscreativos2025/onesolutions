@@ -3,44 +3,39 @@ import { auth } from "@/auth";
 import { Link } from "@/i18n/navigation";
 import { Users, MessageSquareWarning, BarChart3, MessageCircle } from "lucide-react";
 
-export default async function AdminPage({
-  params,
-}: {
-  params: { locale: string };
-}) {
-  const { locale } = await params;
+export default async function AdminPage() {
   const session = await auth();
 
   if (session?.user?.role !== "ADMIN") {
-    redirect(`/${locale}/dashboard`);
+    redirect("/dashboard");
   }
 
   const menuItems = [
     {
       title: "Usuarios",
       description: "Gestiona setters, closers y administradores",
-      href: `/${locale}/admin/users`,
+      href: "/admin/users",
       icon: Users,
       color: "bg-primary/10 text-primary",
     },
     {
       title: "Objeciones",
       description: "Configura las objeciones del equipo",
-      href: `/${locale}/admin/objections`,
+      href: "/admin/objections",
       icon: MessageSquareWarning,
       color: "bg-secondary/10 text-secondary",
     },
     {
       title: "Métricas",
       description: "Visualiza el rendimiento general",
-      href: `/${locale}/admin/metrics`,
+      href: "/admin/metrics",
       icon: BarChart3,
       color: "bg-tertiary/10 text-tertiary",
     },
     {
       title: "Chats",
       description: "Monitorea las conversaciones internas",
-      href: `/${locale}/admin/chats`,
+      href: "/admin/chats",
       icon: MessageCircle,
       color: "bg-primary/10 text-primary",
     },

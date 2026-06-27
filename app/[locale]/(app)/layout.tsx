@@ -5,16 +5,13 @@ import { BottomNav } from "@/components/layout/BottomNav";
 
 export default async function AppLayout({
   children,
-  params,
 }: {
   children: React.ReactNode;
-  params: { locale: string };
 }) {
-  const { locale } = await params;
   const session = await auth();
 
   if (!session) {
-    redirect(`/${locale}/login`);
+    redirect("/login");
   }
 
   return (

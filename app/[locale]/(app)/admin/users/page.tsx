@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { useParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -24,9 +23,7 @@ interface User {
 
 export default function AdminUsersPage() {
   const { data: session } = useSession();
-  const params = useParams();
   const router = useRouter();
-  const locale = params.locale as string;
 
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,11 +43,11 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     if (session?.user?.role !== "ADMIN") {
-      router.push(`/${locale}/dashboard`);
+      router.push("/dashboard");
       return;
     }
     fetchUsers();
-  }, [session, locale, router]);
+  }, [session, router]);
 
   const fetchUsers = async () => {
     try {

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { useParams } from "next/navigation";
 import { Link, useRouter } from "@/i18n/navigation";
 import {
   DoorOpen,
@@ -34,9 +33,7 @@ interface Appointment {
 
 export default function DashboardPage() {
   const { data: session } = useSession();
-  const params = useParams();
   const router = useRouter();
-  const locale = params.locale as string;
 
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -138,7 +135,7 @@ export default function DashboardPage() {
               <div
                 key={apt.id}
                 className="flex items-center justify-between p-4 rounded-xl border border-glass-border hover:border-primary/50 transition-colors cursor-pointer"
-                onClick={() => router.push(`/${locale}/visit/${apt.parcel.id || ""}`)}
+                onClick={() => router.push(`/visit/${apt.parcel.id || ""}`)}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import {
   DoorOpen,
   PersonStanding,
@@ -22,21 +22,19 @@ interface Metrics {
 
 export default function AdminMetricsPage() {
   const { data: session } = useSession();
-  const params = useParams();
   const router = useRouter();
-  const locale = params.locale as string;
 
   const [metrics, setMetrics] = useState<Metrics | null>(null);
 
   useEffect(() => {
     if (session?.user?.role !== "ADMIN") {
-      router.push(`/${locale}/dashboard`);
+      router.push("/dashboard");
       return;
     }
     fetch("/api/metrics")
       .then((res) => res.json())
       .then((data) => setMetrics(data));
-  }, [session, locale, router]);
+  }, [session, router]);
 
   return (
     <div className="space-y-6">
