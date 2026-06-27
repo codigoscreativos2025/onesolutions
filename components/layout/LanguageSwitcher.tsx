@@ -1,14 +1,13 @@
 "use client";
 
 import { usePathname, useRouter } from "@/i18n/navigation";
+import { useLocale } from "next-intl";
 import { Globe } from "lucide-react";
-import { useParams } from "next/navigation";
 
 export function LanguageSwitcher() {
   const router = useRouter();
   const pathname = usePathname();
-  const params = useParams();
-  const currentLocale = params.locale as string;
+  const currentLocale = useLocale();
 
   const switchLocale = () => {
     const newLocale = currentLocale === "es" ? "en" : "es";

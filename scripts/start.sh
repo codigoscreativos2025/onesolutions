@@ -8,4 +8,4 @@ echo "Seeding database..."
 tsx prisma/seed.ts
 
 echo "Starting application..."
-node server.js
+npm start

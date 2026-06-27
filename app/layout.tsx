@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getMessages } from "next-intl/server";
+import { getMessages, getLocale } from "next-intl/server";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
@@ -13,12 +13,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
   const messages = await getMessages();
 
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <body className="antialiased">
-        <Providers messages={messages} locale="es">
+        <Providers messages={messages} locale={locale}>
           {children}
         </Providers>
       </body>
