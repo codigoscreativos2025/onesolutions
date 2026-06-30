@@ -17,19 +17,17 @@ export async function GET() {
   return NextResponse.json(notifications);
 }
 
-export async function PATCH(request: Request) {
+export async function PATCH() {
   const session = await auth();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json();
-  const { ids } = body;
-
+  // Marcar todas como leídas
   await prisma.notification.updateMany({
     where: {
-      id: { in: ids.map((id: number) => parseInt(String(id))) },
       userId: parseInt(session.user.id),
+      isRead: false,
     },
     data: { isRead: true },
   });

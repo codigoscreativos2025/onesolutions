@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { ThemeToggle } from "./ThemeToggle";
 import { LanguageSwitcher } from "./LanguageSwitcher";
-import { Bell } from "lucide-react";
+import { NotificationsDropdown } from "./NotificationsDropdown";
 
 export function TopAppBar() {
   const { data: session } = useSession();
@@ -36,10 +36,7 @@ export function TopAppBar() {
       <div className="flex items-center gap-1">
         <LanguageSwitcher />
         <ThemeToggle />
-        <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-highest transition-colors active:scale-90 relative">
-          <Bell className="w-5 h-5 text-primary" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full" />
-        </button>
+        <NotificationsDropdown />
       </div>
     </header>
   );
