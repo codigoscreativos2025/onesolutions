@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { getMessages, getLocale } from "next-intl/server";
 import { Providers } from "@/components/providers";
+import esMessages from "@/messages/es.json";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
@@ -15,13 +15,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const locale = await getLocale();
-  const messages = await getMessages();
-
   return (
-    <html lang={locale} suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
       <body className="antialiased">
-        <Providers messages={messages} locale={locale}>
+        <Providers messages={esMessages} locale="es">
           {children}
         </Providers>
       </body>

@@ -1,9 +1,11 @@
 "use client";
 
-import { ThemeProvider } from "next-themes";
-import { NextIntlClientProvider, AbstractIntlMessages } from "next-intl";
+import { NextIntlClientProvider } from "next-intl";
 import { SessionProvider } from "next-auth/react";
+import { ThemeProvider } from "next-themes";
 import { ReactNode } from "react";
+
+type Messages = typeof import("../messages/es.json");
 
 export function Providers({
   children,
@@ -11,12 +13,12 @@ export function Providers({
   locale,
 }: {
   children: ReactNode;
-  messages: AbstractIntlMessages;
+  messages: Messages;
   locale: string;
 }) {
   return (
     <SessionProvider>
-      <NextIntlClientProvider messages={messages} locale={locale}>
+      <NextIntlClientProvider locale={locale} messages={messages}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           {children}
         </ThemeProvider>
