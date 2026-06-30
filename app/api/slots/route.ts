@@ -22,10 +22,15 @@ export async function GET() {
       visit: {
         include: {
           parcel: {
-            select: { address: true },
+            select: { id: true, address: true },
           },
           setter: {
             select: { name: true },
+          },
+          projects: {
+            include: {
+              projectType: true,
+            },
           },
         },
       },
