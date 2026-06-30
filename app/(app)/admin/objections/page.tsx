@@ -6,7 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Users, UserCheck } from "lucide-react";
 
 interface Objection {
   id: number;
@@ -22,7 +22,9 @@ export default function AdminObjectionsPage() {
   const { data: session } = useSession();
   const router = useRouter();
 
-  const [objections, setObjections] = useState<Objection[]>([]);
+  const [activeTab, setActiveTab] = useState<"setter" | "closer">("setter");
+  const [setterObjections, setSetterObjections] = useState<Objection[]>([]);
+  const [closerObjections, setCloserObjections] = useState<Objection[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingObjection, setEditingObjection] = useState<Objection | null>(null);
@@ -44,9 +46,14 @@ export default function AdminObjectionsPage() {
 
   const fetchObjections = async () => {
     try {
-      const res = await fetch("/api/admin/objections");
-      const data = await res.json();
-      setObjections(data);
+      const [setterRes, closerRes] = await Promise.all([
+        fetch("/api/admin/objections"),
+        fetch("/api/admin/closer-objections"),
+      ]);
+      const setterData = await setterRes.json();
+      const closerData = await closerRes.json();
+      setSetterObjections(setterData);
+      setCloserObjections(closerData);
     } catch (error) {
       console.error(error);
     } finally {
@@ -57,9 +64,10 @@ export default function AdminObjectionsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const endpoint = activeTab === "setter" ? "objections" : "closer-objections";
     const url = editingObjection
-      ? `/api/admin/objections/${editingObjection.id}`
-      : "/api/admin/objections";
+      ? `/api/admin/${endpoint}/${editingObjection.id}`
+      : `/api/admin/${endpoint}`;
     const method = editingObjection ? "PATCH" : "POST";
 
     const res = await fetch(url, {
@@ -91,7 +99,8 @@ export default function AdminObjectionsPage() {
   const handleDelete = async (id: number) => {
     if (!confirm("¿Eliminar esta objeción?")) return;
 
-    const res = await fetch(`/api/admin/objections/${id}`, {
+    const endpoint = activeTab === "setter" ? "objections" : "closer-objections";
+    const res = await fetch(`/api/admin/${endpoint}/${id}`, {
       method: "DELETE",
     });
 
@@ -105,7 +114,7 @@ export default function AdminObjectionsPage() {
       key: "",
       name: "",
       nameEn: "",
-      color: "#fb7800",
+      color: activeTab === "setter" ? "#fb7800" : "#545f64",
       isActive: true,
     });
   };
@@ -115,6 +124,8 @@ export default function AdminObjectionsPage() {
     resetForm();
     setIsModalOpen(true);
   };
+
+  const currentObjections = activeTab === "setter" ? setterObjections : closerObjections;
 
   if (loading) {
     return (
@@ -132,7 +143,7 @@ export default function AdminObjectionsPage() {
             Objeciones
           </h1>
           <p className="text-on-surface-variant">
-            Configura las objeciones disponibles para los setters
+            Configura las objeciones para setters y closers
           </p>
         </div>
         <Button onClick={openCreateModal}>
@@ -141,8 +152,49 @@ export default function AdminObjectionsPage() {
         </Button>
       </div>
 
+      {/* Tabs */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => setActiveTab("setter")}
+          className={`p-4 rounded-2xl glass-panel border-2 transition-all flex items-center gap-3 ${
+            activeTab === "setter"
+              ? "border-primary bg-primary/5"
+              : "border-transparent"
+          }`}
+        >
+          <Users className={`w-6 h-6 ${activeTab === "setter" ? "text-primary" : "text-on-surface-variant"}`} />
+          <div className="text-left">
+            <span className="font-semibold text-on-surface text-sm block">
+              Objeciones Setter
+            </span>
+            <span className="text-xs text-on-surface-variant">
+              {setterObjections.length} configuradas
+            </span>
+          </div>
+        </button>
+        <button
+          onClick={() => setActiveTab("closer")}
+          className={`p-4 rounded-2xl glass-panel border-2 transition-all flex items-center gap-3 ${
+            activeTab === "closer"
+              ? "border-primary bg-primary/5"
+              : "border-transparent"
+          }`}
+        >
+          <UserCheck className={`w-6 h-6 ${activeTab === "closer" ? "text-primary" : "text-on-surface-variant"}`} />
+          <div className="text-left">
+            <span className="font-semibold text-on-surface text-sm block">
+              Trabajando con Objeciones
+            </span>
+            <span className="text-xs text-on-surface-variant">
+              {closerObjections.length} configuradas
+            </span>
+          </div>
+        </button>
+      </div>
+
+      {/* Lista de objeciones */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {objections.map((objection) => (
+        {currentObjections.map((objection) => (
           <div
             key={objection.id}
             className="glass-panel p-5 rounded-2xl flex items-center justify-between"
@@ -180,10 +232,17 @@ export default function AdminObjectionsPage() {
         ))}
       </div>
 
+      {currentObjections.length === 0 && (
+        <div className="text-center py-12 text-on-surface-variant">
+          <p>No hay objeciones configuradas para {activeTab === "setter" ? "setters" : "closers"}</p>
+        </div>
+      )}
+
+      {/* Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingObjection ? "Editar Objeción" : "Nueva Objeción"}
+        title={editingObjection ? "Editar Objeción" : `Nueva Objeción ${activeTab === "setter" ? "Setter" : "Closer"}`}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
