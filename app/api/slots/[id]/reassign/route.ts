@@ -9,6 +9,17 @@ export async function POST(request: Request) {
   }
 
   try {
+    const userId = parseInt(session.user.id);
+
+    // Validar que el usuario existe
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     const { slotId, reason, toCloserId, newSlotId } = await request.json();
 
     if (!slotId || !reason) {
@@ -29,7 +40,7 @@ export async function POST(request: Request) {
     const reassignment = await prisma.slotReassignment.create({
       data: {
         slotId: parseInt(slotId),
-        fromCloserId: parseInt(session.user.id),
+        fromCloserId: userId,
         toCloserId: toCloserId ? parseInt(toCloserId) : null,
         reason,
         status: toCloserId && newSlotId ? "APPROVED" : "PENDING",

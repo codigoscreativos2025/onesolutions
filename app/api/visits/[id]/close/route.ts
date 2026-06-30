@@ -16,6 +16,17 @@ export async function PATCH(
   const { notes } = body;
 
   try {
+    const userId = parseInt(session.user.id);
+
+    // Validar que el usuario existe
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     const visit = await prisma.visit.update({
       where: { id: parseInt(id) },
       data: {
@@ -48,7 +59,7 @@ export async function PATCH(
           visitId: visit.id,
           messages: {
             create: {
-              userId: parseInt(session.user.id),
+              userId: userId,
               body: `Proyecto cerrado para ${visit.parcel.address}. Chat creado automáticamente.`,
             },
           },

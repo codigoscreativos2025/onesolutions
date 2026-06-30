@@ -27,11 +27,22 @@ export async function POST(request: Request) {
   }
 
   try {
+    const userId = parseInt(session.user.id);
+    
+    // Validar que el usuario existe
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+    
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     const { dayOfWeek, startHour, endHour, slotDuration, isWorkday } = await request.json();
 
     const pattern = await prisma.weeklyPattern.create({
       data: {
-        closerId: parseInt(session.user.id),
+        closerId: userId,
         dayOfWeek,
         startHour,
         endHour,

@@ -9,8 +9,18 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { weeksAhead = 4 } = await request.json();
     const closerId = parseInt(session.user.id);
+
+    // Validar que el usuario existe
+    const user = await prisma.user.findUnique({
+      where: { id: closerId },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const { weeksAhead = 4 } = await request.json();
 
     // Obtener patrones del closer
     const patterns = await prisma.weeklyPattern.findMany({
