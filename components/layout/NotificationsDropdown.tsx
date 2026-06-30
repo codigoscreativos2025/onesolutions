@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "@/i18n/navigation";
+import { useRouter } from "next/navigation";
 import { Bell, CheckCheck } from "lucide-react";
 
 interface Notification {

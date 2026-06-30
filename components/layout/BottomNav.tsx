@@ -1,62 +1,52 @@
 "use client";
 
-import { Link, usePathname } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { getTranslation } from "@/lib/i18n";
 import { Map, LayoutDashboard, Trophy, MessageSquare, Shield, Calendar } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 export function BottomNav() {
   const pathname = usePathname();
-  const t = useTranslations("nav");
+  const t = getTranslation().nav;
   const { data: session } = useSession();
 
   const isActive = (path: string) => pathname.includes(path);
 
   const navItems = [
-    { key: "map", href: "/map", icon: Map },
-    { key: "dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { key: "calendar", href: "/calendar", icon: Calendar },
-    { key: "ranking", href: "/ranking", icon: Trophy },
-    { key: "chat", href: "/chat", icon: MessageSquare },
+    { href: "/map", label: t.map, icon: Map, roles: ["SETTER", "CLOSER", "ADMIN"] },
+    { href: "/dashboard", label: t.dashboard, icon: LayoutDashboard, roles: ["SETTER", "CLOSER", "ADMIN"] },
+    { href: "/calendar", label: t.calendar, icon: Calendar, roles: ["CLOSER", "ADMIN"] },
+    { href: "/ranking", label: t.ranking, icon: Trophy, roles: ["SETTER", "CLOSER", "ADMIN"] },
+    { href: "/chat", label: t.chat, icon: MessageSquare, roles: ["SETTER", "CLOSER", "ADMIN"] },
+    { href: "/admin", label: t.admin, icon: Shield, roles: ["ADMIN"] },
   ];
 
-  const isAdmin = session?.user?.role === "ADMIN";
+  const visibleItems = navItems.filter((item) =>
+    session?.user?.role ? item.roles.includes(session.user.role) : false
+  );
 
   return (
-    <nav className="fixed bottom-0 left-0 w-full h-20 px-4 pb-safe bg-glass-fill dark:bg-deep-black/90 backdrop-blur-xl rounded-t-2xl border-t border-glass-border shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-50">
-      <div className="flex justify-around items-center h-full">
-        {navItems.map((item) => {
-          const active = isActive(item.href);
+    <nav className="fixed bottom-0 z-50 w-full glass-panel border-t border-glass-border">
+      <div className="flex justify-around items-center h-16">
+        {visibleItems.map((item) => {
           const Icon = item.icon;
+          const active = isActive(item.href);
           return (
             <Link
-              key={item.key}
+              key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center px-3 py-2 rounded-xl transition-all active:scale-110 ${
+              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all ${
                 active
                   ? "text-primary bg-primary/10"
-                  : "text-on-surface-variant hover:bg-surface-container-highest"
+                  : "text-on-surface-variant hover:text-primary hover:bg-surface-container-high"
               }`}
             >
-              <Icon className="w-6 h-6" />
-              <span className="text-xs font-medium mt-0.5">{t(item.key)}</span>
+              <Icon className="w-5 h-5" />
+              <span className="text-[10px] font-medium">{item.label}</span>
             </Link>
           );
         })}
-
-        {isAdmin && (
-          <Link
-            href="/admin"
-            className={`flex flex-col items-center justify-center px-3 py-2 rounded-xl transition-all active:scale-110 ${
-              isActive("/admin")
-                ? "text-primary bg-primary/10"
-                : "text-on-surface-variant hover:bg-surface-container-highest"
-            }`}
-          >
-            <Shield className="w-6 h-6" />
-            <span className="text-xs font-medium mt-0.5">{t("admin")}</span>
-          </Link>
-        )}
       </div>
     </nav>
   );

@@ -7,12 +7,21 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   const session = await auth();
-  if (!session) {
+  if (!session || !session.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
   const userId = parseInt(session.user.id);
+
+  // Verificar que el usuario existe
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
 
   const parcel = await prisma.parcel.findUnique({
     where: { id },

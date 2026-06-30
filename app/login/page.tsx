@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
+import { getTranslation } from "@/lib/i18n";
 import { DoorOpen, Mail, Lock, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
-  const t = useTranslations("login");
+  const t = getTranslation().login;
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -28,7 +28,7 @@ export default function LoginPage() {
     });
 
     if (result?.error) {
-      setError(t("error"));
+      setError(t.error);
       setLoading(false);
     } else {
       router.push("/dashboard");
@@ -48,13 +48,13 @@ export default function LoginPage() {
           <h1 className="font-display text-3xl font-bold text-on-surface">
             One Solutions
           </h1>
-          <p className="text-on-surface-variant mt-2">{t("subtitle")}</p>
+          <p className="text-on-surface-variant mt-2">Bienvenido</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <label className="text-sm font-medium text-on-surface-variant uppercase tracking-wider">
-              {t("email")}
+              {t.email}
             </label>
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
@@ -71,7 +71,7 @@ export default function LoginPage() {
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-on-surface-variant uppercase tracking-wider">
-              {t("password")}
+              {t.password}
             </label>
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
@@ -97,7 +97,7 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full h-14 bg-primary text-on-primary rounded-xl font-bold text-lg shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-70"
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t("submit")}
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t.submit}
           </button>
         </form>
       </div>

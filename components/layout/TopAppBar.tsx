@@ -1,14 +1,14 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useTranslations } from "next-intl";
 import { ThemeToggle } from "./ThemeToggle";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { NotificationsDropdown } from "./NotificationsDropdown";
+import { getTranslation } from "@/lib/i18n";
 
 export function TopAppBar() {
   const { data: session } = useSession();
-  const t = useTranslations("roles");
+  const t = getTranslation().roles;
 
   const initials = session?.user?.name
     ?.split(" ")
@@ -28,7 +28,7 @@ export function TopAppBar() {
             One Solutions
           </span>
           <span className="text-xs text-on-surface-variant">
-            {session?.user?.role ? t(session.user.role as "ADMIN" | "SETTER" | "CLOSER") : ""}
+            {session?.user?.role ? t[session.user.role as keyof typeof t] || session.user.role : ""}
           </span>
         </div>
       </div>
