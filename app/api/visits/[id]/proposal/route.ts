@@ -13,7 +13,7 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await request.json();
-  const { phone, clientName, billImageUrl, notes, slotId, closerId } = body;
+  const { phone, clientName, clientEmail, billImageUrl, notes, slotId, closerId, projectTypeIds } = body;
 
   if (!phone || !billImageUrl || !slotId || !closerId) {
     return NextResponse.json(
@@ -34,6 +34,7 @@ export async function PATCH(
           imageUrl: billImageUrl,
           phone,
           clientName,
+          clientEmail,
           notes,
         },
       });
@@ -44,6 +45,7 @@ export async function PATCH(
           imageUrl: billImageUrl,
           phone,
           clientName,
+          clientEmail,
           notes,
         },
       });
@@ -64,6 +66,22 @@ export async function PATCH(
         notes,
       },
     });
+
+    // Guardar proyectos seleccionados
+    if (projectTypeIds && Array.isArray(projectTypeIds) && projectTypeIds.length > 0) {
+      // Eliminar proyectos existentes
+      await prisma.visitProject.deleteMany({
+        where: { visitId: parseInt(id) },
+      });
+
+      // Crear nuevos proyectos
+      await prisma.visitProject.createMany({
+        data: projectTypeIds.map((projectTypeId: number) => ({
+          visitId: parseInt(id),
+          projectTypeId,
+        })),
+      });
+    }
 
     // Crear notificación para el closer
     await prisma.notification.create({

@@ -41,6 +41,11 @@ export async function GET(request: Request) {
       },
       bill: true,
       slot: true,
+      projects: {
+        include: {
+          projectType: true,
+        },
+      },
     },
   });
 

@@ -26,6 +26,12 @@ interface Visit {
     address: string;
   };
   stage: string;
+  projects?: {
+    projectType: {
+      id: number;
+      name: string;
+    };
+  }[];
 }
 
 interface Objection {
@@ -45,6 +51,12 @@ interface Closer {
   }[];
 }
 
+interface ProjectType {
+  id: number;
+  name: string;
+  description?: string;
+}
+
 export default function VisitPage() {
   const params = useParams();
   const router = useRouter();
@@ -54,6 +66,7 @@ export default function VisitPage() {
   const [visit, setVisit] = useState<Visit | null>(null);
   const [objections, setObjections] = useState<Objection[]>([]);
   const [closers, setClosers] = useState<Closer[]>([]);
+  const [projectTypes, setProjectTypes] = useState<ProjectType[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
@@ -66,8 +79,10 @@ export default function VisitPage() {
   const [billPreview, setBillPreview] = useState("");
   const [phone, setPhone] = useState("");
   const [clientName, setClientName] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
   const [selectedSlotId, setSelectedSlotId] = useState("");
   const [selectedCloserId, setSelectedCloserId] = useState("");
+  const [selectedProjectTypes, setSelectedProjectTypes] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
 
   const isClosingMode =
@@ -79,19 +94,29 @@ export default function VisitPage() {
 
   const fetchData = async () => {
     try {
-      const [visitRes, objRes, closersRes] = await Promise.all([
+      const [visitRes, objRes, closersRes, projectTypesRes] = await Promise.all([
         fetch(`/api/visits/active?parcelId=${parcelId}`),
         fetch("/api/objections"),
         fetch("/api/closers"),
+        fetch("/api/project-types"),
       ]);
 
       const visitData = await visitRes.json();
       const objData = await objRes.json();
       const closersData = await closersRes.json();
+      const projectTypesData = await projectTypesRes.json();
 
       setVisit(visitData);
       setObjections(objData);
       setClosers(closersData);
+      setProjectTypes(projectTypesData);
+
+      // Cargar proyectos ya seleccionados si existen
+      if (visitData?.projects) {
+        setSelectedProjectTypes(
+          visitData.projects.map((p: { projectType: { id: number } }) => p.projectType.id)
+        );
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -160,7 +185,7 @@ export default function VisitPage() {
       return;
     }
 
-    if (!phone || !billFile || !selectedSlotId || !selectedCloserId) {
+    if (!phone || !billFile || !selectedSlotId || !selectedCloserId || selectedProjectTypes.length === 0) {
       setSaving(false);
       return;
     }
@@ -173,15 +198,18 @@ export default function VisitPage() {
     });
     const uploadData = await uploadRes.json();
 
+    // Guardar propuesta con proyectos seleccionados
     await fetch(`/api/visits/${visit.id}/proposal`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         phone,
         clientName,
+        clientEmail,
         billImageUrl: uploadData.url,
         slotId: selectedSlotId,
         closerId: selectedCloserId,
+        projectTypeIds: selectedProjectTypes,
       }),
     });
 
@@ -200,6 +228,12 @@ export default function VisitPage() {
   const toggleObjection = (id: number) => {
     setSelectedObjections((prev) =>
       prev.includes(id) ? prev.filter((o) => o !== id) : [...prev, id]
+    );
+  };
+
+  const toggleProjectType = (id: number) => {
+    setSelectedProjectTypes((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
     );
   };
 
@@ -430,6 +464,46 @@ export default function VisitPage() {
                   className="w-full h-12 pl-12 pr-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
                 />
               </div>
+              <div className="relative">
+                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <input
+                  type="email"
+                  value={clientEmail}
+                  onChange={(e) => setClientEmail(e.target.value)}
+                  placeholder="Correo electrónico"
+                  className="w-full h-12 pl-12 pr-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
+                />
+              </div>
+            </div>
+          )}
+
+          {!isClosingMode && (
+            <div className="space-y-3">
+              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                Paso 3: Seleccionar Proyectos
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {projectTypes.map((pt) => (
+                  <button
+                    key={pt.id}
+                    onClick={() => toggleProjectType(pt.id)}
+                    className={`px-4 py-2 rounded-full border text-sm font-medium transition-colors ${
+                      selectedProjectTypes.includes(pt.id)
+                        ? "bg-primary/10 border-primary text-primary"
+                        : "bg-surface-container-lowest border-outline-variant text-on-surface hover:border-primary"
+                    }`}
+                  >
+                    {pt.name}
+                  </button>
+                ))}
+              </div>
+              {selectedProjectTypes.length === 0 && (
+                <p className="text-xs text-secondary italic">
+                  Selecciona al menos un proyecto
+                </p>
+              )}
             </div>
           )}
 
@@ -437,7 +511,7 @@ export default function VisitPage() {
             <div className="space-y-3">
               <div className="flex justify-between items-end">
                 <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                  Paso 3: Agendar con Closer
+                  Paso 4: Agendar con Closer
                 </label>
                 <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded uppercase font-bold">
                   Slots Disponibles
@@ -514,7 +588,7 @@ export default function VisitPage() {
             disabled={
               isClosingMode
                 ? saving
-                : !phone || !billFile || !selectedSlotId || !selectedCloserId || saving
+                : !phone || !billFile || !selectedSlotId || !selectedCloserId || selectedProjectTypes.length === 0 || saving
             }
             className="w-full h-14 uppercase tracking-widest"
           >
