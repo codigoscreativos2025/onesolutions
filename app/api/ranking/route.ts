@@ -10,13 +10,16 @@ export async function GET() {
 
   const userId = parseInt(session.user.id);
 
-  // Ranking por puertas tocadas
-  const doorsKnockedRanking = await prisma.user.findMany({
-    where: { role: { in: ["SETTER", "CLOSER"] } },
+  // Ranking de setters por puertas tocadas
+  const settersDoors = await prisma.user.findMany({
+    where: { role: "SETTER" },
     select: {
       id: true,
       name: true,
       role: true,
+      userBadges: {
+        include: { badge: true },
+      },
       _count: {
         select: { visitsAsSetter: true },
       },
@@ -27,33 +30,65 @@ export async function GET() {
     take: 10,
   });
 
-  // Ranking por proyectos cerrados
-  const projectsClosedRanking = await prisma.user.findMany({
-    where: { role: { in: ["SETTER", "CLOSER"] } },
+  // Ranking de setters por prospectos generados
+  const settersProspects = await prisma.user.findMany({
+    where: { role: "SETTER" },
     select: {
       id: true,
       name: true,
       role: true,
+      userBadges: {
+        include: { badge: true },
+      },
       visitsAsSetter: {
+        where: { stage: "PROPOSAL_ACCEPTED" },
+        select: { id: true },
+      },
+    },
+  });
+
+  const settersProspectsSorted = settersProspects
+    .map((user) => ({
+      id: user.id,
+      name: user.name,
+      role: user.role,
+      badges: user.userBadges.map((ub) => ub.badge),
+      count: user.visitsAsSetter.length,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  // Ranking de closers por proyectos cerrados
+  const closersProjects = await prisma.user.findMany({
+    where: { role: "CLOSER" },
+    select: {
+      id: true,
+      name: true,
+      role: true,
+      userBadges: {
+        include: { badge: true },
+      },
+      visitsAsCloser: {
         where: { stage: "CLOSED" },
         select: { id: true },
       },
     },
   });
 
-  const projectsClosedSorted = projectsClosedRanking
+  const closersProjectsSorted = closersProjects
     .map((user) => ({
       id: user.id,
       name: user.name,
       role: user.role,
-      count: user.visitsAsSetter.length,
+      badges: user.userBadges.map((ub) => ub.badge),
+      count: user.visitsAsCloser.length,
     }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);
 
-  // Posición propia
-  const allDoors = await prisma.user.findMany({
-    where: { role: { in: ["SETTER", "CLOSER"] } },
+  // Posición propia del usuario
+  const allSettersDoors = await prisma.user.findMany({
+    where: { role: "SETTER" },
     select: {
       id: true,
       _count: {
@@ -65,44 +100,77 @@ export async function GET() {
     },
   });
 
-  const allProjects = await prisma.user.findMany({
-    where: { role: { in: ["SETTER", "CLOSER"] } },
+  const allClosersProjects = await prisma.user.findMany({
+    where: { role: "CLOSER" },
     select: {
       id: true,
-      visitsAsSetter: {
+      visitsAsCloser: {
         where: { stage: "CLOSED" },
         select: { id: true },
       },
     },
   });
 
-  const doorsPosition =
-    allDoors.findIndex((u) => u.id === userId) + 1 || allDoors.length + 1;
-  const projectsSorted = allProjects
-    .map((u) => ({
-      id: u.id,
-      count: u.visitsAsSetter.length,
-    }))
-    .sort((a, b) => b.count - a.count);
-  const projectsPosition =
-    projectsSorted.findIndex((u) => u.id === userId) + 1 ||
-    projectsSorted.length + 1;
+  const myRole = session.user.role;
+  let myDoorsPosition = 0;
+  let myProspectsPosition = 0;
+  let myProjectsPosition = 0;
+
+  if (myRole === "SETTER") {
+    myDoorsPosition = allSettersDoors.findIndex((u) => u.id === userId) + 1 || allSettersDoors.length + 1;
+    
+    const allSettersProspects = await prisma.user.findMany({
+      where: { role: "SETTER" },
+      select: {
+        id: true,
+        visitsAsSetter: {
+          where: { stage: "PROPOSAL_ACCEPTED" },
+          select: { id: true },
+        },
+      },
+    });
+    
+    const sorted = allSettersProspects
+      .map((u) => ({ id: u.id, count: u.visitsAsSetter.length }))
+      .sort((a, b) => b.count - a.count);
+    myProspectsPosition = sorted.findIndex((u) => u.id === userId) + 1 || sorted.length + 1;
+  }
+
+  if (myRole === "CLOSER") {
+    const sorted = allClosersProjects
+      .map((u) => ({ id: u.id, count: u.visitsAsCloser.length }))
+      .sort((a, b) => b.count - a.count);
+    myProjectsPosition = sorted.findIndex((u) => u.id === userId) + 1 || sorted.length + 1;
+  }
+
+  // Mis medallas
+  const myBadges = await prisma.userBadge.findMany({
+    where: { userId },
+    include: { badge: true },
+  });
 
   return NextResponse.json({
-    doorsKnocked: doorsKnockedRanking.map((u, index) => ({
+    settersDoors: settersDoors.map((u, index) => ({
       position: index + 1,
       id: u.id,
       name: u.name,
       role: u.role,
+      badges: u.userBadges.map((ub) => ub.badge),
       count: u._count.visitsAsSetter,
     })),
-    projectsClosed: projectsClosedSorted.map((u, index) => ({
+    settersProspects: settersProspectsSorted.map((u, index) => ({
+      position: index + 1,
+      ...u,
+    })),
+    closersProjects: closersProjectsSorted.map((u, index) => ({
       position: index + 1,
       ...u,
     })),
     myPosition: {
-      doorsKnocked: doorsPosition,
-      projectsClosed: projectsPosition,
+      doorsKnocked: myDoorsPosition,
+      prospectsGenerated: myProspectsPosition,
+      projectsClosed: myProjectsPosition,
     },
+    myBadges: myBadges.map((ub) => ub.badge),
   });
 }

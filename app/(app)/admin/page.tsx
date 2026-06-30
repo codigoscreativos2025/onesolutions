@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { Link } from "@/i18n/navigation";
-import { Users, MessageSquareWarning, BarChart3, MessageCircle } from "lucide-react";
+import { Users, MessageSquareWarning, BarChart3, MessageCircle, Award } from "lucide-react";
 
 export default async function AdminPage() {
   const session = await auth();
@@ -33,11 +33,18 @@ export default async function AdminPage() {
       color: "bg-tertiary/10 text-tertiary",
     },
     {
+      title: "Medallas",
+      description: "Configura medallas y metas del equipo",
+      href: "/admin/badges",
+      icon: Award,
+      color: "bg-primary/10 text-primary",
+    },
+    {
       title: "Chats",
       description: "Monitorea las conversaciones internas",
       href: "/admin/chats",
       icon: MessageCircle,
-      color: "bg-primary/10 text-primary",
+      color: "bg-secondary/10 text-secondary",
     },
   ];
 
