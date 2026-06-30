@@ -4,14 +4,19 @@ Aplicación web de gestión de leads y visitas para equipos de ventas door-to-do
 
 ## Características
 
-- Roles: Admin, Setter, Closer
-- Mapa de parcelas con estados visuales (rojo/naranja/verde)
-- Flujo "Tocar Puerta": No disponible, Objeción, Acepta propuesta
-- Calendario interno para closers
-- Chat interno por proyecto aprobado
-- Ranking global
-- Soporte multilenguaje (español / inglés)
-- Modo claro y oscuro
+- **Roles**: Admin, Setter, Closer
+- **Mapa de parcelas** con estados visuales (rojo/naranja/verde)
+- **Flujo "Tocar Puerta"**: No disponible, Objeción, Acepta propuesta
+- **Selección de proyectos**: Panel Solar, Techo, Purificador, Fence, Aires, Screens, Gutters, Jardines, etc.
+- **Calendario mejorado** para closers con patrones semanales y generación automática de slots
+- **Acciones en citas**: Ver proyecto, Visitar, Reasignar cita
+- **Chat interno** con información del proyecto cerrada
+- **Sistema de medallas** con ranking y metas configurables
+- **Métricas del negocio** con metas semanales/mensuales y seguimiento
+- **Objeciones configurables** para setters y closers (Trabajando con Objeciones)
+- **Notificaciones funcionales** con campanita y dropdown
+- **Soporte multilenguaje** (español / inglés)
+- **Modo claro y oscuro**
 
 ## Tecnologías
 
@@ -20,7 +25,6 @@ Aplicación web de gestión de leads y visitas para equipos de ventas door-to-do
 - TailwindCSS
 - Prisma ORM + SQLite
 - NextAuth.js v5
-- next-intl
 - next-themes
 - Leaflet / React-Leaflet
 
@@ -33,10 +37,16 @@ npx prisma db seed
 npm run dev
 ```
 
-Usuarios de prueba:
-- Admin: `admin@onesolutions.com` / `admin`
-- Closer: `closer@onesolutions.com` / `closer`
-- Setter: `setter@onesolutions.com` / `setter`
+## Usuarios de prueba
+
+| Email | Contraseña | Rol | Nombre |
+|-------|------------|-----|--------|
+| `admin@onesolutions.com` | `admin` | ADMIN | Admin Principal |
+| `closer@onesolutions.com` | `closer` | CLOSER | Carlos Mendoza |
+| `closer2@onesolutions.com` | `closer` | CLOSER | Ana Torres |
+| `setter@onesolutions.com` | `setter` | SETTER | Alex Rivera (asignado a Carlos) |
+| `setter2@onesolutions.com` | `setter` | SETTER | Maria Lopez (asignada a Carlos) |
+| `setter3@onesolutions.com` | `setter` | SETTER | Juan Perez (asignado a Ana) |
 
 ## Despliegue en EasyPanel (Hostinger)
 
@@ -102,9 +112,31 @@ Sin API key, la app usa parcelas de muestra en Orlando, FL.
 
 ## Estructura de roles
 
-- **Admin**: crea usuarios, configura objeciones, ve métricas y chats.
-- **Closer**: es también setter, define slots, recibe citas, cierra proyectos.
-- **Setter**: reclama parcelas, registra visitas, agenda citas con su closer asignado.
+- **Admin**: crea usuarios, configura objeciones (setter y closer), ve métricas con metas, gestiona medallas, monitorea chats.
+- **Closer**: define patrones semanales, recibe citas de setters, puede ver proyecto/visitar/reasignar, cierra proyectos, llena detalles del proyecto.
+- **Setter**: reclama parcelas, registra visitas, selecciona proyectos, agenda citas con su closer asignado.
+
+## Flujo completo
+
+1. **Setter toca puerta** → Reclama parcela (AVAILABLE → LEAD)
+2. **Setter registra visita** → No disponible / Objeción / Acepta propuesta
+3. **Si acepta propuesta** → Selecciona proyectos, sube bill, agenda slot con closer
+4. **Closer ve cita** → Puede ver proyecto, visitar o reasignar
+5. **Closer visita** → Registra objeciones de closer o acepta propuesta
+6. **Si acepta propuesta** → Se crea chat, se llena ProjectDetails, parcela pasa a CUSTOMER
+7. **Chat interno** → Setter, Closer y Admin pueden comunicarse
+
+## Datos de prueba incluidos en seed
+
+- 6 usuarios (1 admin, 2 closers, 3 setters)
+- 11 tipos de proyecto
+- 8 objeciones setter + 6 objeciones closer
+- 4 medallas setter + 4 medallas closer
+- 7 parcelas (disponibles, leads, clientes)
+- 5 visitas con diferentes estados
+- 3 chats con mensajes
+- Metas semanales y mensuales
+- Notificaciones de ejemplo
 
 ## Licencia
 
