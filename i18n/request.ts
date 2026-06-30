@@ -10,14 +10,10 @@ const messages: Record<string, Record<string, unknown>> = {
 };
 
 export default getRequestConfig(async ({ requestLocale }) => {
-  let locale = await requestLocale;
-
-  if (!locale || !routing.locales.includes(locale as any)) {
-    locale = routing.defaultLocale;
-  }
+  const locale = (await requestLocale) || routing.defaultLocale;
 
   return {
     locale,
-    messages: messages[locale],
+    messages: messages[locale] || messages[routing.defaultLocale],
   };
 });
