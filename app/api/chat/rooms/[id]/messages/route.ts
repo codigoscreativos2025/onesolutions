@@ -23,6 +23,15 @@ export async function POST(
     );
   }
 
+  // Verify user exists
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
   const room = await prisma.chatRoom.findUnique({
     where: { id: parseInt(id) },
     include: {

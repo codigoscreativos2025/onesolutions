@@ -8,7 +8,8 @@ const messages: Record<string, any> = {
   en: enMessages,
 };
 
-export default getRequestConfig(async ({ locale }) => {
+export default getRequestConfig(async ({ requestLocale }) => {
+  const locale = (await requestLocale) || "es";
   return {
     locale,
     messages: messages[locale] || messages.es,
