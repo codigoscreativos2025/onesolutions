@@ -4,14 +4,39 @@ import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Send, Paperclip, Loader2, MessageSquare } from "lucide-react";
+import { Send, Paperclip, Loader2, MessageSquare, Package, FileText } from "lucide-react";
+
+interface ProjectDetails {
+  clientName?: string;
+  clientEmail?: string;
+  address?: string;
+  closingDate?: string;
+  paymentMethod?: string;
+  solarFinancier?: string;
+  systemSize?: string;
+  roofType?: string;
+  roofSalePrice?: number;
+  waterSystemType?: string;
+  waterSalePrice?: number;
+  otherSalePrice?: number;
+  primaryRep?: string;
+  primaryRepCommPct?: number;
+}
+
+interface ProjectType {
+  id: number;
+  name: string;
+}
 
 interface Room {
   id: number;
   visit: {
-    parcel: { address: string };
+    parcel: { id: string; address: string };
     setter: { name: string };
     closer?: { name: string };
+    bill?: { imageUrl: string; phone: string; clientName: string; clientEmail: string };
+    projectDetails?: ProjectDetails;
+    projects?: { projectType: ProjectType }[];
   };
   messages: {
     body: string;
@@ -38,6 +63,7 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [showProjectInfo, setShowProjectInfo] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -70,6 +96,7 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
     const res = await fetch(`/api/chat/rooms/${roomId}`);
     const data = await res.json();
     setMessages(data.messages);
+    setSelectedRoom(data);
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -127,6 +154,10 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
     );
   }
 
+  const projectDetails = selectedRoom?.visit.projectDetails;
+  const projects = selectedRoom?.visit.projects || [];
+  const bill = selectedRoom?.visit.bill;
+
   return (
     <div className="space-y-4 h-[calc(100dvh-180px)]">
       <div>
@@ -172,14 +203,135 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
             {selectedRoom ? (
               <>
                 <div className="p-4 border-b border-outline-variant/30">
-                  <p className="font-semibold text-on-surface">
-                    {selectedRoom.visit.parcel.address}
-                  </p>
-                  <p className="text-xs text-on-surface-variant">
-                    Setter: {selectedRoom.visit.setter.name}
-                    {selectedRoom.visit.closer &&
-                      ` • Closer: ${selectedRoom.visit.closer.name}`}
-                  </p>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-semibold text-on-surface">
+                        {selectedRoom.visit.parcel.address}
+                      </p>
+                      <p className="text-xs text-on-surface-variant">
+                        Setter: {selectedRoom.visit.setter.name}
+                        {selectedRoom.visit.closer &&
+                          ` • Closer: ${selectedRoom.visit.closer.name}`}
+                      </p>
+                    </div>
+                    {projectDetails && (
+                      <button
+                        onClick={() => setShowProjectInfo(!showProjectInfo)}
+                        className="px-3 py-1 text-xs font-medium bg-primary/10 text-primary rounded-full hover:bg-primary/20 transition-colors"
+                      >
+                        <Package className="w-3 h-3 inline mr-1" />
+                        Info Proyecto
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Project Info Panel */}
+                  {showProjectInfo && projectDetails && (
+                    <div className="mt-3 p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-3">
+                      {/* Proyectos seleccionados */}
+                      {projects.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1">
+                            Proyectos
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {projects.map((p) => (
+                              <span
+                                key={p.projectType.id}
+                                className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full"
+                              >
+                                {p.projectType.name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Info del cliente */}
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        {projectDetails.clientName && (
+                          <div>
+                            <p className="text-on-surface-variant">Cliente</p>
+                            <p className="font-medium text-on-surface">{projectDetails.clientName}</p>
+                          </div>
+                        )}
+                        {projectDetails.clientEmail && (
+                          <div>
+                            <p className="text-on-surface-variant">Email</p>
+                            <p className="font-medium text-on-surface truncate">{projectDetails.clientEmail}</p>
+                          </div>
+                        )}
+                        {projectDetails.paymentMethod && (
+                          <div>
+                            <p className="text-on-surface-variant">Pago</p>
+                            <p className="font-medium text-on-surface">{projectDetails.paymentMethod}</p>
+                          </div>
+                        )}
+                        {projectDetails.closingDate && (
+                          <div>
+                            <p className="text-on-surface-variant">Cierre</p>
+                            <p className="font-medium text-on-surface">
+                              {new Date(projectDetails.closingDate).toLocaleDateString()}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Info específica por tipo de proyecto */}
+                      {projectDetails.solarFinancier && (
+                        <div className="text-xs">
+                          <p className="text-on-surface-variant">Panel Solar</p>
+                          <p className="font-medium text-on-surface">
+                            {projectDetails.solarFinancier} • {projectDetails.systemSize}
+                          </p>
+                        </div>
+                      )}
+                      {projectDetails.roofType && (
+                        <div className="text-xs">
+                          <p className="text-on-surface-variant">Techo</p>
+                          <p className="font-medium text-on-surface">
+                            {projectDetails.roofType} • ${projectDetails.roofSalePrice?.toLocaleString()}
+                          </p>
+                        </div>
+                      )}
+                      {projectDetails.waterSystemType && (
+                        <div className="text-xs">
+                          <p className="text-on-surface-variant">Purificador</p>
+                          <p className="font-medium text-on-surface">
+                            {projectDetails.waterSystemType} • ${projectDetails.waterSalePrice?.toLocaleString()}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Comisiones */}
+                      {projectDetails.primaryRep && (
+                        <div className="text-xs border-t border-outline-variant/30 pt-2">
+                          <p className="text-on-surface-variant">Comisiones</p>
+                          <p className="font-medium text-on-surface">
+                            {projectDetails.primaryRep}: {projectDetails.primaryRepCommPct}%
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Bill */}
+                      {bill && (
+                        <div className="text-xs border-t border-outline-variant/30 pt-2">
+                          <p className="text-on-surface-variant flex items-center gap-1">
+                            <FileText className="w-3 h-3" /> Recibo de Luz
+                          </p>
+                          <a
+                            href={bill.imageUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            Ver archivo
+                          </a>
+                          <p className="text-on-surface mt-1">Tel: {bill.phone}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">

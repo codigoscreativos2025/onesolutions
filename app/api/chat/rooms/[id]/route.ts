@@ -20,9 +20,16 @@ export async function GET(
     include: {
       visit: {
         include: {
-          parcel: { select: { address: true } },
+          parcel: { select: { id: true, address: true } },
           setter: { select: { id: true, name: true } },
           closer: { select: { id: true, name: true } },
+          bill: true,
+          projectDetails: true,
+          projects: {
+            include: {
+              projectType: true,
+            },
+          },
         },
       },
       messages: {
