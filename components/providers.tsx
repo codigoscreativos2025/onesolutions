@@ -1,7 +1,7 @@
 "use client";
 
 import { ThemeProvider } from "next-themes";
-import { NextIntlClientProvider } from "next-intl";
+import { NextIntlClientProvider, AbstractIntlMessages } from "next-intl";
 import { SessionProvider } from "next-auth/react";
 import { ReactNode } from "react";
 
@@ -11,7 +11,7 @@ export function Providers({
   locale,
 }: {
   children: ReactNode;
-  messages: Record<string, unknown>;
+  messages: AbstractIntlMessages;
   locale: string;
 }) {
   return (

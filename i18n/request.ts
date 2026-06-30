@@ -1,19 +1,16 @@
 import { getRequestConfig } from "next-intl/server";
-import { routing } from "./routing";
 
 import esMessages from "../messages/es.json";
 import enMessages from "../messages/en.json";
 
-const messages: Record<string, Record<string, unknown>> = {
+const messages: Record<string, any> = {
   es: esMessages,
   en: enMessages,
 };
 
-export default getRequestConfig(async ({ requestLocale }) => {
-  const locale = (await requestLocale) || routing.defaultLocale;
-
+export default getRequestConfig(async ({ locale }) => {
   return {
     locale,
-    messages: messages[locale] || messages[routing.defaultLocale],
+    messages: messages[locale] || messages.es,
   };
 });

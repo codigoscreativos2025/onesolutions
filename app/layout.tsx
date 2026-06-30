@@ -3,6 +3,8 @@ import { getMessages, getLocale } from "next-intl/server";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "One Solutions",
   description: "Lead and visit management",
