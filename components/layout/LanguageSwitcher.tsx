@@ -1,18 +1,25 @@
 "use client";
 
-import { Globe } from "lucide-react";
+import { useLocale } from "@/lib/locale-context";
 
 export function LanguageSwitcher() {
-  // Language switching is currently disabled
-  // TODO: Implement full i18n system with context
+  const { locale, setLocale } = useLocale();
+
+  const switchLocale = () => {
+    const newLocale = locale === "es" ? "en" : "es";
+    setLocale(newLocale);
+  };
 
   return (
     <button
-      className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container-highest transition-colors active:scale-90 font-bold text-sm opacity-50 cursor-not-allowed"
-      aria-label="Switch language (coming soon)"
-      title="Cambio de idioma próximamente"
+      onClick={switchLocale}
+      className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-highest transition-colors active:scale-90 font-bold text-sm"
+      aria-label="Cambiar idioma"
+      title={locale === "es" ? "Switch to English" : "Cambiar a Español"}
     >
-      <Globe className="w-5 h-5" />
+      <span className="text-xs font-bold text-on-surface-variant">
+        {locale === "es" ? "EN" : "ES"}
+      </span>
     </button>
   );
 }

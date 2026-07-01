@@ -39,8 +39,15 @@ interface Metrics {
   topDoorsKnocked: { id: number; name: string; count: number }[];
   topProspects: { id: number; name: string; count: number }[];
   topProjectsClosed: { id: number; name: string; count: number }[];
-  topObjections: { id: number; name: string; color: string; count: number }[];
+  topSetterObjections: { id: number; name: string; color: string; count: number }[];
+  topCloserObjections: { id: number; name: string; color: string; count: number }[];
+  topSetterObjectionsByUser: { id: number; name: string; count: number }[];
+  topCloserObjectionsByUser: { id: number; name: string; count: number }[];
   projectMetrics: { id: number; name: string; count: number }[];
+  conversionDoorToProspect: number;
+  conversionProspectToClosed: number;
+  topConversionBySetter: { id: number; name: string; doors: number; prospects: number; rate: number }[];
+  topConversionByCloser: { id: number; name: string; prospects: number; closed: number; rate: number }[];
 }
 
 export default function AdminMetricsPage() {
@@ -216,12 +223,90 @@ export default function AdminMetricsPage() {
           clickable
         />
         <MetricCard
-          title="Objeciones Registradas"
-          value={metrics?.objectionsCount || 0}
+          title="Objeciones Setter"
+          value={metrics?.topSetterObjections.reduce((sum, o) => sum + o.count, 0) || 0}
           icon={MessageSquareWarning}
-          onClick={() => setActiveDetail("objections")}
+          onClick={() => setActiveDetail("setterObjections")}
           clickable
         />
+      </div>
+
+      {/* Tasas de Conversión */}
+      <div className="glass-panel p-6 rounded-2xl">
+        <div className="flex items-center gap-3 mb-4">
+          <TrendingUp className="w-6 h-6 text-primary" />
+          <h2 className="font-headline text-lg font-bold text-on-surface">
+            Tasas de Conversión
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/30">
+            <p className="text-sm text-on-surface-variant mb-2">Puertas → Prospectos</p>
+            <p className="font-display text-3xl font-bold text-primary">
+              {(metrics?.conversionDoorToProspect || 0).toFixed(1)}%
+            </p>
+            <p className="text-xs text-on-surface-variant mt-1">
+              {metrics?.prospectsGenerated || 0} de {metrics?.doorsKnocked || 0} puertas
+            </p>
+            {metrics?.topConversionBySetter && metrics.topConversionBySetter.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-outline-variant/20">
+                <p className="text-xs text-on-surface-variant mb-1">Mejor Setter:</p>
+                <p className="text-sm font-semibold text-on-surface">
+                  {metrics.topConversionBySetter[0].name} - {metrics.topConversionBySetter[0].rate.toFixed(1)}%
+                </p>
+              </div>
+            )}
+          </div>
+          <div className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/30">
+            <p className="text-sm text-on-surface-variant mb-2">Prospectos → Cerrados</p>
+            <p className="font-display text-3xl font-bold text-primary">
+              {(metrics?.conversionProspectToClosed || 0).toFixed(1)}%
+            </p>
+            <p className="text-xs text-on-surface-variant mt-1">
+              {metrics?.projectsClosed || 0} de {metrics?.prospectsGenerated || 0} prospectos
+            </p>
+            {metrics?.topConversionByCloser && metrics.topConversionByCloser.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-outline-variant/20">
+                <p className="text-xs text-on-surface-variant mb-1">Mejor Closer:</p>
+                <p className="text-sm font-semibold text-on-surface">
+                  {metrics.topConversionByCloser[0].name} - {metrics.topConversionByCloser[0].rate.toFixed(1)}%
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Objeciones Closer */}
+      <div className="glass-panel p-5 rounded-2xl">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <MessageSquareWarning className="w-5 h-5 text-secondary" />
+            <h3 className="font-semibold text-on-surface">Objeciones Closer</h3>
+          </div>
+          <button
+            onClick={() => setActiveDetail("closerObjections")}
+            className="text-xs text-primary hover:underline"
+          >
+            Ver detalle
+          </button>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {metrics?.topCloserObjections.slice(0, 4).map((obj) => (
+            <div key={obj.id} className="p-2 rounded-lg bg-surface-container-low border border-outline-variant/30">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: obj.color }} />
+                <span className="text-xs text-on-surface truncate">{obj.name}</span>
+              </div>
+              <p className="font-bold text-sm text-on-surface">{obj.count}</p>
+            </div>
+          ))}
+          {(!metrics?.topCloserObjections || metrics.topCloserObjections.length === 0) && (
+            <p className="text-on-surface-variant text-sm col-span-4 text-center py-2">
+              Sin objeciones registradas
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Tipos de Proyecto */}
@@ -293,7 +378,11 @@ export default function AdminMetricsPage() {
             ? "Top Prospectos Generados"
             : activeDetail === "projects"
             ? "Top Proyectos Cerrados"
-            : "Objeciones Más Comunes"
+            : activeDetail === "setterObjections"
+            ? "Objeciones Setter"
+            : activeDetail === "closerObjections"
+            ? "Objeciones Closer"
+            : "Detalle"
         }
       >
         <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -327,22 +416,63 @@ export default function AdminMetricsPage() {
               )}
             </>
           )}
-          {activeDetail === "objections" && (
-            <>
-              {metrics?.topObjections.map((item, idx) => (
-                <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-surface-container-low">
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-on-surface-variant w-6">#{idx + 1}</span>
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                    <span className="font-medium text-on-surface">{item.name}</span>
+          {activeDetail === "setterObjections" && (
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-semibold text-on-surface mb-2">Por Tipo</h4>
+                {metrics?.topSetterObjections.map((item, idx) => (
+                  <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-surface-container-low">
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-on-surface-variant w-6">#{idx + 1}</span>
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                      <span className="font-medium text-on-surface">{item.name}</span>
+                    </div>
+                    <span className="font-bold text-on-surface">{item.count}</span>
                   </div>
-                  <span className="font-bold text-on-surface">{item.count}</span>
-                </div>
-              ))}
-              {(!metrics?.topObjections || metrics.topObjections.length === 0) && (
-                <p className="text-center text-on-surface-variant py-4">Sin objeciones registradas</p>
-              )}
-            </>
+                ))}
+                {(!metrics?.topSetterObjections || metrics.topSetterObjections.length === 0) && (
+                  <p className="text-center text-on-surface-variant py-4">Sin objeciones registradas</p>
+                )}
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-on-surface mb-2">Por Persona</h4>
+                {metrics?.topSetterObjectionsByUser.map((item, idx) => (
+                  <RankingItem key={item.id} position={idx + 1} name={item.name} count={item.count} label="objeciones" />
+                ))}
+                {(!metrics?.topSetterObjectionsByUser || metrics.topSetterObjectionsByUser.length === 0) && (
+                  <p className="text-center text-on-surface-variant py-4">Sin datos</p>
+                )}
+              </div>
+            </div>
+          )}
+          {activeDetail === "closerObjections" && (
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-semibold text-on-surface mb-2">Por Tipo</h4>
+                {metrics?.topCloserObjections.map((item, idx) => (
+                  <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-surface-container-low">
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-on-surface-variant w-6">#{idx + 1}</span>
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                      <span className="font-medium text-on-surface">{item.name}</span>
+                    </div>
+                    <span className="font-bold text-on-surface">{item.count}</span>
+                  </div>
+                ))}
+                {(!metrics?.topCloserObjections || metrics.topCloserObjections.length === 0) && (
+                  <p className="text-center text-on-surface-variant py-4">Sin objeciones registradas</p>
+                )}
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-on-surface mb-2">Por Persona</h4>
+                {metrics?.topCloserObjectionsByUser.map((item, idx) => (
+                  <RankingItem key={item.id} position={idx + 1} name={item.name} count={item.count} label="objeciones" />
+                ))}
+                {(!metrics?.topCloserObjectionsByUser || metrics.topCloserObjectionsByUser.length === 0) && (
+                  <p className="text-center text-on-surface-variant py-4">Sin datos</p>
+                )}
+              </div>
+            </div>
           )}
         </div>
       </Modal>

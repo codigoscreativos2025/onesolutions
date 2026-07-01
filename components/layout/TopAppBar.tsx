@@ -1,14 +1,15 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { ThemeToggle } from "./ThemeToggle";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { NotificationsDropdown } from "./NotificationsDropdown";
-import { getTranslation } from "@/lib/i18n";
+import { useLocale } from "@/lib/locale-context";
+import { LogOut } from "lucide-react";
 
 export function TopAppBar() {
   const { data: session } = useSession();
-  const t = getTranslation().roles;
+  const { t } = useLocale();
 
   const initials = session?.user?.name
     ?.split(" ")
@@ -16,6 +17,10 @@ export function TopAppBar() {
     .join("")
     .slice(0, 2)
     .toUpperCase() || "U";
+
+  const handleSignOut = () => {
+    signOut({ callbackUrl: "/login" });
+  };
 
   return (
     <header className="fixed top-0 z-50 w-full h-16 glass-panel border-b border-glass-border flex justify-between items-center px-5 shadow-sm">
@@ -28,7 +33,7 @@ export function TopAppBar() {
             One Solutions
           </span>
           <span className="text-xs text-on-surface-variant">
-            {session?.user?.role ? t[session.user.role as keyof typeof t] || session.user.role : ""}
+            {session?.user?.role ? t.roles[session.user.role as keyof typeof t.roles] || session.user.role : ""}
           </span>
         </div>
       </div>
@@ -37,6 +42,13 @@ export function TopAppBar() {
         <LanguageSwitcher />
         <ThemeToggle />
         <NotificationsDropdown />
+        <button
+          onClick={handleSignOut}
+          className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-highest transition-colors active:scale-90"
+          title="Cerrar sesión"
+        >
+          <LogOut className="w-5 h-5 text-on-surface-variant" />
+        </button>
       </div>
     </header>
   );

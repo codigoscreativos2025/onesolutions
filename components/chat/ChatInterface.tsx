@@ -4,7 +4,8 @@ import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Send, Paperclip, Loader2, MessageSquare, Package, FileText } from "lucide-react";
+import { Send, Paperclip, Loader2, MessageSquare, Package, FileText, Pencil } from "lucide-react";
+import { Modal } from "@/components/ui/Modal";
 
 interface ProjectDetails {
   clientName?: string;
@@ -31,6 +32,7 @@ interface ProjectType {
 interface Room {
   id: number;
   visit: {
+    id: number;
     parcel: { id: string; address: string };
     setter: { name: string };
     closer?: { name: string };
@@ -64,6 +66,9 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [showProjectInfo, setShowProjectInfo] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState<ProjectDetails>({});
+  const [saving, setSaving] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -97,6 +102,38 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
     const data = await res.json();
     setMessages(data.messages);
     setSelectedRoom(data);
+  };
+
+  const handleOpenEditModal = () => {
+    if (projectDetails) {
+      setEditForm(projectDetails);
+      setShowEditModal(true);
+    }
+  };
+
+  const handleSaveProjectDetails = async () => {
+    if (!selectedRoom) return;
+
+    setSaving(true);
+    try {
+      const res = await fetch("/api/project-details", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          visitId: selectedRoom.visit.id,
+          ...editForm,
+        }),
+      });
+
+      if (res.ok) {
+        setShowEditModal(false);
+        fetchMessages(selectedRoom.id);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -215,13 +252,24 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
                       </p>
                     </div>
                     {projectDetails && (
-                      <button
-                        onClick={() => setShowProjectInfo(!showProjectInfo)}
-                        className="px-3 py-1 text-xs font-medium bg-primary/10 text-primary rounded-full hover:bg-primary/20 transition-colors"
-                      >
-                        <Package className="w-3 h-3 inline mr-1" />
-                        Info Proyecto
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setShowProjectInfo(!showProjectInfo)}
+                          className="px-3 py-1 text-xs font-medium bg-primary/10 text-primary rounded-full hover:bg-primary/20 transition-colors"
+                        >
+                          <Package className="w-3 h-3 inline mr-1" />
+                          Info Proyecto
+                        </button>
+                        {(session?.user?.role === "ADMIN" || session?.user?.role === "CLOSER") && (
+                          <button
+                            onClick={handleOpenEditModal}
+                            className="px-3 py-1 text-xs font-medium bg-secondary/10 text-secondary rounded-full hover:bg-secondary/20 transition-colors"
+                          >
+                            <Pencil className="w-3 h-3 inline mr-1" />
+                            Editar
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
 
@@ -414,6 +462,172 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
           </div>
         </div>
       )}
+
+      {/* Modal de Edición de ProjectDetails */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        title="Editar Información del Proyecto"
+      >
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Nombre del Cliente"
+              value={editForm.clientName || ""}
+              onChange={(e) => setEditForm({ ...editForm, clientName: e.target.value })}
+            />
+            <Input
+              label="Email del Cliente"
+              type="email"
+              value={editForm.clientEmail || ""}
+              onChange={(e) => setEditForm({ ...editForm, clientEmail: e.target.value })}
+            />
+          </div>
+
+          <Input
+            label="Dirección"
+            value={editForm.address || ""}
+            onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Fecha de Cierre"
+              type="date"
+              value={editForm.closingDate ? new Date(editForm.closingDate).toISOString().split("T")[0] : ""}
+              onChange={(e) => setEditForm({ ...editForm, closingDate: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
+            />
+            <div>
+              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                Método de Pago
+              </label>
+              <select
+                value={editForm.paymentMethod || ""}
+                onChange={(e) => setEditForm({ ...editForm, paymentMethod: e.target.value })}
+                className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface mt-1"
+              >
+                <option value="">Seleccionar...</option>
+                <option value="efectivo">Efectivo</option>
+                <option value="transferencia">Transferencia</option>
+                <option value="cheque">Cheque</option>
+                <option value="financiamiento">Financiamiento</option>
+                <option value="tarjeta de credito">Tarjeta de Crédito</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Panel Solar */}
+          {projects.some(p => p.projectType.name === "Panel Solar") && (
+            <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-3">
+              <p className="text-sm font-semibold text-on-surface">Panel Solar</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label="Financiadora"
+                  value={editForm.solarFinancier || ""}
+                  onChange={(e) => setEditForm({ ...editForm, solarFinancier: e.target.value })}
+                />
+                <Input
+                  label="Tamaño del Sistema"
+                  value={editForm.systemSize || ""}
+                  onChange={(e) => setEditForm({ ...editForm, systemSize: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Techo */}
+          {projects.some(p => p.projectType.name === "Techo") && (
+            <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-3">
+              <p className="text-sm font-semibold text-on-surface">Techo</p>
+              <div>
+                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                  Tipo de Trabajo
+                </label>
+                <select
+                  value={editForm.roofType || ""}
+                  onChange={(e) => setEditForm({ ...editForm, roofType: e.target.value })}
+                  className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface mt-1"
+                >
+                  <option value="">Seleccionar...</option>
+                  <option value="reemplazo">Reemplazo</option>
+                  <option value="reparacion">Reparación</option>
+                  <option value="gutters">Gutters</option>
+                </select>
+              </div>
+              <Input
+                label="Precio de Venta"
+                type="number"
+                value={editForm.roofSalePrice?.toString() || ""}
+                onChange={(e) => setEditForm({ ...editForm, roofSalePrice: parseFloat(e.target.value) || undefined })}
+              />
+            </div>
+          )}
+
+          {/* Purificador */}
+          {projects.some(p => p.projectType.name === "Purificador de Agua") && (
+            <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-3">
+              <p className="text-sm font-semibold text-on-surface">Purificador de Agua</p>
+              <div>
+                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                  Tipo de Sistema
+                </label>
+                <select
+                  value={editForm.waterSystemType || ""}
+                  onChange={(e) => setEditForm({ ...editForm, waterSystemType: e.target.value })}
+                  className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface mt-1"
+                >
+                  <option value="">Seleccionar...</option>
+                  <option value="sistema completo">Sistema Completo</option>
+                  <option value="softener">Softener</option>
+                  <option value="R.O">R.O</option>
+                  <option value="sistema de pozo">Sistema de Pozo</option>
+                </select>
+              </div>
+              <Input
+                label="Precio de Venta"
+                type="number"
+                value={editForm.waterSalePrice?.toString() || ""}
+                onChange={(e) => setEditForm({ ...editForm, waterSalePrice: parseFloat(e.target.value) || undefined })}
+              />
+            </div>
+          )}
+
+          {/* Comisiones */}
+          <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-3">
+            <p className="text-sm font-semibold text-on-surface">Comisiones</p>
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Representante Principal"
+                value={editForm.primaryRep || ""}
+                onChange={(e) => setEditForm({ ...editForm, primaryRep: e.target.value })}
+              />
+              <Input
+                label="Comisión %"
+                type="number"
+                value={editForm.primaryRepCommPct?.toString() || ""}
+                onChange={(e) => setEditForm({ ...editForm, primaryRepCommPct: parseFloat(e.target.value) || undefined })}
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setShowEditModal(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={handleSaveProjectDetails}
+              isLoading={saving}
+            >
+              Guardar Cambios
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

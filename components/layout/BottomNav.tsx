@@ -2,24 +2,24 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { getTranslation } from "@/lib/i18n";
+import { useLocale } from "@/lib/locale-context";
 import { Map, LayoutDashboard, Trophy, MessageSquare, Shield, Calendar } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 export function BottomNav() {
   const pathname = usePathname();
-  const t = getTranslation().nav;
+  const { t } = useLocale();
   const { data: session } = useSession();
 
   const isActive = (path: string) => pathname.includes(path);
 
   const navItems = [
-    { href: "/map", label: t.map, icon: Map, roles: ["SETTER", "CLOSER", "ADMIN"] },
-    { href: "/dashboard", label: t.dashboard, icon: LayoutDashboard, roles: ["SETTER", "CLOSER", "ADMIN"] },
-    { href: "/calendar", label: t.calendar, icon: Calendar, roles: ["CLOSER", "ADMIN"] },
-    { href: "/ranking", label: t.ranking, icon: Trophy, roles: ["SETTER", "CLOSER", "ADMIN"] },
-    { href: "/chat", label: t.chat, icon: MessageSquare, roles: ["SETTER", "CLOSER", "ADMIN"] },
-    { href: "/admin", label: t.admin, icon: Shield, roles: ["ADMIN"] },
+    { href: "/map", label: t.nav.map, icon: Map, roles: ["SETTER", "CLOSER", "ADMIN"] },
+    { href: "/dashboard", label: t.nav.dashboard, icon: LayoutDashboard, roles: ["SETTER", "CLOSER", "ADMIN"] },
+    { href: "/calendar", label: t.nav.calendar, icon: Calendar, roles: ["CLOSER", "ADMIN"] },
+    { href: "/ranking", label: t.nav.ranking, icon: Trophy, roles: ["SETTER", "CLOSER", "ADMIN"] },
+    { href: "/chat", label: t.nav.chat, icon: MessageSquare, roles: ["SETTER", "CLOSER", "ADMIN"] },
+    { href: "/admin", label: t.nav.admin, icon: Shield, roles: ["ADMIN"] },
   ];
 
   const visibleItems = navItems.filter((item) =>
