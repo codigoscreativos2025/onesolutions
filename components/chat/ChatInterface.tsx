@@ -195,6 +195,50 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
   const projects = selectedRoom?.visit.projects || [];
   const bill = selectedRoom?.visit.bill;
 
+  // Calcular porcentaje de completitud del proyecto
+  const calculateCompletion = () => {
+    if (!projectDetails) return 0;
+
+    const requiredFields = [
+      'clientName',
+      'clientEmail',
+      'address',
+      'closingDate',
+      'paymentMethod',
+    ];
+
+    const projectSpecificFields: Record<string, string[]> = {
+      'Panel Solar': ['solarFinancier', 'systemSize'],
+      'Techo': ['roofType', 'roofSalePrice'],
+      'Purificador de Agua': ['waterSystemType', 'waterSalePrice'],
+    };
+
+    let totalFields = requiredFields.length;
+    let completedFields = requiredFields.filter(field => 
+      projectDetails[field as keyof ProjectDetails]
+    ).length;
+
+    // Agregar campos específicos según los proyectos seleccionados
+    projects.forEach(p => {
+      const fields = projectSpecificFields[p.projectType.name];
+      if (fields) {
+        totalFields += fields.length;
+        completedFields += fields.filter(field => 
+          projectDetails[field as keyof ProjectDetails]
+        ).length;
+      }
+    });
+
+    // Agregar comisiones
+    totalFields += 2;
+    if (projectDetails.primaryRep) completedFields++;
+    if (projectDetails.primaryRepCommPct) completedFields++;
+
+    return totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
+  };
+
+  const completionPercentage = calculateCompletion();
+
   return (
     <div className="space-y-4 h-[calc(100dvh-180px)]">
       <div>
@@ -254,7 +298,7 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
                     {projectDetails && (
                       <div className="flex gap-2">
                         <button
-                          onClick={() => setShowProjectInfo(!showProjectInfo)}
+                          onClick={() => setShowProjectInfo(true)}
                           className="px-3 py-1 text-xs font-medium bg-primary/10 text-primary rounded-full hover:bg-primary/20 transition-colors"
                         >
                           <Package className="w-3 h-3 inline mr-1" />
@@ -272,112 +316,30 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
                       </div>
                     )}
                   </div>
-
-                  {/* Project Info Panel */}
-                  {showProjectInfo && projectDetails && (
-                    <div className="mt-3 p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-3">
-                      {/* Proyectos seleccionados */}
-                      {projects.length > 0 && (
-                        <div>
-                          <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1">
-                            Proyectos
-                          </p>
-                          <div className="flex flex-wrap gap-1">
-                            {projects.map((p) => (
-                              <span
-                                key={p.projectType.id}
-                                className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full"
-                              >
-                                {p.projectType.name}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Info del cliente */}
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        {projectDetails.clientName && (
-                          <div>
-                            <p className="text-on-surface-variant">Cliente</p>
-                            <p className="font-medium text-on-surface">{projectDetails.clientName}</p>
-                          </div>
-                        )}
-                        {projectDetails.clientEmail && (
-                          <div>
-                            <p className="text-on-surface-variant">Email</p>
-                            <p className="font-medium text-on-surface truncate">{projectDetails.clientEmail}</p>
-                          </div>
-                        )}
-                        {projectDetails.paymentMethod && (
-                          <div>
-                            <p className="text-on-surface-variant">Pago</p>
-                            <p className="font-medium text-on-surface">{projectDetails.paymentMethod}</p>
-                          </div>
-                        )}
-                        {projectDetails.closingDate && (
-                          <div>
-                            <p className="text-on-surface-variant">Cierre</p>
-                            <p className="font-medium text-on-surface">
-                              {new Date(projectDetails.closingDate).toLocaleDateString()}
-                            </p>
-                          </div>
-                        )}
+                  
+                  {/* Barra de progreso de completitud */}
+                  {projectDetails && (
+                    <div className="mt-3">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs text-on-surface-variant">
+                          Progreso del proyecto
+                        </span>
+                        <span className="text-xs font-semibold text-on-surface">
+                          {completionPercentage}%
+                        </span>
                       </div>
-
-                      {/* Info específica por tipo de proyecto */}
-                      {projectDetails.solarFinancier && (
-                        <div className="text-xs">
-                          <p className="text-on-surface-variant">Panel Solar</p>
-                          <p className="font-medium text-on-surface">
-                            {projectDetails.solarFinancier} • {projectDetails.systemSize}
-                          </p>
-                        </div>
-                      )}
-                      {projectDetails.roofType && (
-                        <div className="text-xs">
-                          <p className="text-on-surface-variant">Techo</p>
-                          <p className="font-medium text-on-surface">
-                            {projectDetails.roofType} • ${projectDetails.roofSalePrice?.toLocaleString()}
-                          </p>
-                        </div>
-                      )}
-                      {projectDetails.waterSystemType && (
-                        <div className="text-xs">
-                          <p className="text-on-surface-variant">Purificador</p>
-                          <p className="font-medium text-on-surface">
-                            {projectDetails.waterSystemType} • ${projectDetails.waterSalePrice?.toLocaleString()}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Comisiones */}
-                      {projectDetails.primaryRep && (
-                        <div className="text-xs border-t border-outline-variant/30 pt-2">
-                          <p className="text-on-surface-variant">Comisiones</p>
-                          <p className="font-medium text-on-surface">
-                            {projectDetails.primaryRep}: {projectDetails.primaryRepCommPct}%
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Bill */}
-                      {bill && (
-                        <div className="text-xs border-t border-outline-variant/30 pt-2">
-                          <p className="text-on-surface-variant flex items-center gap-1">
-                            <FileText className="w-3 h-3" /> Recibo de Luz
-                          </p>
-                          <a
-                            href={bill.imageUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline"
-                          >
-                            Ver archivo
-                          </a>
-                          <p className="text-on-surface mt-1">Tel: {bill.phone}</p>
-                        </div>
-                      )}
+                      <div className="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${
+                            completionPercentage === 100
+                              ? 'bg-primary'
+                              : completionPercentage >= 50
+                              ? 'bg-secondary'
+                              : 'bg-tertiary'
+                          }`}
+                          style={{ width: `${completionPercentage}%` }}
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -462,6 +424,120 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
           </div>
         </div>
       )}
+
+      {/* Modal de Info del Proyecto */}
+      <Modal
+        isOpen={showProjectInfo}
+        onClose={() => setShowProjectInfo(false)}
+        title="Información del Proyecto"
+      >
+        {projectDetails && (
+          <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+            {/* Proyectos seleccionados */}
+            {projects.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">
+                  Proyectos
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {projects.map((p) => (
+                    <span
+                      key={p.projectType.id}
+                      className="px-3 py-1 bg-primary/10 text-primary text-sm rounded-full"
+                    >
+                      {p.projectType.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Info del cliente */}
+            <div className="grid grid-cols-2 gap-4">
+              {projectDetails.clientName && (
+                <div>
+                  <p className="text-xs text-on-surface-variant">Cliente</p>
+                  <p className="font-medium text-on-surface">{projectDetails.clientName}</p>
+                </div>
+              )}
+              {projectDetails.clientEmail && (
+                <div>
+                  <p className="text-xs text-on-surface-variant">Email</p>
+                  <p className="font-medium text-on-surface truncate">{projectDetails.clientEmail}</p>
+                </div>
+              )}
+              {projectDetails.paymentMethod && (
+                <div>
+                  <p className="text-xs text-on-surface-variant">Pago</p>
+                  <p className="font-medium text-on-surface">{projectDetails.paymentMethod}</p>
+                </div>
+              )}
+              {projectDetails.closingDate && (
+                <div>
+                  <p className="text-xs text-on-surface-variant">Cierre</p>
+                  <p className="font-medium text-on-surface">
+                    {new Date(projectDetails.closingDate).toLocaleDateString()}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Info específica por tipo de proyecto */}
+            {projectDetails.solarFinancier && (
+              <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30">
+                <p className="text-sm font-semibold text-on-surface mb-2">Panel Solar</p>
+                <p className="text-sm text-on-surface">
+                  {projectDetails.solarFinancier} • {projectDetails.systemSize}
+                </p>
+              </div>
+            )}
+            {projectDetails.roofType && (
+              <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30">
+                <p className="text-sm font-semibold text-on-surface mb-2">Techo</p>
+                <p className="text-sm text-on-surface">
+                  {projectDetails.roofType} • ${projectDetails.roofSalePrice?.toLocaleString()}
+                </p>
+              </div>
+            )}
+            {projectDetails.waterSystemType && (
+              <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30">
+                <p className="text-sm font-semibold text-on-surface mb-2">Purificador</p>
+                <p className="text-sm text-on-surface">
+                  {projectDetails.waterSystemType} • ${projectDetails.waterSalePrice?.toLocaleString()}
+                </p>
+              </div>
+            )}
+
+            {/* Comisiones */}
+            {projectDetails.primaryRep && (
+              <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30">
+                <p className="text-sm font-semibold text-on-surface mb-2">Comisiones</p>
+                <p className="text-sm text-on-surface">
+                  {projectDetails.primaryRep}: {projectDetails.primaryRepCommPct}%
+                </p>
+              </div>
+            )}
+
+            {/* Bill */}
+            {bill && (
+              <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30">
+                <p className="text-sm font-semibold text-on-surface mb-2 flex items-center gap-2">
+                  <FileText className="w-4 h-4" /> Recibo de Luz
+                </p>
+                <a
+                  href={bill.imageUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline text-sm"
+                >
+                  Ver archivo
+                </a>
+                <p className="text-sm text-on-surface mt-1">Tel: {bill.phone}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
 
       {/* Modal de Edición de ProjectDetails */}
       <Modal

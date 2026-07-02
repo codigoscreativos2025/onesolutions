@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import Link from "next/link";
-import { Users, MessageSquareWarning, BarChart3, MessageCircle, Award } from "lucide-react";
+import { Users, MessageSquareWarning, BarChart3, MessageCircle, Award, Settings } from "lucide-react";
 
 export default async function AdminPage() {
   const session = await auth();
@@ -40,11 +40,18 @@ export default async function AdminPage() {
       color: "bg-primary/10 text-primary",
     },
     {
+      title: "Campos de Proyectos",
+      description: "Configura campos personalizados por tipo de proyecto",
+      href: "/admin/project-fields",
+      icon: Settings,
+      color: "bg-secondary/10 text-secondary",
+    },
+    {
       title: "Chats",
       description: "Monitorea las conversaciones internas",
       href: "/admin/chats",
       icon: MessageCircle,
-      color: "bg-secondary/10 text-secondary",
+      color: "bg-primary/10 text-primary",
     },
   ];
 

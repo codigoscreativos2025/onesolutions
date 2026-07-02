@@ -86,7 +86,7 @@ export default function DashboardPage() {
         </p>
       </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
           title="Puertas Tocadas"
           value={metrics?.doorsKnocked || 0}
@@ -176,22 +176,22 @@ function MetricCard({
   color: "primary" | "secondary";
 }) {
   return (
-    <div className="glass-panel p-5 rounded-2xl flex flex-col justify-between min-h-[130px] group hover:border-primary/40 transition-all">
+    <div className="glass-panel p-3 sm:p-5 rounded-2xl flex flex-col justify-between min-h-[100px] sm:min-h-[130px] group hover:border-primary/40 transition-all">
       <div className="flex justify-between items-start">
         <div
-          className={`p-3 rounded-xl ${
+          className={`p-2 sm:p-3 rounded-xl ${
             color === "primary" ? "bg-primary/10 text-primary" : "bg-secondary/10 text-secondary"
           }`}
         >
-          <Icon className="w-5 h-5" />
+          <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
         </div>
-        <TrendingUp className="w-4 h-4 text-primary" />
+        <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
       </div>
-      <div className="mt-4">
-        <h3 className="text-on-surface-variant text-xs uppercase tracking-wider font-semibold">
+      <div className="mt-2 sm:mt-4">
+        <h3 className="text-on-surface-variant text-[10px] sm:text-xs uppercase tracking-wider font-semibold">
           {title}
         </h3>
-        <p className="font-display text-3xl font-bold text-on-surface mt-1">
+        <p className="font-display text-2xl sm:text-3xl font-bold text-on-surface mt-1">
           {value}
         </p>
       </div>

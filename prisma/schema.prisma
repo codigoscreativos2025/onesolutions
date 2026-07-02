@@ -96,6 +96,24 @@ model ProjectType {
   description String?
   isActive    Boolean        @default(true)
   visits      VisitProject[]
+  fields      ProjectTypeField[]
+}
+
+// Campos configurables por tipo de proyecto
+model ProjectTypeField {
+  id            Int         @id @default(autoincrement())
+  projectTypeId Int
+  projectType   ProjectType @relation(fields: [projectTypeId], references: [id], onDelete: Cascade)
+  fieldName     String
+  fieldLabel    String
+  fieldType     String      // "text", "number", "select", "date", "file"
+  options       String?     // JSON para selects
+  isRequired    Boolean     @default(false)
+  order         Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  @@unique([projectTypeId, fieldName])
 }
 
 // Proyectos seleccionados en una visita

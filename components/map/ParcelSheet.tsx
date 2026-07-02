@@ -54,7 +54,7 @@ export function ParcelSheet({
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 z-[60] w-full sm:w-96 glass-panel border-l border-glass-border shadow-[-10px_0_40px_rgba(0,0,0,0.1)] flex flex-col max-h-screen sm:max-h-none animate-slide-in-right">
+    <div className="fixed inset-y-0 right-0 z-[1000] w-full sm:w-96 glass-panel border-l border-glass-border shadow-[-10px_0_40px_rgba(0,0,0,0.1)] flex flex-col max-h-screen sm:max-h-none animate-slide-in-right">
       <div className="flex justify-between items-center p-4 border-b border-glass-border">
         <div className="flex items-center gap-2">
           <StatusBadge status={parcel.status} />

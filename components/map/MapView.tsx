@@ -85,7 +85,7 @@ export default function MapView({
   const defaultPosition: [number, number] = [28.385, -81.365];
 
   return (
-    <>
+    <div className="relative w-full h-full">
       <MapContainer
         key={center ? `${center[0]}-${center[1]}` : "default"}
         center={center || defaultPosition}
@@ -155,6 +155,6 @@ export default function MapView({
         userRole={session?.user?.role || ""}
         userId={session?.user?.id || ""}
       />
-    </>
+    </div>
   );
 }
