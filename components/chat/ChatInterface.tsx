@@ -60,6 +60,7 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
   const { data: session } = useSession();
 
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -76,10 +77,10 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
   }, []);
 
   useEffect(() => {
-    if (selectedRoom) {
-      fetchMessages(selectedRoom.id);
+    if (selectedRoomId) {
+      fetchMessages(selectedRoomId);
     }
-  }, [selectedRoom]);
+  }, [selectedRoomId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -102,6 +103,11 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
     const data = await res.json();
     setMessages(data.messages);
     setSelectedRoom(data);
+  };
+
+  const handleSelectRoom = (room: Room) => {
+    setSelectedRoomId(room.id);
+    setSelectedRoom(room);
   };
 
   const handleOpenEditModal = () => {
@@ -263,9 +269,9 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
             {rooms.map((room) => (
               <button
                 key={room.id}
-                onClick={() => setSelectedRoom(room)}
+                onClick={() => handleSelectRoom(room)}
                 className={`w-full text-left p-4 border-b border-outline-variant/20 last:border-0 transition-colors ${
-                  selectedRoom?.id === room.id
+                  selectedRoomId === room.id
                     ? "bg-primary/10"
                     : "hover:bg-surface-container-low"
                 }`}

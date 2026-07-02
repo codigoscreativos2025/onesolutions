@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLocale } from "@/lib/locale-context";
 import {
   DoorOpen,
   PersonStanding,
@@ -35,6 +36,7 @@ interface Appointment {
 export default function DashboardPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { t } = useLocale();
 
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -79,34 +81,34 @@ export default function DashboardPage() {
           {isAdmin ? "Admin" : role === "CLOSER" ? "Closer" : "Setter"}
         </span>
         <h1 className="font-headline text-2xl font-bold text-on-surface">
-          Hola, {session?.user?.name}
+          {t.dashboard.greeting}, {session?.user?.name}
         </h1>
         <p className="text-on-surface-variant">
-          Este es tu resumen de actividad
+          {t.dashboard.summary}
         </p>
       </section>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          title="Puertas Tocadas"
+          title={t.dashboard.doorsKnocked}
           value={metrics?.doorsKnocked || 0}
           icon={DoorOpen}
           color="primary"
         />
         <MetricCard
-          title="Leads Generados"
+          title={t.dashboard.leadsGenerated}
           value={metrics?.leadsGenerated || 0}
           icon={PersonStanding}
           color="secondary"
         />
         <MetricCard
-          title="Proyectos Cerrados"
+          title={t.dashboard.projectsClosed}
           value={metrics?.projectsClosed || 0}
           icon={Handshake}
           color="primary"
         />
         <MetricCard
-          title="Objeciones"
+          title={t.dashboard.objections}
           value={metrics?.objectionsCount || 0}
           icon={MessageSquareWarning}
           color="secondary"
@@ -116,19 +118,19 @@ export default function DashboardPage() {
       <section className="glass-panel rounded-2xl p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="font-headline text-lg font-bold text-on-surface">
-            Citas Recientes
+            {t.dashboard.recentAppointments}
           </h2>
           <Link
             href="/calendar"
             className="text-sm text-primary font-medium flex items-center gap-1"
           >
-            Ver todas <ChevronRight className="w-4 h-4" />
+            {t.dashboard.viewAll} <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
 
         {appointments.length === 0 ? (
           <p className="text-on-surface-variant text-center py-8">
-            No tienes citas recientes
+            {t.dashboard.noAppointments}
           </p>
         ) : (
           <div className="space-y-3">
@@ -149,7 +151,7 @@ export default function DashboardPage() {
                     <p className="text-xs text-on-surface-variant">
                       {apt.slot
                         ? new Date(apt.slot.startAt).toLocaleString()
-                        : "Sin fecha"}
+                        : t.common.none}
                       {role === "CLOSER" && ` • Setter: ${apt.setter.name}`}
                     </p>
                   </div>
