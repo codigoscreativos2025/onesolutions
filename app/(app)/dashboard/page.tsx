@@ -13,10 +13,13 @@ import {
   TrendingUp,
   Calendar,
   ChevronRight,
+  Plus,
 } from "lucide-react";
 import { MetricsCharts } from "@/components/dashboard/MetricsCharts";
 import { MiniRanking } from "@/components/dashboard/MiniRanking";
 import { MetricDetailModal } from "@/components/dashboard/MetricDetailModal";
+import { CreateLeadModal } from "@/components/leads/CreateLeadModal";
+import { Button } from "@/components/ui/Button";
 
 interface Metrics {
   doorsKnocked: number;
@@ -45,6 +48,7 @@ export default function DashboardPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMetric, setSelectedMetric] = useState<'doors' | 'leads' | 'projects' | 'objections' | null>(null);
+  const [showCreateLeadModal, setShowCreateLeadModal] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -81,15 +85,28 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <section className="mb-6">
-        <span className="inline-block px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-wider mb-2">
-          {isAdmin ? "Admin" : role === "CLOSER" ? "Closer" : "Setter"}
-        </span>
-        <h1 className="font-headline text-2xl font-bold text-on-surface">
-          {t.dashboard.greeting}, {session?.user?.name}
-        </h1>
-        <p className="text-on-surface-variant">
-          {t.dashboard.summary}
-        </p>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <span className="inline-block px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-wider mb-2">
+              {isAdmin ? "Admin" : role === "CLOSER" ? "Closer" : "Setter"}
+            </span>
+            <h1 className="font-headline text-2xl font-bold text-on-surface">
+              {t.dashboard.greeting}, {session?.user?.name}
+            </h1>
+            <p className="text-on-surface-variant">
+              {t.dashboard.summary}
+            </p>
+          </div>
+          {(role === "SETTER" || role === "CLOSER") && (
+            <Button
+              onClick={() => setShowCreateLeadModal(true)}
+              variant="primary"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Crear Lead
+            </Button>
+          )}
+        </div>
       </section>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -187,6 +204,15 @@ export default function DashboardPage() {
         onClose={() => setSelectedMetric(null)}
         metricType={selectedMetric}
         userId={session?.user?.id ? parseInt(session.user.id) : undefined}
+      />
+
+      {/* Modal de Crear Lead Manual */}
+      <CreateLeadModal
+        isOpen={showCreateLeadModal}
+        onClose={() => setShowCreateLeadModal(false)}
+        onSuccess={() => {
+          fetchData();
+        }}
       />
     </div>
   );

@@ -59,6 +59,8 @@ model Parcel {
   territory   String       @default("Florida")
   status      String       @default("AVAILABLE")
   metadata    String? // JSON con datos extra (roofAge, utility, solarPotential)
+  lastActivityAt DateTime?
+  claimedAt   DateTime?
 
   setterId Int?
   setter   User?   @relation("ParcelSetter", fields: [setterId], references: [id])
@@ -366,4 +368,15 @@ model UserProfile {
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+// Historial de visitas a parcelas (inborrable)
+model ParcelVisitHistory {
+  id          Int      @id @default(autoincrement())
+  parcelId    String
+  setterId    Int
+  visitedAt   DateTime
+  status      String   // MANUAL_LEAD, NOT_AVAILABLE, OBJECTION, etc.
+  notes       String?
+  createdAt   DateTime @default(now())
 }
