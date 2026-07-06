@@ -34,6 +34,7 @@ model User {
   userBadges     UserBadge[]
   reassignFrom   SlotReassignment[] @relation("ReassignFrom")
   reassignTo     SlotReassignment[] @relation("ReassignTo")
+  profile        UserProfile?
 }
 
 model CloserSlot {
@@ -343,4 +344,26 @@ model SlotReassignment {
   status       String    @default("PENDING") // PENDING, APPROVED, REJECTED
   createdAt    DateTime  @default(now())
   resolvedAt   DateTime?
+}
+
+// Perfil de usuario con datos sensibles
+model UserProfile {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Datos públicos
+  profilePhoto    String?
+  joinDate        DateTime @default(now())
+  
+  // Datos privados (solo admin y propio usuario)
+  address         String?
+  ssn             String?  // Encriptado
+  dateOfBirth     DateTime?
+  bankName        String?
+  routingNumber   String?  // Encriptado
+  zelle           String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
