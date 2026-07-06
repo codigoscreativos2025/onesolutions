@@ -35,6 +35,7 @@ model User {
   reassignFrom   SlotReassignment[] @relation("ReassignFrom")
   reassignTo     SlotReassignment[] @relation("ReassignTo")
   profile        UserProfile?
+  parcelHistory  ParcelVisitHistory[] @relation("ParcelVisitHistory")
 }
 
 model CloserSlot {
@@ -375,6 +376,7 @@ model ParcelVisitHistory {
   id          Int      @id @default(autoincrement())
   parcelId    String
   setterId    Int
+  setter      User     @relation("ParcelVisitHistory", fields: [setterId], references: [id])
   visitedAt   DateTime
   status      String   // MANUAL_LEAD, NOT_AVAILABLE, OBJECTION, etc.
   notes       String?
