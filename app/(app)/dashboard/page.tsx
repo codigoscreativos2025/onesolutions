@@ -14,6 +14,9 @@ import {
   Calendar,
   ChevronRight,
 } from "lucide-react";
+import { MetricsCharts } from "@/components/dashboard/MetricsCharts";
+import { MiniRanking } from "@/components/dashboard/MiniRanking";
+import { MetricDetailModal } from "@/components/dashboard/MetricDetailModal";
 
 interface Metrics {
   doorsKnocked: number;
@@ -41,6 +44,7 @@ export default function DashboardPage() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedMetric, setSelectedMetric] = useState<'doors' | 'leads' | 'projects' | 'objections' | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -94,25 +98,39 @@ export default function DashboardPage() {
           value={metrics?.doorsKnocked || 0}
           icon={DoorOpen}
           color="primary"
+          onClick={() => setSelectedMetric('doors')}
         />
         <MetricCard
           title={t.dashboard.leadsGenerated}
           value={metrics?.leadsGenerated || 0}
           icon={PersonStanding}
           color="secondary"
+          onClick={() => setSelectedMetric('leads')}
         />
         <MetricCard
           title={t.dashboard.projectsClosed}
           value={metrics?.projectsClosed || 0}
           icon={Handshake}
           color="primary"
+          onClick={() => setSelectedMetric('projects')}
         />
         <MetricCard
           title={t.dashboard.objections}
           value={metrics?.objectionsCount || 0}
           icon={MessageSquareWarning}
           color="secondary"
+          onClick={() => setSelectedMetric('objections')}
         />
+      </div>
+
+      {/* Gráficas y Ranking */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <MetricsCharts userId={session?.user?.id ? parseInt(session.user.id) : undefined} />
+        </div>
+        <div className="lg:col-span-1">
+          <MiniRanking currentUserId={session?.user?.id ? parseInt(session.user.id) : undefined} />
+        </div>
       </div>
 
       <section className="glass-panel rounded-2xl p-6">
@@ -162,6 +180,14 @@ export default function DashboardPage() {
           </div>
         )}
       </section>
+
+      {/* Modal de Detalle de Métricas */}
+      <MetricDetailModal
+        isOpen={selectedMetric !== null}
+        onClose={() => setSelectedMetric(null)}
+        metricType={selectedMetric}
+        userId={session?.user?.id ? parseInt(session.user.id) : undefined}
+      />
     </div>
   );
 }
@@ -171,14 +197,19 @@ function MetricCard({
   value,
   icon: Icon,
   color,
+  onClick,
 }: {
   title: string;
   value: number;
   icon: React.ElementType;
   color: "primary" | "secondary";
+  onClick?: () => void;
 }) {
   return (
-    <div className="glass-panel p-3 sm:p-5 rounded-2xl flex flex-col justify-between min-h-[100px] sm:min-h-[130px] group hover:border-primary/40 transition-all">
+    <div 
+      className={`glass-panel p-3 sm:p-5 rounded-2xl flex flex-col justify-between min-h-[100px] sm:min-h-[130px] group transition-all ${onClick ? 'cursor-pointer hover:border-primary/40 hover:shadow-lg' : ''}`}
+      onClick={onClick}
+    >
       <div className="flex justify-between items-start">
         <div
           className={`p-2 sm:p-3 rounded-xl ${
@@ -187,7 +218,7 @@ function MetricCard({
         >
           <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
         </div>
-        <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+        {onClick && <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />}
       </div>
       <div className="mt-2 sm:mt-4">
         <h3 className="text-on-surface-variant text-[10px] sm:text-xs uppercase tracking-wider font-semibold">
