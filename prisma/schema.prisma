@@ -83,6 +83,8 @@ model Visit {
   completedAt DateTime?
   notes       String?
   createdAt   DateTime   @default(now())
+  chatCreatedAt DateTime?
+  chatCreatedBy Int?
 
   objections       VisitObjection[]
   closerObjections VisitCloserObjection[]
