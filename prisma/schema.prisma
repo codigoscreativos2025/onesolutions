@@ -36,6 +36,7 @@ model User {
   reassignTo     SlotReassignment[] @relation("ReassignTo")
   profile        UserProfile?
   parcelHistory  ParcelVisitHistory[] @relation("ParcelVisitHistory")
+  auditLogs      AuditLog[] @relation("AuditLog")
 }
 
 model CloserSlot {
@@ -395,4 +396,17 @@ model VisitLocation {
   longitude   Float
   accuracy    Float
   recordedAt  DateTime @default(now())
+}
+
+// Historial de cambios (auditoría)
+model AuditLog {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  user            User     @relation("AuditLog", fields: [userId], references: [id])
+  action          String   // CREATE, UPDATE, DELETE, ASSIGN, etc.
+  entityType      String   // VISIT, PARCEL, PROJECT, USER, etc.
+  entityId        String
+  oldValue        String?  // JSON
+  newValue        String?  // JSON
+  createdAt       DateTime @default(now())
 }

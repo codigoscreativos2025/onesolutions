@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import Link from "next/link";
-import { Users, MessageSquareWarning, BarChart3, MessageCircle, Award, Settings, Briefcase } from "lucide-react";
+import { Users, MessageSquareWarning, BarChart3, MessageCircle, Award, Settings, Briefcase, FileText } from "lucide-react";
 
 export default async function AdminPage() {
   const session = await auth();
@@ -52,6 +52,13 @@ export default async function AdminPage() {
       href: "/admin/crm",
       icon: Briefcase,
       color: "bg-primary/10 text-primary",
+    },
+    {
+      title: "Historial de Auditoría",
+      description: "Registro de todos los cambios en la plataforma",
+      href: "/admin/audit-logs",
+      icon: FileText,
+      color: "bg-secondary/10 text-secondary",
     },
     {
       title: "Chats",
