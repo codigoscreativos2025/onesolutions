@@ -16,14 +16,17 @@ import {
   RefreshCw,
   Check,
   X,
+  LayoutGrid,
+  List,
 } from "lucide-react";
+import { VisualCalendar } from "@/components/calendar/VisualCalendar";
 
 interface Slot {
   id: number;
   startAt: string;
   endAt: string;
   isBooked: boolean;
-  isWorkday: boolean;
+  isWorkday?: boolean;
   visit?: {
     id: number;
     parcel: { id: string; address: string };
@@ -51,6 +54,7 @@ export default function CalendarPage() {
   const [slots, setSlots] = useState<Slot[]>([]);
   const [patterns, setPatterns] = useState<WeeklyPattern[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [isPatternModalOpen, setIsPatternModalOpen] = useState(false);
   const [isSlotModalOpen, setIsSlotModalOpen] = useState(false);
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
@@ -230,6 +234,28 @@ export default function CalendarPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <div className="flex border border-outline-variant rounded-lg overflow-hidden">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-2 transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-primary text-on-primary'
+                  : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high'
+              }`}
+            >
+              <List className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setViewMode('calendar')}
+              className={`px-3 py-2 transition-colors ${
+                viewMode === 'calendar'
+                  ? 'bg-primary text-on-primary'
+                  : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high'
+              }`}
+            >
+              <LayoutGrid className="w-5 h-5" />
+            </button>
+          </div>
           <Button variant="outline" onClick={() => setIsPatternModalOpen(true)}>
             <Plus className="w-5 h-5" />
             Patrón
@@ -281,26 +307,41 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* Slots */}
-      {Object.keys(grouped).length === 0 && (
-        <div className="text-center py-12 text-on-surface-variant">
-          <CalendarIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <p>No tienes slots configurados</p>
-          <p className="text-sm mt-2">Crea un patrón semanal o agrega slots manualmente</p>
-        </div>
+      {/* Vista de Calendario Visual */}
+      {viewMode === 'calendar' && (
+        <VisualCalendar
+          slots={slots}
+          onSlotSelect={(slot) => {
+            if (slot.isBooked) {
+              handleSlotClick(slot);
+            }
+          }}
+        />
       )}
 
-      <div className="space-y-4">
-        {Object.entries(grouped).map(([dateKey, daySlots]) => (
-          <div key={dateKey} className="glass-panel rounded-2xl p-4">
-            <h3 className="font-semibold text-on-surface mb-3">{dateKey}</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {daySlots.map((slot) => (
-                <div
-                  key={slot.id}
-                  onClick={() => slot.isBooked && handleSlotClick(slot)}
-                  className={`p-3 rounded-xl border flex flex-col gap-1 ${
-                    slot.isBooked
+      {/* Vista de Lista */}
+      {viewMode === 'list' && (
+        <>
+          {/* Slots */}
+          {Object.keys(grouped).length === 0 && (
+            <div className="text-center py-12 text-on-surface-variant">
+              <CalendarIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>No tienes slots configurados</p>
+              <p className="text-sm mt-2">Crea un patrón semanal o agrega slots manualmente</p>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            {Object.entries(grouped).map(([dateKey, daySlots]) => (
+              <div key={dateKey} className="glass-panel rounded-2xl p-4">
+                <h3 className="font-semibold text-on-surface mb-3">{dateKey}</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {daySlots.map((slot) => (
+                    <div
+                      key={slot.id}
+                      onClick={() => slot.isBooked && handleSlotClick(slot)}
+                      className={`p-3 rounded-xl border flex flex-col gap-1 ${
+                        slot.isBooked
                       ? "bg-primary/10 border-primary/30 cursor-pointer hover:bg-primary/20"
                       : "bg-surface-container-low border-outline-variant"
                   }`}
@@ -335,7 +376,7 @@ export default function CalendarPage() {
                   )}
                   {!slot.isBooked && (
                     <span className="text-xs text-on-surface-variant">
-                      {slot.isWorkday ? "Laborable" : "No laborable"}
+                      {slot.isWorkday !== false ? "Laborable" : "No laborable"}
                     </span>
                   )}
                 </div>
@@ -344,6 +385,8 @@ export default function CalendarPage() {
           </div>
         ))}
       </div>
+        </>
+      )}
 
       {/* Modal de Patrón Semanal */}
       <Modal
