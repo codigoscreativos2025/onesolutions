@@ -70,10 +70,14 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState<ProjectDetails>({});
   const [saving, setSaving] = useState(false);
+  const [mentionUsers, setMentionUsers] = useState<{ id: number; name: string; role: string }[]>([]);
+  const [showMentionDropdown, setShowMentionDropdown] = useState(false);
+  const [mentionSearch, setMentionSearch] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchRooms();
+    fetchMentionUsers();
   }, []);
 
   useEffect(() => {
@@ -95,6 +99,16 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMentionUsers = async () => {
+    try {
+      const res = await fetch("/api/users/mentionable");
+      const data = await res.json();
+      setMentionUsers(data);
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -155,10 +169,64 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
 
     if (res.ok) {
       setNewMessage("");
+      setShowMentionDropdown(false);
       fetchMessages(selectedRoom.id);
       fetchRooms();
     }
     setSending(false);
+  };
+
+  const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNewMessage(value);
+
+    // Detectar si se está escribiendo una mención
+    const lastAtIndex = value.lastIndexOf("@");
+    if (lastAtIndex !== -1) {
+      const textAfterAt = value.slice(lastAtIndex + 1);
+      // Si no hay espacios después de @, mostrar dropdown
+      if (!textAfterAt.includes(" ")) {
+        setMentionSearch(textAfterAt);
+        setShowMentionDropdown(true);
+      } else {
+        setShowMentionDropdown(false);
+      }
+    } else {
+      setShowMentionDropdown(false);
+    }
+  };
+
+  const handleMentionSelect = (user: { id: number; name: string }) => {
+    const lastAtIndex = newMessage.lastIndexOf("@");
+    if (lastAtIndex !== -1) {
+      const beforeAt = newMessage.slice(0, lastAtIndex);
+      const newMsg = `${beforeAt}@${user.name} `;
+      setNewMessage(newMsg);
+      setShowMentionDropdown(false);
+      setMentionSearch("");
+    }
+  };
+
+  const filteredMentionUsers = mentionUsers.filter((user) =>
+    user.name.toLowerCase().includes(mentionSearch.toLowerCase())
+  );
+
+  // Función para resaltar menciones en el texto
+  const renderMessageWithMentions = (text: string) => {
+    const parts = text.split(/(@\w+)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith('@')) {
+        return (
+          <span
+            key={index}
+            className="font-semibold bg-primary/20 px-1 rounded"
+          >
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -371,7 +439,7 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
                           <p className="text-xs opacity-70 mb-1">
                             {msg.user.name}
                           </p>
-                          <p className="text-sm">{msg.body}</p>
+                          <p className="text-sm">{renderMessageWithMentions(msg.body)}</p>
                           {msg.fileUrl && (
                             <a
                               href={msg.fileUrl}
@@ -397,7 +465,7 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
 
                 <form
                   onSubmit={handleSend}
-                  className="p-4 border-t border-outline-variant/30 flex gap-2"
+                  className="p-4 border-t border-outline-variant/30 flex gap-2 relative"
                 >
                   <label className="w-11 h-11 flex items-center justify-center rounded-xl bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest transition-colors cursor-pointer">
                     <Paperclip className="w-5 h-5" />
@@ -407,12 +475,32 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
                       onChange={handleFileUpload}
                     />
                   </label>
-                  <Input
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Escribe un mensaje..."
-                    className="flex-1"
-                  />
+                  <div className="flex-1 relative">
+                    <Input
+                      value={newMessage}
+                      onChange={handleMessageChange}
+                      placeholder="Escribe un mensaje... usa @ para mencionar"
+                      className="w-full"
+                    />
+                    {/* Dropdown de menciones */}
+                    {showMentionDropdown && filteredMentionUsers.length > 0 && (
+                      <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto z-10">
+                        {filteredMentionUsers.map((user) => (
+                          <button
+                            key={user.id}
+                            type="button"
+                            onClick={() => handleMentionSelect(user)}
+                            className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                          >
+                            <span className="font-medium">{user.name}</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {user.role}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <Button
                     type="submit"
                     disabled={!newMessage.trim() || sending}
