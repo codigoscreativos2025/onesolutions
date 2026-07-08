@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Loader2,
 } from "lucide-react";
+import { LocationValidator } from "@/components/map/LocationValidator";
 
 interface Visit {
   id: number;
@@ -86,6 +87,9 @@ export default function VisitPage() {
   const [selectedCloserId, setSelectedCloserId] = useState("");
   const [selectedProjectTypes, setSelectedProjectTypes] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
+  const [showLocationValidator, setShowLocationValidator] = useState(false);
+  const [locationValidated, setLocationValidated] = useState(false);
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
 
   const isClosingMode =
     session?.user?.role === "CLOSER" && (visit?.stage === "PROPOSAL_ACCEPTED" || mode === "closer");
@@ -129,6 +133,13 @@ export default function VisitPage() {
   const handleNotAvailable = async () => {
     if (!scheduledDate || !scheduledTime || !visit) return;
 
+    // Validar ubicación antes de continuar
+    if (!locationValidated) {
+      setPendingAction('notAvailable');
+      setShowLocationValidator(true);
+      return;
+    }
+
     setSaving(true);
     const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}`).toISOString();
 
@@ -144,6 +155,13 @@ export default function VisitPage() {
 
   const handleObjection = async () => {
     if (selectedObjections.length === 0 || !visit) return;
+
+    // Validar ubicación antes de continuar
+    if (!locationValidated) {
+      setPendingAction('objection');
+      setShowLocationValidator(true);
+      return;
+    }
 
     setSaving(true);
     await fetch(`/api/visits/${visit.id}/objection`, {
@@ -161,6 +179,13 @@ export default function VisitPage() {
 
   const handleProposal = async () => {
     if (!visit) return;
+
+    // Validar ubicación antes de continuar
+    if (!locationValidated) {
+      setPendingAction('proposal');
+      setShowLocationValidator(true);
+      return;
+    }
 
     setSaving(true);
 
@@ -217,6 +242,27 @@ export default function VisitPage() {
 
     setSaving(false);
     router.push("/map");
+  };
+
+  const handleLocationValidated = async () => {
+    setLocationValidated(true);
+    setShowLocationValidator(false);
+
+    // Ejecutar la acción pendiente
+    if (pendingAction === 'notAvailable') {
+      await handleNotAvailable();
+    } else if (pendingAction === 'objection') {
+      await handleObjection();
+    } else if (pendingAction === 'proposal') {
+      await handleProposal();
+    }
+
+    setPendingAction(null);
+  };
+
+  const handleLocationCancelled = () => {
+    setShowLocationValidator(false);
+    setPendingAction(null);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -603,6 +649,15 @@ export default function VisitPage() {
             )}
           </Button>
         </div>
+      )}
+
+      {/* Validador de Ubicación */}
+      {showLocationValidator && (
+        <LocationValidator
+          parcelId={parcelId}
+          onValidated={handleLocationValidated}
+          onCancel={handleLocationCancelled}
+        />
       )}
     </div>
   );

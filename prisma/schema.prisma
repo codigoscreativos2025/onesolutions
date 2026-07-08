@@ -93,6 +93,7 @@ model Visit {
   slot             CloserSlot?
   projects         VisitProject[]
   projectDetails   ProjectDetails?
+  location         VisitLocation?
 }
 
 // Tipos de proyectos disponibles
@@ -383,4 +384,15 @@ model ParcelVisitHistory {
   status      String   // MANUAL_LEAD, NOT_AVAILABLE, OBJECTION, etc.
   notes       String?
   createdAt   DateTime @default(now())
+}
+
+// Ubicación registrada al tocar puerta
+model VisitLocation {
+  id          Int      @id @default(autoincrement())
+  visitId     Int      @unique
+  visit       Visit    @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  latitude    Float
+  longitude   Float
+  accuracy    Float
+  recordedAt  DateTime @default(now())
 }
