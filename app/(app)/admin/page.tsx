@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import Link from "next/link";
-import { Users, MessageSquareWarning, BarChart3, MessageCircle, Award, Settings } from "lucide-react";
+import { Users, MessageSquareWarning, BarChart3, MessageCircle, Award, Settings, Briefcase } from "lucide-react";
 
 export default async function AdminPage() {
   const session = await auth();
@@ -45,6 +45,13 @@ export default async function AdminPage() {
       href: "/admin/project-fields",
       icon: Settings,
       color: "bg-secondary/10 text-secondary",
+    },
+    {
+      title: "CRM",
+      description: "Gestión completa de proyectos, leads y visitas",
+      href: "/admin/crm",
+      icon: Briefcase,
+      color: "bg-primary/10 text-primary",
     },
     {
       title: "Chats",
