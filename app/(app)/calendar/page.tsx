@@ -20,6 +20,7 @@ import {
   List,
 } from "lucide-react";
 import { VisualCalendar } from "@/components/calendar/VisualCalendar";
+import { ViewProjectModal } from "@/components/calendar/ViewProjectModal";
 
 interface Slot {
   id: number;
@@ -59,7 +60,9 @@ export default function CalendarPage() {
   const [isSlotModalOpen, setIsSlotModalOpen] = useState(false);
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [isReassignModalOpen, setIsReassignModalOpen] = useState(false);
+  const [isViewProjectModalOpen, setIsViewProjectModalOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
+  const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
 
   // Pattern form
   const [patternDay, setPatternDay] = useState(1);
@@ -170,9 +173,10 @@ export default function CalendarPage() {
 
   const handleViewProject = () => {
     if (selectedSlot?.visit) {
-      router.push(`/visit/${selectedSlot.visit.parcel.id}?mode=closer`);
+      setSelectedVisitId(selectedSlot.visit.id);
+      setIsViewProjectModalOpen(true);
+      setIsActionModalOpen(false);
     }
-    setIsActionModalOpen(false);
   };
 
   const handleVisit = () => {
@@ -385,7 +389,7 @@ export default function CalendarPage() {
           </div>
         ))}
       </div>
-        </>
+      </>
       )}
 
       {/* Modal de Patrón Semanal */}
@@ -634,6 +638,13 @@ export default function CalendarPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Modal de Ver Proyecto */}
+      <ViewProjectModal
+        isOpen={isViewProjectModalOpen}
+        onClose={() => setIsViewProjectModalOpen(false)}
+        visitId={selectedVisitId}
+      />
     </div>
   );
 }

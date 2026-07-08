@@ -62,6 +62,8 @@ export default function VisitPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const parcelId = params.parcelId as string;
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const mode = searchParams?.get('mode');
 
   const [visit, setVisit] = useState<Visit | null>(null);
   const [objections, setObjections] = useState<Objection[]>([]);
@@ -86,7 +88,7 @@ export default function VisitPage() {
   const [saving, setSaving] = useState(false);
 
   const isClosingMode =
-    session?.user?.role === "CLOSER" && visit?.stage === "PROPOSAL_ACCEPTED";
+    session?.user?.role === "CLOSER" && (visit?.stage === "PROPOSAL_ACCEPTED" || mode === "closer");
 
   useEffect(() => {
     fetchData();
