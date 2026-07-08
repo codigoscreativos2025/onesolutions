@@ -19,6 +19,7 @@ import { MetricsCharts } from "@/components/dashboard/MetricsCharts";
 import { MiniRanking } from "@/components/dashboard/MiniRanking";
 import { MetricDetailModal } from "@/components/dashboard/MetricDetailModal";
 import { CreateLeadModal } from "@/components/leads/CreateLeadModal";
+import { CompetitionStats } from "@/components/dashboard/CompetitionStats";
 import { Button } from "@/components/ui/Button";
 
 interface Metrics {
@@ -197,6 +198,9 @@ export default function DashboardPage() {
           </div>
         )}
       </section>
+
+      {/* Estadísticas de Competencia */}
+      <CompetitionStats />
 
       {/* Modal de Detalle de Métricas */}
       <MetricDetailModal

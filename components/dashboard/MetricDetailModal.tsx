@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, Calendar, MapPin, User, FileText } from 'lucide-react';
+import { X, Calendar, MapPin, User, FileText, Filter } from 'lucide-react';
 
 interface Visit {
   id: number;
@@ -39,12 +39,14 @@ interface MetricDetailModalProps {
 export function MetricDetailModal({ isOpen, onClose, metricType, userId }: MetricDetailModalProps) {
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(false);
+  const [filterStartDate, setFilterStartDate] = useState<string>('');
+  const [filterEndDate, setFilterEndDate] = useState<string>('');
 
   useEffect(() => {
     if (isOpen && metricType) {
       fetchVisits();
     }
-  }, [isOpen, metricType, userId]);
+  }, [isOpen, metricType, userId, filterStartDate, filterEndDate]);
 
   const fetchVisits = async () => {
     setLoading(true);
@@ -52,6 +54,8 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
       const params = new URLSearchParams();
       if (metricType) params.append('type', metricType);
       if (userId) params.append('userId', userId.toString());
+      if (filterStartDate) params.append('startDate', filterStartDate);
+      if (filterEndDate) params.append('endDate', filterEndDate);
 
       const res = await fetch(`/api/visits/details?${params}`);
       const data = await res.json();
@@ -61,6 +65,11 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
     } finally {
       setLoading(false);
     }
+  };
+
+  const clearFilters = () => {
+    setFilterStartDate('');
+    setFilterEndDate('');
   };
 
   if (!isOpen) return null;
@@ -118,6 +127,40 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
           >
             <X className="w-5 h-5" />
           </button>
+        </div>
+
+        {/* Filtros */}
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+          <div className="flex items-center gap-2 mb-3">
+            <Filter className="w-4 h-4" />
+            <span className="text-sm font-medium">Filtrar por fecha</span>
+          </div>
+          <div className="flex gap-3 items-end">
+            <div className="flex-1">
+              <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Desde</label>
+              <input
+                type="date"
+                value={filterStartDate}
+                onChange={(e) => setFilterStartDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Hasta</label>
+              <input
+                type="date"
+                value={filterEndDate}
+                onChange={(e) => setFilterEndDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
+              />
+            </div>
+            <button
+              onClick={clearFilters}
+              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+            >
+              Limpiar
+            </button>
+          </div>
         </div>
 
         {/* Content */}

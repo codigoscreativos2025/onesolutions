@@ -35,10 +35,14 @@ export default function MapView({
   const fetchParcels = async () => {
     try {
       const res = await fetch("/api/parcels");
+      if (!res.ok) {
+        throw new Error('Failed to fetch parcels');
+      }
       const data = await res.json();
-      setParcels(data);
+      setParcels(data || []);
     } catch (error) {
-      console.error(error);
+      console.error('Error fetching parcels:', error);
+      setParcels([]);
     } finally {
       setLoading(false);
     }
@@ -98,49 +102,65 @@ export default function MapView({
           url="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
         />
         {parcels.map((parcel) => {
-          let geometry;
           try {
-            geometry = JSON.parse(parcel.geometry);
-          } catch {
+            if (!parcel.geometry) return null;
+            
+            const geometry = JSON.parse(parcel.geometry);
+            
+            // Validar que la geometría tenga coordenadas válidas
+            if (!geometry.coordinates || !geometry.coordinates[0] || geometry.coordinates[0].length < 3) {
+              return null;
+            }
+
+            const coordinates = geometry.coordinates[0].map(
+              (coord: [number, number]) => [coord[1], coord[0]] as [number, number]
+            );
+
+            // Validar que todas las coordenadas sean números válidos
+            const hasValidCoords = coordinates.every(
+              (coord: [number, number]) => 
+                typeof coord[0] === 'number' && 
+                typeof coord[1] === 'number' &&
+                !isNaN(coord[0]) && 
+                !isNaN(coord[1])
+            );
+
+            if (!hasValidCoords) return null;
+
+            return (
+              <Polygon
+                key={parcel.id}
+                positions={coordinates}
+                pathOptions={{
+                  color: getParcelColor(parcel.status),
+                  fillColor: getParcelColor(parcel.status),
+                  fillOpacity: parcel.status === "AVAILABLE" ? 0.35 : 0.55,
+                  weight: 4,
+                }}
+                eventHandlers={{
+                  click: (e) => {
+                    e.originalEvent.stopPropagation();
+                    e.originalEvent.preventDefault();
+                    setSelectedParcel(parcel);
+                  },
+                  mouseover: (e) => {
+                    e.target.setStyle({ weight: 6, fillOpacity: 0.7 });
+                    document.body.style.cursor = "pointer";
+                  },
+                  mouseout: (e) => {
+                    e.target.setStyle({
+                      weight: 4,
+                      fillOpacity: parcel.status === "AVAILABLE" ? 0.35 : 0.55,
+                    });
+                    document.body.style.cursor = "default";
+                  },
+                }}
+              />
+            );
+          } catch (error) {
+            console.error('Error rendering parcel:', parcel.id, error);
             return null;
           }
-
-          const coordinates = geometry.coordinates?.[0]?.map(
-            ([lng, lat]: [number, number]) => [lat, lng] as [number, number]
-          );
-
-          if (!coordinates) return null;
-
-          return (
-            <Polygon
-              key={parcel.id}
-              positions={coordinates}
-              pathOptions={{
-                color: getParcelColor(parcel.status),
-                fillColor: getParcelColor(parcel.status),
-                fillOpacity: parcel.status === "AVAILABLE" ? 0.35 : 0.55,
-                weight: 4,
-              }}
-              eventHandlers={{
-                click: (e) => {
-                  e.originalEvent.stopPropagation();
-                  e.originalEvent.preventDefault();
-                  setSelectedParcel(parcel);
-                },
-                mouseover: (e) => {
-                  e.target.setStyle({ weight: 6, fillOpacity: 0.7 });
-                  document.body.style.cursor = "pointer";
-                },
-                mouseout: (e) => {
-                  e.target.setStyle({
-                    weight: 4,
-                    fillOpacity: parcel.status === "AVAILABLE" ? 0.35 : 0.55,
-                  });
-                  document.body.style.cursor = "default";
-                },
-              }}
-            />
-          );
         })}
       </MapContainer>
 

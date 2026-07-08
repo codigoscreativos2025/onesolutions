@@ -11,6 +11,8 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const type = searchParams.get('type');
   const userId = searchParams.get('userId');
+  const startDate = searchParams.get('startDate');
+  const endDate = searchParams.get('endDate');
 
   const currentUserId = parseInt(session.user.id);
   const role = session.user.role;
@@ -25,6 +27,17 @@ export async function GET(request: Request) {
       whereClause.setterId = currentUserId;
     } else if (role === 'CLOSER') {
       whereClause.closerId = currentUserId;
+    }
+
+    // Filtrar por fecha si se proporciona
+    if (startDate || endDate) {
+      whereClause.createdAt = {};
+      if (startDate) {
+        (whereClause.createdAt as Record<string, unknown>).gte = new Date(startDate);
+      }
+      if (endDate) {
+        (whereClause.createdAt as Record<string, unknown>).lte = new Date(endDate + 'T23:59:59.999Z');
+      }
     }
 
     // Filtrar según el tipo de métrica

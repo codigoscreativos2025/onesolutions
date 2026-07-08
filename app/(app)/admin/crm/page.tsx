@@ -230,7 +230,11 @@ export default function AdminCRMPage() {
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredVisits.map((visit) => (
-                <tr key={visit.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                <tr 
+                  key={visit.id} 
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                  onClick={() => handleViewDetails(visit.id)}
+                >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <MapPin className="w-4 h-4 text-gray-400 mr-2" />

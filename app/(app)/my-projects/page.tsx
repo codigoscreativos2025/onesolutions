@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { MessageSquare, CheckCircle, AlertCircle } from 'lucide-react';
+import { MessageSquare, CheckCircle, AlertCircle, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ViewProjectModal } from '@/components/calendar/ViewProjectModal';
+import { EditProjectModal } from '@/components/calendar/EditProjectModal';
 
 interface ProjectDetails {
   [key: string]: string | number | boolean | null | undefined;
@@ -39,7 +40,30 @@ export default function MyProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [creatingChat, setCreatingChat] = useState<number | null>(null);
   const [isViewProjectModalOpen, setIsViewProjectModalOpen] = useState(false);
+  const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
   const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
+
+  // Función para calcular el porcentaje de completitud
+  const calculateCompletion = (projectDetails: ProjectDetails | null): number => {
+    if (!projectDetails) return 0;
+
+    const requiredFields = [
+      'clientName',
+      'clientEmail',
+      'address',
+      'closingDate',
+      'paymentMethod',
+    ];
+
+    let completed = 0;
+    requiredFields.forEach(field => {
+      if (projectDetails[field] && projectDetails[field] !== '') {
+        completed++;
+      }
+    });
+
+    return Math.round((completed / requiredFields.length) * 100);
+  };
 
   useEffect(() => {
     if (session?.user?.role === 'SETTER') {
@@ -85,6 +109,11 @@ export default function MyProjectsPage() {
   const handleViewProject = (visitId: number) => {
     setSelectedVisitId(visitId);
     setIsViewProjectModalOpen(true);
+  };
+
+  const handleEditProject = (visitId: number) => {
+    setSelectedVisitId(visitId);
+    setIsEditProjectModalOpen(true);
   };
 
   if (loading) {
@@ -180,22 +209,54 @@ export default function MyProjectsPage() {
                 )}
 
                 {/* Estado de Project Details */}
-                <div className="flex items-center gap-2 text-sm">
-                  {visit.projectDetails ? (
-                    <>
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                      <span className="text-green-600 dark:text-green-400">
-                        Información del proyecto completa
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <AlertCircle className="w-4 h-4 text-red-500" />
-                      <span className="text-red-600 dark:text-red-400">
-                        Falta completar la información del proyecto
-                      </span>
-                    </>
-                  )}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm">
+                      {visit.projectDetails ? (
+                        <>
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                          <span className="text-green-600 dark:text-green-400">
+                            Información del proyecto cargada
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle className="w-4 h-4 text-red-500" />
+                          <span className="text-red-600 dark:text-red-400">
+                            Falta completar la información del proyecto
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditProject(visit.id)}
+                    >
+                      <Edit className="w-4 h-4 mr-1" />
+                      Editar
+                    </Button>
+                  </div>
+
+                  {/* Barra de Progreso */}
+                  <div>
+                    <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
+                      <span>Progreso de información</span>
+                      <span>{calculateCompletion(visit.projectDetails)}%</span>
+                    </div>
+                    <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          calculateCompletion(visit.projectDetails) === 100
+                            ? 'bg-green-500'
+                            : calculateCompletion(visit.projectDetails) >= 50
+                            ? 'bg-yellow-500'
+                            : 'bg-red-500'
+                        }`}
+                        style={{ width: `${calculateCompletion(visit.projectDetails)}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -278,6 +339,14 @@ export default function MyProjectsPage() {
         isOpen={isViewProjectModalOpen}
         onClose={() => setIsViewProjectModalOpen(false)}
         visitId={selectedVisitId}
+      />
+
+      {/* Modal de Editar Proyecto */}
+      <EditProjectModal
+        isOpen={isEditProjectModalOpen}
+        onClose={() => setIsEditProjectModalOpen(false)}
+        visitId={selectedVisitId}
+        onSuccess={fetchProjects}
       />
     </div>
   );
