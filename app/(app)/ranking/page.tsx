@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { Trophy, Medal, Target, Crown, Award } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Trophy, Medal, Target, Crown, Award, Eye } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 
 interface Badge {
   id: number;
@@ -35,6 +37,7 @@ interface RankingData {
 
 export default function RankingPage() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [data, setData] = useState<RankingData | null>(null);
   const [activeTab, setActiveTab] = useState<"doors" | "prospects" | "projects">("doors");
 
@@ -216,6 +219,14 @@ export default function RankingPage() {
                     {activeTab === "doors" ? "puertas" : activeTab === "prospects" ? "prospectos" : "proyectos"}
                   </p>
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/profile/${item.id}`)}
+                >
+                  <Eye className="w-4 h-4 mr-1" />
+                  Ver Perfil
+                </Button>
               </div>
             ))}
           </div>

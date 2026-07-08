@@ -24,28 +24,25 @@ export function TopAppBar() {
     signOut({ callbackUrl: "/login" });
   };
 
-  const handleProfileClick = () => {
-    router.push("/profile");
-  };
-
   return (
     <header className="fixed top-0 z-50 w-full h-16 glass-panel border-b border-glass-border flex justify-between items-center px-5 shadow-sm">
       <div className="flex items-center gap-3">
         <button
-          onClick={handleProfileClick}
-          className="w-10 h-10 rounded-full border-2 border-primary overflow-hidden bg-surface-container flex items-center justify-center text-primary font-bold text-sm hover:border-primary/70 transition-colors"
-          title="Ver perfil"
+          onClick={() => router.push(`/profile/${session?.user?.id}`)}
+          className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
-          {initials}
+          <div className="w-10 h-10 rounded-full border-2 border-primary overflow-hidden bg-surface-container flex items-center justify-center text-primary font-bold text-sm">
+            {initials}
+          </div>
+          <div className="flex flex-col text-left">
+            <span className="font-headline text-lg font-bold text-primary tracking-tight">
+              {session?.user?.name || 'One Solutions'}
+            </span>
+            <span className="text-xs text-on-surface-variant">
+              {session?.user?.role ? t.roles[session.user.role as keyof typeof t.roles] || session.user.role : ""}
+            </span>
+          </div>
         </button>
-        <div className="flex flex-col">
-          <span className="font-headline text-lg font-bold text-primary tracking-tight">
-            One Solutions
-          </span>
-          <span className="text-xs text-on-surface-variant">
-            {session?.user?.role ? t.roles[session.user.role as keyof typeof t.roles] || session.user.role : ""}
-          </span>
-        </div>
       </div>
 
       <div className="flex items-center gap-1">

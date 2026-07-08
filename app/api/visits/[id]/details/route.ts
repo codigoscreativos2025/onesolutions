@@ -2,25 +2,20 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 
-export async function GET(request: Request) {
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { searchParams } = new URL(request.url);
-  const visitId = searchParams.get('visitId');
-
-  if (!visitId) {
-    return NextResponse.json({ error: 'visitId is required' }, { status: 400 });
-  }
-
-  const userId = parseInt(session.user.id);
-  const role = session.user.role;
-
   try {
+    const visitId = parseInt(params.id);
+
     const visit = await prisma.visit.findUnique({
-      where: { id: parseInt(visitId) },
+      where: { id: visitId },
       include: {
         parcel: {
           select: {
@@ -44,21 +39,47 @@ export async function GET(request: Request) {
             email: true,
           },
         },
-        bill: true,
+        bill: {
+          select: {
+            id: true,
+            imageUrl: true,
+            phone: true,
+            clientName: true,
+            clientEmail: true,
+            notes: true,
+          },
+        },
         projectDetails: true,
         projects: {
           include: {
-            projectType: true,
+            projectType: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
         objections: {
           include: {
-            objection: true,
+            objection: {
+              select: {
+                id: true,
+                name: true,
+                color: true,
+              },
+            },
           },
         },
         closerObjections: {
           include: {
-            closerObjection: true,
+            closerObjection: {
+              select: {
+                id: true,
+                name: true,
+                color: true,
+              },
+            },
           },
         },
       },
@@ -66,16 +87,6 @@ export async function GET(request: Request) {
 
     if (!visit) {
       return NextResponse.json({ error: 'Visit not found' }, { status: 404 });
-    }
-
-    // Verificar permisos
-    const hasAccess =
-      role === 'ADMIN' ||
-      visit.setterId === userId ||
-      visit.closerId === userId;
-
-    if (!hasAccess) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     return NextResponse.json(visit);
