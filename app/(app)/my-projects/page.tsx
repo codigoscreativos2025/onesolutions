@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { MessageSquare, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { ViewProjectModal } from '@/components/calendar/ViewProjectModal';
 
 interface ProjectDetails {
   [key: string]: string | number | boolean | null | undefined;
@@ -37,6 +38,8 @@ export default function MyProjectsPage() {
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
   const [creatingChat, setCreatingChat] = useState<number | null>(null);
+  const [isViewProjectModalOpen, setIsViewProjectModalOpen] = useState(false);
+  const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
 
   useEffect(() => {
     if (session?.user?.role === 'SETTER') {
@@ -80,7 +83,8 @@ export default function MyProjectsPage() {
   };
 
   const handleViewProject = (visitId: number) => {
-    router.push(`/calendar?viewProject=${visitId}`);
+    setSelectedVisitId(visitId);
+    setIsViewProjectModalOpen(true);
   };
 
   if (loading) {
@@ -268,6 +272,13 @@ export default function MyProjectsPage() {
           </p>
         </div>
       )}
+
+      {/* Modal de Ver Proyecto */}
+      <ViewProjectModal
+        isOpen={isViewProjectModalOpen}
+        onClose={() => setIsViewProjectModalOpen(false)}
+        visitId={selectedVisitId}
+      />
     </div>
   );
 }

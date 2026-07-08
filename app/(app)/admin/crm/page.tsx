@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Search, Filter, Download, Eye, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { ViewProjectModal } from '@/components/calendar/ViewProjectModal';
 
 interface ProjectDetails {
   [key: string]: string | number | boolean | null | undefined;
@@ -45,6 +46,8 @@ export default function AdminCRMPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStage, setFilterStage] = useState<string>('all');
   const [filterSetter, setFilterSetter] = useState<string>('all');
+  const [isViewProjectModalOpen, setIsViewProjectModalOpen] = useState(false);
+  const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
 
   useEffect(() => {
     if (session?.user?.role !== 'ADMIN') {
@@ -101,7 +104,8 @@ export default function AdminCRMPage() {
   };
 
   const handleViewDetails = (visitId: number) => {
-    router.push(`/calendar?viewProject=${visitId}`);
+    setSelectedVisitId(visitId);
+    setIsViewProjectModalOpen(true);
   };
 
   const setters = Array.from(new Set(visits.map((v) => v.setter.id))).map((id) => {
@@ -302,6 +306,13 @@ export default function AdminCRMPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de Ver Proyecto */}
+      <ViewProjectModal
+        isOpen={isViewProjectModalOpen}
+        onClose={() => setIsViewProjectModalOpen(false)}
+        visitId={selectedVisitId}
+      />
     </div>
   );
 }

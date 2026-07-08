@@ -17,6 +17,7 @@ model User {
   phone     String?
   avatarUrl String?
   isActive  Boolean  @default(true)
+  locationValidationEnabled Boolean @default(true)
   createdAt DateTime @default(now())
 
   // Relación closer -> setters

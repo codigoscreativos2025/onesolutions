@@ -16,6 +16,7 @@ interface User {
   role: string;
   phone?: string;
   isActive: boolean;
+  locationValidationEnabled: boolean;
   closerId?: number;
   closer?: { id: number; name: string };
   _count?: { setters: number };
@@ -109,6 +110,18 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleToggleLocationValidation = async (userId: number, enabled: boolean) => {
+    const res = await fetch(`/api/admin/users/${userId}/location-validation`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ locationValidationEnabled: !enabled }),
+    });
+
+    if (res.ok) {
+      fetchUsers();
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: "",
@@ -169,6 +182,9 @@ export default function AdminUsersPage() {
                 <th className="text-left p-4 text-sm font-semibold text-on-surface-variant uppercase">
                   Estado
                 </th>
+                <th className="text-left p-4 text-sm font-semibold text-on-surface-variant uppercase">
+                  Validación GPS
+                </th>
                 <th className="text-right p-4 text-sm font-semibold text-on-surface-variant uppercase">
                   Acciones
                 </th>
@@ -213,6 +229,20 @@ export default function AdminUsersPage() {
                       }`}
                     />
                     {user.isActive ? "Activo" : "Inactivo"}
+                  </td>
+                  <td className="p-4">
+                    <button
+                      onClick={() => handleToggleLocationValidation(user.id, user.locationValidationEnabled)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        user.locationValidationEnabled ? "bg-primary" : "bg-gray-300 dark:bg-gray-600"
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          user.locationValidationEnabled ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
                   </td>
                   <td className="p-4 text-right">
                     <div className="flex justify-end gap-2">

@@ -2,25 +2,20 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 
-// Función para calcular la distancia entre dos puntos usando la fórmula de Haversine
-function calculateDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-): number {
+// Función para calcular la distancia entre dos puntos (fórmula de Haversine)
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371e3; // Radio de la Tierra en metros
-  const φ1 = (lat1 * Math.PI) / 180;
-  const φ2 = (lat2 * Math.PI) / 180;
-  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
 
-  const a =
-    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
-  return R * c; // Distancia en metros
+  return R * c;
 }
 
 export async function POST(request: Request) {
@@ -29,17 +24,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const userId = parseInt(session.user.id);
-
   try {
-    const body = await request.json();
-    const { parcelId, latitude, longitude, accuracy } = body;
+    const { parcelId, latitude, longitude, accuracy } = await request.json();
 
-    if (!parcelId || latitude === undefined || longitude === undefined) {
-      return NextResponse.json(
-        { error: 'parcelId, latitude, and longitude are required' },
-        { status: 400 }
-      );
+    // Verificar si el usuario tiene la validación habilitada
+    const user = await prisma.user.findUnique({
+      where: { id: parseInt(session.user.id) },
+      select: { locationValidationEnabled: true },
+    });
+
+    if (!user?.locationValidationEnabled) {
+      return NextResponse.json({
+        valid: true,
+        message: 'Validación de ubicación deshabilitada para este usuario',
+      });
     }
 
     // Obtener la parcela
@@ -51,6 +49,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Parcel not found' }, { status: 404 });
     }
 
+    // Si la parcela no tiene geometría válida (leads manuales), permitir
+    if (!parcel.geometry || parcel.geometry === '{"coordinates":[0,0],"type":"Point"}') {
+      return NextResponse.json({
+        valid: true,
+        message: 'Parcela sin coordenadas exactas (lead manual)',
+      });
+    }
+
     // Parsear la geometría de la parcela
     let parcelLat: number;
     let parcelLon: number;
@@ -58,43 +64,39 @@ export async function POST(request: Request) {
     try {
       const geometry = JSON.parse(parcel.geometry);
       
-      // Si es un Point, usar las coordenadas directamente
       if (geometry.type === 'Point') {
         parcelLon = geometry.coordinates[0];
         parcelLat = geometry.coordinates[1];
-      }
-      // Si es un Polygon, calcular el centroide
-      else if (geometry.type === 'Polygon' && geometry.coordinates[0]) {
+      } else if (geometry.type === 'Polygon') {
+        // Calcular el centroide del polígono
         const coords = geometry.coordinates[0];
-        parcelLon = coords.reduce((sum: number, coord: number[]) => sum + coord[0], 0) / coords.length;
-        parcelLat = coords.reduce((sum: number, coord: number[]) => sum + coord[1], 0) / coords.length;
+        const sum = coords.reduce((acc: [number, number], coord: [number, number]) => {
+          return [acc[0] + coord[0], acc[1] + coord[1]];
+        }, [0, 0]);
+        parcelLon = sum[0] / coords.length;
+        parcelLat = sum[1] / coords.length;
       } else {
-        return NextResponse.json(
-          { error: 'Invalid parcel geometry' },
-          { status: 400 }
-        );
+        return NextResponse.json({
+          valid: true,
+          message: 'Tipo de geometría no soportado',
+        });
       }
     } catch {
-      return NextResponse.json(
-        { error: 'Invalid parcel geometry format' },
-        { status: 400 }
-      );
+      return NextResponse.json({
+        valid: true,
+        message: 'Error al parsear geometría de la parcela',
+      });
     }
 
     // Calcular la distancia
     const distance = calculateDistance(latitude, longitude, parcelLat, parcelLon);
-
-    // Agregar el error de precisión del GPS
-    const effectiveDistance = distance + (accuracy || 0);
-
-    // Validar si está dentro de los 50 metros
-    const isValid = effectiveDistance <= 50;
+    const isValid = distance <= 50;
 
     // Registrar la ubicación en VisitLocation si la visita existe
     const visit = await prisma.visit.findFirst({
       where: {
         parcelId,
-        setterId: userId,
+        setterId: parseInt(session.user.id),
         stage: 'IN_PROGRESS',
       },
       orderBy: { createdAt: 'desc' },
@@ -114,13 +116,14 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       valid: isValid,
-      distance: effectiveDistance,
+      distance: Math.round(distance),
       message: isValid
-        ? 'Ubicación válida. Puedes continuar con la visita.'
-        : `Estás demasiado lejos de la parcela (${effectiveDistance.toFixed(0)}m). Debes estar a menos de 50m.`,
+        ? 'Ubicación válida'
+        : `Estás a ${Math.round(distance)}m de la parcela. Debes estar a menos de 50m.`,
     });
   } catch (error) {
     console.error('Error validating location:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
