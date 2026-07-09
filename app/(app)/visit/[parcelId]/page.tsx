@@ -25,6 +25,7 @@ interface Visit {
   id: number;
   parcel: {
     address: string;
+    geometry?: string;
   };
   stage: string;
   projects?: {
@@ -180,8 +181,11 @@ export default function VisitPage() {
   const handleProposal = async () => {
     if (!visit) return;
 
-    // Validar ubicación antes de continuar
-    if (!locationValidated) {
+    // Verificar si es un lead manual (sin geometría válida)
+    const isManualLead = visit.parcel.geometry === '{"coordinates":[0,0],"type":"Point"}' || !visit.parcel.geometry;
+
+    // Validar ubicación antes de continuar (solo si no es lead manual)
+    if (!locationValidated && !isManualLead) {
       setPendingAction('proposal');
       setShowLocationValidator(true);
       return;

@@ -32,6 +32,7 @@ interface Visit {
   } | null;
   projects: {
     projectType: {
+      id: number;
       name: string;
     };
   }[];
@@ -46,6 +47,9 @@ export default function AdminCRMPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStage, setFilterStage] = useState<string>('all');
   const [filterSetter, setFilterSetter] = useState<string>('all');
+  const [filterProjectType, setFilterProjectType] = useState<string>('all');
+  const [filterDateFrom, setFilterDateFrom] = useState<string>('');
+  const [filterDateTo, setFilterDateTo] = useState<string>('');
   const [isViewProjectModalOpen, setIsViewProjectModalOpen] = useState(false);
   const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
 
@@ -76,8 +80,17 @@ export default function AdminCRMPage() {
     
     const matchesStage = filterStage === 'all' || visit.stage === filterStage;
     const matchesSetter = filterSetter === 'all' || visit.setter.id.toString() === filterSetter;
+    
+    // Filtro por tipo de proyecto
+    const matchesProjectType = filterProjectType === 'all' || 
+      visit.projects.some(p => p.projectType.id.toString() === filterProjectType);
+    
+    // Filtro por intervalo de tiempo
+    const visitDate = new Date(visit.createdAt);
+    const matchesDateFrom = !filterDateFrom || visitDate >= new Date(filterDateFrom);
+    const matchesDateTo = !filterDateTo || visitDate <= new Date(filterDateTo + 'T23:59:59.999Z');
 
-    return matchesSearch && matchesStage && matchesSetter;
+    return matchesSearch && matchesStage && matchesSetter && matchesProjectType && matchesDateFrom && matchesDateTo;
   });
 
   const handleExport = () => {
@@ -185,6 +198,48 @@ export default function AdminCRMPage() {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+              Tipo de Proyecto
+            </label>
+            <select
+              value={filterProjectType}
+              onChange={(e) => setFilterProjectType(e.target.value)}
+              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
+            >
+              <option value="all">Todos</option>
+              {Array.from(new Set(visits.flatMap(v => v.projects.map(p => p.projectType)))).map((pt) => (
+                <option key={pt.id} value={pt.id}>
+                  {pt.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+              Fecha Desde
+            </label>
+            <input
+              type="date"
+              value={filterDateFrom}
+              onChange={(e) => setFilterDateFrom(e.target.value)}
+              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+              Fecha Hasta
+            </label>
+            <input
+              type="date"
+              value={filterDateTo}
+              onChange={(e) => setFilterDateTo(e.target.value)}
+              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
+            />
           </div>
         </div>
 

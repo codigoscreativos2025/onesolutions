@@ -1,12 +1,22 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/auth';
 
 export async function GET(
   request: Request,
   { params }: { params: { userId: string } }
 ) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const userId = parseInt(params.userId);
+
+    if (isNaN(userId)) {
+      return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 });
+    }
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -69,9 +79,9 @@ export async function GET(
     });
 
     // Obtener mejor mes
-    const visitsByMonth = await prisma.$queryRaw<Array<{ month: string; count: number }>>`
+    const visitsByMonth = await prisma.$queryRaw<Array<{ month: string; count: bigint }>>`
       SELECT 
-        strftime('%Y-%m', "createdAt") as month,
+        strftime('%Y-%m', createdAt) as month,
         COUNT(*) as count
       FROM Visit
       WHERE setterId = ${userId} OR closerId = ${userId}
@@ -79,6 +89,10 @@ export async function GET(
       ORDER BY count DESC
       LIMIT 1
     `;
+
+    const bestMonth = visitsByMonth[0] 
+      ? { month: visitsByMonth[0].month, count: Number(visitsByMonth[0].count) }
+      : null;
 
     return NextResponse.json({
       ...user,
@@ -88,7 +102,7 @@ export async function GET(
         leadsGenerated,
         projectsClosed,
       },
-      bestMonth: visitsByMonth[0] || null,
+      bestMonth,
     });
   } catch (error) {
     console.error('Error fetching user profile:', error);

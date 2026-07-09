@@ -151,53 +151,59 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <section className="glass-panel rounded-2xl p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="font-headline text-lg font-bold text-on-surface">
-            {t.dashboard.recentAppointments}
-          </h2>
-          <Link
-            href="/calendar"
-            className="text-sm text-primary font-medium flex items-center gap-1"
-          >
-            {t.dashboard.viewAll} <ChevronRight className="w-4 h-4" />
-          </Link>
-        </div>
+      {/* Estadísticas de Competencia */}
+      <CompetitionStats />
 
-        {appointments.length === 0 ? (
-          <p className="text-on-surface-variant text-center py-8">
-            {t.dashboard.noAppointments}
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {appointments.map((apt) => (
-              <div
-                key={apt.id}
-                className="flex items-center justify-between p-4 rounded-xl border border-glass-border hover:border-primary/50 transition-colors cursor-pointer"
-                onClick={() => router.push(`/visit/${apt.parcel.id || ""}`)}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                    <Calendar className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-on-surface">
-                      {apt.parcel.address}
-                    </p>
-                    <p className="text-xs text-on-surface-variant">
-                      {apt.slot
-                        ? new Date(apt.slot.startAt).toLocaleString()
-                        : t.common.none}
-                      {role === "CLOSER" && ` • Setter: ${apt.setter.name}`}
-                    </p>
-                  </div>
-                </div>
-                <StatusIcon stage={apt.stage} />
-              </div>
-            ))}
+      {/* Citas Recientes (solo para Closers y Admin) */}
+      {role !== 'SETTER' && (
+        <section className="glass-panel rounded-2xl p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="font-headline text-lg font-bold text-on-surface">
+              {t.dashboard.recentAppointments}
+            </h2>
+            <Link
+              href="/calendar"
+              className="text-sm text-primary font-medium flex items-center gap-1"
+            >
+              {t.dashboard.viewAll} <ChevronRight className="w-4 h-4" />
+            </Link>
           </div>
-        )}
-      </section>
+
+          {appointments.length === 0 ? (
+            <p className="text-on-surface-variant text-center py-8">
+              {t.dashboard.noAppointments}
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {appointments.map((apt) => (
+                <div
+                  key={apt.id}
+                  className="flex items-center justify-between p-4 rounded-xl border border-glass-border hover:border-primary/50 transition-colors cursor-pointer"
+                  onClick={() => router.push(`/visit/${apt.parcel.id || ""}`)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                      <Calendar className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-on-surface">
+                        {apt.parcel.address}
+                      </p>
+                      <p className="text-xs text-on-surface-variant">
+                        {apt.slot
+                          ? new Date(apt.slot.startAt).toLocaleString()
+                          : t.common.none}
+                        {role === "CLOSER" && ` • Setter: ${apt.setter.name}`}
+                      </p>
+                    </div>
+                  </div>
+                  <StatusIcon stage={apt.stage} />
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Estadísticas de Competencia */}
       <CompetitionStats />

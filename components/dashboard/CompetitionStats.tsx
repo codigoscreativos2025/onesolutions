@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { Award, Target, DoorOpen, CheckCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Award, Target, DoorOpen, CheckCircle, Eye } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 
 interface UserStats {
   id: number;
@@ -27,6 +29,7 @@ interface ComparisonData {
 
 export function CompetitionStats() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [data, setData] = useState<ComparisonData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -109,7 +112,19 @@ export function CompetitionStats() {
                       <span className={`text-sm font-medium truncate ${isMe ? 'text-primary' : ''}`}>
                         {user.name} {isMe && '(Tú)'}
                       </span>
-                      <span className="text-sm font-bold ml-2">{user.doorsKnocked}</span>
+                      <div className="flex items-center gap-2 ml-2">
+                        <span className="text-sm font-bold">{user.doorsKnocked}</span>
+                        {!isMe && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push(`/profile/${user.id}`)}
+                            className="px-2 py-1"
+                          >
+                            <Eye className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div
@@ -159,7 +174,19 @@ export function CompetitionStats() {
                       <span className={`text-sm font-medium truncate ${isMe ? 'text-primary' : ''}`}>
                         {user.name} {isMe && '(Tú)'}
                       </span>
-                      <span className="text-sm font-bold ml-2">{user.leadsGenerated}</span>
+                      <div className="flex items-center gap-2 ml-2">
+                        <span className="text-sm font-bold">{user.leadsGenerated}</span>
+                        {!isMe && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push(`/profile/${user.id}`)}
+                            className="px-2 py-1"
+                          >
+                            <Eye className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div
@@ -209,7 +236,19 @@ export function CompetitionStats() {
                       <span className={`text-sm font-medium truncate ${isMe ? 'text-primary' : ''}`}>
                         {user.name} {isMe && '(Tú)'}
                       </span>
-                      <span className="text-sm font-bold ml-2">{user.projectsClosed}</span>
+                      <div className="flex items-center gap-2 ml-2">
+                        <span className="text-sm font-bold">{user.projectsClosed}</span>
+                        {!isMe && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push(`/profile/${user.id}`)}
+                            className="px-2 py-1"
+                          >
+                            <Eye className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div
