@@ -134,8 +134,11 @@ export default function VisitPage() {
   const handleNotAvailable = async () => {
     if (!scheduledDate || !scheduledTime || !visit) return;
 
-    // Validar ubicación antes de continuar
-    if (!locationValidated) {
+    // Los closers no necesitan validar ubicación
+    const isCloser = session?.user?.role === 'CLOSER';
+
+    // Validar ubicación antes de continuar (solo si no es closer)
+    if (!locationValidated && !isCloser) {
       setPendingAction('notAvailable');
       setShowLocationValidator(true);
       return;
@@ -157,8 +160,11 @@ export default function VisitPage() {
   const handleObjection = async () => {
     if (selectedObjections.length === 0 || !visit) return;
 
-    // Validar ubicación antes de continuar
-    if (!locationValidated) {
+    // Los closers no necesitan validar ubicación
+    const isCloser = session?.user?.role === 'CLOSER';
+
+    // Validar ubicación antes de continuar (solo si no es closer)
+    if (!locationValidated && !isCloser) {
       setPendingAction('objection');
       setShowLocationValidator(true);
       return;
@@ -184,8 +190,11 @@ export default function VisitPage() {
     // Verificar si es un lead manual (sin geometría válida)
     const isManualLead = visit.parcel.geometry === '{"coordinates":[0,0],"type":"Point"}' || !visit.parcel.geometry;
 
-    // Validar ubicación antes de continuar (solo si no es lead manual)
-    if (!locationValidated && !isManualLead) {
+    // Los closers no necesitan validar ubicación (solo los setters)
+    const isCloser = session?.user?.role === 'CLOSER';
+
+    // Validar ubicación antes de continuar (solo si no es lead manual y no es closer)
+    if (!locationValidated && !isManualLead && !isCloser) {
       setPendingAction('proposal');
       setShowLocationValidator(true);
       return;

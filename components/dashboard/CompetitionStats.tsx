@@ -40,12 +40,14 @@ export function CompetitionStats() {
   const fetchComparisonData = async () => {
     try {
       const res = await fetch('/api/metrics/comparison');
-      if (res.ok) {
-        const result = await res.json();
-        setData(result);
+      if (!res.ok) {
+        throw new Error('Failed to fetch comparison data');
       }
+      const result = await res.json();
+      setData(result);
     } catch (error) {
       console.error('Error fetching comparison data:', error);
+      setData(null);
     } finally {
       setLoading(false);
     }

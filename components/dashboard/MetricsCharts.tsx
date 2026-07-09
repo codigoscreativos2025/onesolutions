@@ -56,10 +56,14 @@ export function MetricsCharts({ userId }: MetricsChartsProps) {
       if (userId) params.append('userId', userId.toString());
       
       const res = await fetch(`/api/metrics/charts?${params}`);
+      if (!res.ok) {
+        throw new Error('Failed to fetch chart data');
+      }
       const data = await res.json();
       setChartData(data);
     } catch (error) {
       console.error('Error fetching chart data:', error);
+      setChartData(null);
     } finally {
       setLoading(false);
     }

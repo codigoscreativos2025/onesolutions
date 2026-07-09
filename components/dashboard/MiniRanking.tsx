@@ -29,10 +29,14 @@ export function MiniRanking({ currentUserId }: MiniRankingProps) {
   const fetchRanking = async () => {
     try {
       const res = await fetch('/api/ranking/mini');
+      if (!res.ok) {
+        throw new Error('Failed to fetch ranking');
+      }
       const data = await res.json();
       setRanking(data);
     } catch (error) {
       console.error('Error fetching ranking:', error);
+      setRanking([]);
     } finally {
       setLoading(false);
     }
