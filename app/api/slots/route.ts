@@ -2,21 +2,28 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await auth();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userId = parseInt(session.user.id);
+  const { searchParams } = new URL(request.url);
+  const closerIdParam = searchParams.get("closerId");
 
-  // Solo closers o admin pueden ver sus slots
-  if (session.user.role === "SETTER") {
+  const userId = parseInt(session.user.id);
+  const role = session.user.role;
+
+  // Si es setter, solo puede ver slots si proporciona un closerId específico
+  if (role === "SETTER" && !closerIdParam) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // Determinar qué closerId usar
+  const closerId = closerIdParam ? parseInt(closerIdParam) : userId;
+
   const slots = await prisma.closerSlot.findMany({
-    where: { closerId: userId },
+    where: { closerId },
     orderBy: { startAt: "asc" },
     include: {
       visit: {

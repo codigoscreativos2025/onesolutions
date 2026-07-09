@@ -40,6 +40,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "visitId required" }, { status: 400 });
     }
 
+    // Convertir fechas de string a Date
+    const processedDetails = { ...details };
+    if (processedDetails.closingDate && typeof processedDetails.closingDate === 'string') {
+      processedDetails.closingDate = new Date(processedDetails.closingDate);
+    }
+    if (processedDetails.siteSurveyDate && typeof processedDetails.siteSurveyDate === 'string') {
+      processedDetails.siteSurveyDate = new Date(processedDetails.siteSurveyDate);
+    }
+
     // Verificar si ya existe
     const existing = await prisma.projectDetails.findUnique({
       where: { visitId: parseInt(visitId) },
@@ -49,13 +58,13 @@ export async function POST(request: Request) {
     if (existing) {
       result = await prisma.projectDetails.update({
         where: { visitId: parseInt(visitId) },
-        data: details,
+        data: processedDetails,
       });
     } else {
       result = await prisma.projectDetails.create({
         data: {
           visitId: parseInt(visitId),
-          ...details,
+          ...processedDetails,
         },
       });
     }
@@ -81,9 +90,18 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "visitId required" }, { status: 400 });
     }
 
+    // Convertir fechas de string a Date
+    const processedDetails = { ...details };
+    if (processedDetails.closingDate && typeof processedDetails.closingDate === 'string') {
+      processedDetails.closingDate = new Date(processedDetails.closingDate);
+    }
+    if (processedDetails.siteSurveyDate && typeof processedDetails.siteSurveyDate === 'string') {
+      processedDetails.siteSurveyDate = new Date(processedDetails.siteSurveyDate);
+    }
+
     const result = await prisma.projectDetails.update({
       where: { visitId: parseInt(visitId) },
-      data: details,
+      data: processedDetails,
     });
 
     return NextResponse.json(result);

@@ -16,10 +16,10 @@ import {
   Upload,
   Phone,
   User,
-  ChevronRight,
   Loader2,
 } from "lucide-react";
 import { LocationValidator } from "@/components/map/LocationValidator";
+import { SlotPicker } from "@/components/calendar/SlotPicker";
 
 interface Visit {
   id: number;
@@ -575,58 +575,41 @@ export default function VisitPage() {
                   Paso 4: Agendar con Closer
                 </label>
                 <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded uppercase font-bold">
-                  Slots Disponibles
+                  Seleccionar Fecha y Hora
                 </span>
               </div>
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                {closers.map((closer) =>
-                  closer.slots.map((slot) => (
-                    <div
-                      key={slot.id}
-                      onClick={() => {
-                        setSelectedSlotId(String(slot.id));
-                        setSelectedCloserId(String(closer.id));
-                      }}
-                      className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
-                        selectedSlotId === String(slot.id)
-                          ? "border-primary bg-primary/5"
-                          : "border-glass-border hover:border-primary/50"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant font-bold text-sm">
-                          {closer.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")
-                            .slice(0, 2)
-                            .toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-on-surface">
-                            {closer.name}
-                          </p>
-                          <p className="text-xs text-on-surface-variant">
-                            {new Date(slot.startAt).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                      <ChevronRight
-                        className={`w-5 h-5 transition-transform ${
-                          selectedSlotId === String(slot.id)
-                            ? "text-primary translate-x-1"
-                            : "text-primary"
-                        }`}
-                      />
-                    </div>
-                  ))
-                )}
-                {closers.every((c) => c.slots.length === 0) && (
-                  <p className="text-center text-on-surface-variant py-4">
-                    No hay slots disponibles
-                  </p>
-                )}
+              
+              {/* Selector de Closer */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-on-surface">Selecciona un Closer</label>
+                <select
+                  value={selectedCloserId}
+                  onChange={(e) => {
+                    setSelectedCloserId(e.target.value);
+                    setSelectedSlotId("");
+                  }}
+                  className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
+                >
+                  <option value="">-- Selecciona un Closer --</option>
+                  {closers.map((closer) => (
+                    <option key={closer.id} value={closer.id}>
+                      {closer.name}
+                    </option>
+                  ))}
+                </select>
               </div>
+
+              {/* Selector de Fecha y Hora */}
+              {selectedCloserId && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-on-surface">Selecciona Fecha y Hora</label>
+                  <SlotPicker
+                    closerId={parseInt(selectedCloserId)}
+                    selectedSlotId={selectedSlotId ? parseInt(selectedSlotId) : undefined}
+                    onSlotSelect={(slotId) => setSelectedSlotId(String(slotId))}
+                  />
+                </div>
+              )}
             </div>
           )}
 

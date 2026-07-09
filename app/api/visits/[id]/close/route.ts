@@ -39,6 +39,7 @@ export async function PATCH(
         setter: { select: { id: true } },
         closer: { select: { id: true } },
         parcel: { select: { address: true } },
+        slot: true,
       },
     });
 
@@ -47,6 +48,17 @@ export async function PATCH(
       where: { id: visit.parcelId },
       data: { status: "CUSTOMER" },
     });
+
+    // Liberar el slot del calendario si existe
+    if (visit.slot) {
+      await prisma.closerSlot.update({
+        where: { id: visit.slot.id },
+        data: {
+          isBooked: false,
+          visitId: null,
+        },
+      });
+    }
 
     // NO crear chat automáticamente - el closer debe crearlo manualmente después de cargar la información
 
