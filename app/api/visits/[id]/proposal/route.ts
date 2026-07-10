@@ -15,12 +15,14 @@ export async function PATCH(
   const body = await request.json();
   const { phone, clientName, clientEmail, billImageUrl, notes, slotId, closerId, projectTypeIds } = body;
 
-  if (!phone || !billImageUrl || !slotId || !closerId) {
+  if (!phone || !slotId || !closerId) {
     return NextResponse.json(
       { error: "Missing required fields" },
       { status: 400 }
     );
   }
+
+  // billImageUrl es opcional (recibo de luz no obligatorio)
 
   try {
     const existingBill = await prisma.bill.findUnique({
@@ -94,7 +96,8 @@ export async function PATCH(
     });
 
     return NextResponse.json(visit);
-  } catch {
-    return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+  } catch (error) {
+    console.error("Error submitting proposal:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

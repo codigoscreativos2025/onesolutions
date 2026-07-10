@@ -27,6 +27,12 @@ interface Visit {
       color: string;
     };
   }[];
+  closerObjections?: {
+    closerObjection: {
+      name: string;
+      color: string;
+    };
+  }[];
 }
 
 interface MetricDetailModalProps {
@@ -213,11 +219,11 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
                     )}
                   </div>
 
-                  {/* Objeciones */}
+                  {/* Objeciones de Setter */}
                   {visit.objections.length > 0 && (
                     <div className="mb-3">
                       <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                        Objeciones:
+                        Objeciones de Setter:
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {visit.objections.map((obj, idx) => (
@@ -230,6 +236,29 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
                             }}
                           >
                             {obj.objection.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Objeciones de Closer */}
+                  {visit.closerObjections && visit.closerObjections.length > 0 && (
+                    <div className="mb-3">
+                      <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                        Objeciones de Closer:
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {visit.closerObjections.map((obj, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 rounded text-xs font-medium"
+                            style={{
+                              backgroundColor: obj.closerObjection.color + '20',
+                              color: obj.closerObjection.color,
+                            }}
+                          >
+                            {obj.closerObjection.name}
                           </span>
                         ))}
                       </div>

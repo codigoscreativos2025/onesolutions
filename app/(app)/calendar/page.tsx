@@ -54,6 +54,7 @@ export default function CalendarPage() {
 
   const [slots, setSlots] = useState<Slot[]>([]);
   const [patterns, setPatterns] = useState<WeeklyPattern[]>([]);
+  const [appointments, setAppointments] = useState<Slot[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [isPatternModalOpen, setIsPatternModalOpen] = useState(false);
@@ -91,14 +92,34 @@ export default function CalendarPage() {
 
   const fetchData = async () => {
     try {
-      const [slotsRes, patternsRes] = await Promise.all([
+      const [slotsRes, patternsRes, appointmentsRes] = await Promise.all([
         fetch("/api/slots"),
         fetch("/api/weekly-patterns"),
+        fetch("/api/appointments"),
       ]);
       const slotsData = await slotsRes.json();
       const patternsData = await patternsRes.json();
+      const appointmentsData = await appointmentsRes.json();
+
+      // Convertir citas asignadas a formato Slot para mostrarlas en el calendario
+      const appointmentSlots: Slot[] = (appointmentsData || [])
+        .filter((apt: { slot: unknown; stage: string }) => !apt.slot && apt.stage !== "CLOSED")
+        .map((apt: { id: number; parcel: { id: string; address: string }; setter: { name: string }; slot?: { startAt: string }; stage: string; projects?: { projectType: { id: number; name: string } }[] }) => ({
+          id: -apt.id, // IDs negativos para diferenciar de slots reales
+          startAt: apt.slot?.startAt || new Date().toISOString(),
+          endAt: apt.slot?.startAt || new Date().toISOString(),
+          isBooked: true,
+          visit: {
+            id: apt.id,
+            parcel: apt.parcel,
+            setter: apt.setter,
+            projects: apt.projects,
+          },
+        }));
+
       setSlots(slotsData);
       setPatterns(patternsData);
+      setAppointments(appointmentSlots);
     } catch (error) {
       console.error(error);
     } finally {
@@ -208,7 +229,8 @@ export default function CalendarPage() {
 
   const groupSlotsByDate = () => {
     const grouped: Record<string, Slot[]> = {};
-    slots.forEach((slot) => {
+    const allSlots = [...slots, ...appointments];
+    allSlots.forEach((slot) => {
       const dateKey = new Date(slot.startAt).toLocaleDateString();
       if (!grouped[dateKey]) grouped[dateKey] = [];
       grouped[dateKey].push(slot);
@@ -582,17 +604,19 @@ export default function CalendarPage() {
                 <MapPin className="w-5 h-5 mr-2" />
                 Visitar
               </Button>
-              <Button
-                onClick={() => {
-                  setIsActionModalOpen(false);
-                  setIsReassignModalOpen(true);
-                }}
-                variant="secondary"
-                className="w-full"
-              >
-                <RefreshCw className="w-5 h-5 mr-2" />
-                Reasignar Cita
-              </Button>
+              {selectedSlot && selectedSlot.id > 0 && (
+                <Button
+                  onClick={() => {
+                    setIsActionModalOpen(false);
+                    setIsReassignModalOpen(true);
+                  }}
+                  variant="secondary"
+                  className="w-full"
+                >
+                  <RefreshCw className="w-5 h-5 mr-2" />
+                  Reasignar Cita
+                </Button>
+              )}
             </div>
           </div>
         )}

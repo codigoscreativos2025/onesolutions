@@ -70,12 +70,15 @@ export default function MapView({
       method: "POST",
     });
 
-    if (res.ok) {
-      fetchParcels();
-      const updated = await fetch(`/api/parcels/${parcelId}`);
-      const data = await updated.json();
-      setSelectedParcel(data);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: "Error al reclamar parcela" }));
+      throw new Error(err.error);
     }
+
+    fetchParcels();
+    const updated = await fetch(`/api/parcels/${parcelId}`);
+    const data = await updated.json();
+    setSelectedParcel(data);
   };
 
   if (loading) {

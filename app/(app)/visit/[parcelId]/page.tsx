@@ -16,6 +16,7 @@ import {
   Upload,
   Phone,
   User,
+  FileText,
   Loader2,
 } from "lucide-react";
 import { LocationValidator } from "@/components/map/LocationValidator";
@@ -26,6 +27,8 @@ interface Visit {
   parcel: {
     address: string;
     geometry?: string;
+    metadata?: string;
+    ownerName?: string;
   };
   stage: string;
   projects?: {
@@ -87,6 +90,7 @@ export default function VisitPage() {
   const [selectedSlotId, setSelectedSlotId] = useState("");
   const [selectedCloserId, setSelectedCloserId] = useState("");
   const [selectedProjectTypes, setSelectedProjectTypes] = useState<number[]>([]);
+  const [proposalNotes, setProposalNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [showLocationValidator, setShowLocationValidator] = useState(false);
   const [locationValidated, setLocationValidated] = useState(false);
@@ -128,6 +132,19 @@ export default function VisitPage() {
         setSelectedProjectTypes(
           visitData.projects.map((p: { projectType: { id: number } }) => p.projectType.id)
         );
+      }
+
+      // Precargar datos de lead manual si existe metadata
+      if (visitData?.parcel?.metadata) {
+        try {
+          const metadata = JSON.parse(visitData.parcel.metadata);
+          if (metadata.isManual) {
+            setPhone(metadata.phone || "");
+            setClientName(visitData.parcel.ownerName || metadata.ownerName || "");
+            setClientEmail(metadata.email || "");
+            setProposalNotes(metadata.notes || "");
+          }
+        } catch {}
       }
     } catch (error) {
       console.error(error);
@@ -226,7 +243,7 @@ export default function VisitPage() {
       });
 
       setSaving(false);
-      router.push("/chat");
+      router.push("/my-projects");
       return;
     }
 
@@ -255,6 +272,7 @@ export default function VisitPage() {
         slotId: selectedSlotId,
         closerId: selectedCloserId,
         projectTypeIds: selectedProjectTypes,
+        notes: proposalNotes,
       }),
     });
 
@@ -482,7 +500,7 @@ export default function VisitPage() {
             <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
               {isClosingMode
                 ? "Adjuntar documento (opcional)"
-                : "Paso 1: Subir Recibo de Luz"}
+                : "Paso 1: Subir Recibo de Luz (opcional)"}
             </label>
             <label className="w-full h-32 border-2 border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center bg-surface-container-lowest hover:bg-primary/5 transition-colors cursor-pointer group">
               <Upload className="w-8 h-8 text-on-surface-variant group-hover:text-primary" />
@@ -497,11 +515,20 @@ export default function VisitPage() {
               />
             </label>
             {billPreview && (
-              <img
-                src={billPreview}
-                alt="Preview"
-                className="w-full h-40 object-cover rounded-xl"
-              />
+              <div className="relative">
+                <img
+                  src={billPreview}
+                  alt="Preview"
+                  className="w-full h-40 object-cover rounded-xl"
+                />
+                <button
+                  type="button"
+                  onClick={() => { setBillFile(null); setBillPreview(""); }}
+                  className="absolute top-2 right-2 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors"
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
             )}
           </div>
 
@@ -575,6 +602,20 @@ export default function VisitPage() {
 
           {!isClosingMode && (
             <div className="space-y-3">
+              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                Notas adicionales
+              </label>
+              <textarea
+                value={proposalNotes}
+                onChange={(e) => setProposalNotes(e.target.value)}
+                className="w-full min-h-[80px] bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none rounded-xl p-4 resize-none text-on-surface"
+                placeholder="Información adicional sobre el cliente o la visita..."
+              />
+            </div>
+          )}
+
+          {!isClosingMode && (
+            <div className="space-y-3">
               <div className="flex justify-between items-end">
                 <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
                   Paso 4: Agendar con Closer
@@ -637,7 +678,7 @@ export default function VisitPage() {
             disabled={
               isClosingMode
                 ? saving
-                : !phone || !billFile || !selectedSlotId || !selectedCloserId || selectedProjectTypes.length === 0 || saving
+                : !phone || !selectedSlotId || !selectedCloserId || selectedProjectTypes.length === 0 || saving
             }
             className="w-full h-14 uppercase tracking-widest"
           >

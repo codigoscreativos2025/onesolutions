@@ -168,27 +168,26 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalP
               ))}
             </div>
           </div>
-        </form>
 
-        {/* Footer */}
-        <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            className="flex-1"
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            onClick={handleSubmit}
-            disabled={loading || !formData.address}
-            className="flex-1"
-          >
-            {loading ? 'Creando...' : 'Crear Lead'}
-          </Button>
-        </div>
+          {/* Botones dentro del form para que sean visibles en móvil */}
+          <div className="flex gap-3 pt-4 sticky bottom-0 bg-white dark:bg-gray-800">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="flex-1"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading || !formData.address}
+              className="flex-1"
+            >
+              {loading ? 'Creando...' : 'Crear Lead'}
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );

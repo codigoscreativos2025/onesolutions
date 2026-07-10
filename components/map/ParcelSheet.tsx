@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { DoorOpen, X, User } from "lucide-react";
@@ -37,6 +38,7 @@ export function ParcelSheet({
   userId,
 }: ParcelSheetProps) {
   const router = useRouter();
+  const [claiming, setClaiming] = useState(false);
 
   if (!parcel) return null;
 
@@ -46,11 +48,19 @@ export function ParcelSheet({
   const isAvailable = parcel.status === "AVAILABLE";
 
   const handleKnockDoor = async () => {
-    if (isAvailable) {
-      await onClaim(parcel.id);
+    if (claiming) return;
+    setClaiming(true);
+    try {
+      if (isAvailable) {
+        await onClaim(parcel.id);
+      }
+      onVisitStarted();
+      router.push(`/visit/${parcel.id}`);
+    } catch {
+      // Si el claim falla, no navegar
+    } finally {
+      setClaiming(false);
     }
-    onVisitStarted();
-    router.push(`/visit/${parcel.id}`);
   };
 
   return (

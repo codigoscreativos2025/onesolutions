@@ -11,6 +11,8 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const period = searchParams.get('period') || '7d';
   const userId = searchParams.get('userId');
+  const startDateParam = searchParams.get('startDate');
+  const endDateParam = searchParams.get('endDate');
 
   const currentUserId = parseInt(session.user.id);
   const role = session.user.role;
@@ -19,31 +21,37 @@ export async function GET(request: Request) {
     // Calcular fechas según período
     const now = new Date();
     let startDate: Date;
+    let endDate: Date | undefined;
     let groupBy: 'day' | 'week' | 'month';
 
-    switch (period) {
-      case '7d':
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        groupBy = 'day';
-        break;
-      case '30d':
-        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        groupBy = 'day';
-        break;
-      case 'month':
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        groupBy = 'day';
-        break;
-      default:
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        groupBy = 'day';
+    if (period === 'custom') {
+      startDate = startDateParam ? new Date(startDateParam) : new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      endDate = endDateParam ? new Date(endDateParam + 'T23:59:59.999Z') : undefined;
+      groupBy = 'day';
+    } else {
+      switch (period) {
+        case '7d':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case '30d':
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        case 'month':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          break;
+        default:
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      }
+      groupBy = 'day';
     }
 
     // Obtener visitas en el período
+    const dateFilter: Record<string, unknown> = { gte: startDate };
+    if (endDate) {
+      dateFilter.lte = endDate;
+    }
     const whereClause: Record<string, unknown> = {
-      createdAt: {
-        gte: startDate,
-      },
+      createdAt: dateFilter,
     };
 
     if (userId) {
@@ -108,11 +116,13 @@ export async function GET(request: Request) {
     const objections = labels.map((label) => groupedData[label].objections);
 
     // Obtener proyectos por tipo
+    const visitDateFilter: Record<string, unknown> = { gte: startDate };
+    if (endDate) {
+      visitDateFilter.lte = endDate;
+    }
     const projectTypesWhere: Record<string, unknown> = {
       visit: {
-        createdAt: {
-          gte: startDate,
-        },
+        createdAt: visitDateFilter,
       },
     };
 

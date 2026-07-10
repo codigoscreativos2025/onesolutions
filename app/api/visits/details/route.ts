@@ -86,6 +86,16 @@ export async function GET(request: Request) {
             },
           },
         },
+        closerObjections: {
+          include: {
+            closerObjection: {
+              select: {
+                name: true,
+                color: true,
+              },
+            },
+          },
+        },
       },
     });
 

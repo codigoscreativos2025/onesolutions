@@ -151,9 +151,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Estadísticas de Competencia */}
-      <CompetitionStats />
-
       {/* Citas Recientes (solo para Closers y Admin) */}
       {role !== 'SETTER' && (
         <section className="glass-panel rounded-2xl p-6">

@@ -40,21 +40,39 @@ interface MetricsChartsProps {
   userId?: number;
 }
 
+const COLORS = {
+  doors: { border: '#3B82F6', bg: 'rgba(59, 130, 246, 0.1)' },
+  leads: { border: '#10B981', bg: 'rgba(16, 185, 129, 0.1)' },
+  projects: { border: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.1)' },
+  objections: { border: '#F97316', bg: 'rgba(249, 115, 22, 0.1)' },
+};
+
+const BAR_COLORS = [
+  '#3B82F6', '#10B981', '#8B5CF6', '#F97316', '#EC4899',
+  '#14B8A6', '#F59E0B', '#6366F1', '#84CC16', '#06B6D4',
+];
+
 export function MetricsCharts({ userId }: MetricsChartsProps) {
   const [chartData, setChartData] = useState<ChartData | null>(null);
-  const [period, setPeriod] = useState<'7d' | '30d' | 'month'>('7d');
+  const [period, setPeriod] = useState<'7d' | '30d' | 'month' | 'custom'>('7d');
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchChartData();
-  }, [period, userId]);
+  }, [period, userId, customStart, customEnd]);
 
   const fetchChartData = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ period });
+      const params = new URLSearchParams({ period: period === 'custom' ? 'custom' : period });
       if (userId) params.append('userId', userId.toString());
-      
+      if (period === 'custom') {
+        if (customStart) params.append('startDate', customStart);
+        if (customEnd) params.append('endDate', customEnd);
+      }
+
       const res = await fetch(`/api/metrics/charts?${params}`);
       if (!res.ok) {
         throw new Error('Failed to fetch chart data');
@@ -87,24 +105,32 @@ export function MetricsCharts({ userId }: MetricsChartsProps) {
       {
         label: 'Puertas Tocadas',
         data: chartData.doorsKnocked,
-        borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderColor: COLORS.doors.border,
+        backgroundColor: COLORS.doors.bg,
         fill: true,
         tension: 0.4,
       },
       {
         label: 'Leads Generados',
         data: chartData.leadsGenerated,
-        borderColor: 'rgb(16, 185, 129)',
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        borderColor: COLORS.leads.border,
+        backgroundColor: COLORS.leads.bg,
         fill: true,
         tension: 0.4,
       },
       {
         label: 'Proyectos Cerrados',
         data: chartData.projectsClosed,
-        borderColor: 'rgb(139, 92, 246)',
-        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+        borderColor: COLORS.projects.border,
+        backgroundColor: COLORS.projects.bg,
+        fill: true,
+        tension: 0.4,
+      },
+      {
+        label: 'Objeciones',
+        data: chartData.objections,
+        borderColor: COLORS.objections.border,
+        backgroundColor: COLORS.objections.bg,
         fill: true,
         tension: 0.4,
       },
@@ -118,8 +144,8 @@ export function MetricsCharts({ userId }: MetricsChartsProps) {
           {
             label: 'Proyectos por Tipo',
             data: chartData.projectTypes.map((p) => p.count),
-            backgroundColor: 'rgba(59, 130, 246, 0.6)',
-            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: chartData.projectTypes.map((_, i) => BAR_COLORS[i % BAR_COLORS.length]),
+            borderColor: chartData.projectTypes.map((_, i) => BAR_COLORS[i % BAR_COLORS.length]),
             borderWidth: 1,
           },
         ],
@@ -173,7 +199,7 @@ export function MetricsCharts({ userId }: MetricsChartsProps) {
   return (
     <div className="space-y-6">
       {/* Selector de período */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setPeriod('7d')}
           className={`px-4 py-2 rounded-lg transition-colors ${
@@ -204,7 +230,41 @@ export function MetricsCharts({ userId }: MetricsChartsProps) {
         >
           Este Mes
         </button>
+        <button
+          onClick={() => setPeriod('custom')}
+          className={`px-4 py-2 rounded-lg transition-colors ${
+            period === 'custom'
+              ? 'bg-primary text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          Personalizado
+        </button>
       </div>
+
+      {/* Fechas personalizadas */}
+      {period === 'custom' && (
+        <div className="flex gap-3 items-end">
+          <div>
+            <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Desde</label>
+            <input
+              type="date"
+              value={customStart}
+              onChange={(e) => setCustomStart(e.target.value)}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Hasta</label>
+            <input
+              type="date"
+              value={customEnd}
+              onChange={(e) => setCustomEnd(e.target.value)}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Gráfica de Líneas */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">

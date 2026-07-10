@@ -63,7 +63,8 @@ export async function PATCH(
     // NO crear chat automáticamente - el closer debe crearlo manualmente después de cargar la información
 
     return NextResponse.json(visit);
-  } catch {
-    return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+  } catch (error) {
+    console.error("Error closing visit:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
