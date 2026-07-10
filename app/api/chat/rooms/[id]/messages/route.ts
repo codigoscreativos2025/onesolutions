@@ -37,6 +37,9 @@ export async function POST(
     include: {
       visit: {
         select: { setterId: true, closerId: true },
+        include: {
+          parcel: { select: { address: true } },
+        },
       },
     },
   });
@@ -67,6 +70,43 @@ export async function POST(
       user: { select: { id: true, name: true } },
     },
   });
+
+  // Parse @mentions and create notifications
+  if (messageBody) {
+    const mentionRegex = /(?:^|\s)@(\w+)/g;
+    const mentions: string[] = [];
+    let match;
+    while ((match = mentionRegex.exec(messageBody)) !== null) {
+      mentions.push(match[1].toLowerCase());
+    }
+
+    if (mentions.length > 0) {
+      const mentionedUsers = await prisma.user.findMany({
+        where: {
+          name: { in: mentions },
+          NOT: { id: userId },
+        },
+        select: { id: true, name: true },
+      });
+
+      const mentionedNames = new Set(mentions);
+      const matchedUsers = mentionedUsers.filter((u) =>
+        mentionedNames.has(u.name.toLowerCase())
+      );
+
+      if (matchedUsers.length > 0) {
+        const address = room.visit?.parcel?.address || "el proyecto";
+        const notifications = matchedUsers.map((u) => ({
+          userId: u.id,
+          title: "Te mencionaron en un chat",
+          body: `@${user.name} te mencionó en el chat de ${address}`,
+          link: "/chat",
+        }));
+
+        await prisma.notification.createMany({ data: notifications });
+      }
+    }
+  }
 
   return NextResponse.json(message, { status: 201 });
 }
