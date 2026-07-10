@@ -108,6 +108,11 @@ export default function VisitPage() {
         fetch("/api/project-types"),
       ]);
 
+      if (!visitRes.ok) {
+        setLoading(false);
+        return;
+      }
+
       const visitData = await visitRes.json();
       const objData = await objRes.json();
       const closersData = await closersRes.json();
