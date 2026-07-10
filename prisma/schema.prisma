@@ -68,7 +68,8 @@ model Parcel {
   setterId Int?
   setter   User?   @relation("ParcelSetter", fields: [setterId], references: [id])
 
-  visits Visit[]
+  visits        Visit[]
+  visitHistory  ParcelVisitHistory[] @relation("ParcelToVisitHistory")
 }
 
 model Visit {
@@ -380,6 +381,7 @@ model UserProfile {
 model ParcelVisitHistory {
   id          Int      @id @default(autoincrement())
   parcelId    String
+  parcel      Parcel   @relation("ParcelToVisitHistory", fields: [parcelId], references: [id])
   setterId    Int
   setter      User     @relation("ParcelVisitHistory", fields: [setterId], references: [id])
   visitedAt   DateTime
