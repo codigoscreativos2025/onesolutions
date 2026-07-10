@@ -16,7 +16,6 @@ import {
   Upload,
   Phone,
   User,
-  FileText,
   Loader2,
 } from "lucide-react";
 import { LocationValidator } from "@/components/map/LocationValidator";
