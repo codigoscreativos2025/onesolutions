@@ -126,6 +126,10 @@ export default function VisitPage() {
       setClosers(closersData);
       setProjectTypes(projectTypesData);
 
+      if (session?.user?.role === "CLOSER" && closersData.length === 1) {
+        setSelectedCloserId(String(closersData[0].id));
+      }
+
       // Cargar proyectos ya seleccionados si existen
       if (visitData?.projects) {
         setSelectedProjectTypes(

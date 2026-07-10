@@ -39,6 +39,7 @@ export function ParcelSheet({
 }: ParcelSheetProps) {
   const router = useRouter();
   const [claiming, setClaiming] = useState(false);
+  const [claimError, setClaimError] = useState("");
 
   if (!parcel) return null;
 
@@ -49,6 +50,7 @@ export function ParcelSheet({
 
   const handleKnockDoor = async () => {
     if (claiming) return;
+    setClaimError("");
     setClaiming(true);
     try {
       if (isAvailable) {
@@ -56,8 +58,8 @@ export function ParcelSheet({
       }
       onVisitStarted();
       router.push(`/visit/${parcel.id}`);
-    } catch {
-      // Si el claim falla, no navegar
+    } catch (e) {
+      setClaimError(e instanceof Error ? e.message : "Error al reclamar parcela");
     } finally {
       setClaiming(false);
     }
@@ -135,13 +137,19 @@ export function ParcelSheet({
       </div>
 
       {isSetter && (isAvailable || isTakenByMe) && parcel.status !== "CUSTOMER" && (
-        <div className="p-4 border-t border-glass-border">
+        <div className="p-4 border-t border-glass-border space-y-2">
+          {claimError && (
+            <p className="text-sm text-error bg-error/10 px-3 py-2 rounded-lg">
+              {claimError}
+            </p>
+          )}
           <Button
             onClick={handleKnockDoor}
+            disabled={claiming}
             className="w-full h-14 text-lg uppercase tracking-widest"
           >
             <DoorOpen className="w-6 h-6" />
-            {isAvailable ? "Tocar Puerta" : "Continuar Visita"}
+            {claiming ? "Reclamando..." : isAvailable ? "Tocar Puerta" : "Continuar Visita"}
           </Button>
         </div>
       )}
