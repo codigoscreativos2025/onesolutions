@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const roomId = searchParams.get('roomId');
 
-    let userIds: number[] = [];
+    const userIds: number[] = [];
 
     if (roomId) {
       const chatRoom = await prisma.chatRoom.findUnique({

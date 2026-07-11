@@ -14,8 +14,6 @@ import {
   Calendar,
   ChevronRight,
   Plus,
-  Users,
-  ArrowUpRight,
 } from "lucide-react";
 import { MetricsCharts } from "@/components/dashboard/MetricsCharts";
 import { MiniRanking } from "@/components/dashboard/MiniRanking";
