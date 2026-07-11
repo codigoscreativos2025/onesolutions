@@ -16,7 +16,7 @@ export function BottomNav() {
   const navItems = [
     { href: "/map", label: t.nav.map, icon: Map, roles: ["SETTER", "CLOSER", "ADMIN"] },
     { href: "/dashboard", label: t.nav.dashboard, icon: LayoutDashboard, roles: ["SETTER", "CLOSER", "ADMIN"] },
-    { href: "/my-parcels", label: "Mis Parcelas", icon: MapPin, roles: ["SETTER", "CLOSER"] },
+    { href: "/my-parcels", label: "Parcelas Activas", icon: MapPin, roles: ["SETTER", "CLOSER"] },
     { href: "/my-projects", label: "Mis Proyectos", icon: Briefcase, roles: ["CLOSER"] },
     { href: "/calendar", label: t.nav.calendar, icon: Calendar, roles: ["CLOSER", "ADMIN"] },
     { href: "/ranking", label: t.nav.ranking, icon: Trophy, roles: ["SETTER", "CLOSER", "ADMIN"] },

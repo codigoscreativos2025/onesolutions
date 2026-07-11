@@ -159,59 +159,6 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
                 />
               </div>
 
-              {/* Techo */}
-              <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <h3 className="font-semibold text-lg">Techo</h3>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
-                    Tipo de Trabajo
-                  </label>
-                  <select
-                    value={projectDetails.roofType as string || ''}
-                    onChange={(e) => handleFieldChange('roofType', e.target.value)}
-                    className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
-                  >
-                    <option value="">Seleccionar...</option>
-                    <option value="reemplazo">Reemplazo</option>
-                    <option value="reparacion">Reparación</option>
-                    <option value="gutters">Gutters</option>
-                  </select>
-                </div>
-                <Input
-                  label="Precio de Venta"
-                  type="number"
-                  value={projectDetails.roofSalePrice as number || ''}
-                  onChange={(e) => handleFieldChange('roofSalePrice', parseFloat(e.target.value) || null)}
-                />
-              </div>
-
-              {/* Purificador */}
-              <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <h3 className="font-semibold text-lg">Purificador de Agua</h3>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
-                    Tipo de Sistema
-                  </label>
-                  <select
-                    value={projectDetails.waterSystemType as string || ''}
-                    onChange={(e) => handleFieldChange('waterSystemType', e.target.value)}
-                    className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
-                  >
-                    <option value="">Seleccionar...</option>
-                    <option value="sistema completo">Sistema Completo</option>
-                    <option value="softener">Softener</option>
-                    <option value="R.O">R.O</option>
-                    <option value="sistema de pozo">Sistema de Pozo</option>
-                  </select>
-                </div>
-                <Input
-                  label="Precio de Venta"
-                  type="number"
-                  value={projectDetails.waterSalePrice as number || ''}
-                  onChange={(e) => handleFieldChange('waterSalePrice', parseFloat(e.target.value) || null)}
-                />
-              </div>
-
               {/* Comisiones */}
               <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <h3 className="font-semibold text-lg">Comisiones</h3>

@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { Search, Filter, Download, Eye, MapPin } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Search, Filter, Download, Eye, MapPin, Clock, Calendar, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ViewProjectModal } from '@/components/calendar/ViewProjectModal';
@@ -18,6 +18,8 @@ interface Visit {
   outcome: string | null;
   createdAt: string;
   completedAt: string | null;
+  scheduledAt: string | null;
+  notes: string | null;
   parcel: {
     id: string;
     address: string;
@@ -37,11 +39,17 @@ interface Visit {
     };
   }[];
   projectDetails: ProjectDetails | null;
+  daysSinceActivity?: number;
+  daysRemaining?: number;
+  isExpiringSoon?: boolean;
+  isExpired?: boolean;
+  lastActivityAt?: string | null;
 }
 
 export default function AdminCRMPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -58,14 +66,44 @@ export default function AdminCRMPage() {
       router.push('/dashboard');
       return;
     }
+
+    // Leer filtros de la URL
+    const filterParam = searchParams.get('filter');
+    const setterIdParam = searchParams.get('setterId');
+    const closerIdParam = searchParams.get('closerId');
+
+    if (filterParam === 'doors') setFilterStage('all');
+    if (filterParam === 'leads') setFilterStage('PROPOSAL_ACCEPTED');
+    if (filterParam === 'projects') setFilterStage('CLOSED');
+    if (filterParam === 'objections') setFilterStage('all');
+    if (setterIdParam) setFilterSetter(setterIdParam);
+    if (closerIdParam) setFilterSetter(closerIdParam);
+
     fetchVisits();
-  }, [session, router]);
+  }, [session, router, searchParams]);
 
   const fetchVisits = async () => {
     try {
       const res = await fetch('/api/admin/crm/visits');
       const data = await res.json();
-      setVisits(data);
+
+      // Enriquecer con datos de expiración (simulados)
+      const enriched = data.map((v: Visit) => {
+        const createdAt = new Date(v.createdAt);
+        const now = new Date();
+        const daysSince = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+        const daysRemaining = Math.max(0, 30 - daysSince);
+        return {
+          ...v,
+          daysSinceActivity: daysSince,
+          daysRemaining,
+          isExpiringSoon: daysRemaining <= 5 && daysRemaining > 0,
+          isExpired: daysRemaining === 0,
+          lastActivityAt: v.completedAt || v.scheduledAt || v.createdAt,
+        };
+      });
+
+      setVisits(enriched);
     } catch (error) {
       console.error('Error fetching visits:', error);
     } finally {
@@ -81,11 +119,9 @@ export default function AdminCRMPage() {
     const matchesStage = filterStage === 'all' || visit.stage === filterStage;
     const matchesSetter = filterSetter === 'all' || visit.setter.id.toString() === filterSetter;
     
-    // Filtro por tipo de proyecto
     const matchesProjectType = filterProjectType === 'all' || 
       visit.projects.some(p => p.projectType.id.toString() === filterProjectType);
     
-    // Filtro por intervalo de tiempo
     const visitDate = new Date(visit.createdAt);
     const matchesDateFrom = !filterDateFrom || visitDate >= new Date(filterDateFrom);
     const matchesDateTo = !filterDateTo || visitDate <= new Date(filterDateTo + 'T23:59:59.999Z');
@@ -95,15 +131,16 @@ export default function AdminCRMPage() {
 
   const handleExport = () => {
     const csv = [
-      ['ID', 'Dirección', 'Setter', 'Closer', 'Estado', 'Fecha Creación', 'Fecha Completado', 'Proyectos'].join(','),
+      ['ID', 'Dirección', 'Setter', 'Closer', 'Estado', 'Fecha Creación', 'Última Actividad', 'Días Restantes', 'Proyectos'].join(','),
       ...filteredVisits.map((v) => [
         v.id,
         v.parcel.address,
         v.setter.name,
         v.closer?.name || 'N/A',
         v.stage,
-        new Date(v.createdAt).toLocaleDateString(),
-        v.completedAt ? new Date(v.completedAt).toLocaleDateString() : 'N/A',
+        new Date(v.createdAt).toLocaleString(),
+        v.lastActivityAt ? new Date(v.lastActivityAt).toLocaleString() : 'N/A',
+        v.daysRemaining?.toString() || 'N/A',
         v.projects.map((p) => p.projectType.name).join('; '),
       ].join(',')),
     ].join('\n');
@@ -112,7 +149,7 @@ export default function AdminCRMPage() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `visitas-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `crm-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
   };
 
@@ -137,9 +174,9 @@ export default function AdminCRMPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold mb-2">CRM - Administración de Proyectos</h1>
+        <h1 className="text-3xl font-bold mb-2">CRM - Administración Completa</h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Gestiona todos los proyectos, leads y visitas de la plataforma
+          Gestión completa de leads, puertas tocadas, visitas y proyectos. Haz clic en cualquier fila para ver detalles.
         </p>
       </div>
 
@@ -176,9 +213,9 @@ export default function AdminCRMPage() {
               className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
             >
               <option value="all">Todos</option>
-              <option value="IN_PROGRESS">En Progreso</option>
-              <option value="PROPOSAL_ACCEPTED">Propuesta Aceptada</option>
-              <option value="CLOSED">Cerrado</option>
+              <option value="IN_PROGRESS">En Progreso (Puerta Tocada)</option>
+              <option value="PROPOSAL_ACCEPTED">Propuesta Aceptada (Lead)</option>
+              <option value="CLOSED">Cerrado (Proyecto)</option>
             </select>
           </div>
 
@@ -273,10 +310,16 @@ export default function AdminCRMPage() {
                   Estado
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Proyectos
+                  Creado
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Fecha
+                  Última Actividad
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Tiempo Restante
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Proyectos
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Acciones
@@ -316,10 +359,46 @@ export default function AdminCRMPage() {
                         ? 'bg-blue-100 text-blue-800'
                         : 'bg-yellow-100 text-yellow-800'
                     }`}>
-                      {visit.stage === 'IN_PROGRESS' && 'En Progreso'}
-                      {visit.stage === 'PROPOSAL_ACCEPTED' && 'Propuesta Aceptada'}
-                      {visit.stage === 'CLOSED' && 'Cerrado'}
+                      {visit.stage === 'IN_PROGRESS' && 'Puerta Tocada'}
+                      {visit.stage === 'PROPOSAL_ACCEPTED' && 'Lead'}
+                      {visit.stage === 'CLOSED' && 'Proyecto'}
                     </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {new Date(visit.createdAt).toLocaleString()}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    {visit.lastActivityAt ? (
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {new Date(visit.lastActivityAt).toLocaleString()}
+                      </div>
+                    ) : 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {visit.stage === 'IN_PROGRESS' && visit.daysRemaining !== undefined && (
+                      <div className="flex items-center gap-1">
+                        {visit.isExpired ? (
+                          <span className="flex items-center gap-1 text-red-600 text-sm font-medium">
+                            <AlertCircle className="w-3 h-3" /> Expirada
+                          </span>
+                        ) : visit.isExpiringSoon ? (
+                          <span className="flex items-center gap-1 text-yellow-600 text-sm font-medium">
+                            <AlertCircle className="w-3 h-3" /> {visit.daysRemaining}d
+                          </span>
+                        ) : (
+                          <span className="text-sm text-gray-600">
+                            {visit.daysRemaining} días
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {visit.stage !== 'IN_PROGRESS' && (
+                      <span className="text-sm text-gray-500">—</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-wrap gap-1">
@@ -338,14 +417,14 @@ export default function AdminCRMPage() {
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {new Date(visit.createdAt).toLocaleDateString()}
-                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleViewDetails(visit.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewDetails(visit.id);
+                      }}
                     >
                       <Eye className="w-4 h-4 mr-1" />
                       Ver

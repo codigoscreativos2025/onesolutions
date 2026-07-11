@@ -20,13 +20,12 @@ export async function GET(request: Request) {
   try {
     const whereClause: Record<string, unknown> = {};
 
-    // Filtrar por usuario si se proporciona
     if (userId) {
       whereClause.setterId = parseInt(userId);
     } else if (role === 'SETTER') {
       whereClause.setterId = currentUserId;
     } else if (role === 'CLOSER') {
-      whereClause.closerId = currentUserId;
+      whereClause.OR = [{ closerId: currentUserId }, { setterId: currentUserId }];
     }
 
     // Filtrar por fecha si se proporciona

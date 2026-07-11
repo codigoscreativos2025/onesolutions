@@ -89,8 +89,6 @@ async function main() {
 
   const projectTypes = [
     { name: "Panel Solar", description: "Instalación de paneles solares" },
-    { name: "Techo", description: "Reemplazo o reparación de techo" },
-    { name: "Purificador de Agua", description: "Sistemas de purificación" },
     { name: "Fence", description: "Cercas y vallas" },
     { name: "Aires Acondicionados", description: "Instalación y mantenimiento AC" },
     { name: "Screens", description: "Pantallas y mallas" },

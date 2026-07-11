@@ -14,6 +14,8 @@ import {
   Calendar,
   ChevronRight,
   Plus,
+  Users,
+  ArrowUpRight,
 } from "lucide-react";
 import { MetricsCharts } from "@/components/dashboard/MetricsCharts";
 import { MiniRanking } from "@/components/dashboard/MiniRanking";
@@ -29,6 +31,11 @@ interface Metrics {
   objectionsCount: number;
   appointments: number;
   teamGoal: number;
+  topDoorsKnocked?: { id: number; name: string; count: number }[];
+  topProspects?: { id: number; name: string; count: number }[];
+  topProjectsClosed?: { id: number; name: string; count: number }[];
+  topSetterObjectionsByUser?: { id: number; name: string; count: number }[];
+  topCloserObjectionsByUser?: { id: number; name: string; count: number }[];
 }
 
 interface Appointment {
@@ -89,13 +96,15 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <span className="inline-block px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-wider mb-2">
-              {isAdmin ? "Admin" : role === "CLOSER" ? "Closer" : "Setter"}
+              {isAdmin ? "Admin - Vista General de la Empresa" : role === "CLOSER" ? "Closer" : "Setter"}
             </span>
             <h1 className="font-headline text-2xl font-bold text-on-surface">
-              {t.dashboard.greeting}, {session?.user?.name}
+              {isAdmin ? "Panel de Control" : `${t.dashboard.greeting}, ${session?.user?.name}`}
             </h1>
             <p className="text-on-surface-variant">
-              {t.dashboard.summary}
+              {isAdmin
+                ? "Métrica general de toda la empresa: puertas tocadas, leads generados y proyectos cerrados"
+                : t.dashboard.summary}
             </p>
           </div>
           {(role === "SETTER" || role === "CLOSER") && (
@@ -111,40 +120,147 @@ export default function DashboardPage() {
       </section>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard
-          title={t.dashboard.doorsKnocked}
-          value={metrics?.doorsKnocked || 0}
-          icon={DoorOpen}
-          color="primary"
-          onClick={() => setSelectedMetric('doors')}
-        />
-        <MetricCard
-          title={t.dashboard.leadsGenerated}
-          value={metrics?.leadsGenerated || 0}
-          icon={PersonStanding}
-          color="secondary"
-          onClick={() => setSelectedMetric('leads')}
-        />
-        <MetricCard
-          title={t.dashboard.projectsClosed}
-          value={metrics?.projectsClosed || 0}
-          icon={Handshake}
-          color="primary"
-          onClick={() => setSelectedMetric('projects')}
-        />
-        <MetricCard
-          title={t.dashboard.objections}
-          value={metrics?.objectionsCount || 0}
-          icon={MessageSquareWarning}
-          color="secondary"
-          onClick={() => setSelectedMetric('objections')}
-        />
+        {isAdmin ? (
+          <>
+            <Link href="/admin/crm?filter=doors" className="block">
+              <MetricCard
+                title={t.dashboard.doorsKnocked}
+                value={metrics?.doorsKnocked || 0}
+                icon={DoorOpen}
+                color="primary"
+              />
+            </Link>
+            <Link href="/admin/crm?filter=leads" className="block">
+              <MetricCard
+                title={t.dashboard.leadsGenerated}
+                value={metrics?.leadsGenerated || 0}
+                icon={PersonStanding}
+                color="secondary"
+              />
+            </Link>
+            <Link href="/admin/crm?filter=projects" className="block">
+              <MetricCard
+                title={t.dashboard.projectsClosed}
+                value={metrics?.projectsClosed || 0}
+                icon={Handshake}
+                color="primary"
+              />
+            </Link>
+            <Link href="/admin/crm?filter=objections" className="block">
+              <MetricCard
+                title={t.dashboard.objections}
+                value={metrics?.objectionsCount || 0}
+                icon={MessageSquareWarning}
+                color="secondary"
+              />
+            </Link>
+          </>
+        ) : (
+          <>
+            <MetricCard
+              title={t.dashboard.doorsKnocked}
+              value={metrics?.doorsKnocked || 0}
+              icon={DoorOpen}
+              color="primary"
+              onClick={() => setSelectedMetric('doors')}
+            />
+            <MetricCard
+              title={t.dashboard.leadsGenerated}
+              value={metrics?.leadsGenerated || 0}
+              icon={PersonStanding}
+              color="secondary"
+              onClick={() => setSelectedMetric('leads')}
+            />
+            <MetricCard
+              title={t.dashboard.projectsClosed}
+              value={metrics?.projectsClosed || 0}
+              icon={Handshake}
+              color="primary"
+              onClick={() => setSelectedMetric('projects')}
+            />
+            <MetricCard
+              title={t.dashboard.objections}
+              value={metrics?.objectionsCount || 0}
+              icon={MessageSquareWarning}
+              color="secondary"
+              onClick={() => setSelectedMetric('objections')}
+            />
+          </>
+        )}
       </div>
+
+      {/* Top Performers (solo Admin) */}
+      {isAdmin && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="glass-panel p-4 rounded-2xl">
+            <h3 className="text-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-2">
+              <DoorOpen className="w-4 h-4" /> Top Puertas Tocadas
+            </h3>
+            <div className="space-y-2">
+              {metrics?.topDoorsKnocked?.slice(0, 5).map((user, i) => (
+                <Link
+                  key={user.id}
+                  href={`/admin/crm?setterId=${user.id}`}
+                  className="flex items-center justify-between p-2 rounded-lg hover:bg-surface-container-high transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-primary">{i + 1}</span>
+                    <span className="text-sm font-medium">{user.name}</span>
+                  </div>
+                  <span className="text-sm font-bold">{user.count}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="glass-panel p-4 rounded-2xl">
+            <h3 className="text-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-2">
+              <PersonStanding className="w-4 h-4" /> Top Leads Generados
+            </h3>
+            <div className="space-y-2">
+              {metrics?.topProspects?.slice(0, 5).map((user, i) => (
+                <Link
+                  key={user.id}
+                  href={`/admin/crm?setterId=${user.id}&filter=leads`}
+                  className="flex items-center justify-between p-2 rounded-lg hover:bg-surface-container-high transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-secondary">{i + 1}</span>
+                    <span className="text-sm font-medium">{user.name}</span>
+                  </div>
+                  <span className="text-sm font-bold">{user.count}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="glass-panel p-4 rounded-2xl">
+            <h3 className="text-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-2">
+              <Handshake className="w-4 h-4" /> Top Proyectos Cerrados
+            </h3>
+            <div className="space-y-2">
+              {metrics?.topProjectsClosed?.slice(0, 5).map((user, i) => (
+                <Link
+                  key={user.id}
+                  href={`/admin/crm?closerId=${user.id}&filter=projects`}
+                  className="flex items-center justify-between p-2 rounded-lg hover:bg-surface-container-high transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-primary">{i + 1}</span>
+                    <span className="text-sm font-medium">{user.name}</span>
+                  </div>
+                  <span className="text-sm font-bold">{user.count}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Gráficas y Ranking */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <MetricsCharts userId={session?.user?.id ? parseInt(session.user.id) : undefined} />
+          <MetricsCharts userId={isAdmin ? undefined : (session?.user?.id ? parseInt(session.user.id) : undefined)} />
         </div>
         <div className="lg:col-span-1">
           <MiniRanking currentUserId={session?.user?.id ? parseInt(session.user.id) : undefined} />
@@ -205,13 +321,15 @@ export default function DashboardPage() {
       {/* Estadísticas de Competencia */}
       <CompetitionStats />
 
-      {/* Modal de Detalle de Métricas */}
-      <MetricDetailModal
-        isOpen={selectedMetric !== null}
-        onClose={() => setSelectedMetric(null)}
-        metricType={selectedMetric}
-        userId={session?.user?.id ? parseInt(session.user.id) : undefined}
-      />
+      {/* Modal de Detalle de Métricas (solo no-admin) */}
+      {!isAdmin && (
+        <MetricDetailModal
+          isOpen={selectedMetric !== null}
+          onClose={() => setSelectedMetric(null)}
+          metricType={selectedMetric}
+          userId={session?.user?.id ? parseInt(session.user.id) : undefined}
+        />
+      )}
 
       {/* Modal de Crear Lead Manual */}
       <CreateLeadModal

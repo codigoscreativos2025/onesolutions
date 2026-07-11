@@ -15,10 +15,6 @@ interface ProjectDetails {
   paymentMethod?: string;
   solarFinancier?: string;
   systemSize?: string;
-  roofType?: string;
-  roofSalePrice?: number;
-  waterSystemType?: string;
-  waterSalePrice?: number;
   otherSalePrice?: number;
   primaryRep?: string;
   primaryRepCommPct?: number;
@@ -77,12 +73,12 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
 
   useEffect(() => {
     fetchRooms();
-    fetchMentionUsers();
   }, []);
 
   useEffect(() => {
     if (selectedRoomId) {
       fetchMessages(selectedRoomId);
+      fetchMentionUsers(selectedRoomId);
     }
   }, [selectedRoomId]);
 
@@ -102,9 +98,10 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
     }
   };
 
-  const fetchMentionUsers = async () => {
+  const fetchMentionUsers = async (roomId?: number) => {
     try {
-      const res = await fetch("/api/users/mentionable");
+      const url = roomId ? `/api/users/mentionable?roomId=${roomId}` : "/api/users/mentionable";
+      const res = await fetch(url);
       const data = await res.json();
       setMentionUsers(data);
     } catch (error) {
@@ -283,8 +280,6 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
 
     const projectSpecificFields: Record<string, string[]> = {
       'Panel Solar': ['solarFinancier', 'systemSize'],
-      'Techo': ['roofType', 'roofSalePrice'],
-      'Purificador de Agua': ['waterSystemType', 'waterSalePrice'],
     };
 
     let totalFields = requiredFields.length;
@@ -585,23 +580,6 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
                 </p>
               </div>
             )}
-            {projectDetails.roofType && (
-              <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30">
-                <p className="text-sm font-semibold text-on-surface mb-2">Techo</p>
-                <p className="text-sm text-on-surface">
-                  {projectDetails.roofType} • ${projectDetails.roofSalePrice?.toLocaleString()}
-                </p>
-              </div>
-            )}
-            {projectDetails.waterSystemType && (
-              <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30">
-                <p className="text-sm font-semibold text-on-surface mb-2">Purificador</p>
-                <p className="text-sm text-on-surface">
-                  {projectDetails.waterSystemType} • ${projectDetails.waterSalePrice?.toLocaleString()}
-                </p>
-              </div>
-            )}
-
             {/* Comisiones */}
             {projectDetails.primaryRep && (
               <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30">
@@ -702,63 +680,6 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
                   onChange={(e) => setEditForm({ ...editForm, systemSize: e.target.value })}
                 />
               </div>
-            </div>
-          )}
-
-          {/* Techo */}
-          {projects.some(p => p.projectType.name === "Techo") && (
-            <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-3">
-              <p className="text-sm font-semibold text-on-surface">Techo</p>
-              <div>
-                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                  Tipo de Trabajo
-                </label>
-                <select
-                  value={editForm.roofType || ""}
-                  onChange={(e) => setEditForm({ ...editForm, roofType: e.target.value })}
-                  className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface mt-1"
-                >
-                  <option value="">Seleccionar...</option>
-                  <option value="reemplazo">Reemplazo</option>
-                  <option value="reparacion">Reparación</option>
-                  <option value="gutters">Gutters</option>
-                </select>
-              </div>
-              <Input
-                label="Precio de Venta"
-                type="number"
-                value={editForm.roofSalePrice?.toString() || ""}
-                onChange={(e) => setEditForm({ ...editForm, roofSalePrice: parseFloat(e.target.value) || undefined })}
-              />
-            </div>
-          )}
-
-          {/* Purificador */}
-          {projects.some(p => p.projectType.name === "Purificador de Agua") && (
-            <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-3">
-              <p className="text-sm font-semibold text-on-surface">Purificador de Agua</p>
-              <div>
-                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                  Tipo de Sistema
-                </label>
-                <select
-                  value={editForm.waterSystemType || ""}
-                  onChange={(e) => setEditForm({ ...editForm, waterSystemType: e.target.value })}
-                  className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface mt-1"
-                >
-                  <option value="">Seleccionar...</option>
-                  <option value="sistema completo">Sistema Completo</option>
-                  <option value="softener">Softener</option>
-                  <option value="R.O">R.O</option>
-                  <option value="sistema de pozo">Sistema de Pozo</option>
-                </select>
-              </div>
-              <Input
-                label="Precio de Venta"
-                type="number"
-                value={editForm.waterSalePrice?.toString() || ""}
-                onChange={(e) => setEditForm({ ...editForm, waterSalePrice: parseFloat(e.target.value) || undefined })}
-              />
             </div>
           )}
 

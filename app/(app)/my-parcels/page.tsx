@@ -63,9 +63,9 @@ export default function MyParcelsPage() {
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold mb-2">Mis Parcelas</h1>
+        <h1 className="text-3xl font-bold mb-2">Parcelas Activas</h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Gestiona tus parcelas reclamadas. Recuerda que las parcelas sin actividad por 30 días se liberan automáticamente.
+          Parcelas en seguimiento activo. Las parcelas con propuesta aceptada o cerradas se mueven a Mis Proyectos.
         </p>
       </div>
 

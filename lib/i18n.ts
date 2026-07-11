@@ -118,11 +118,6 @@ export const translations = {
       solarPanel: "Panel Solar",
       financier: "Financiadora",
       systemSize: "Tamaño del Sistema",
-      roof: "Techo",
-      workType: "Tipo de Trabajo",
-      salePrice: "Precio de Venta",
-      waterPurifier: "Purificador de Agua",
-      systemType: "Tipo de Sistema",
       writeMessage: "Escribe un mensaje...",
     },
     admin: {
@@ -189,17 +184,6 @@ export const translations = {
       check: "Cheque",
       financing: "Financiamiento",
       creditCard: "Tarjeta de Crédito",
-    },
-    roofTypes: {
-      replacement: "Reemplazo",
-      repair: "Reparación",
-      gutters: "Gutters",
-    },
-    waterSystems: {
-      complete: "Sistema Completo",
-      softener: "Softener",
-      ro: "R.O",
-      well: "Sistema de Pozo",
     },
   },
   en: {
@@ -320,11 +304,6 @@ export const translations = {
       solarPanel: "Solar Panel",
       financier: "Financier",
       systemSize: "System Size",
-      roof: "Roof",
-      workType: "Work Type",
-      salePrice: "Sale Price",
-      waterPurifier: "Water Purifier",
-      systemType: "System Type",
       writeMessage: "Write a message...",
     },
     admin: {
@@ -391,17 +370,6 @@ export const translations = {
       check: "Check",
       financing: "Financing",
       creditCard: "Credit Card",
-    },
-    roofTypes: {
-      replacement: "Replacement",
-      repair: "Repair",
-      gutters: "Gutters",
-    },
-    waterSystems: {
-      complete: "Complete System",
-      softener: "Softener",
-      ro: "R.O",
-      well: "Well System",
     },
   },
 };

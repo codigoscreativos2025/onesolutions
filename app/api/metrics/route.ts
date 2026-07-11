@@ -12,8 +12,10 @@ export async function GET() {
   const role = session.user.role;
 
   let whereClause: Record<string, unknown> = {};
-  if (role !== "ADMIN") {
+  if (role === "SETTER") {
     whereClause = { setterId: userId };
+  } else if (role === "CLOSER") {
+    whereClause = { closerId: userId };
   }
 
   // Métricas básicas
