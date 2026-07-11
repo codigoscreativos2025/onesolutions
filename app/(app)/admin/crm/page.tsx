@@ -3,13 +3,21 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, Filter, Download, Eye, MapPin, Clock, Calendar, AlertCircle } from 'lucide-react';
+import { Search, Filter, Download, Eye, MapPin, Clock, Calendar, AlertCircle, MessageSquareWarning } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ViewProjectModal } from '@/components/calendar/ViewProjectModal';
 
 interface ProjectDetails {
   [key: string]: string | number | boolean | null | undefined;
+}
+
+interface Objection {
+  objection: { id: number; name: string; color: string };
+}
+
+interface CloserObjection {
+  closerObjection: { id: number; name: string; color: string };
 }
 
 interface Visit {
@@ -39,6 +47,8 @@ interface Visit {
     };
   }[];
   projectDetails: ProjectDetails | null;
+  objections: Objection[];
+  closerObjections: CloserObjection[];
   daysSinceActivity?: number;
   daysRemaining?: number;
   isExpiringSoon?: boolean;
@@ -58,6 +68,8 @@ export default function AdminCRMPage() {
   const [filterProjectType, setFilterProjectType] = useState<string>('all');
   const [filterDateFrom, setFilterDateFrom] = useState<string>('');
   const [filterDateTo, setFilterDateTo] = useState<string>('');
+  const [filterObjectionType, setFilterObjectionType] = useState<string>('all');
+  const [filterObjectionId, setFilterObjectionId] = useState<string>('all');
   const [isViewProjectModalOpen, setIsViewProjectModalOpen] = useState(false);
   const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
 
@@ -67,7 +79,6 @@ export default function AdminCRMPage() {
       return;
     }
 
-    // Leer filtros de la URL
     const filterParam = searchParams.get('filter');
     const setterIdParam = searchParams.get('setterId');
     const closerIdParam = searchParams.get('closerId');
@@ -87,7 +98,6 @@ export default function AdminCRMPage() {
       const res = await fetch('/api/admin/crm/visits');
       const data = await res.json();
 
-      // Enriquecer con datos de expiración (simulados)
       const enriched = data.map((v: Visit) => {
         const createdAt = new Date(v.createdAt);
         const now = new Date();
@@ -111,27 +121,59 @@ export default function AdminCRMPage() {
     }
   };
 
+  // Colecciones para filtros
+  const setters = Array.from(new Set(visits.map((v) => v.setter.id))).map((id) => {
+    const visit = visits.find((v) => v.setter.id === id);
+    return { id, name: visit?.setter.name || 'Unknown' };
+  });
+
+  const setterObjectionTypes = Array.from(
+    new Set(visits.flatMap(v => v.objections.map(o => o.objection.id)))
+  ).map(id => {
+    const objection = visits.find(v => v.objections.some(o => o.objection.id === id))?.objections.find(o => o.objection.id === id);
+    return { id, name: objection?.objection.name || 'Unknown' };
+  });
+
+  const closerObjectionTypes = Array.from(
+    new Set(visits.flatMap(v => v.closerObjections.map(o => o.closerObjection.id)))
+  ).map(id => {
+    const objection = visits.find(v => v.closerObjections.some(o => o.closerObjection.id === id))?.closerObjections.find(o => o.closerObjection.id === id);
+    return { id, name: objection?.closerObjection.name || 'Unknown' };
+  });
+
   const filteredVisits = visits.filter((visit) => {
     const matchesSearch = visit.parcel.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          visit.setter.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (visit.closer?.name.toLowerCase().includes(searchTerm.toLowerCase()) || '');
-    
+
     const matchesStage = filterStage === 'all' || visit.stage === filterStage;
     const matchesSetter = filterSetter === 'all' || visit.setter.id.toString() === filterSetter;
-    
-    const matchesProjectType = filterProjectType === 'all' || 
-      visit.projects.some(p => p.projectType.id.toString() === filterProjectType);
-    
+
+    const matchesProjectType = filterProjectType === 'all' ||
+      visit.projects.some(p => p.projectType?.id?.toString() === filterProjectType);
+
     const visitDate = new Date(visit.createdAt);
     const matchesDateFrom = !filterDateFrom || visitDate >= new Date(filterDateFrom);
     const matchesDateTo = !filterDateTo || visitDate <= new Date(filterDateTo + 'T23:59:59.999Z');
 
-    return matchesSearch && matchesStage && matchesSetter && matchesProjectType && matchesDateFrom && matchesDateTo;
+    // Filtro de objeciones
+    let matchesObjection = true;
+    if (filterObjectionType === 'setter' && filterObjectionId !== 'all') {
+      matchesObjection = visit.objections.some(o => o.objection.id.toString() === filterObjectionId);
+    } else if (filterObjectionType === 'closer' && filterObjectionId !== 'all') {
+      matchesObjection = visit.closerObjections.some(o => o.closerObjection.id.toString() === filterObjectionId);
+    } else if (filterObjectionType === 'setter' && filterObjectionId === 'all') {
+      matchesObjection = visit.objections.length > 0;
+    } else if (filterObjectionType === 'closer' && filterObjectionId === 'all') {
+      matchesObjection = visit.closerObjections.length > 0;
+    }
+
+    return matchesSearch && matchesStage && matchesSetter && matchesProjectType && matchesDateFrom && matchesDateTo && matchesObjection;
   });
 
   const handleExport = () => {
     const csv = [
-      ['ID', 'Dirección', 'Setter', 'Closer', 'Estado', 'Fecha Creación', 'Última Actividad', 'Días Restantes', 'Proyectos'].join(','),
+      ['ID', 'Dirección', 'Setter', 'Closer', 'Estado', 'Fecha Creación', 'Última Actividad', 'Días Restantes', 'Proyectos', 'Objeciones Setter', 'Objeciones Closer'].join(','),
       ...filteredVisits.map((v) => [
         v.id,
         v.parcel.address,
@@ -141,7 +183,9 @@ export default function AdminCRMPage() {
         new Date(v.createdAt).toLocaleString(),
         v.lastActivityAt ? new Date(v.lastActivityAt).toLocaleString() : 'N/A',
         v.daysRemaining?.toString() || 'N/A',
-        v.projects.map((p) => p.projectType.name).join('; '),
+        v.projects.map((p) => p.projectType?.name || '').join('; '),
+        v.objections.map(o => o.objection.name).join('; '),
+        v.closerObjections.map(o => o.closerObjection.name).join('; '),
       ].join(',')),
     ].join('\n');
 
@@ -157,11 +201,6 @@ export default function AdminCRMPage() {
     setSelectedVisitId(visitId);
     setIsViewProjectModalOpen(true);
   };
-
-  const setters = Array.from(new Set(visits.map((v) => v.setter.id))).map((id) => {
-    const visit = visits.find((v) => v.setter.id === id);
-    return { id, name: visit?.setter.name || 'Unknown' };
-  });
 
   if (loading) {
     return (
@@ -180,7 +219,6 @@ export default function AdminCRMPage() {
         </p>
       </div>
 
-      {/* Filtros y Búsqueda */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 space-y-4">
         <div className="flex items-center gap-2 mb-4">
           <Filter className="w-5 h-5" />
@@ -189,9 +227,7 @@ export default function AdminCRMPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="lg:col-span-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
-              Búsqueda
-            </label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Búsqueda</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <Input
@@ -204,9 +240,7 @@ export default function AdminCRMPage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
-              Estado
-            </label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Estado</label>
             <select
               value={filterStage}
               onChange={(e) => setFilterStage(e.target.value)}
@@ -220,9 +254,7 @@ export default function AdminCRMPage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
-              Setter
-            </label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Setter</label>
             <select
               value={filterSetter}
               onChange={(e) => setFilterSetter(e.target.value)}
@@ -230,17 +262,13 @@ export default function AdminCRMPage() {
             >
               <option value="all">Todos</option>
               {setters.map((setter) => (
-                <option key={setter.id} value={setter.id}>
-                  {setter.name}
-                </option>
+                <option key={setter.id} value={setter.id}>{setter.name}</option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
-              Tipo de Proyecto
-            </label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Tipo de Proyecto</label>
             <select
               value={filterProjectType}
               onChange={(e) => setFilterProjectType(e.target.value)}
@@ -248,35 +276,55 @@ export default function AdminCRMPage() {
             >
               <option value="all">Todos</option>
               {Array.from(new Set(visits.flatMap(v => v.projects.map(p => p.projectType)))).map((pt) => (
-                <option key={pt.id} value={pt.id}>
-                  {pt.name}
-                </option>
+                <option key={pt.id} value={pt.id}>{pt.name}</option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
-              Fecha Desde
-            </label>
-            <input
-              type="date"
-              value={filterDateFrom}
-              onChange={(e) => setFilterDateFrom(e.target.value)}
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Tipo de Objeción</label>
+            <select
+              value={filterObjectionType}
+              onChange={(e) => {
+                setFilterObjectionType(e.target.value);
+                setFilterObjectionId('all');
+              }}
               className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
-            />
+            >
+              <option value="all">Todos</option>
+              <option value="setter">Objeciones Setter</option>
+              <option value="closer">Objeciones Closer</option>
+            </select>
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
-              Fecha Hasta
-            </label>
-            <input
-              type="date"
-              value={filterDateTo}
-              onChange={(e) => setFilterDateTo(e.target.value)}
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Objeción Específica</label>
+            <select
+              value={filterObjectionId}
+              onChange={(e) => setFilterObjectionId(e.target.value)}
               className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
-            />
+              disabled={filterObjectionType === 'all'}
+            >
+              <option value="all">Todas</option>
+              {filterObjectionType === 'setter' && setterObjectionTypes.map(o => (
+                <option key={o.id} value={o.id}>{o.name}</option>
+              ))}
+              {filterObjectionType === 'closer' && closerObjectionTypes.map(o => (
+                <option key={o.id} value={o.id}>{o.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Fecha Desde</label>
+            <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)}
+              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface" />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Fecha Hasta</label>
+            <input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)}
+              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface" />
           </div>
         </div>
 
@@ -285,149 +333,84 @@ export default function AdminCRMPage() {
             Mostrando {filteredVisits.length} de {visits.length} visitas
           </p>
           <Button onClick={handleExport} variant="outline">
-            <Download className="w-5 h-5 mr-2" />
-            Exportar CSV
+            <Download className="w-5 h-5 mr-2" /> Exportar CSV
           </Button>
         </div>
       </div>
 
-      {/* Tabla de Visitas */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Dirección
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Setter
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Closer
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Estado
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Creado
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Última Actividad
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Tiempo Restante
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Proyectos
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Acciones
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Dirección</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Setter</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Closer</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Creado</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Última Actividad</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tiempo Restante</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Proyectos / Objeciones</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredVisits.map((visit) => (
-                <tr 
-                  key={visit.id} 
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                  onClick={() => handleViewDetails(visit.id)}
-                >
+                <tr key={visit.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" onClick={() => handleViewDetails(visit.id)}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <MapPin className="w-4 h-4 text-gray-400 mr-2" />
-                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {visit.parcel.address}
-                      </div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{visit.parcel.address}</div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-gray-100">
-                      {visit.setter.name}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-gray-100">
-                      {visit.closer?.name || 'N/A'}
-                    </div>
-                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{visit.setter.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{visit.closer?.name || 'N/A'}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      visit.stage === 'CLOSED'
-                        ? 'bg-green-100 text-green-800'
-                        : visit.stage === 'PROPOSAL_ACCEPTED'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-yellow-100 text-yellow-800'
+                      visit.stage === 'CLOSED' ? 'bg-green-100 text-green-800' :
+                      visit.stage === 'PROPOSAL_ACCEPTED' ? 'bg-blue-100 text-blue-800' :
+                      'bg-yellow-100 text-yellow-800'
                     }`}>
-                      {visit.stage === 'IN_PROGRESS' && 'Puerta Tocada'}
-                      {visit.stage === 'PROPOSAL_ACCEPTED' && 'Lead'}
-                      {visit.stage === 'CLOSED' && 'Proyecto'}
+                      {visit.stage === 'IN_PROGRESS' ? 'Puerta Tocada' : visit.stage === 'PROPOSAL_ACCEPTED' ? 'Lead' : 'Proyecto'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {new Date(visit.createdAt).toLocaleString()}
-                    </div>
+                    <div className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(visit.createdAt).toLocaleString()}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     {visit.lastActivityAt ? (
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {new Date(visit.lastActivityAt).toLocaleString()}
-                      </div>
+                      <div className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(visit.lastActivityAt).toLocaleString()}</div>
                     ) : 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {visit.stage === 'IN_PROGRESS' && visit.daysRemaining !== undefined && (
+                    {visit.stage === 'IN_PROGRESS' && visit.daysRemaining !== undefined ? (
                       <div className="flex items-center gap-1">
                         {visit.isExpired ? (
-                          <span className="flex items-center gap-1 text-red-600 text-sm font-medium">
-                            <AlertCircle className="w-3 h-3" /> Expirada
-                          </span>
+                          <span className="flex items-center gap-1 text-red-600 text-sm font-medium"><AlertCircle className="w-3 h-3" /> Expirada</span>
                         ) : visit.isExpiringSoon ? (
-                          <span className="flex items-center gap-1 text-yellow-600 text-sm font-medium">
-                            <AlertCircle className="w-3 h-3" /> {visit.daysRemaining}d
-                          </span>
+                          <span className="flex items-center gap-1 text-yellow-600 text-sm font-medium"><AlertCircle className="w-3 h-3" /> {visit.daysRemaining}d</span>
                         ) : (
-                          <span className="text-sm text-gray-600">
-                            {visit.daysRemaining} días
-                          </span>
+                          <span className="text-sm text-gray-600">{visit.daysRemaining} días</span>
                         )}
                       </div>
-                    )}
-                    {visit.stage !== 'IN_PROGRESS' && (
-                      <span className="text-sm text-gray-500">—</span>
-                    )}
+                    ) : <span className="text-sm text-gray-500">—</span>}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-wrap gap-1">
                       {visit.projects.slice(0, 2).map((p, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs"
-                        >
-                          {p.projectType.name}
-                        </span>
+                        <span key={idx} className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs">{p.projectType?.name || 'N/A'}</span>
                       ))}
-                      {visit.projects.length > 2 && (
-                        <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-full text-xs">
-                          +{visit.projects.length - 2}
-                        </span>
+                      {visit.objections.length > 0 && (
+                        <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs">{visit.objections.length} obj.</span>
+                      )}
+                      {visit.closerObjections.length > 0 && (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">{visit.closerObjections.length} obj. closer</span>
                       )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleViewDetails(visit.id);
-                      }}
-                    >
-                      <Eye className="w-4 h-4 mr-1" />
-                      Ver
+                    <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleViewDetails(visit.id); }}>
+                      <Eye className="w-4 h-4 mr-1" /> Ver
                     </Button>
                   </td>
                 </tr>
@@ -438,14 +421,11 @@ export default function AdminCRMPage() {
 
         {filteredVisits.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500 dark:text-gray-400">
-              No se encontraron visitas con los filtros aplicados
-            </p>
+            <p className="text-gray-500 dark:text-gray-400">No se encontraron visitas con los filtros aplicados</p>
           </div>
         )}
       </div>
 
-      {/* Modal de Ver Proyecto */}
       <ViewProjectModal
         isOpen={isViewProjectModalOpen}
         onClose={() => setIsViewProjectModalOpen(false)}

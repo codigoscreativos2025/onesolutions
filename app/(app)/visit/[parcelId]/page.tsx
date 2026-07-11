@@ -90,6 +90,8 @@ export default function VisitPage() {
   const [selectedCloserId, setSelectedCloserId] = useState("");
   const [selectedProjectTypes, setSelectedProjectTypes] = useState<number[]>([]);
   const [proposalNotes, setProposalNotes] = useState("");
+  const [closingNotes, setClosingNotes] = useState("");
+  const [billFileName, setBillFileName] = useState("");
   const [saving, setSaving] = useState(false);
   const [showLocationValidator, setShowLocationValidator] = useState(false);
   const [locationValidated, setLocationValidated] = useState(false);
@@ -232,20 +234,25 @@ export default function VisitPage() {
     setSaving(true);
 
     if (isClosingMode) {
+      let billImageUrl = "";
       if (billFile) {
         const formData = new FormData();
         formData.append("file", billFile);
-        await fetch("/api/upload", {
+        const uploadRes = await fetch("/api/upload", {
           method: "POST",
           body: formData,
         });
+        const uploadData = await uploadRes.json();
+        billImageUrl = uploadData.url;
       }
 
       await fetch(`/api/visits/${visit.id}/close`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          notes: clientName,
+          notes: closingNotes || clientName,
+          billImageUrl,
+          billFileName: billFileName || billFile?.name || "",
         }),
       });
 
@@ -667,17 +674,30 @@ export default function VisitPage() {
           )}
 
           {isClosingMode && (
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                Notas de cierre
-              </label>
-              <textarea
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-                className="w-full min-h-[120px] bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none rounded-xl p-4 resize-none text-on-surface"
-                placeholder="Detalles del cierre..."
-              />
-            </div>
+            <>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                  Nombre del archivo
+                </label>
+                <input
+                  value={billFileName}
+                  onChange={(e) => setBillFileName(e.target.value)}
+                  placeholder="Ej: Contrato firmado, Documento de cierre..."
+                  className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                  Notas de cierre
+                </label>
+                <textarea
+                  value={closingNotes}
+                  onChange={(e) => setClosingNotes(e.target.value)}
+                  className="w-full min-h-[120px] bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none rounded-xl p-4 resize-none text-on-surface"
+                  placeholder="Detalles del cierre..."
+                />
+              </div>
+            </>
           )}
 
           <Button

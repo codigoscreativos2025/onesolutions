@@ -88,6 +88,7 @@ async function main() {
   });
 
   const projectTypes = [
+    { name: "Campos Comunes", description: "Campos obligatorios comunes a todos los proyectos. Configúralos desde Admin > Campos de Proyectos" },
     { name: "Panel Solar", description: "Instalación de paneles solares" },
     { name: "Fence", description: "Cercas y vallas" },
     { name: "Aires Acondicionados", description: "Instalación y mantenimiento AC" },

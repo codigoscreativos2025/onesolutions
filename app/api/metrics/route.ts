@@ -329,6 +329,7 @@ export async function GET() {
 
   return NextResponse.json({
     doorsKnocked,
+    leadsGenerated: prospectsGenerated,
     prospectsGenerated,
     projectsClosed,
     objectionsCount,

@@ -181,7 +181,7 @@ export default function AdminProjectFieldsPage() {
           Campos de Proyectos
         </h1>
         <p className="text-on-surface-variant">
-          Configura los campos personalizados para cada tipo de proyecto
+          Configura los campos personalizados para cada tipo de proyecto. Selecciona "Campos Comunes" para definir campos obligatorios que aplican a todos los proyectos.
         </p>
       </div>
 

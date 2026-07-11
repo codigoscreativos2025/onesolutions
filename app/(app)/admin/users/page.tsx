@@ -20,6 +20,15 @@ interface User {
   closerId?: number;
   closer?: { id: number; name: string };
   _count?: { setters: number };
+  profile?: {
+    ssn?: string;
+    dateOfBirth?: string;
+    bankName?: string;
+    routingNumber?: string;
+    zelle?: string;
+    address?: string;
+    profilePhoto?: string;
+  };
 }
 
 export default function AdminUsersPage() {
@@ -38,6 +47,12 @@ export default function AdminUsersPage() {
     closerId: "",
     phone: "",
     isActive: true,
+    ssn: "",
+    dateOfBirth: "",
+    bankName: "",
+    routingNumber: "",
+    zelle: "",
+    address: "",
   });
 
   const closers = users.filter((u) => u.role === "CLOSER");
@@ -54,7 +69,20 @@ export default function AdminUsersPage() {
     try {
       const res = await fetch("/api/admin/users");
       const data = await res.json();
-      setUsers(data);
+
+      // Fetch profiles for each user
+      const withProfiles = await Promise.all(
+        data.map(async (u: User) => {
+          const profileRes = await fetch(`/api/profile/${u.id}`);
+          if (profileRes.ok) {
+            const profileData = await profileRes.json();
+            return { ...u, profile: profileData };
+          }
+          return u;
+        })
+      );
+
+      setUsers(withProfiles);
     } catch (error) {
       console.error(error);
     } finally {
@@ -94,6 +122,14 @@ export default function AdminUsersPage() {
       closerId: user.closerId?.toString() || "",
       phone: user.phone || "",
       isActive: user.isActive,
+      ssn: user.profile?.ssn || "",
+      dateOfBirth: user.profile?.dateOfBirth
+        ? new Date(user.profile.dateOfBirth).toISOString().split("T")[0]
+        : "",
+      bankName: user.profile?.bankName || "",
+      routingNumber: user.profile?.routingNumber || "",
+      zelle: user.profile?.zelle || "",
+      address: user.profile?.address || "",
     });
     setIsModalOpen(true);
   };
@@ -131,6 +167,12 @@ export default function AdminUsersPage() {
       closerId: "",
       phone: "",
       isActive: true,
+      ssn: "",
+      dateOfBirth: "",
+      bankName: "",
+      routingNumber: "",
+      zelle: "",
+      address: "",
     });
   };
 
@@ -200,6 +242,9 @@ export default function AdminUsersPage() {
                     <div>
                       <p className="font-semibold text-on-surface">{user.name}</p>
                       <p className="text-sm text-on-surface-variant">{user.email}</p>
+                      {user.phone && (
+                        <p className="text-xs text-on-surface-variant">Tel: {user.phone}</p>
+                      )}
                     </div>
                   </td>
                   <td className="p-4">
@@ -272,39 +317,31 @@ export default function AdminUsersPage() {
         onClose={() => setIsModalOpen(false)}
         title={editingUser ? "Editar Usuario" : "Nuevo Usuario"}
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto">
           <Input
             label="Nombre"
             value={formData.name}
-            onChange={(e) =>
-              setFormData({ ...formData, name: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             required
           />
           <Input
             label="Email"
             type="email"
             value={formData.email}
-            onChange={(e) =>
-              setFormData({ ...formData, email: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             required
           />
           <Input
             label={editingUser ? "Nueva contraseña (opcional)" : "Contraseña"}
             type="password"
             value={formData.password}
-            onChange={(e) =>
-              setFormData({ ...formData, password: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             required={!editingUser}
           />
           <Select
             label="Rol"
             value={formData.role}
-            onChange={(e) =>
-              setFormData({ ...formData, role: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
             options={[
               { value: "SETTER", label: "Setter" },
               { value: "CLOSER", label: "Closer" },
@@ -315,36 +352,73 @@ export default function AdminUsersPage() {
             <Select
               label="Closer asignado"
               value={formData.closerId}
-              onChange={(e) =>
-                setFormData({ ...formData, closerId: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, closerId: e.target.value })}
               options={[
                 { value: "", label: "Sin closer" },
                 ...closers.map((c) => ({ value: String(c.id), label: c.name })),
               ]}
             />
           )}
-          <Input
-            label="Teléfono"
-            value={formData.phone}
-            onChange={(e) =>
-              setFormData({ ...formData, phone: e.target.value })
-            }
-          />
-          <div className="flex items-center gap-2">
+
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+            <h3 className="font-semibold text-sm text-on-surface mb-3">Información Adicional</h3>
+            <div className="space-y-3">
+              <Input
+                label="Teléfono"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              />
+              <Input
+                label="Dirección"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              />
+              <Input
+                label="Fecha de Nacimiento"
+                type="date"
+                value={formData.dateOfBirth}
+                onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+              />
+              <Input
+                label="SSN (Social Security Number)"
+                value={formData.ssn}
+                onChange={(e) => setFormData({ ...formData, ssn: e.target.value })}
+                placeholder="XXX-XX-XXXX"
+              />
+              <Input
+                label="Nombre del Banco"
+                value={formData.bankName}
+                onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+              />
+              <Input
+                label="Routing Number"
+                value={formData.routingNumber}
+                onChange={(e) => setFormData({ ...formData, routingNumber: e.target.value })}
+              />
+              <Input
+                label="Zelle / Account Number"
+                value={formData.zelle}
+                onChange={(e) => setFormData({ ...formData, zelle: e.target.value })}
+              />
+            </div>
+            <p className="text-xs text-on-surface-variant mt-2">
+              Estos datos son privados. Solo el usuario y el administrador pueden verlos desde el perfil.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 pt-2">
             <input
               type="checkbox"
               id="isActive"
               checked={formData.isActive}
-              onChange={(e) =>
-                setFormData({ ...formData, isActive: e.target.checked })
-              }
+              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
               className="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary"
             />
             <label htmlFor="isActive" className="text-on-surface">
               Usuario activo
             </label>
           </div>
+
           <div className="flex gap-3 pt-4">
             <Button
               type="button"

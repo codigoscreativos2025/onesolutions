@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import {
@@ -16,6 +17,7 @@ import {
   Settings,
   Loader2,
   Package,
+  ArrowUpRight,
 } from "lucide-react";
 
 interface Metrics {
@@ -389,7 +391,7 @@ export default function AdminMetricsPage() {
           {activeDetail === "doors" && (
             <>
               {metrics?.topDoorsKnocked.map((item, idx) => (
-                <RankingItem key={item.id} position={idx + 1} name={item.name} count={item.count} label="puertas" />
+                <RankingItem key={item.id} position={idx + 1} name={item.name} count={item.count} label="puertas" linkTo={`/admin/crm?setterId=${item.id}`} />
               ))}
               {(!metrics?.topDoorsKnocked || metrics.topDoorsKnocked.length === 0) && (
                 <p className="text-center text-on-surface-variant py-4">Sin datos</p>
@@ -399,7 +401,7 @@ export default function AdminMetricsPage() {
           {activeDetail === "prospects" && (
             <>
               {metrics?.topProspects.map((item, idx) => (
-                <RankingItem key={item.id} position={idx + 1} name={item.name} count={item.count} label="prospectos" />
+                <RankingItem key={item.id} position={idx + 1} name={item.name} count={item.count} label="prospectos" linkTo={`/admin/crm?setterId=${item.id}&filter=leads`} />
               ))}
               {(!metrics?.topProspects || metrics.topProspects.length === 0) && (
                 <p className="text-center text-on-surface-variant py-4">Sin datos</p>
@@ -409,7 +411,7 @@ export default function AdminMetricsPage() {
           {activeDetail === "projects" && (
             <>
               {metrics?.topProjectsClosed.map((item, idx) => (
-                <RankingItem key={item.id} position={idx + 1} name={item.name} count={item.count} label="proyectos" />
+                <RankingItem key={item.id} position={idx + 1} name={item.name} count={item.count} label="proyectos" linkTo={`/admin/crm?closerId=${item.id}&filter=projects`} />
               ))}
               {(!metrics?.topProjectsClosed || metrics.topProjectsClosed.length === 0) && (
                 <p className="text-center text-on-surface-variant py-4">Sin datos</p>
@@ -437,7 +439,7 @@ export default function AdminMetricsPage() {
               <div>
                 <h4 className="text-sm font-semibold text-on-surface mb-2">Por Persona</h4>
                 {metrics?.topSetterObjectionsByUser.map((item, idx) => (
-                  <RankingItem key={item.id} position={idx + 1} name={item.name} count={item.count} label="objeciones" />
+                  <RankingItem key={item.id} position={idx + 1} name={item.name} count={item.count} label="objeciones" linkTo={`/admin/crm?setterId=${item.id}&filter=objections`} />
                 ))}
                 {(!metrics?.topSetterObjectionsByUser || metrics.topSetterObjectionsByUser.length === 0) && (
                   <p className="text-center text-on-surface-variant py-4">Sin datos</p>
@@ -466,7 +468,7 @@ export default function AdminMetricsPage() {
               <div>
                 <h4 className="text-sm font-semibold text-on-surface mb-2">Por Persona</h4>
                 {metrics?.topCloserObjectionsByUser.map((item, idx) => (
-                  <RankingItem key={item.id} position={idx + 1} name={item.name} count={item.count} label="objeciones" />
+                  <RankingItem key={item.id} position={idx + 1} name={item.name} count={item.count} label="objeciones" linkTo={`/admin/crm?closerId=${item.id}&filter=objections`} />
                 ))}
                 {(!metrics?.topCloserObjectionsByUser || metrics.topCloserObjectionsByUser.length === 0) && (
                   <p className="text-center text-on-surface-variant py-4">Sin datos</p>
@@ -631,14 +633,16 @@ function RankingItem({
   name,
   count,
   label,
+  linkTo,
 }: {
   position: number;
   name: string;
   count: number;
   label: string;
+  linkTo?: string;
 }) {
-  return (
-    <div className="flex items-center justify-between p-3 rounded-xl bg-surface-container-low">
+  const content = (
+    <div className="flex items-center justify-between p-3 rounded-xl bg-surface-container-low hover:bg-surface-container-high transition-colors">
       <div className="flex items-center gap-3">
         <span
           className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
@@ -655,10 +659,18 @@ function RankingItem({
         </span>
         <span className="font-medium text-on-surface">{name}</span>
       </div>
-      <div className="text-right">
-        <span className="font-bold text-on-surface">{count}</span>
-        <span className="text-xs text-on-surface-variant ml-1">{label}</span>
+      <div className="flex items-center gap-2">
+        <div className="text-right">
+          <span className="font-bold text-on-surface">{count}</span>
+          <span className="text-xs text-on-surface-variant ml-1">{label}</span>
+        </div>
+        {linkTo && <ArrowUpRight className="w-4 h-4 text-primary" />}
       </div>
     </div>
   );
+
+  if (linkTo) {
+    return <Link href={linkTo}>{content}</Link>;
+  }
+  return content;
 }

@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { name, email, password, role, closerId, phone } = body;
+  const { name, email, password, role, closerId, phone, ssn, dateOfBirth, bankName, routingNumber, zelle, address, profilePhoto } = body;
 
   if (!name || !email || !password || !role) {
     return NextResponse.json(
@@ -55,7 +55,19 @@ export async function POST(request: Request) {
       role,
       phone,
       closerId: role === "SETTER" && closerId ? parseInt(closerId) : null,
+      profile: {
+        create: {
+          ssn: ssn || null,
+          dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+          bankName: bankName || null,
+          routingNumber: routingNumber || null,
+          zelle: zelle || null,
+          address: address || null,
+          profilePhoto: profilePhoto || null,
+        },
+      },
     },
+    include: { profile: true },
   });
 
   return NextResponse.json(user, { status: 201 });

@@ -13,7 +13,7 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await request.json();
-  const { notes } = body;
+  const { notes, billImageUrl, billFileName } = body;
 
   try {
     const userId = parseInt(session.user.id);
@@ -42,6 +42,25 @@ export async function PATCH(
         slot: true,
       },
     });
+
+    // Guardar archivo adjunto si se proporcionó
+    if (billImageUrl) {
+      await prisma.bill.upsert({
+        where: { visitId: visit.id },
+        create: {
+          visitId: visit.id,
+          imageUrl: billImageUrl,
+          phone: "",
+          clientName: billFileName || "Archivo adjunto",
+          notes: billFileName || "Archivo adjunto",
+        },
+        update: {
+          imageUrl: billImageUrl,
+          clientName: billFileName || "Archivo adjunto",
+          notes: billFileName || "Archivo adjunto",
+        },
+      });
+    }
 
     // Marcar parcela como cliente
     await prisma.parcel.update({

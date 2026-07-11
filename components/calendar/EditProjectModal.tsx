@@ -35,7 +35,16 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
       const res = await fetch(`/api/visits/${visitId}/details`);
       if (res.ok) {
         const data = await res.json();
-        setProjectDetails(data.projectDetails || {});
+        const bill = data.bill || {};
+        const details = data.projectDetails || {};
+        // Merge bill data into projectDetails for pre-filling general info
+        setProjectDetails({
+          ...details,
+          clientName: details.clientName || bill.clientName || '',
+          clientEmail: details.clientEmail || bill.clientEmail || '',
+          address: details.address || data.parcel?.address || '',
+          phone: bill.phone || '',
+        });
       }
     } catch (error) {
       console.error('Error fetching project details:', error);

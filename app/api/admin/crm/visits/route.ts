@@ -34,12 +34,27 @@ export async function GET() {
           include: {
             projectType: {
               select: {
+                id: true,
                 name: true,
               },
             },
           },
         },
         projectDetails: true,
+        objections: {
+          include: {
+            objection: {
+              select: { id: true, name: true, color: true },
+            },
+          },
+        },
+        closerObjections: {
+          include: {
+            closerObjection: {
+              select: { id: true, name: true, color: true },
+            },
+          },
+        },
       },
     });
 
