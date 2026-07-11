@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, Calendar, MapPin, User, FileText, Filter } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { X, Calendar, MapPin, User, FileText, Filter, MessageSquare, AlertCircle } from 'lucide-react';
 
 interface ProjectType {
   id: number;
@@ -14,6 +15,8 @@ interface BillData {
   clientName?: string;
   clientEmail?: string;
   notes?: string;
+  additionalFileUrl?: string;
+  additionalFileName?: string;
 }
 
 interface SlotData {
@@ -55,6 +58,7 @@ interface Visit {
   projects?: { projectType: ProjectType }[];
   projectDetails?: Record<string, unknown> | null;
   slot?: SlotData | null;
+  chatRoom?: { id: number } | null;
 }
 
 interface MetricDetailModalProps {
@@ -65,6 +69,7 @@ interface MetricDetailModalProps {
 }
 
 export function MetricDetailModal({ isOpen, onClose, metricType, userId }: MetricDetailModalProps) {
+  const router = useRouter();
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(false);
   const [filterStartDate, setFilterStartDate] = useState<string>('');
@@ -115,6 +120,16 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
       default:
         return 'Detalles';
     }
+  };
+
+  const getCompletionPercentage = (details: Record<string, unknown> | null | undefined): number => {
+    if (!details) return 0;
+    const fields = Object.entries(details).filter(
+      ([key]) => !['id', 'visitId', 'createdAt', 'updatedAt', 'panelsUp', 'panelsDown'].includes(key)
+    );
+    if (fields.length === 0) return 0;
+    const filled = fields.filter(([, val]) => val !== null && val !== undefined && val !== '' && val !== false);
+    return Math.round((filled.length / fields.length) * 100);
   };
 
   const getStageLabel = (stage: string) => {
@@ -342,6 +357,16 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
                           Ver recibo de luz
                         </a>
                       )}
+                      {visit.bill.additionalFileUrl && (
+                        <a
+                          href={visit.bill.additionalFileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-2 inline-block text-xs text-secondary underline ml-3"
+                        >
+                          {visit.bill.additionalFileName || 'Ver archivo adicional'}
+                        </a>
+                      )}
                     </div>
                   )}
 
@@ -376,6 +401,39 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
                           );
                         })}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Chat / Progress para proyectos cerrados */}
+                  {visit.stage === 'CLOSED' && (
+                    <div className="mb-3">
+                      {visit.chatRoom ? (
+                        <button
+                          onClick={() => router.push('/chat')}
+                          className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-sm font-medium"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                          Ir al Chat
+                        </button>
+                      ) : (
+                        <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
+                          <div className="flex items-center gap-2 mb-2">
+                            <AlertCircle className="w-4 h-4 text-yellow-600" />
+                            <span className="text-xs font-medium text-yellow-700 dark:text-yellow-300">
+                              Datos pendientes del Closer
+                            </span>
+                          </div>
+                          <div className="w-full bg-yellow-200 dark:bg-yellow-700 rounded-full h-2">
+                            <div
+                              className="bg-yellow-500 h-2 rounded-full transition-all"
+                              style={{ width: `${getCompletionPercentage(visit.projectDetails)}%` }}
+                            />
+                          </div>
+                          <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                            {getCompletionPercentage(visit.projectDetails)}% completado
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 

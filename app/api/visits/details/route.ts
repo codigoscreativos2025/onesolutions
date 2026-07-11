@@ -21,7 +21,12 @@ export async function GET(request: Request) {
     const whereClause: Record<string, unknown> = {};
 
     if (userId) {
-      whereClause.setterId = parseInt(userId);
+      const uid = parseInt(userId);
+      if (role === 'CLOSER' && userId === session.user.id) {
+        whereClause.OR = [{ closerId: uid }, { setterId: uid }];
+      } else {
+        whereClause.setterId = uid;
+      }
     } else if (role === 'SETTER') {
       whereClause.setterId = currentUserId;
     } else if (role === 'CLOSER') {
@@ -102,6 +107,8 @@ export async function GET(request: Request) {
             clientName: true,
             clientEmail: true,
             notes: true,
+            additionalFileUrl: true,
+            additionalFileName: true,
           },
         },
         projects: {
@@ -120,6 +127,9 @@ export async function GET(request: Request) {
             startAt: true,
             endAt: true,
           },
+        },
+        chatRoom: {
+          select: { id: true },
         },
       },
     });
