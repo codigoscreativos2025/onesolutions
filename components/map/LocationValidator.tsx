@@ -155,9 +155,9 @@ export function LocationValidator({ parcelId, onValidated, onCancel }: LocationV
                 <span className="font-medium">Ubicación Obtenida</span>
               </div>
               <p className="text-sm text-blue-600 dark:text-blue-400 mt-2">
-                Latitud: {location.latitude.toFixed(6)}<br />
-                Longitud: {location.longitude.toFixed(6)}<br />
-                Precisión: ±{location.accuracy.toFixed(0)}m
+                Latitud: {location.latitude?.toFixed(6) ?? "—"}<br />
+                Longitud: {location.longitude?.toFixed(6) ?? "—"}<br />
+                Precisión: ±{location.accuracy?.toFixed(0) ?? "—"}m
               </p>
             </div>
             <div className="flex gap-3">

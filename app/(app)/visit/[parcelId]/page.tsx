@@ -169,8 +169,8 @@ export default function VisitPage() {
     // Los closers no necesitan validar ubicación
     const isCloser = session?.user?.role === 'CLOSER';
 
-    // Validar ubicación antes de continuar (solo si no es lead manual ni closer)
-    if (!locationValidated && !isManualLead && !isCloser) {
+    // Validar ubicación antes de continuar (solo si no es lead manual, closer, o tiene validación desactivada)
+    if (!locationValidated && !isManualLead && !isCloser && session?.user?.locationValidationEnabled !== false) {
       setPendingAction('notAvailable');
       setShowLocationValidator(true);
       return;
@@ -195,8 +195,8 @@ export default function VisitPage() {
     // Los closers no necesitan validar ubicación
     const isCloser = session?.user?.role === 'CLOSER';
 
-    // Validar ubicación antes de continuar (solo si no es lead manual ni closer)
-    if (!locationValidated && !isManualLead && !isCloser) {
+    // Validar ubicación antes de continuar (solo si no es lead manual, closer, o tiene validación desactivada)
+    if (!locationValidated && !isManualLead && !isCloser && session?.user?.locationValidationEnabled !== false) {
       setPendingAction('objection');
       setShowLocationValidator(true);
       return;
@@ -222,8 +222,8 @@ export default function VisitPage() {
     // Los closers no necesitan validar ubicación (solo los setters)
     const isCloser = session?.user?.role === 'CLOSER';
 
-    // Validar ubicación antes de continuar (solo si no es lead manual ni closer)
-    if (!locationValidated && !isManualLead && !isCloser) {
+    // Validar ubicación antes de continuar (solo si no es lead manual, closer, o tiene validación desactivada)
+    if (!locationValidated && !isManualLead && !isCloser && session?.user?.locationValidationEnabled !== false) {
       setPendingAction('proposal');
       setShowLocationValidator(true);
       return;

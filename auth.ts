@@ -31,6 +31,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           name: user.name,
           role: user.role,
           closerId: user.closerId ?? undefined,
+          locationValidationEnabled: user.locationValidationEnabled,
         };
       },
     }),
@@ -44,15 +45,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.id = user.id;
         token.role = user.role;
         token.closerId = user.closerId;
+        token.locationValidationEnabled = user.locationValidationEnabled;
       } else if (token.email) {
         const dbUser = await prisma.user.findUnique({
           where: { email: token.email as string },
-          select: { id: true, role: true, closerId: true },
+          select: { id: true, role: true, closerId: true, locationValidationEnabled: true },
         });
         if (dbUser) {
           token.id = String(dbUser.id);
           token.role = dbUser.role;
           token.closerId = dbUser.closerId ?? undefined;
+          token.locationValidationEnabled = dbUser.locationValidationEnabled;
         }
       }
       return token;
@@ -61,6 +64,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       session.user.id = token.id as string;
       session.user.role = token.role as string;
       session.user.closerId = token.closerId as number | undefined;
+      session.user.locationValidationEnabled = token.locationValidationEnabled as boolean | undefined;
       return session;
     },
   },
