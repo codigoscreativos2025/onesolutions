@@ -47,6 +47,7 @@ export function ParcelSheet({
   const isSetter = userRole === "SETTER" || userRole === "CLOSER";
   const isTakenByMe = parcel.setter?.id === parseInt(userId);
   const isAvailable = parcel.status === "AVAILABLE";
+  const isClaimedByMySetter = userRole === "CLOSER" && parcel.status === "LEAD" && parcel.setter;
 
   const handleKnockDoor = async () => {
     if (claiming) return;
@@ -136,7 +137,7 @@ export function ParcelSheet({
         )}
       </div>
 
-      {isSetter && (isAvailable || isTakenByMe) && parcel.status !== "CUSTOMER" && (
+      {isSetter && (isAvailable || isTakenByMe || isClaimedByMySetter) && parcel.status !== "CUSTOMER" && (
         <div className="p-4 border-t border-glass-border space-y-2">
           {claimError && (
             <p className="text-sm text-error bg-error/10 px-3 py-2 rounded-lg">
@@ -149,7 +150,7 @@ export function ParcelSheet({
             className="w-full h-14 text-lg uppercase tracking-widest"
           >
             <DoorOpen className="w-6 h-6" />
-            {claiming ? "Reclamando..." : isAvailable ? "Tocar Puerta" : "Continuar Visita"}
+            {claiming ? "Reclamando..." : isAvailable ? "Tocar Puerta" : isTakenByMe || isClaimedByMySetter ? "Continuar Visita" : "Visitar"}
           </Button>
         </div>
       )}

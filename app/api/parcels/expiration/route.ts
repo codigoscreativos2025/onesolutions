@@ -103,13 +103,26 @@ export async function GET() {
             name: true,
           },
         },
+        visits: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            stage: true,
+          },
+        },
       },
       orderBy: {
         claimedAt: 'desc',
       },
     });
 
-    const parcelsWithDaysRemaining = parcels.map((parcel) => {
+    // Filtrar parcelas cuya última visita esté en PROPOSAL_ACCEPTED o CLOSED
+    const filteredParcels = parcels.filter((p) => {
+      const latestVisit = p.visits?.[0];
+      return !latestVisit || !['PROPOSAL_ACCEPTED', 'CLOSED'].includes(latestVisit.stage);
+    });
+
+    const parcelsWithDaysRemaining = filteredParcels.map((parcel) => {
       const now = new Date();
       const lastActivity = parcel.lastActivityAt || parcel.claimedAt || now;
       const daysSinceActivity = Math.floor(

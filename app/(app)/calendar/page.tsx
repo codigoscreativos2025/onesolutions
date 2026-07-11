@@ -202,7 +202,7 @@ export default function CalendarPage() {
 
   const handleVisit = () => {
     if (selectedSlot?.visit) {
-      router.push(`/map?parcelId=${selectedSlot.visit.parcel.id}`);
+      router.push(`/visit/${selectedSlot.visit.parcel.id}`);
     }
     setIsActionModalOpen(false);
   };

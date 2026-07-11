@@ -3,6 +3,24 @@
 import { useEffect, useState } from 'react';
 import { X, Calendar, MapPin, User, FileText, Filter } from 'lucide-react';
 
+interface ProjectType {
+  id: number;
+  name: string;
+}
+
+interface BillData {
+  imageUrl?: string;
+  phone?: string;
+  clientName?: string;
+  clientEmail?: string;
+  notes?: string;
+}
+
+interface SlotData {
+  startAt?: string;
+  endAt?: string;
+}
+
 interface Visit {
   id: number;
   createdAt: string;
@@ -33,6 +51,10 @@ interface Visit {
       color: string;
     };
   }[];
+  bill?: BillData | null;
+  projects?: { projectType: ProjectType }[];
+  projectDetails?: Record<string, unknown> | null;
+  slot?: SlotData | null;
 }
 
 interface MetricDetailModalProps {
@@ -261,6 +283,98 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
                             {obj.closerObjection.name}
                           </span>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Proyectos seleccionados */}
+                  {visit.projects && visit.projects.length > 0 && (
+                    <div className="mb-3">
+                      <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                        Proyectos:
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {visit.projects.map((p, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 rounded text-xs font-medium bg-primary/10 text-primary"
+                          >
+                            {p.projectType.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Información del cliente (Bill) */}
+                  {visit.bill && (
+                    <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                        Datos del Cliente:
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        {visit.bill.clientName && (
+                          <div>
+                            <span className="text-gray-500">Nombre:</span>{' '}
+                            <span className="font-medium">{visit.bill.clientName}</span>
+                          </div>
+                        )}
+                        {visit.bill.phone && (
+                          <div>
+                            <span className="text-gray-500">Teléfono:</span>{' '}
+                            <span className="font-medium">{visit.bill.phone}</span>
+                          </div>
+                        )}
+                        {visit.bill.clientEmail && (
+                          <div className="col-span-2">
+                            <span className="text-gray-500">Email:</span>{' '}
+                            <span className="font-medium">{visit.bill.clientEmail}</span>
+                          </div>
+                        )}
+                      </div>
+                      {visit.bill.imageUrl && (
+                        <a
+                          href={visit.bill.imageUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-2 inline-block text-xs text-primary underline"
+                        >
+                          Ver recibo de luz
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Cita agendada */}
+                  {visit.slot?.startAt && (
+                    <div className="mb-3 text-sm text-gray-600 dark:text-gray-400">
+                      <Calendar className="w-4 h-4 inline mr-1" />
+                      Cita: {new Date(visit.slot.startAt).toLocaleString()}
+                    </div>
+                  )}
+
+                  {/* Progreso del Closer (ProjectDetails) */}
+                  {visit.projectDetails && (
+                    <div className="mb-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                      <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                        Progreso del Closer:
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        {Object.entries(visit.projectDetails).map(([key, val]) => {
+                          if (key === 'id' || key === 'visitId' || key === 'createdAt' || key === 'updatedAt') return null;
+                          if (!val) return null;
+                          const label = key
+                            .replace(/([A-Z])/g, ' $1')
+                            .replace(/^./, (s) => s.toUpperCase());
+                          return (
+                            <div key={key}>
+                              <span className="text-gray-500">{label}:</span>{' '}
+                              <span className="font-medium">
+                                {typeof val === 'boolean' ? (val ? 'Sí' : 'No') : String(val)}
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

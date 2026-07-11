@@ -96,6 +96,32 @@ export async function GET(request: Request) {
             },
           },
         },
+        bill: {
+          select: {
+            imageUrl: true,
+            phone: true,
+            clientName: true,
+            clientEmail: true,
+            notes: true,
+          },
+        },
+        projects: {
+          include: {
+            projectType: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        projectDetails: true,
+        slot: {
+          select: {
+            startAt: true,
+            endAt: true,
+          },
+        },
       },
     });
 
