@@ -9,6 +9,16 @@ interface ProjectDetails {
   [key: string]: string | number | boolean | null | undefined;
 }
 
+interface ProjectTypeField {
+  id: number;
+  fieldName: string;
+  fieldLabel: string;
+  fieldType: string;
+  options?: string;
+  isRequired: boolean;
+  order: number;
+}
+
 interface EditProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -20,6 +30,7 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
   const [projectDetails, setProjectDetails] = useState<ProjectDetails>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [commonFields, setCommonFields] = useState<ProjectTypeField[]>([]);
 
   useEffect(() => {
     if (isOpen && visitId) {
@@ -52,6 +63,27 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
       setLoading(false);
     }
   };
+
+  const fetchCommonFields = async () => {
+    try {
+      const typesRes = await fetch("/api/project-types");
+      const types = await typesRes.json();
+      const comunes = types.find((t: { id: number; name: string }) => t.name === "Campos Comunes");
+      if (comunes) {
+        const fieldsRes = await fetch(`/api/admin/project-type-fields?projectTypeId=${comunes.id}`);
+        const fields = await fieldsRes.json();
+        setCommonFields(fields);
+      }
+    } catch (error) {
+      console.error("Error fetching common fields:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchCommonFields();
+    }
+  }, [isOpen]);
 
   const handleSave = async () => {
     if (!visitId) return;
@@ -183,6 +215,54 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
                   onChange={(e) => handleFieldChange('primaryRepCommPct', parseFloat(e.target.value) || null)}
                 />
               </div>
+
+              {/* Campos Comunes */}
+              {commonFields.length > 0 && (
+                <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <h3 className="font-semibold text-lg">Campos Comunes</h3>
+                  {commonFields.map((field) => (
+                    <div key={field.id}>
+                      {field.fieldType === "select" ? (
+                        <div>
+                          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+                            {field.fieldLabel}
+                          </label>
+                          <select
+                            value={projectDetails[field.fieldName] as string || ''}
+                            onChange={(e) => handleFieldChange(field.fieldName, e.target.value)}
+                            className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
+                          >
+                            <option value="">Seleccionar...</option>
+                            {field.options && JSON.parse(field.options).map((opt: string) => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : field.fieldType === "date" ? (
+                        <Input
+                          label={field.fieldLabel}
+                          type="date"
+                          value={projectDetails[field.fieldName] ? new Date(projectDetails[field.fieldName] as string).toISOString().split('T')[0] : ''}
+                          onChange={(e) => handleFieldChange(field.fieldName, e.target.value)}
+                        />
+                      ) : field.fieldType === "number" ? (
+                        <Input
+                          label={field.fieldLabel}
+                          type="number"
+                          value={projectDetails[field.fieldName] as string || ''}
+                          onChange={(e) => handleFieldChange(field.fieldName, parseFloat(e.target.value) || null)}
+                        />
+                      ) : (
+                        <Input
+                          label={field.fieldLabel}
+                          value={projectDetails[field.fieldName] as string || ''}
+                          onChange={(e) => handleFieldChange(field.fieldName, e.target.value)}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

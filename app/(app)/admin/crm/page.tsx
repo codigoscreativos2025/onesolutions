@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, Filter, Download, Eye, MapPin, Clock, Calendar, AlertCircle, MessageSquareWarning } from 'lucide-react';
+import { Search, Filter, Download, Eye, MapPin, Clock, Calendar, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ViewProjectModal } from '@/components/calendar/ViewProjectModal';

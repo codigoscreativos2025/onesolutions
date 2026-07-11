@@ -8,6 +8,7 @@ import { Send, Paperclip, Loader2, MessageSquare, Package, FileText, Pencil } fr
 import { Modal } from "@/components/ui/Modal";
 
 interface ProjectDetails {
+  [key: string]: string | number | boolean | undefined;
   clientName?: string;
   clientEmail?: string;
   address?: string;
@@ -18,6 +19,15 @@ interface ProjectDetails {
   otherSalePrice?: number;
   primaryRep?: string;
   primaryRepCommPct?: number;
+}
+
+interface CommonField {
+  id: number;
+  fieldName: string;
+  fieldLabel: string;
+  fieldType: string;
+  options?: string;
+  isRequired: boolean;
 }
 
 interface ProjectType {
@@ -69,6 +79,7 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
   const [mentionUsers, setMentionUsers] = useState<{ id: number; name: string; role: string }[]>([]);
   const [showMentionDropdown, setShowMentionDropdown] = useState(false);
   const [mentionSearch, setMentionSearch] = useState("");
+  const [commonFields, setCommonFields] = useState<CommonField[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -120,6 +131,27 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
     setSelectedRoomId(room.id);
     setSelectedRoom(room);
   };
+
+  const fetchCommonFields = async () => {
+    try {
+      const typesRes = await fetch("/api/project-types");
+      const types = await typesRes.json();
+      const comunes = types.find((t: { id: number; name: string }) => t.name === "Campos Comunes");
+      if (comunes) {
+        const fieldsRes = await fetch(`/api/admin/project-type-fields?projectTypeId=${comunes.id}`);
+        const fields = await fieldsRes.json();
+        setCommonFields(fields);
+      }
+    } catch (error) {
+      console.error("Error fetching common fields:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (showEditModal) {
+      fetchCommonFields();
+    }
+  }, [showEditModal]);
 
   const handleOpenEditModal = () => {
     if (projectDetails) {
@@ -700,6 +732,56 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
               />
             </div>
           </div>
+
+          {/* Campos Comunes */}
+          {commonFields.length > 0 && (
+            <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-3">
+              <p className="text-sm font-semibold text-on-surface">Campos Comunes</p>
+              <div className="grid grid-cols-2 gap-3">
+                {commonFields.map((field) => (
+                  <div key={field.id}>
+                    {field.fieldType === "select" ? (
+                      <div>
+                        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                          {field.fieldLabel}
+                        </label>
+                        <select
+                          value={editForm[field.fieldName] as string || ""}
+                          onChange={(e) => setEditForm({ ...editForm, [field.fieldName]: e.target.value })}
+                          className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface mt-1"
+                        >
+                          <option value="">Seleccionar...</option>
+                          {field.options && JSON.parse(field.options).map((opt: string) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : field.fieldType === "date" ? (
+                      <Input
+                        label={field.fieldLabel}
+                        type="date"
+                        value={editForm[field.fieldName] ? new Date(editForm[field.fieldName] as string).toISOString().split("T")[0] : ""}
+                        onChange={(e) => setEditForm({ ...editForm, [field.fieldName]: e.target.value })}
+                      />
+                    ) : field.fieldType === "number" ? (
+                      <Input
+                        label={field.fieldLabel}
+                        type="number"
+                        value={editForm[field.fieldName] as string || ""}
+                        onChange={(e) => setEditForm({ ...editForm, [field.fieldName]: parseFloat(e.target.value) || undefined })}
+                      />
+                    ) : (
+                      <Input
+                        label={field.fieldLabel}
+                        value={editForm[field.fieldName] as string || ""}
+                        onChange={(e) => setEditForm({ ...editForm, [field.fieldName]: e.target.value })}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex gap-3 pt-4">
             <Button

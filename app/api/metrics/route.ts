@@ -15,7 +15,7 @@ export async function GET() {
   if (role === "SETTER") {
     whereClause = { setterId: userId };
   } else if (role === "CLOSER") {
-    whereClause = { closerId: userId };
+    whereClause = { OR: [{ closerId: userId }, { setterId: userId }] };
   }
 
   // Métricas básicas
