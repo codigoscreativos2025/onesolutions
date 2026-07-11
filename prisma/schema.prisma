@@ -245,14 +245,16 @@ model VisitCloserObjection {
 }
 
 model Bill {
-  id         Int     @id @default(autoincrement())
-  visitId    Int     @unique
-  visit      Visit   @relation(fields: [visitId], references: [id])
-  imageUrl   String
-  phone      String
-  clientName String?
-  clientEmail String?
-  notes      String?
+  id                 Int     @id @default(autoincrement())
+  visitId            Int     @unique
+  visit              Visit   @relation(fields: [visitId], references: [id])
+  imageUrl           String
+  phone              String
+  clientName         String?
+  clientEmail        String?
+  notes              String?
+  additionalFileUrl  String?
+  additionalFileName String?
 }
 
 model ChatRoom {

@@ -55,6 +55,16 @@ export async function GET() {
             },
           },
         },
+        bill: {
+          select: {
+            imageUrl: true,
+            additionalFileUrl: true,
+            additionalFileName: true,
+          },
+        },
+        chatRoom: {
+          select: { id: true },
+        },
       },
     });
 

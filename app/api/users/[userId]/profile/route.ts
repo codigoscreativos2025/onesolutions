@@ -28,6 +28,12 @@ export async function GET(
         createdAt: true,
         phone: true,
         avatarUrl: true,
+        closer: {
+          select: { id: true, name: true },
+        },
+        setters: {
+          select: { id: true, name: true },
+        },
         userBadges: {
           include: {
             badge: {

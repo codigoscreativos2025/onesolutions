@@ -2,11 +2,14 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await auth();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const { searchParams } = new URL(request.url);
+  const mode = searchParams.get("mode"); // 'own' or 'setter'
 
   const userId = parseInt(session.user.id);
   const role = session.user.role;
@@ -15,7 +18,12 @@ export async function GET() {
   if (role === "SETTER") {
     whereClause = { setterId: userId };
   } else if (role === "CLOSER") {
-    whereClause = { OR: [{ closerId: userId }, { setterId: userId }] };
+    if (mode === "own") {
+      whereClause = { closerId: userId };
+    } else {
+      // default: show all visits from own setters + own closer visits
+      whereClause = { OR: [{ closerId: userId }, { setterId: userId }] };
+    }
   }
 
   // Métricas básicas

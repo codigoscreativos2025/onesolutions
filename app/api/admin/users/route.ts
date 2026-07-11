@@ -15,6 +15,9 @@ export async function GET() {
       closer: {
         select: { id: true, name: true },
       },
+      setters: {
+        select: { id: true, name: true },
+      },
       _count: {
         select: { setters: true },
       },

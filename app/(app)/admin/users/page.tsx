@@ -19,6 +19,7 @@ interface User {
   locationValidationEnabled: boolean;
   closerId?: number;
   closer?: { id: number; name: string };
+  setters?: { id: number; name: string }[];
   _count?: { setters: number };
   profile?: {
     ssn?: string;
@@ -55,7 +56,18 @@ export default function AdminUsersPage() {
     address: "",
   });
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterRole, setFilterRole] = useState("all");
+
   const closers = users.filter((u) => u.role === "CLOSER");
+
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = filterRole === "all" || user.role === filterRole;
+    return matchesSearch && matchesRole;
+  });
 
   useEffect(() => {
     if (session?.user?.role !== "ADMIN") {
@@ -207,6 +219,29 @@ export default function AdminUsersPage() {
         </Button>
       </div>
 
+      {/* Search & Filter */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1">
+          <Input
+            placeholder="Buscar por nombre o email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="w-full sm:w-48">
+          <select
+            value={filterRole}
+            onChange={(e) => setFilterRole(e.target.value)}
+            className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
+          >
+            <option value="all">Todos los roles</option>
+            <option value="SETTER">Setter</option>
+            <option value="CLOSER">Closer</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </div>
+      </div>
+
       <div className="glass-panel rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -233,7 +268,7 @@ export default function AdminUsersPage() {
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
+              {filteredUsers.map((user) => (
                 <tr
                   key={user.id}
                   className="border-b border-outline-variant/20 last:border-0 hover:bg-surface-container-low/50"
@@ -264,7 +299,9 @@ export default function AdminUsersPage() {
                     {user.role === "SETTER" && user.closer
                       ? `Closer: ${user.closer.name}`
                       : user.role === "CLOSER"
-                      ? `${user._count?.setters || 0} setters`
+                      ? user.setters && user.setters.length > 0
+                        ? <div className="flex flex-col gap-1">{user.setters.map(s => <span key={s.id} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full w-fit">{s.name}</span>)}</div>
+                        : "0 setters"
                       : "—"}
                   </td>
                   <td className="p-4">

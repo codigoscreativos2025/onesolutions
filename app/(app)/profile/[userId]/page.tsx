@@ -19,6 +19,8 @@ interface UserProfile {
   createdAt: string;
   phone?: string;
   avatarUrl?: string;
+  closer?: { id: number; name: string } | null;
+  setters?: { id: number; name: string }[];
   userBadges: {
     badge: Badge;
   }[];
@@ -178,6 +180,26 @@ export default function PublicProfilePage() {
           </div>
         )}
       </div>
+
+      {/* Setters asignados (solo closers) */}
+      {profile.role === "CLOSER" && profile.setters && profile.setters.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <User className="w-5 h-5" />
+            Setters Asignados
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {profile.setters.map((setter) => (
+              <div key={setter.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                  {setter.name.charAt(0).toUpperCase()}
+                </div>
+                <span className="font-medium">{setter.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Medallas */}
       {profile.userBadges.length > 0 && (

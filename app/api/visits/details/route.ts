@@ -41,16 +41,16 @@ export async function GET(request: Request) {
 
     // Filtrar según el tipo de métrica
     if (type === 'doors') {
-      // Todas las visitas (puertas tocadas)
+      whereClause.stage = 'IN_PROGRESS';
     } else if (type === 'leads') {
-      // Solo visitas que generaron leads (PROPOSAL_ACCEPTED o CLOSED)
-      whereClause.stage = { in: ['PROPOSAL_ACCEPTED', 'CLOSED'] };
+      whereClause.stage = 'PROPOSAL_ACCEPTED';
     } else if (type === 'projects') {
-      // Solo proyectos cerrados
       whereClause.stage = 'CLOSED';
     } else if (type === 'objections') {
-      // Solo visitas con objeciones
-      whereClause.outcome = 'OBJECTION';
+      whereClause.OR = [
+        { outcome: 'OBJECTION' },
+        { closerObjections: { some: {} } },
+      ];
     }
 
     const visits = await prisma.visit.findMany({

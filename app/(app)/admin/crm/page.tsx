@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, Filter, Download, Eye, MapPin, Clock, Calendar, AlertCircle } from 'lucide-react';
+import { Search, Filter, Download, Eye, MapPin, Clock, Calendar, AlertCircle, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ViewProjectModal } from '@/components/calendar/ViewProjectModal';
@@ -49,6 +49,8 @@ interface Visit {
   projectDetails: ProjectDetails | null;
   objections: Objection[];
   closerObjections: CloserObjection[];
+  bill?: { imageUrl?: string; additionalFileUrl?: string; additionalFileName?: string } | null;
+  chatRoom?: { id: number } | null;
   daysSinceActivity?: number;
   daysRemaining?: number;
   isExpiringSoon?: boolean;
@@ -83,10 +85,11 @@ export default function AdminCRMPage() {
     const setterIdParam = searchParams.get('setterId');
     const closerIdParam = searchParams.get('closerId');
 
-    if (filterParam === 'doors') setFilterStage('all');
+    if (filterParam === 'doors') setFilterStage('IN_PROGRESS');
     if (filterParam === 'leads') setFilterStage('PROPOSAL_ACCEPTED');
     if (filterParam === 'projects') setFilterStage('CLOSED');
     if (filterParam === 'objections') setFilterStage('all');
+    if (filterParam === 'objections') setFilterObjectionType('setter');
     if (setterIdParam) setFilterSetter(setterIdParam);
     if (closerIdParam) setFilterSetter(closerIdParam);
 
@@ -409,9 +412,16 @@ export default function AdminCRMPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleViewDetails(visit.id); }}>
-                      <Eye className="w-4 h-4 mr-1" /> Ver
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      {visit.chatRoom && (
+                        <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); router.push('/chat'); }}>
+                          <MessageSquare className="w-4 h-4" />
+                        </Button>
+                      )}
+                      <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleViewDetails(visit.id); }}>
+                        <Eye className="w-4 h-4 mr-1" /> Ver
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}

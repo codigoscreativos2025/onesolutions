@@ -45,21 +45,31 @@ export async function PATCH(
 
     // Guardar archivo adjunto si se proporcionó
     if (billImageUrl) {
-      await prisma.bill.upsert({
+      const existingBill = await prisma.bill.findUnique({
         where: { visitId: visit.id },
-        create: {
-          visitId: visit.id,
-          imageUrl: billImageUrl,
-          phone: "",
-          clientName: billFileName || "Archivo adjunto",
-          notes: billFileName || "Archivo adjunto",
-        },
-        update: {
-          imageUrl: billImageUrl,
-          clientName: billFileName || "Archivo adjunto",
-          notes: billFileName || "Archivo adjunto",
-        },
       });
+
+      if (existingBill) {
+        // Si ya existe un recibo de luz, guardar como archivo adicional
+        await prisma.bill.update({
+          where: { visitId: visit.id },
+          data: {
+            additionalFileUrl: billImageUrl,
+            additionalFileName: billFileName || "Archivo adjunto",
+          },
+        });
+      } else {
+        // No existe recibo, crear nuevo registro
+        await prisma.bill.create({
+          data: {
+            visitId: visit.id,
+            imageUrl: billImageUrl,
+            phone: "",
+            clientName: billFileName || "Archivo adjunto",
+            notes: billFileName || "Archivo adjunto",
+          },
+        });
+      }
     }
 
     // Marcar parcela como cliente
