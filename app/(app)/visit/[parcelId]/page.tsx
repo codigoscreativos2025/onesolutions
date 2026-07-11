@@ -156,14 +156,21 @@ export default function VisitPage() {
     }
   };
 
+  const isManualLead = (() => {
+    try {
+      const m = JSON.parse(visit?.parcel?.metadata || '{}');
+      return m.isManual === true;
+    } catch { return false; }
+  })();
+
   const handleNotAvailable = async () => {
     if (!scheduledDate || !scheduledTime || !visit) return;
 
     // Los closers no necesitan validar ubicación
     const isCloser = session?.user?.role === 'CLOSER';
 
-    // Validar ubicación antes de continuar (solo si no es closer)
-    if (!locationValidated && !isCloser) {
+    // Validar ubicación antes de continuar (solo si no es lead manual ni closer)
+    if (!locationValidated && !isManualLead && !isCloser) {
       setPendingAction('notAvailable');
       setShowLocationValidator(true);
       return;
@@ -188,8 +195,8 @@ export default function VisitPage() {
     // Los closers no necesitan validar ubicación
     const isCloser = session?.user?.role === 'CLOSER';
 
-    // Validar ubicación antes de continuar (solo si no es closer)
-    if (!locationValidated && !isCloser) {
+    // Validar ubicación antes de continuar (solo si no es lead manual ni closer)
+    if (!locationValidated && !isManualLead && !isCloser) {
       setPendingAction('objection');
       setShowLocationValidator(true);
       return;
@@ -212,13 +219,10 @@ export default function VisitPage() {
   const handleProposal = async () => {
     if (!visit) return;
 
-    // Verificar si es un lead manual (sin geometría válida)
-    const isManualLead = visit.parcel.geometry === '{"coordinates":[0,0],"type":"Point"}' || !visit.parcel.geometry;
-
     // Los closers no necesitan validar ubicación (solo los setters)
     const isCloser = session?.user?.role === 'CLOSER';
 
-    // Validar ubicación antes de continuar (solo si no es lead manual y no es closer)
+    // Validar ubicación antes de continuar (solo si no es lead manual ni closer)
     if (!locationValidated && !isManualLead && !isCloser) {
       setPendingAction('proposal');
       setShowLocationValidator(true);
