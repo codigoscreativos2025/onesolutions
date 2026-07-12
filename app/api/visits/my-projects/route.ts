@@ -3,29 +3,44 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const { searchParams } = new URL(request.url);
+  const filter = searchParams.get('filter');
+
   const userId = parseInt(session.user.id);
   const role = session.user.role;
 
-  // Solo closers y admins pueden ver sus proyectos
   if (role !== 'CLOSER' && role !== 'ADMIN') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   try {
-    const whereClause = role === 'ADMIN' ? {} : { closerId: userId };
+    const whereClause: Record<string, unknown> = role === 'ADMIN' ? {} : { closerId: userId };
+
+    if (filter && filter !== 'all') {
+      if (filter === 'leads') {
+        whereClause.stage = 'PROPOSAL_ACCEPTED';
+      } else if (filter === 'project') {
+        whereClause.stage = 'PROJECT';
+      } else if (filter === 'closed') {
+        whereClause.stage = 'CLOSED';
+      } else if (filter === 'cancelled') {
+        whereClause.stage = 'CANCELLED';
+      } else if (filter === 'objections') {
+        whereClause.closerObjections = { some: {} };
+      }
+    } else {
+      whereClause.stage = { in: ['PROPOSAL_ACCEPTED', 'PROJECT', 'CLOSED', 'CANCELLED'] };
+    }
 
     const visits = await prisma.visit.findMany({
-      where: {
-        ...whereClause,
-        stage: 'CLOSED',
-      },
-      orderBy: { completedAt: 'desc' },
+      where: whereClause,
+      orderBy: { createdAt: 'desc' },
       include: {
         parcel: {
           select: {
@@ -34,20 +49,46 @@ export async function GET() {
           },
         },
         setter: {
-          select: {
-            name: true,
-          },
+          select: { name: true },
+        },
+        closer: {
+          select: { name: true },
         },
         projects: {
           include: {
             projectType: {
-              select: {
-                name: true,
-              },
+              select: { name: true },
             },
           },
         },
         projectDetails: true,
+        objections: {
+          include: {
+            objection: {
+              select: { name: true, color: true },
+            },
+          },
+        },
+        closerObjections: {
+          include: {
+            closerObjection: {
+              select: { name: true, color: true },
+            },
+          },
+        },
+        chatRoom: {
+          select: { id: true },
+        },
+        bill: {
+          select: {
+            imageUrl: true,
+            clientName: true,
+            phone: true,
+            clientEmail: true,
+            additionalFileUrl: true,
+            additionalFileName: true,
+          },
+        },
       },
     });
 

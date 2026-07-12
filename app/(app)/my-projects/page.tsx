@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { MessageSquare, CheckCircle, AlertCircle, Edit } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { MessageSquare, CheckCircle, Edit, MapPin, XCircle, FileText, User } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ViewProjectModal } from '@/components/calendar/ViewProjectModal';
 import { EditProjectModal } from '@/components/calendar/EditProjectModal';
@@ -12,56 +12,60 @@ interface ProjectDetails {
   [key: string]: string | number | boolean | null | undefined;
 }
 
+interface ObjectionData {
+  objection: { name: string; color: string };
+}
+
+interface CloserObjectionData {
+  closerObjection: { name: string; color: string };
+}
+
 interface Visit {
   id: number;
   stage: string;
   createdAt: string;
   completedAt: string | null;
   chatCreatedAt: string | null;
-  parcel: {
-    id: string;
-    address: string;
-  };
-  setter: {
-    name: string;
-  };
-  projects: {
-    projectType: {
-      name: string;
-    };
-  }[];
+  parcel: { id: string; address: string };
+  setter: { name: string };
+  closer?: { name: string };
+  projects: { projectType: { name: string } }[];
   projectDetails: ProjectDetails | null;
+  objections: ObjectionData[];
+  closerObjections: CloserObjectionData[];
+  chatRoom?: { id: number } | null;
+  bill?: {
+    imageUrl?: string;
+    clientName?: string;
+    phone?: string;
+    clientEmail?: string;
+    additionalFileUrl?: string;
+    additionalFileName?: string;
+  } | null;
 }
 
 export default function MyProjectsPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const filterParam = searchParams.get('filter') || 'all';
+
+  const validFilters = ['all', 'leads', 'objections', 'project', 'closed', 'cancelled'];
+  const filter = validFilters.includes(filterParam) ? filterParam : 'all';
+
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creatingChat, setCreatingChat] = useState<number | null>(null);
   const [isViewProjectModalOpen, setIsViewProjectModalOpen] = useState(false);
   const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
   const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
 
-  // Función para calcular el porcentaje de completitud
   const calculateCompletion = (projectDetails: ProjectDetails | null): number => {
     if (!projectDetails) return 0;
-
-    const requiredFields = [
-      'clientName',
-      'clientEmail',
-      'address',
-      'closingDate',
-      'paymentMethod',
-    ];
-
+    const requiredFields = ['clientName', 'clientEmail', 'address', 'closingDate', 'paymentMethod'];
     let completed = 0;
     requiredFields.forEach(field => {
-      if (projectDetails[field] && projectDetails[field] !== '') {
-        completed++;
-      }
+      if (projectDetails[field] && projectDetails[field] !== '') completed++;
     });
-
     return Math.round((completed / requiredFields.length) * 100);
   };
 
@@ -71,38 +75,17 @@ export default function MyProjectsPage() {
       return;
     }
     fetchProjects();
-  }, [session, router]);
+  }, [session, router, filter]);
 
   const fetchProjects = async () => {
     try {
-      const res = await fetch('/api/visits/my-projects');
+      const res = await fetch(`/api/visits/my-projects?filter=${filter}`);
       const data = await res.json();
       setVisits(data);
     } catch (error) {
       console.error('Error fetching projects:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleCreateChat = async (visitId: number) => {
-    setCreatingChat(visitId);
-    try {
-      const res = await fetch(`/api/visits/${visitId}/create-chat`, {
-        method: 'POST',
-      });
-
-      if (res.ok) {
-        fetchProjects();
-      } else {
-        const error = await res.json();
-        alert(error.error || 'Error creating chat');
-      }
-    } catch (error) {
-      console.error('Error creating chat:', error);
-      alert('Error creating chat');
-    } finally {
-      setCreatingChat(null);
     }
   };
 
@@ -116,6 +99,10 @@ export default function MyProjectsPage() {
     setIsEditProjectModalOpen(true);
   };
 
+  const setFilter = (f: string) => {
+    router.push(`/my-projects?filter=${f}`);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -124,230 +111,142 @@ export default function MyProjectsPage() {
     );
   }
 
-  const pendingProjects = visits.filter((v) => v.stage === 'CLOSED' && !v.chatCreatedAt);
-  const completedProjects = visits.filter((v) => v.chatCreatedAt);
+  const getStageBadge = (stage: string) => {
+    switch (stage) {
+      case 'PROPOSAL_ACCEPTED': return <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">Lead</span>;
+      case 'PROJECT': return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">En Proyecto</span>;
+      case 'CLOSED': return <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">Cerrado</span>;
+      case 'CANCELLED': return <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">Cancelado</span>;
+      default: return <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">{stage}</span>;
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
         <h1 className="text-3xl font-bold mb-2">Mis Proyectos</h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Gestiona tus proyectos cerrados y crea chats cuando la información esté completa
+          Gestiona tus leads, proyectos en curso, cerrados y cancelados
         </p>
       </div>
 
-      {/* Proyectos Pendientes de Chat */}
-      {pendingProjects.length > 0 && (
-        <div>
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-yellow-500" />
-            Pendientes de Chat ({pendingProjects.length})
-          </h2>
-          <div className="space-y-4">
-            {pendingProjects.map((visit) => (
-              <div
-                key={visit.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border-l-4 border-yellow-500"
+      <div className="flex gap-2 flex-wrap">
+        <button onClick={() => setFilter('all')} className={`px-4 py-2 rounded-lg transition-colors ${filter === 'all' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>Todos ({visits.length})</button>
+        <button onClick={() => setFilter('leads')} className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${filter === 'leads' ? 'bg-green-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}><User className="w-4 h-4" /> Leads</button>
+        <button onClick={() => setFilter('objections')} className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${filter === 'objections' ? 'bg-secondary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}><XCircle className="w-4 h-4" /> Objeciones</button>
+        <button onClick={() => setFilter('project')} className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${filter === 'project' ? 'bg-yellow-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}><FileText className="w-4 h-4" /> Proyecto</button>
+        <button onClick={() => setFilter('closed')} className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${filter === 'closed' ? 'bg-purple-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}><CheckCircle className="w-4 h-4" /> Cerrados</button>
+        <button onClick={() => setFilter('cancelled')} className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${filter === 'cancelled' ? 'bg-red-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}><XCircle className="w-4 h-4" /> Cancelados</button>
+      </div>
+
+      {visits.length === 0 ? (
+        <div className="text-center py-12">
+          <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">No se encontraron proyectos</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {visits.map((visit) => {
+            const completion = calculateCompletion(visit.projectDetails);
+            const hasChat = visit.chatRoom || visit.chatCreatedAt;
+            return (
+              <div key={visit.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border-l-4"
+                style={{
+                  borderLeftColor:
+                    visit.stage === 'CANCELLED' ? '#ef4444' :
+                    visit.stage === 'CLOSED' ? '#8b5cf6' :
+                    visit.stage === 'PROJECT' ? '#eab308' :
+                    visit.stage === 'PROPOSAL_ACCEPTED' ? '#22c55e' :
+                    '#6b7280'
+                }}
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">
-                      {visit.parcel.address}
-                    </h3>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <MapPin className="w-5 h-5 text-gray-500" />
+                      <h3 className="text-lg font-semibold">{visit.parcel.address}</h3>
+                      {getStageBadge(visit.stage)}
+                    </div>
                     <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                       <span>Setter: {visit.setter.name}</span>
-                      <span>
-                        Cerrado:{' '}
-                        {visit.completedAt
-                          ? new Date(visit.completedAt).toLocaleDateString()
-                          : 'N/A'}
-                      </span>
+                      {visit.closer && <span>Closer: {visit.closer.name}</span>}
+                      <span>Creado: {new Date(visit.createdAt).toLocaleDateString()}</span>
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleViewProject(visit.id)}
-                    >
-                      Ver Detalles
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => handleCreateChat(visit.id)}
-                      disabled={creatingChat === visit.id}
-                    >
-                      {creatingChat === visit.id ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      ) : (
-                        <>
-                          <MessageSquare className="w-4 h-4 mr-2" />
-                          Crear Chat
-                        </>
-                      )}
-                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleViewProject(visit.id)}>Ver</Button>
+                    {visit.stage !== 'CANCELLED' && (
+                      <Button variant="outline" size="sm" onClick={() => handleEditProject(visit.id)}>
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {hasChat && (
+                      <Button variant="outline" size="sm" onClick={() => router.push('/chat')}>
+                        <MessageSquare className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
 
-                {/* Proyectos Seleccionados */}
                 {visit.projects.length > 0 && (
-                  <div className="mb-3">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                      Proyectos:
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {visit.projects.map((p, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs"
-                        >
-                          {p.projectType.name}
-                        </span>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {visit.projects.map((p, idx) => (
+                      <span key={idx} className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs">{p.projectType.name}</span>
+                    ))}
+                  </div>
+                )}
+
+                {visit.objections.length > 0 && (
+                  <div className="mb-2">
+                    <span className="text-xs font-medium text-gray-500">Objeciones Setter: </span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {visit.objections.map((o, idx) => (
+                        <span key={idx} className="px-2 py-0.5 rounded text-xs font-medium" style={{ backgroundColor: o.objection.color + '20', color: o.objection.color }}>{o.objection.name}</span>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* Estado de Project Details */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm">
-                      {visit.projectDetails ? (
-                        <>
-                          <CheckCircle className="w-4 h-4 text-green-500" />
-                          <span className="text-green-600 dark:text-green-400">
-                            Información del proyecto cargada
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <AlertCircle className="w-4 h-4 text-red-500" />
-                          <span className="text-red-600 dark:text-red-400">
-                            Falta completar la información del proyecto
-                          </span>
-                        </>
-                      )}
+                {visit.closerObjections.length > 0 && (
+                  <div className="mb-2">
+                    <span className="text-xs font-medium text-gray-500">Objeciones Proyecto: </span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {visit.closerObjections.map((o, idx) => (
+                        <span key={idx} className="px-2 py-0.5 rounded text-xs font-medium" style={{ backgroundColor: o.closerObjection.color + '20', color: o.closerObjection.color }}>{o.closerObjection.name}</span>
+                      ))}
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditProject(visit.id)}
-                    >
-                      <Edit className="w-4 h-4 mr-1" />
-                      Editar
-                    </Button>
                   </div>
+                )}
 
-                  {/* Barra de Progreso */}
-                  <div>
+                {visit.stage === 'PROJECT' && (
+                  <div className="mt-3">
                     <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
                       <span>Progreso de información</span>
-                      <span>{calculateCompletion(visit.projectDetails)}%</span>
+                      <span>{completion}%</span>
                     </div>
                     <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-300 ${
-                          calculateCompletion(visit.projectDetails) === 100
-                            ? 'bg-green-500'
-                            : calculateCompletion(visit.projectDetails) >= 50
-                            ? 'bg-yellow-500'
-                            : 'bg-red-500'
-                        }`}
-                        style={{ width: `${calculateCompletion(visit.projectDetails)}%` }}
+                      <div className={`h-full rounded-full transition-all ${completion === 100 ? 'bg-green-500' : completion >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                        style={{ width: `${completion}%` }}
                       />
                     </div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+                )}
 
-      {/* Proyectos con Chat Creado */}
-      {completedProjects.length > 0 && (
-        <div>
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-green-500" />
-            Proyectos con Chat ({completedProjects.length})
-          </h2>
-          <div className="space-y-4">
-            {completedProjects.map((visit) => (
-              <div
-                key={visit.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border-l-4 border-green-500"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">
-                      {visit.parcel.address}
-                    </h3>
-                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                      <span>Setter: {visit.setter.name}</span>
-                      <span>
-                        Chat creado:{' '}
-                        {visit.chatCreatedAt
-                          ? new Date(visit.chatCreatedAt).toLocaleDateString()
-                          : 'N/A'}
-                      </span>
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleViewProject(visit.id)}
-                  >
-                    Ver Detalles
-                  </Button>
-                </div>
-
-                {/* Proyectos Seleccionados */}
-                {visit.projects.length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                      Proyectos:
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {visit.projects.map((p, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs"
-                        >
-                          {p.projectType.name}
-                        </span>
-                      ))}
-                    </div>
+                {(visit.stage === 'CLOSED' || visit.stage === 'PROPOSAL_ACCEPTED') && visit.bill?.clientName && (
+                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm">
+                    <span className="font-medium">{visit.bill.clientName}</span>
+                    {visit.bill.phone && <span className="ml-3 text-gray-500">{visit.bill.phone}</span>}
+                    {visit.bill.clientEmail && <span className="ml-3 text-gray-500">{visit.bill.clientEmail}</span>}
                   </div>
                 )}
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       )}
 
-      {visits.length === 0 && (
-        <div className="text-center py-12">
-          <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500 dark:text-gray-400">
-            No tienes proyectos cerrados aún
-          </p>
-        </div>
-      )}
-
-      {/* Modal de Ver Proyecto */}
-      <ViewProjectModal
-        isOpen={isViewProjectModalOpen}
-        onClose={() => setIsViewProjectModalOpen(false)}
-        visitId={selectedVisitId}
-      />
-
-      {/* Modal de Editar Proyecto */}
-      <EditProjectModal
-        isOpen={isEditProjectModalOpen}
-        onClose={() => setIsEditProjectModalOpen(false)}
-        visitId={selectedVisitId}
-        onSuccess={fetchProjects}
-      />
+      <ViewProjectModal isOpen={isViewProjectModalOpen} onClose={() => setIsViewProjectModalOpen(false)} visitId={selectedVisitId} />
+      <EditProjectModal isOpen={isEditProjectModalOpen} onClose={() => setIsEditProjectModalOpen(false)} visitId={selectedVisitId} onSuccess={fetchProjects} />
     </div>
   );
 }

@@ -1,8 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MapPin, Calendar, AlertCircle, Clock } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { MapPin, Calendar, AlertCircle, Clock, XCircle } from 'lucide-react';
 import Link from 'next/link';
+
+interface VisitData {
+  stage: string;
+  objections?: { id: number }[];
+}
 
 interface Parcel {
   id: string;
@@ -16,12 +22,19 @@ interface Parcel {
   percentage: number;
   isExpiringSoon: boolean;
   isExpired: boolean;
+  visits?: VisitData[];
+  hasSetterObjections?: boolean;
 }
 
 export default function MyParcelsPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [parcels, setParcels] = useState<Parcel[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'expiring' | 'expired'>('all');
+  const filterParam = searchParams.get('filter') || 'all';
+
+  const validFilters = ['all', 'expiring', 'expired', 'objections'];
+  const filter = validFilters.includes(filterParam) ? filterParam : 'all';
 
   useEffect(() => {
     fetchParcels();
@@ -31,7 +44,23 @@ export default function MyParcelsPage() {
     try {
       const res = await fetch('/api/parcels/expiration');
       const data = await res.json();
-      setParcels(data);
+
+      // Enriquecer con datos de objeciones
+      const enriched = await Promise.all(
+        data.map(async (p: Parcel) => {
+          try {
+            const visitRes = await fetch(`/api/visits/active?parcelId=${p.id}`);
+            if (visitRes.ok) {
+              const visit = await visitRes.json();
+              const hasObj = visit?.objections && visit.objections.length > 0;
+              return { ...p, hasSetterObjections: hasObj };
+            }
+          } catch {}
+          return { ...p, hasSetterObjections: false };
+        })
+      );
+
+      setParcels(enriched);
     } catch (error) {
       console.error('Error fetching parcels:', error);
     } finally {
@@ -42,8 +71,20 @@ export default function MyParcelsPage() {
   const filteredParcels = parcels.filter((parcel) => {
     if (filter === 'expiring') return parcel.isExpiringSoon && !parcel.isExpired;
     if (filter === 'expired') return parcel.isExpired;
+    if (filter === 'objections') return parcel.hasSetterObjections;
     return true;
   });
+
+  const getFilterCount = (f: string) => {
+    if (f === 'expiring') return parcels.filter((p) => p.isExpiringSoon && !p.isExpired).length;
+    if (f === 'expired') return parcels.filter((p) => p.isExpired).length;
+    if (f === 'objections') return parcels.filter((p) => p.hasSetterObjections).length;
+    return parcels.length;
+  };
+
+  const setFilter = (f: string) => {
+    router.push(`/my-parcels?filter=${f}`);
+  };
 
   const getProgressColor = (percentage: number) => {
     if (percentage > 50) return 'bg-green-500';
@@ -61,7 +102,6 @@ export default function MyParcelsPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold mb-2">Parcelas Activas</h1>
         <p className="text-gray-600 dark:text-gray-400">
@@ -69,8 +109,7 @@ export default function MyParcelsPage() {
         </p>
       </div>
 
-      {/* Filtros */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <button
           onClick={() => setFilter('all')}
           className={`px-4 py-2 rounded-lg transition-colors ${
@@ -79,7 +118,7 @@ export default function MyParcelsPage() {
               : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
           }`}
         >
-          Todas ({parcels.length})
+          Todas ({getFilterCount('all')})
         </button>
         <button
           onClick={() => setFilter('expiring')}
@@ -90,7 +129,7 @@ export default function MyParcelsPage() {
           }`}
         >
           <AlertCircle className="w-4 h-4" />
-          Por Vencer ({parcels.filter((p) => p.isExpiringSoon && !p.isExpired).length})
+          Por Vencer ({getFilterCount('expiring')})
         </button>
         <button
           onClick={() => setFilter('expired')}
@@ -101,20 +140,26 @@ export default function MyParcelsPage() {
           }`}
         >
           <Clock className="w-4 h-4" />
-          Expiradas ({parcels.filter((p) => p.isExpired).length})
+          Expiradas ({getFilterCount('expired')})
+        </button>
+        <button
+          onClick={() => setFilter('objections')}
+          className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+            filter === 'objections'
+              ? 'bg-secondary text-white'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+          }`}
+        >
+          <XCircle className="w-4 h-4" />
+          Objeciones ({getFilterCount('objections')})
         </button>
       </div>
 
-      {/* Lista de Parcelas */}
       {filteredParcels.length === 0 ? (
         <div className="text-center py-12">
           <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-500 dark:text-gray-400">
-            {filter === 'all'
-              ? 'No tienes parcelas reclamadas'
-              : filter === 'expiring'
-              ? 'No tienes parcelas por vencer'
-              : 'No tienes parcelas expiradas'}
+            No tienes parcelas{filter === 'objections' ? ' con objeciones' : ''}
           </p>
         </div>
       ) : (
@@ -123,7 +168,9 @@ export default function MyParcelsPage() {
             <div
               key={parcel.id}
               className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border-l-4 ${
-                parcel.isExpired
+                filter === 'objections'
+                  ? 'border-secondary'
+                  : parcel.isExpired
                   ? 'border-red-500'
                   : parcel.isExpiringSoon
                   ? 'border-yellow-500'
@@ -135,6 +182,11 @@ export default function MyParcelsPage() {
                   <div className="flex items-center gap-2 mb-2">
                     <MapPin className="w-5 h-5 text-gray-500" />
                     <h3 className="text-lg font-semibold">{parcel.address}</h3>
+                    {parcel.hasSetterObjections && (
+                      <span className="px-2 py-0.5 bg-secondary/10 text-secondary rounded-full text-xs font-medium">
+                        Objeción
+                      </span>
+                    )}
                   </div>
                   {parcel.ownerName && (
                     <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -178,7 +230,6 @@ export default function MyParcelsPage() {
                 </div>
               </div>
 
-              {/* Barra de Progreso */}
               <div className="mb-4">
                 <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
                   <span>Tiempo restante</span>
@@ -186,22 +237,18 @@ export default function MyParcelsPage() {
                 </div>
                 <div className="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                   <div
-                    className={`h-full transition-all duration-300 ${getProgressColor(
-                      parcel.percentage
-                    )}`}
+                    className={`h-full transition-all duration-300 ${getProgressColor(parcel.percentage)}`}
                     style={{ width: `${parcel.percentage}%` }}
                   />
                 </div>
               </div>
 
-              {/* Alerta de Expiración */}
               {parcel.isExpiringSoon && !parcel.isExpired && (
                 <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-4">
                   <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
                     <AlertCircle className="w-5 h-5" />
                     <span className="font-medium">
-                      ¡Atención! Esta parcela expirará en {parcel.daysRemaining} días.
-                      Realiza una visita para mantenerla.
+                      ¡Atención! Esta parcela expirará en {parcel.daysRemaining} días. Realiza una visita para mantenerla.
                     </span>
                   </div>
                 </div>
@@ -218,7 +265,6 @@ export default function MyParcelsPage() {
                 </div>
               )}
 
-              {/* Acciones */}
               <div className="flex gap-3">
                 <Link
                   href={`/visit/${parcel.id}`}
