@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
+export const dynamic = 'force-dynamic';
 
 // Cron job que se ejecuta diariamente para verificar parcelas sin actividad por 30 días
 export async function POST() {
