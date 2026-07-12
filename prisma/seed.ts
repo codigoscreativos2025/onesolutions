@@ -98,6 +98,9 @@ async function main() {
     { name: "Jardines", description: "Diseño y mantenimiento de jardines" },
     { name: "Corte de Árbol", description: "Poda y remoción de árboles" },
     { name: "Remodelación", description: "Remodelación general" },
+    { name: "Purificacion de agua", description: "sistema de purificacion para agua" },
+    { name: "Techo", description: "Reparacion de techo" }
+        
   ];
 
   for (const pt of projectTypes) {
