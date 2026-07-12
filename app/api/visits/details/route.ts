@@ -45,12 +45,16 @@ export async function GET(request: Request) {
     }
 
     // Filtrar según el tipo de métrica
-    if (type === 'doors') {
+    if (type === 'doors' || type === 'parcels') {
       whereClause.stage = 'IN_PROGRESS';
     } else if (type === 'leads') {
       whereClause.stage = 'PROPOSAL_ACCEPTED';
     } else if (type === 'projects') {
+      whereClause.stage = 'PROJECT';
+    } else if (type === 'closed') {
       whereClause.stage = 'CLOSED';
+    } else if (type === 'cancelled') {
+      whereClause.stage = 'CANCELLED';
     } else if (type === 'objections') {
       whereClause.OR = [
         { outcome: 'OBJECTION' },

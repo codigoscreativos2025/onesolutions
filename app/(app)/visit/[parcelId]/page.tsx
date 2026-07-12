@@ -98,7 +98,7 @@ export default function VisitPage() {
   const [pendingAction, setPendingAction] = useState<string | null>(null);
 
   const isClosingMode =
-    session?.user?.role === "CLOSER" && (visit?.stage === "PROPOSAL_ACCEPTED" || mode === "closer");
+    session?.user?.role === "CLOSER" && (visit?.stage === "PROPOSAL_ACCEPTED" || visit?.stage === "PROJECT" || mode === "closer");
 
   useEffect(() => {
     fetchData();
@@ -246,6 +246,8 @@ export default function VisitPage() {
         billImageUrl = uploadData.url;
       }
 
+      const action = visit?.stage === "PROPOSAL_ACCEPTED" ? "start-project" : undefined;
+
       await fetch(`/api/visits/${visit.id}/close`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -253,6 +255,7 @@ export default function VisitPage() {
           notes: closingNotes || clientName,
           billImageUrl,
           billFileName: billFileName || billFile?.name || "",
+          action,
         }),
       });
 
@@ -292,6 +295,21 @@ export default function VisitPage() {
 
     setSaving(false);
     router.push("/map");
+  };
+
+  const handleCancel = async () => {
+    if (!visit) return;
+    const reason = prompt("Motivo de cancelación:");
+    if (reason === null) return;
+
+    setSaving(true);
+    await fetch(`/api/visits/${visit.id}/cancel`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason }),
+    });
+    setSaving(false);
+    router.push("/my-projects");
   };
 
   const handleLocationValidated = async () => {
@@ -700,6 +718,16 @@ export default function VisitPage() {
             </>
           )}
 
+          {isClosingMode && visit?.stage === "PROJECT" && (
+            <Button
+              onClick={handleCancel}
+              variant="secondary"
+              disabled={saving}
+              className="w-full h-14 uppercase tracking-widest"
+            >
+              {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Cancelar Proyecto"}
+            </Button>
+          )}
           <Button
             onClick={handleProposal}
             disabled={
@@ -711,6 +739,8 @@ export default function VisitPage() {
           >
             {saving ? (
               <Loader2 className="w-5 h-5 animate-spin" />
+            ) : isClosingMode && visit?.stage === "PROPOSAL_ACCEPTED" ? (
+              "Iniciar Proyecto"
             ) : isClosingMode ? (
               "Cerrar Proyecto"
             ) : (

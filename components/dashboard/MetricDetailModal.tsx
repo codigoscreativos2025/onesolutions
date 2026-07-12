@@ -64,7 +64,7 @@ interface Visit {
 interface MetricDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  metricType: 'doors' | 'leads' | 'projects' | 'objections' | null;
+  metricType: 'doors' | 'leads' | 'projects' | 'objections' | 'parcels' | 'closed' | 'cancelled' | null;
   userId?: number;
 }
 
@@ -111,10 +111,16 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
     switch (metricType) {
       case 'doors':
         return 'Puertas Tocadas';
+      case 'parcels':
+        return 'Parcelas';
       case 'leads':
-        return 'Leads Generados';
+        return 'Leads';
       case 'projects':
+        return 'Proyectos';
+      case 'closed':
         return 'Proyectos Cerrados';
+      case 'cancelled':
+        return 'Proyectos Cancelados';
       case 'objections':
         return 'Objeciones';
       default:
@@ -138,8 +144,12 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
         return 'En Progreso';
       case 'PROPOSAL_ACCEPTED':
         return 'Propuesta Aceptada';
+      case 'PROJECT':
+        return 'Proyecto';
       case 'CLOSED':
         return 'Cerrado';
+      case 'CANCELLED':
+        return 'Cancelado';
       default:
         return stage;
     }
@@ -151,8 +161,12 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
       case 'PROPOSAL_ACCEPTED':
         return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'PROJECT':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
       case 'CLOSED':
         return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
     }

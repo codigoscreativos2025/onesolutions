@@ -85,6 +85,8 @@ model Visit {
   scheduledAt DateTime?
   completedAt DateTime?
   notes       String?
+  cancelledAt DateTime?
+  cancellationReason String?
   createdAt   DateTime   @default(now())
   chatCreatedAt DateTime?
   chatCreatedBy Int?

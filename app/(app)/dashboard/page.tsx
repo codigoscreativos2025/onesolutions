@@ -14,6 +14,9 @@ import {
   Calendar,
   ChevronRight,
   Plus,
+  FileText,
+  XCircle,
+  BarChart3,
 } from "lucide-react";
 import { MetricsCharts } from "@/components/dashboard/MetricsCharts";
 import { MiniRanking } from "@/components/dashboard/MiniRanking";
@@ -24,9 +27,14 @@ import { Button } from "@/components/ui/Button";
 
 interface Metrics {
   doorsKnocked: number;
+  parcels: number;
+  setterObjections: number;
   leadsGenerated: number;
+  closerLeads: number;
+  projectsInProgress: number;
   projectsClosed: number;
-  objectionsCount: number;
+  projectsCancelled: number;
+  closerObjectionsCount: number;
   appointments: number;
   teamGoal: number;
   topDoorsKnocked?: { id: number; name: string; count: number }[];
@@ -53,7 +61,7 @@ export default function DashboardPage() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedMetric, setSelectedMetric] = useState<'doors' | 'leads' | 'projects' | 'objections' | null>(null);
+  const [selectedMetric, setSelectedMetric] = useState<'doors' | 'leads' | 'projects' | 'objections' | 'parcels' | 'closed' | 'cancelled' | null>(null);
   const [showCreateLeadModal, setShowCreateLeadModal] = useState(false);
   const [closerMode, setCloserMode] = useState<'all' | 'own'>('all');
 
@@ -140,6 +148,29 @@ export default function DashboardPage() {
         )}
       </section>
 
+      {/* Puertas Tocadas - stat global */}
+      {!isAdmin && (
+        <div 
+          className="glass-panel p-4 rounded-2xl flex items-center justify-between cursor-pointer hover:border-primary/40 transition-all"
+          onClick={() => setSelectedMetric('doors')}
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-xl bg-primary/10 text-primary">
+              <BarChart3 className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-on-surface-variant uppercase tracking-wider">
+                Puertas Tocadas
+              </h3>
+              <p className="text-2xl font-bold text-on-surface mt-1">
+                {metrics?.doorsKnocked || 0}
+              </p>
+            </div>
+          </div>
+          <TrendingUp className="w-5 h-5 text-primary" />
+        </div>
+      )}
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {isAdmin ? (
           <>
@@ -170,41 +201,72 @@ export default function DashboardPage() {
             <Link href="/admin/crm?filter=objections" className="block">
               <MetricCard
                 title={t.dashboard.objections}
-                value={metrics?.objectionsCount || 0}
+                value={(metrics?.setterObjections || 0) + (metrics?.closerObjectionsCount || 0)}
                 icon={MessageSquareWarning}
                 color="secondary"
               />
             </Link>
           </>
+        ) : role === "SETTER" ? (
+          <>
+            <MetricCard
+              title="Parcelas"
+              value={metrics?.parcels || 0}
+              icon={DoorOpen}
+              color="primary"
+              onClick={() => setSelectedMetric('parcels')}
+            />
+            <MetricCard
+              title="Objeciones"
+              value={metrics?.setterObjections || 0}
+              icon={MessageSquareWarning}
+              color="secondary"
+              onClick={() => setSelectedMetric('objections')}
+            />
+            <MetricCard
+              title="Leads Generados"
+              value={metrics?.leadsGenerated || 0}
+              icon={PersonStanding}
+              color="primary"
+              onClick={() => setSelectedMetric('leads')}
+            />
+          </>
         ) : (
           <>
             <MetricCard
-              title={t.dashboard.doorsKnocked}
-              value={metrics?.doorsKnocked || 0}
-              icon={DoorOpen}
-              color="primary"
-              onClick={() => setSelectedMetric('doors')}
-            />
-            <MetricCard
-              title={t.dashboard.leadsGenerated}
-              value={metrics?.leadsGenerated || 0}
+              title="Leads"
+              value={metrics?.closerLeads || 0}
               icon={PersonStanding}
               color="secondary"
               onClick={() => setSelectedMetric('leads')}
             />
             <MetricCard
-              title={t.dashboard.projectsClosed}
-              value={metrics?.projectsClosed || 0}
-              icon={Handshake}
+              title="Objeciones"
+              value={metrics?.closerObjectionsCount || 0}
+              icon={MessageSquareWarning}
               color="primary"
+              onClick={() => setSelectedMetric('objections')}
+            />
+            <MetricCard
+              title="Proyecto"
+              value={metrics?.projectsInProgress || 0}
+              icon={FileText}
+              color="secondary"
               onClick={() => setSelectedMetric('projects')}
             />
             <MetricCard
-              title={t.dashboard.objections}
-              value={metrics?.objectionsCount || 0}
-              icon={MessageSquareWarning}
+              title="Proyecto Cerrado"
+              value={metrics?.projectsClosed || 0}
+              icon={Handshake}
+              color="primary"
+              onClick={() => setSelectedMetric('closed')}
+            />
+            <MetricCard
+              title="Proyecto Cancelado"
+              value={metrics?.projectsCancelled || 0}
+              icon={XCircle}
               color="secondary"
-              onClick={() => setSelectedMetric('objections')}
+              onClick={() => setSelectedMetric('cancelled')}
             />
           </>
         )}

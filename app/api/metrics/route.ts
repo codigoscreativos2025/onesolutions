@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const mode = searchParams.get("mode"); // 'own' or 'setter'
+  const mode = searchParams.get("mode");
 
   const userId = parseInt(session.user.id);
   const role = session.user.role;
@@ -21,48 +21,67 @@ export async function GET(request: Request) {
     if (mode === "own") {
       whereClause = { closerId: userId };
     } else {
-      // default: show all visits from own setters + own closer visits
       whereClause = { OR: [{ closerId: userId }, { setterId: userId }] };
     }
   }
 
-  // Métricas básicas
   const [
     doorsKnocked,
-    prospectsGenerated,
+    parcels,
+    setterObjections,
+    leadsGenerated,
+    closerLeads,
+    projectsInProgress,
     projectsClosed,
-    objectionsCount,
+    projectsCancelled,
+    closerObjectionsCount,
     appointments,
   ] = await Promise.all([
+    // Todas las visitas (stats)
     prisma.visit.count({ where: whereClause }),
+    // Parcelas activas (IN_PROGRESS)
     prisma.visit.count({
-      where: {
-        ...whereClause,
-        stage: "PROPOSAL_ACCEPTED",
-      },
+      where: { ...whereClause, stage: "IN_PROGRESS" },
     }),
-    prisma.visit.count({
-      where: {
-        ...whereClause,
-        stage: "CLOSED",
-      },
-    }),
+    // Objeciones de setter
     prisma.visitObjection.count({
-      where: {
-        visit: whereClause,
-      },
+      where: { visit: whereClause },
     }),
+    // Leads generados (PROPOSAL_ACCEPTED para setter)
+    prisma.visit.count({
+      where: { ...whereClause, stage: "PROPOSAL_ACCEPTED" },
+    }),
+    // Leads del closer (PROPOSAL_ACCEPTED asignados como closer)
+    prisma.visit.count({
+      where: role === "CLOSER"
+        ? { closerId: userId, stage: "PROPOSAL_ACCEPTED" }
+        : { ...whereClause, stage: "PROPOSAL_ACCEPTED" },
+    }),
+    // Proyectos en elaboración (PROJECT)
+    prisma.visit.count({
+      where: { ...whereClause, stage: "PROJECT" },
+    }),
+    // Proyectos cerrados
+    prisma.visit.count({
+      where: { ...whereClause, stage: "CLOSED" },
+    }),
+    // Proyectos cancelados
+    prisma.visit.count({
+      where: { ...whereClause, stage: "CANCELLED" },
+    }),
+    // Objeciones de closer
+    prisma.visitCloserObjection.count({
+      where: { visit: whereClause },
+    }),
+    // Citas agendadas
     prisma.visit.count({
       where: {
         ...whereClause,
-        stage: {
-          in: ["PROPOSAL_ACCEPTED", "CLOSED"],
-        },
+        stage: { in: ["PROPOSAL_ACCEPTED", "PROJECT", "CLOSED"] },
       },
     }),
   ]);
 
-  // Obtener metas actuales
   const now = new Date();
   const [weeklyGoal, monthlyGoal] = await Promise.all([
     prisma.businessGoal.findFirst({
@@ -81,13 +100,11 @@ export async function GET(request: Request) {
     }),
   ]);
 
-  // Top personas por métrica (solo admin)
   const topDoorsKnocked: { id: number; name: string; count: number }[] = [];
   const topProspects: { id: number; name: string; count: number }[] = [];
   const topProjectsClosed: { id: number; name: string; count: number }[] = [];
 
   if (role === "ADMIN") {
-    // Top puertas tocadas
     const doorsData = await prisma.visit.groupBy({
       by: ["setterId"],
       _count: { setterId: true },
@@ -105,7 +122,6 @@ export async function GET(request: Request) {
       }
     }
 
-    // Top prospectos
     const prospectsData = await prisma.visit.groupBy({
       by: ["setterId"],
       _count: { setterId: true },
@@ -124,7 +140,6 @@ export async function GET(request: Request) {
       }
     }
 
-    // Top proyectos cerrados (closers)
     const projectsData = await prisma.visit.groupBy({
       by: ["closerId"],
       _count: { closerId: true },
@@ -146,7 +161,6 @@ export async function GET(request: Request) {
     }
   }
 
-  // Objeciones más comunes de SETTER
   const topSetterObjections = await prisma.visitObjection.groupBy({
     by: ["objectionId"],
     _count: { objectionId: true },
@@ -170,7 +184,6 @@ export async function GET(request: Request) {
     }
   }
 
-  // Objeciones más comunes de CLOSER
   const topCloserObjections = await prisma.visitCloserObjection.groupBy({
     by: ["closerObjectionId"],
     _count: { closerObjectionId: true },
@@ -194,7 +207,6 @@ export async function GET(request: Request) {
     }
   }
 
-  // Top personas con más objeciones de SETTER
   const topSetterObjectionsByUser: { id: number; name: string; count: number }[] = [];
   if (role === "ADMIN") {
     const setterObjectionsData = await prisma.visitObjection.groupBy({
@@ -228,7 +240,6 @@ export async function GET(request: Request) {
     }
   }
 
-  // Top personas con más objeciones de CLOSER
   const topCloserObjectionsByUser: { id: number; name: string; count: number }[] = [];
   if (role === "ADMIN") {
     const closerObjectionsData = await prisma.visitCloserObjection.groupBy({
@@ -262,11 +273,9 @@ export async function GET(request: Request) {
     }
   }
 
-  // Tasas de conversión
-  const conversionDoorToProspect = doorsKnocked > 0 ? (prospectsGenerated / doorsKnocked) * 100 : 0;
-  const conversionProspectToClosed = prospectsGenerated > 0 ? (projectsClosed / prospectsGenerated) * 100 : 0;
+  const conversionDoorToProspect = doorsKnocked > 0 ? (leadsGenerated / doorsKnocked) * 100 : 0;
+  const conversionProspectToClosed = leadsGenerated > 0 ? (projectsClosed / leadsGenerated) * 100 : 0;
 
-  // Top conversión por setter
   const topConversionBySetter: { id: number; name: string; doors: number; prospects: number; rate: number }[] = [];
   if (role === "ADMIN") {
     const setters = await prisma.user.findMany({
@@ -292,7 +301,6 @@ export async function GET(request: Request) {
     topConversionBySetter.sort((a, b) => b.rate - a.rate);
   }
 
-  // Top conversión por closer
   const topConversionByCloser: { id: number; name: string; prospects: number; closed: number; rate: number }[] = [];
   if (role === "ADMIN") {
     const closers = await prisma.user.findMany({
@@ -302,7 +310,7 @@ export async function GET(request: Request) {
 
     for (const closer of closers) {
       const prospects = await prisma.visit.count({
-        where: { closerId: closer.id, stage: { in: ["PROPOSAL_ACCEPTED", "CLOSED"] } },
+        where: { closerId: closer.id, stage: { in: ["PROPOSAL_ACCEPTED", "PROJECT"] } },
       });
       const closed = await prisma.visit.count({
         where: { closerId: closer.id, stage: "CLOSED" },
@@ -320,7 +328,6 @@ export async function GET(request: Request) {
     topConversionByCloser.sort((a, b) => b.rate - a.rate);
   }
 
-  // Métricas por tipo de proyecto
   const projectTypes = await prisma.projectType.findMany({
     include: {
       visits: {
@@ -337,10 +344,14 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     doorsKnocked,
-    leadsGenerated: prospectsGenerated,
-    prospectsGenerated,
+    parcels,
+    setterObjections,
+    leadsGenerated,
+    closerLeads,
+    projectsInProgress,
     projectsClosed,
-    objectionsCount,
+    projectsCancelled,
+    closerObjectionsCount,
     appointments,
     weeklyGoal,
     monthlyGoal,

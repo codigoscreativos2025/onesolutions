@@ -13,12 +13,11 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await request.json();
-  const { notes, billImageUrl, billFileName } = body;
+  const { notes, billImageUrl, billFileName, action } = body;
 
   try {
     const userId = parseInt(session.user.id);
 
-    // Validar que el usuario existe
     const user = await prisma.user.findUnique({
       where: { id: userId },
     });
@@ -27,13 +26,27 @@ export async function PATCH(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    const existingVisit = await prisma.visit.findUnique({
+      where: { id: parseInt(id) },
+      include: { slot: true, chatRoom: true },
+    });
+
+    if (!existingVisit) {
+      return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+    }
+
+    let newStage = "CLOSED";
+    if (action === "start-project") {
+      newStage = "PROJECT";
+    }
+
     const visit = await prisma.visit.update({
       where: { id: parseInt(id) },
       data: {
-        stage: "CLOSED",
-        outcome: "CLOSED",
+        stage: newStage,
+        outcome: newStage === "CLOSED" ? "CLOSED" : undefined,
         notes,
-        completedAt: new Date(),
+        completedAt: newStage === "CLOSED" ? new Date() : undefined,
       },
       include: {
         setter: { select: { id: true } },
@@ -50,7 +63,6 @@ export async function PATCH(
       });
 
       if (existingBill) {
-        // Si ya existe un recibo de luz, guardar como archivo adicional
         await prisma.bill.update({
           where: { visitId: visit.id },
           data: {
@@ -59,7 +71,6 @@ export async function PATCH(
           },
         });
       } else {
-        // No existe recibo, crear nuevo registro
         await prisma.bill.create({
           data: {
             visitId: visit.id,
@@ -72,24 +83,45 @@ export async function PATCH(
       }
     }
 
-    // Marcar parcela como cliente
-    await prisma.parcel.update({
-      where: { id: visit.parcelId },
-      data: { status: "CUSTOMER" },
-    });
+    if (newStage === "CLOSED") {
+      // Marcar parcela como cliente
+      await prisma.parcel.update({
+        where: { id: visit.parcelId },
+        data: { status: "CUSTOMER" },
+      });
 
-    // Liberar el slot del calendario si existe
-    if (visit.slot) {
+      // Crear chat automáticamente al cerrar proyecto
+      const existingChat = await prisma.chatRoom.findUnique({
+        where: { visitId: visit.id },
+      });
+
+      if (!existingChat) {
+        await prisma.chatRoom.create({
+          data: {
+            visitId: visit.id,
+          },
+        });
+
+        await prisma.visit.update({
+          where: { id: visit.id },
+          data: {
+            chatCreatedAt: new Date(),
+            chatCreatedBy: userId,
+          },
+        });
+      }
+    }
+
+    // Liberar el slot del calendario si existe (para CLOSED o PROJECT)
+    if (existingVisit.slot && newStage !== "PROJECT") {
       await prisma.closerSlot.update({
-        where: { id: visit.slot.id },
+        where: { id: existingVisit.slot.id },
         data: {
           isBooked: false,
           visitId: null,
         },
       });
     }
-
-    // NO crear chat automáticamente - el closer debe crearlo manualmente después de cargar la información
 
     return NextResponse.json(visit);
   } catch (error) {
