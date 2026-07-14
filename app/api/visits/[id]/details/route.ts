@@ -24,6 +24,12 @@ export async function GET(
             address: true,
             ownerName: true,
             metadata: true,
+            visitHistory: {
+              include: {
+                setter: { select: { name: true } },
+              },
+              orderBy: { visitedAt: 'asc' },
+            },
           },
         },
         setter: {

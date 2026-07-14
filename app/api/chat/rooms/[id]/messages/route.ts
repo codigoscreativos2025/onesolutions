@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+export const dynamic = 'force-dynamic';
 
 export async function POST(
   request: Request,
@@ -36,9 +37,25 @@ export async function POST(
     where: { id: parseInt(id) },
     include: {
       visit: {
-        select: { setterId: true, closerId: true },
-        include: {
-          parcel: { select: { address: true } },
+        select: { 
+          id: true,
+          setterId: true, 
+          closerId: true,
+          stage: true,
+          createdAt: true,
+          parcel: { select: { id: true, address: true } },
+          setter: { select: { id: true, name: true } },
+          closer: { select: { id: true, name: true } },
+          bill: { select: { imageUrl: true, clientName: true, phone: true, clientEmail: true, additionalFileUrl: true, additionalFileName: true } },
+          projectDetails: true,
+          projects: { include: { projectType: { select: { id: true, name: true } } } },
+          objections: { include: { objection: { select: { name: true, color: true } } } },
+          closerObjections: { include: { closerObjection: { select: { name: true, color: true } } } },
+          notes: true,
+          cancelledAt: true,
+          cancellationReason: true,
+          completedAt: true,
+          scheduledAt: true,
         },
       },
     },

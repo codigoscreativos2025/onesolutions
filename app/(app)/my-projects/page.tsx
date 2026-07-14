@@ -26,7 +26,7 @@ interface Visit {
   createdAt: string;
   completedAt: string | null;
   chatCreatedAt: string | null;
-  parcel: { id: string; address: string };
+  parcel: { id: string; address: string; ownerName: string | null };
   setter: { name: string };
   closer?: { name: string };
   projects: { projectType: { id: number; name: string } }[];
@@ -61,6 +61,8 @@ export default function MyProjectsPage() {
   const [projectTypeFilter, setProjectTypeFilter] = useState<string>('all');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
+  const [ownerNameFilter, setOwnerNameFilter] = useState<string>('');
+  const [addressFilter, setAddressFilter] = useState<string>('');
   const [projectTypes, setProjectTypes] = useState<{ id: number; name: string }[]>([]);
 
   const calculateCompletion = (projectDetails: ProjectDetails | null): number => {
@@ -117,9 +119,6 @@ export default function MyProjectsPage() {
   };
 
   const setFilter = (f: string) => {
-    setProjectTypeFilter('all');
-    setDateFrom('');
-    setDateTo('');
     router.push(`/my-projects?filter=${f}`);
   };
 
@@ -131,7 +130,14 @@ export default function MyProjectsPage() {
     const matchesDateFrom = !dateFrom || visitDate >= new Date(dateFrom);
     const matchesDateTo = !dateTo || visitDate <= new Date(dateTo + 'T23:59:59.999Z');
 
-    return matchesProjectType && matchesDateFrom && matchesDateTo;
+    const matchesOwnerName = !ownerNameFilter ||
+      (visit.parcel.ownerName || '').toLowerCase().includes(ownerNameFilter.toLowerCase()) ||
+      (visit.bill?.clientName || '').toLowerCase().includes(ownerNameFilter.toLowerCase());
+
+    const matchesAddress = !addressFilter ||
+      visit.parcel.address.toLowerCase().includes(addressFilter.toLowerCase());
+
+    return matchesProjectType && matchesDateFrom && matchesDateTo && matchesOwnerName && matchesAddress;
   });
 
   if (loading) {
@@ -204,6 +210,26 @@ export default function MyProjectsPage() {
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
             className="h-10 px-3 rounded-lg bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface text-sm"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Propietario / Cliente</label>
+          <input
+            type="text"
+            value={ownerNameFilter}
+            onChange={(e) => setOwnerNameFilter(e.target.value)}
+            placeholder="Buscar..."
+            className="h-10 px-3 rounded-lg bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface text-sm w-44"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Dirección</label>
+          <input
+            type="text"
+            value={addressFilter}
+            onChange={(e) => setAddressFilter(e.target.value)}
+            placeholder="Buscar..."
+            className="h-10 px-3 rounded-lg bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface text-sm w-44"
           />
         </div>
       </div>

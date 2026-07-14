@@ -35,16 +35,32 @@ interface ProjectType {
   name: string;
 }
 
+interface ObjectionEntry {
+  objection?: { name: string; color: string };
+  closerObjection?: { name: string; color: string };
+}
+
 interface Room {
   id: number;
   visit: {
     id: number;
+    setterId: number;
+    closerId?: number;
+    stage?: string;
+    createdAt?: string;
     parcel: { id: string; address: string };
     setter: { name: string };
     closer?: { name: string };
-    bill?: { imageUrl: string; phone: string; clientName: string; clientEmail: string };
+    bill?: { imageUrl: string; phone: string; clientName: string; clientEmail: string; additionalFileUrl?: string; additionalFileName?: string };
     projectDetails?: ProjectDetails;
     projects?: { projectType: ProjectType }[];
+    objections?: ObjectionEntry[];
+    closerObjections?: ObjectionEntry[];
+    notes?: string;
+    cancelledAt?: string;
+    cancellationReason?: string;
+    completedAt?: string;
+    scheduledAt?: string;
   };
   messages: {
     body: string;
@@ -72,7 +88,7 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [showProjectInfo, setShowProjectInfo] = useState(false);
+  const [showFullInfo, setShowFullInfo] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState<ProjectDetails>({});
   const [saving, setSaving] = useState(false);
@@ -396,26 +412,28 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
                           ` • Closer: ${selectedRoom.visit.closer.name}`}
                       </p>
                     </div>
-                    {projectDetails && (
-                      <div className="flex gap-2">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowFullInfo(!showFullInfo)}
+                        className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                          showFullInfo
+                            ? 'bg-primary text-on-primary'
+                            : 'bg-primary/10 text-primary hover:bg-primary/20'
+                        }`}
+                      >
+                        <Package className="w-3 h-3 inline mr-1" />
+                        Info Proyecto
+                      </button>
+                      {(session?.user?.role === "ADMIN" || session?.user?.role === "CLOSER") && (
                         <button
-                          onClick={() => setShowProjectInfo(true)}
-                          className="px-3 py-1 text-xs font-medium bg-primary/10 text-primary rounded-full hover:bg-primary/20 transition-colors"
+                          onClick={handleOpenEditModal}
+                          className="px-3 py-1 text-xs font-medium bg-secondary/10 text-secondary rounded-full hover:bg-secondary/20 transition-colors"
                         >
-                          <Package className="w-3 h-3 inline mr-1" />
-                          Info Proyecto
+                          <Pencil className="w-3 h-3 inline mr-1" />
+                          Editar
                         </button>
-                        {(session?.user?.role === "ADMIN" || session?.user?.role === "CLOSER") && (
-                          <button
-                            onClick={handleOpenEditModal}
-                            className="px-3 py-1 text-xs font-medium bg-secondary/10 text-secondary rounded-full hover:bg-secondary/20 transition-colors"
-                          >
-                            <Pencil className="w-3 h-3 inline mr-1" />
-                            Editar
-                          </button>
-                        )}
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                   
                   {/* Barra de progreso de completitud */}
@@ -443,7 +461,18 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
                       </div>
                     </div>
                   )}
-                </div>
+                  </div>
+
+                {/* Collapsible Full Project Info Panel */}
+                {showFullInfo && selectedRoom && (
+                  <div className="border-b border-outline-variant/30 bg-surface-container-low/50">
+                    <ProjectInfoPanel
+                      room={selectedRoom}
+                      projects={projects}
+                      bill={bill}
+                    />
+                  </div>
+                )}
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
                   {messages.map((msg) => {
@@ -545,103 +574,6 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
           </div>
         </div>
       )}
-
-      {/* Modal de Info del Proyecto */}
-      <Modal
-        isOpen={showProjectInfo}
-        onClose={() => setShowProjectInfo(false)}
-        title="Información del Proyecto"
-      >
-        {projectDetails && (
-          <div className="space-y-4 max-h-[70vh] overflow-y-auto">
-            {/* Proyectos seleccionados */}
-            {projects.length > 0 && (
-              <div>
-                <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">
-                  Proyectos
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {projects.map((p) => (
-                    <span
-                      key={p.projectType.id}
-                      className="px-3 py-1 bg-primary/10 text-primary text-sm rounded-full"
-                    >
-                      {p.projectType.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Info del cliente */}
-            <div className="grid grid-cols-2 gap-4">
-              {projectDetails.clientName && (
-                <div>
-                  <p className="text-xs text-on-surface-variant">Cliente</p>
-                  <p className="font-medium text-on-surface">{projectDetails.clientName}</p>
-                </div>
-              )}
-              {projectDetails.clientEmail && (
-                <div>
-                  <p className="text-xs text-on-surface-variant">Email</p>
-                  <p className="font-medium text-on-surface truncate">{projectDetails.clientEmail}</p>
-                </div>
-              )}
-              {projectDetails.paymentMethod && (
-                <div>
-                  <p className="text-xs text-on-surface-variant">Pago</p>
-                  <p className="font-medium text-on-surface">{projectDetails.paymentMethod}</p>
-                </div>
-              )}
-              {projectDetails.closingDate && (
-                <div>
-                  <p className="text-xs text-on-surface-variant">Cierre</p>
-                  <p className="font-medium text-on-surface">
-                    {new Date(projectDetails.closingDate).toLocaleDateString()}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Info específica por tipo de proyecto */}
-            {projectDetails.solarFinancier && (
-              <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30">
-                <p className="text-sm font-semibold text-on-surface mb-2">Panel Solar</p>
-                <p className="text-sm text-on-surface">
-                  {projectDetails.solarFinancier} • {projectDetails.systemSize}
-                </p>
-              </div>
-            )}
-            {/* Comisiones */}
-            {projectDetails.primaryRep && (
-              <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30">
-                <p className="text-sm font-semibold text-on-surface mb-2">Comisiones</p>
-                <p className="text-sm text-on-surface">
-                  {projectDetails.primaryRep}: {projectDetails.primaryRepCommPct}%
-                </p>
-              </div>
-            )}
-
-            {/* Bill */}
-            {bill && (
-              <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30">
-                <p className="text-sm font-semibold text-on-surface mb-2 flex items-center gap-2">
-                  <FileText className="w-4 h-4" /> Recibo de Luz
-                </p>
-                <a
-                  href={bill.imageUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline text-sm"
-                >
-                  Ver archivo
-                </a>
-                <p className="text-sm text-on-surface mt-1">Tel: {bill.phone}</p>
-              </div>
-            )}
-          </div>
-        )}
-      </Modal>
 
       {/* Modal de Edición de ProjectDetails */}
       <Modal
@@ -801,6 +733,227 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
           </div>
         </div>
       </Modal>
+    </div>
+  );
+}
+
+function ProjectInfoPanel({
+  room,
+  projects,
+  bill,
+}: {
+  room: Room;
+  projects: { projectType: ProjectType }[];
+  bill?: { imageUrl: string; phone: string; clientName: string; clientEmail: string; additionalFileUrl?: string; additionalFileName?: string };
+}) {
+  const { visit } = room;
+  const projectDetails = visit.projectDetails;
+  const stageLabels: Record<string, string> = {
+    IN_PROGRESS: "En Progreso",
+    PROPOSAL_ACCEPTED: "Propuesta Aceptada",
+    PROJECT: "En Proyecto",
+    CLOSED: "Cerrado",
+    CANCELLED: "Cancelado",
+  };
+
+  return (
+    <div className="p-4 max-h-64 overflow-y-auto">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+        {visit.stage && (
+          <div className="col-span-2 md:col-span-3">
+            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+              visit.stage === 'CLOSED' ? 'bg-primary/10 text-primary' :
+              visit.stage === 'CANCELLED' ? 'bg-error/10 text-error' :
+              'bg-secondary/10 text-secondary'
+            }`}>
+              {stageLabels[visit.stage] || visit.stage}
+            </span>
+          </div>
+        )}
+
+        {bill?.clientName && (
+          <div>
+            <p className="text-xs text-on-surface-variant">Cliente</p>
+            <p className="font-medium text-on-surface text-sm">{bill.clientName}</p>
+          </div>
+        )}
+        {bill?.phone && (
+          <div>
+            <p className="text-xs text-on-surface-variant">Teléfono</p>
+            <p className="font-medium text-on-surface text-sm">{bill.phone}</p>
+          </div>
+        )}
+        {bill?.clientEmail && (
+          <div>
+            <p className="text-xs text-on-surface-variant">Email</p>
+            <p className="font-medium text-on-surface text-sm truncate">{bill.clientEmail}</p>
+          </div>
+        )}
+
+        <div>
+          <p className="text-xs text-on-surface-variant">Dirección</p>
+          <p className="font-medium text-on-surface text-sm">{visit.parcel.address}</p>
+        </div>
+
+        {projects.length > 0 && (
+          <div>
+            <p className="text-xs text-on-surface-variant">Proyectos</p>
+            <div className="flex flex-wrap gap-1 mt-0.5">
+              {projects.map((p) => (
+                <span
+                  key={p.projectType.id}
+                  className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full"
+                >
+                  {p.projectType.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {projectDetails?.closingDate && (
+          <div>
+            <p className="text-xs text-on-surface-variant">Fecha de Cierre</p>
+            <p className="font-medium text-on-surface text-sm">
+              {new Date(projectDetails.closingDate).toLocaleDateString()}
+            </p>
+          </div>
+        )}
+        {projectDetails?.paymentMethod && (
+          <div>
+            <p className="text-xs text-on-surface-variant">Método de Pago</p>
+            <p className="font-medium text-on-surface text-sm capitalize">{projectDetails.paymentMethod}</p>
+          </div>
+        )}
+        {projectDetails?.solarFinancier && (
+          <div>
+            <p className="text-xs text-on-surface-variant">Financiadora Solar</p>
+            <p className="font-medium text-on-surface text-sm">{projectDetails.solarFinancier}</p>
+          </div>
+        )}
+        {projectDetails?.systemSize && (
+          <div>
+            <p className="text-xs text-on-surface-variant">Tamaño del Sistema</p>
+            <p className="font-medium text-on-surface text-sm">{projectDetails.systemSize}</p>
+          </div>
+        )}
+        {projectDetails?.otherSalePrice !== undefined && (
+          <div>
+            <p className="text-xs text-on-surface-variant">Precio de Venta</p>
+            <p className="font-medium text-on-surface text-sm">${projectDetails.otherSalePrice?.toLocaleString()}</p>
+          </div>
+        )}
+        {projectDetails?.primaryRep && (
+          <div>
+            <p className="text-xs text-on-surface-variant">Rep. Principal</p>
+            <p className="font-medium text-on-surface text-sm">
+              {projectDetails.primaryRep}
+              {projectDetails.primaryRepCommPct !== undefined && ` (${projectDetails.primaryRepCommPct}%)`}
+            </p>
+          </div>
+        )}
+
+        {visit.objections && visit.objections.length > 0 && (
+          <div className="col-span-2 md:col-span-3">
+            <p className="text-xs text-on-surface-variant mb-1">Objeciones (Setter)</p>
+            <div className="flex flex-wrap gap-1">
+              {visit.objections.map((o, i) => (
+                <span
+                  key={i}
+                  className="px-2 py-0.5 rounded-full text-xs font-medium"
+                  style={{
+                    backgroundColor: o.objection?.color ? `${o.objection.color}20` : undefined,
+                    color: o.objection?.color || undefined,
+                    border: o.objection?.color ? `1px solid ${o.objection.color}40` : undefined,
+                  }}
+                >
+                  {o.objection?.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {visit.closerObjections && visit.closerObjections.length > 0 && (
+          <div className="col-span-2 md:col-span-3">
+            <p className="text-xs text-on-surface-variant mb-1">Objeciones (Closer)</p>
+            <div className="flex flex-wrap gap-1">
+              {visit.closerObjections.map((o, i) => (
+                <span
+                  key={i}
+                  className="px-2 py-0.5 rounded-full text-xs font-medium"
+                  style={{
+                    backgroundColor: o.closerObjection?.color ? `${o.closerObjection.color}20` : undefined,
+                    color: o.closerObjection?.color || undefined,
+                    border: o.closerObjection?.color ? `1px solid ${o.closerObjection.color}40` : undefined,
+                  }}
+                >
+                  {o.closerObjection?.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {visit.notes && (
+          <div className="col-span-2 md:col-span-3">
+            <p className="text-xs text-on-surface-variant mb-1">Notas</p>
+            <p className="text-sm text-on-surface whitespace-pre-wrap">{visit.notes}</p>
+          </div>
+        )}
+
+        {bill && (
+          <div className="col-span-2 md:col-span-3">
+            <p className="text-xs text-on-surface-variant mb-1">Recibo de Luz</p>
+            <div className="flex flex-wrap gap-2">
+              <a
+                href={bill.imageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline text-xs flex items-center gap-1"
+              >
+                <FileText className="w-3 h-3" /> Ver recibo
+              </a>
+              {bill.additionalFileUrl && (
+                <a
+                  href={bill.additionalFileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline text-xs flex items-center gap-1"
+                >
+                  <FileText className="w-3 h-3" /> {bill.additionalFileName || "Archivo adicional"}
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+
+        {visit.scheduledAt && (
+          <div>
+            <p className="text-xs text-on-surface-variant">Cita Programada</p>
+            <p className="font-medium text-on-surface text-sm">
+              {new Date(visit.scheduledAt).toLocaleDateString()}
+            </p>
+          </div>
+        )}
+        {visit.cancelledAt && (
+          <div className="col-span-2 md:col-span-3">
+            <p className="text-xs text-error mb-1">Cancelado</p>
+            <p className="text-sm text-on-surface">
+              {new Date(visit.cancelledAt).toLocaleDateString()}
+              {visit.cancellationReason && ` — ${visit.cancellationReason}`}
+            </p>
+          </div>
+        )}
+        {visit.completedAt && (
+          <div>
+            <p className="text-xs text-on-surface-variant">Completado</p>
+            <p className="font-medium text-on-surface text-sm">
+              {new Date(visit.completedAt).toLocaleDateString()}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

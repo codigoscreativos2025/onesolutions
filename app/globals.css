@@ -56,6 +56,8 @@
   --circuit-grey: #e8e8e8;
   --glass-fill: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(255, 255, 255, 0.4);
+  --brand-orange: #FF5722;
+  --brand-green: #4CAF50;
 }
 
 .dark {
@@ -110,6 +112,8 @@
   --circuit-grey: #2a2a2a;
   --glass-fill: rgba(30, 32, 34, 0.8);
   --glass-border: rgba(255, 255, 255, 0.1);
+  --brand-orange: #FF5722;
+  --brand-green: #4CAF50;
 }
 
 body {
@@ -372,4 +376,78 @@ body {
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
   }
+}
+
+@keyframes floatHex {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(5deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes nodePulse {
+  0%, 100% { opacity: 0.4; box-shadow: 0 0 8px var(--brand-orange); }
+  50% { opacity: 1; box-shadow: 0 0 18px var(--brand-orange), 0 0 30px rgba(255, 87, 34, 0.3); }
+}
+
+@keyframes ringSpin {
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes slideFadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideFadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-20px); }
+}
+
+.brand-glow {
+  box-shadow: 0 0 20px rgba(255, 87, 34, 0.15), 0 0 40px rgba(255, 87, 34, 0.05);
+}
+
+.glass-panel-orange {
+  border-color: rgba(255, 87, 34, 0.25);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06), 0 0 15px rgba(255, 87, 34, 0.08);
+}
+
+.floating-hex {
+  position: fixed;
+  width: 100px;
+  height: 115px;
+  background: var(--glass-fill);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  filter: drop-shadow(0 0 1px rgba(255, 87, 34, 0.1));
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.circuit-node-bg {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  background-color: var(--brand-orange);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  animation: nodePulse 3s ease-in-out infinite;
+}
+
+.bg-ring-orange {
+  position: fixed;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 87, 34, 0.12);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.animate-slide-fade-in {
+  animation: slideFadeIn 0.3s ease-in-out forwards;
 }

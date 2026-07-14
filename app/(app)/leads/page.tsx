@@ -41,6 +41,8 @@ export default function LeadsPage() {
   const [projectTypeFilter, setProjectTypeFilter] = useState<string>('all');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
+  const [ownerNameFilter, setOwnerNameFilter] = useState<string>('');
+  const [addressFilter, setAddressFilter] = useState<string>('');
   const [projectTypes, setProjectTypes] = useState<{ id: number; name: string }[]>([]);
 
   useEffect(() => {
@@ -100,7 +102,13 @@ export default function LeadsPage() {
     const matchesDateFrom = !dateFrom || (parcelDate && parcelDate >= new Date(dateFrom));
     const matchesDateTo = !dateTo || (parcelDate && parcelDate <= new Date(dateTo + 'T23:59:59.999Z'));
 
-    return matchesProjectType && matchesDateFrom && matchesDateTo;
+    const matchesOwnerName = !ownerNameFilter ||
+      (parcel.ownerName || '').toLowerCase().includes(ownerNameFilter.toLowerCase());
+
+    const matchesAddress = !addressFilter ||
+      parcel.address.toLowerCase().includes(addressFilter.toLowerCase());
+
+    return matchesProjectType && matchesDateFrom && matchesDateTo && matchesOwnerName && matchesAddress;
   });
 
   const getFilterCount = (f: string) => {
@@ -171,6 +179,26 @@ export default function LeadsPage() {
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
             className="h-10 px-3 rounded-lg bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface text-sm"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Propietario</label>
+          <input
+            type="text"
+            value={ownerNameFilter}
+            onChange={(e) => setOwnerNameFilter(e.target.value)}
+            placeholder="Buscar..."
+            className="h-10 px-3 rounded-lg bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface text-sm w-44"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Dirección</label>
+          <input
+            type="text"
+            value={addressFilter}
+            onChange={(e) => setAddressFilter(e.target.value)}
+            placeholder="Buscar..."
+            className="h-10 px-3 rounded-lg bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface text-sm w-44"
           />
         </div>
       </div>

@@ -1,8 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, MapPin, User, FileText, Package } from 'lucide-react';
+import { X, MapPin, User, FileText, Package, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+
+interface HistoryEntry {
+  date: string;
+  action: string;
+  userName: string;
+  details: string;
+}
 
 interface ProjectDetails {
   [key: string]: string | number | boolean | null | undefined;
@@ -14,11 +21,20 @@ interface VisitDetails {
   outcome: string | null;
   notes: string | null;
   createdAt: string;
+  completedAt?: string | null;
+  cancelledAt?: string | null;
   parcel: {
     id: string;
     address: string;
     ownerName: string | null;
     metadata: string | null;
+    visitHistory?: {
+      id: number;
+      visitedAt: string;
+      status: string;
+      notes: string | null;
+      setter: { name: string };
+    }[];
   };
   setter: {
     id: number;
@@ -38,7 +54,7 @@ interface VisitDetails {
     clientEmail: string | null;
     notes: string | null;
   } | null;
-  projectDetails?: ProjectDetails;
+  projectDetails?: ProjectDetails & { createdAt?: string };
   projects: {
     projectType: {
       id: number;
@@ -72,6 +88,7 @@ interface ViewProjectModalProps {
 export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalProps) {
   const [visit, setVisit] = useState<VisitDetails | null>(null);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'details' | 'history'>('details');
 
   useEffect(() => {
     if (isOpen && visitId) {
@@ -94,6 +111,85 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
     }
   };
 
+  const buildTimeline = (visit: VisitDetails): HistoryEntry[] => {
+    const entries: HistoryEntry[] = [];
+
+    if (visit.parcel.visitHistory) {
+      for (const h of visit.parcel.visitHistory) {
+        let action = 'Visita';
+        if (h.status === 'MANUAL_LEAD') action = 'Lead manual';
+        else if (h.status === 'NOT_AVAILABLE') action = 'No disponible';
+        else if (h.status === 'OBJECTION') action = 'Objeción';
+
+        entries.push({
+          date: new Date(h.visitedAt).toLocaleString(),
+          action,
+          userName: h.setter.name,
+          details: h.notes || '',
+        });
+      }
+    }
+
+    const projectNames = visit.projects.map((p) => p.projectType.name).join(', ');
+
+    entries.push({
+      date: new Date(visit.createdAt).toLocaleString(),
+      action: 'Lead creado',
+      userName: visit.setter.name,
+      details: projectNames || '',
+    });
+
+    if (visit.bill) {
+      entries.push({
+        date: new Date(visit.createdAt).toLocaleString(),
+        action: 'Propuesta aceptada',
+        userName: visit.setter.name,
+        details: projectNames ? `Seleccionó ${projectNames}` : '',
+      });
+    }
+
+    if (visit.projectDetails?.createdAt) {
+      entries.push({
+        date: new Date(visit.projectDetails.createdAt).toLocaleString(),
+        action: 'Proyecto iniciado',
+        userName: visit.closer?.name || visit.setter.name,
+        details: 'Inició elaboración',
+      });
+    }
+
+    if (visit.completedAt) {
+      entries.push({
+        date: new Date(visit.completedAt).toLocaleString(),
+        action: 'Cerrado',
+        userName: visit.closer?.name || visit.setter.name,
+        details: 'Proyecto completado',
+      });
+    }
+
+    if (visit.cancelledAt) {
+      entries.push({
+        date: new Date(visit.cancelledAt).toLocaleString(),
+        action: 'Cancelado',
+        userName: visit.closer?.name || visit.setter.name,
+        details: 'Proyecto cancelado',
+      });
+    }
+
+    entries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    return entries;
+  };
+
+  const getTimelineColor = (action: string): string => {
+    if (action === 'Lead creado') return '#3b82f6';
+    if (action === 'Propuesta aceptada') return '#22c55e';
+    if (action === 'Proyecto iniciado') return '#eab308';
+    if (action === 'Cerrado') return '#8b5cf6';
+    if (action === 'Cancelado') return '#ef4444';
+    if (action === 'Objeción') return '#fb7800';
+    if (action === 'No disponible') return '#6b7280';
+    return '#6b7280';
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -101,7 +197,31 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-2xl font-bold">Detalles del Proyecto</h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-2xl font-bold">Detalles del Proyecto</h2>
+            <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+              <button
+                onClick={() => setActiveTab('details')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'details'
+                    ? 'bg-white dark:bg-gray-600 text-primary shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                }`}
+              >
+                Detalles
+              </button>
+              <button
+                onClick={() => setActiveTab('history')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'history'
+                    ? 'bg-white dark:bg-gray-600 text-primary shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                }`}
+              >
+                Historial
+              </button>
+            </div>
+          </div>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
@@ -120,7 +240,7 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
             <div className="text-center text-gray-500 py-12">
               No se pudo cargar la información del proyecto
             </div>
-          ) : (
+          ) : activeTab === 'details' ? (
             <div className="space-y-6">
               {/* Información de la Parcela */}
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
@@ -357,6 +477,60 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
                       }
                       return null;
                     })}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Historial Tab */
+            <div className="space-y-0">
+              {buildTimeline(visit).length === 0 ? (
+                <div className="text-center text-gray-500 py-12">
+                  <Clock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p>No hay historial disponible</p>
+                </div>
+              ) : (
+                <div className="relative">
+                  <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-gray-200 dark:bg-gray-600" />
+                  <div className="space-y-6">
+                    {buildTimeline(visit).map((entry, idx) => (
+                      <div key={idx} className="relative pl-10">
+                        <div
+                          className="absolute left-0 top-1 w-8 h-8 rounded-full flex items-center justify-center border-2"
+                          style={{
+                            backgroundColor: getTimelineColor(entry.action) + '20',
+                            borderColor: getTimelineColor(entry.action),
+                          }}
+                        >
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: getTimelineColor(entry.action) }}
+                          />
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-1">
+                            <span
+                              className="text-xs font-bold px-2 py-0.5 rounded-full"
+                              style={{
+                                backgroundColor: getTimelineColor(entry.action) + '20',
+                                color: getTimelineColor(entry.action),
+                              }}
+                            >
+                              {entry.action}
+                            </span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {entry.date}
+                            </span>
+                          </div>
+                          <p className="text-sm font-medium">{entry.userName}</p>
+                          {entry.details && (
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                              {entry.details}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

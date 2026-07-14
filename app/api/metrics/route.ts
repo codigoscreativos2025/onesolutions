@@ -3,14 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: Request) {
+export async function GET() {
   const session = await auth();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
-  const { searchParams } = new URL(request.url);
-  const mode = searchParams.get("mode");
 
   const userId = parseInt(session.user.id);
   const role = session.user.role;
@@ -19,11 +16,7 @@ export async function GET(request: Request) {
   if (role === "SETTER") {
     whereClause = { setterId: userId };
   } else if (role === "CLOSER") {
-    if (mode === "own") {
-      whereClause = { closerId: userId };
-    } else {
-      whereClause = { OR: [{ closerId: userId }, { setterId: userId }] };
-    }
+    whereClause = { closerId: userId };
   }
 
   const [

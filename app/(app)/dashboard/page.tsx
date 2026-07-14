@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -62,15 +62,10 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [selectedMetric, setSelectedMetric] = useState<'doors' | 'leads' | 'projects' | 'objections' | 'parcels' | 'closed' | 'cancelled' | null>(null);
   const [showCreateLeadModal, setShowCreateLeadModal] = useState(false);
-  const [closerMode, setCloserMode] = useState<'all' | 'own'>('all');
 
-  useEffect(() => {
-    fetchData();
-  }, [closerMode]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const modeParam = session?.user?.role === 'CLOSER' ? `?mode=${closerMode}` : '';
+      const modeParam = session?.user?.role === 'CLOSER' ? '?mode=own' : '';
       const [metricsRes, appointmentsRes] = await Promise.all([
         fetch(`/api/metrics${modeParam}`),
         fetch("/api/appointments"),
@@ -84,7 +79,11 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [session?.user?.role]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   if (loading) {
     return (
@@ -124,27 +123,6 @@ export default function DashboardPage() {
             </Button>
           )}
         </div>
-        {role === "CLOSER" && (
-          <div className="flex items-center gap-3 mt-4 p-4 glass-panel rounded-xl">
-            <span className="text-sm font-medium text-on-surface">Ver leads de:</span>
-            <button
-              onClick={() => setCloserMode('all')}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                closerMode === 'all' ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface-variant'
-              }`}
-            >
-              Mis Setters
-            </button>
-            <button
-              onClick={() => setCloserMode('own')}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                closerMode === 'own' ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface-variant'
-              }`}
-            >
-              Solo Míos
-            </button>
-          </div>
-        )}
       </section>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

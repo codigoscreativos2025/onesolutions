@@ -61,6 +61,8 @@ const config: Config = {
         "circuit-grey": "var(--circuit-grey)",
         "glass-fill": "var(--glass-fill)",
         "glass-border": "var(--glass-border)",
+        "brand-orange": "var(--brand-orange)",
+        "brand-green": "var(--brand-green)",
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],

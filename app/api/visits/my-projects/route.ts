@@ -46,6 +46,7 @@ export async function GET(request: Request) {
           select: {
             id: true,
             address: true,
+            ownerName: true,
           },
         },
         setter: {

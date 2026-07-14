@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Crown, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -210,16 +211,17 @@ export default function RankingPage() {
                         )}
                       </div>
                     </div>
-                    <span
+                    <Link
+                      href={`/profile/${item.id}`}
                       className={cn(
-                        "font-semibold text-center",
+                        "font-semibold text-center hover:text-primary transition-colors",
                         isRank1
                           ? "text-primary font-headline text-sm"
                           : "text-xs"
                       )}
                     >
                       {item.name}
-                    </span>
+                    </Link>
                     <span
                       className={cn(
                         "font-bold",
@@ -272,9 +274,9 @@ export default function RankingPage() {
                         </span>
                       </div>
                       <div>
-                        <span className="font-semibold text-sm">
+                        <Link href={`/profile/${item.id}`} className="font-semibold text-sm hover:text-primary transition-colors">
                           {item.name}
-                        </span>
+                        </Link>
                         {item.badges.length > 0 && (
                           <div className="flex gap-1 mt-0.5">
                             {item.badges.slice(0, 3).map((badge) => (
@@ -320,12 +322,12 @@ export default function RankingPage() {
                 <p className="font-semibold text-primary text-sm">
                   Tu puesto actual
                 </p>
-                <p className="text-sm text-on-surface truncate">
+                <Link href={`/profile/${session?.user?.id}`} className="text-sm text-on-surface truncate hover:text-primary transition-colors">
                   {session?.user?.name ?? "Tú"}
                   {userDisplayCount !== undefined &&
                     userDisplayCount !== null &&
                     ` · ${userDisplayCount} ${labelForCount}`}
-                </p>
+                </Link>
               </div>
             </div>
             {nextUpGap && nextUpGap > 0 && (

@@ -20,17 +20,25 @@ export async function GET(
     where: { id: parseInt(id) },
     include: {
       visit: {
-        include: {
+        select: {
+          id: true,
+          setterId: true,
+          closerId: true,
+          stage: true,
+          createdAt: true,
           parcel: { select: { id: true, address: true } },
           setter: { select: { id: true, name: true } },
           closer: { select: { id: true, name: true } },
-          bill: true,
+          bill: { select: { imageUrl: true, clientName: true, phone: true, clientEmail: true, additionalFileUrl: true, additionalFileName: true } },
           projectDetails: true,
-          projects: {
-            include: {
-              projectType: true,
-            },
-          },
+          projects: { include: { projectType: { select: { id: true, name: true } } } },
+          objections: { include: { objection: { select: { name: true, color: true } } } },
+          closerObjections: { include: { closerObjection: { select: { name: true, color: true } } } },
+          notes: true,
+          cancelledAt: true,
+          cancellationReason: true,
+          completedAt: true,
+          scheduledAt: true,
         },
       },
       messages: {
