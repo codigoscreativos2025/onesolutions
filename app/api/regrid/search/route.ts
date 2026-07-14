@@ -2,6 +2,8 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   const session = await auth();
   if (!session) {
@@ -22,7 +24,7 @@ export async function GET(request: Request) {
       {
         error: "Regrid API key not configured",
         message:
-          "Configura REGRID_API_KEY en las variables de entorno para usar búsqueda real.",
+          "Configura REGRID_API_KEY en las variables de entorno para usar busqueda real.",
       },
       { status: 503 }
     );
@@ -30,13 +32,14 @@ export async function GET(request: Request) {
 
   try {
     const res = await fetch(
-      `https://app.regrid.com/api/v1/search?query=${encodeURIComponent(
+      `https://app.regrid.com/api/v2/parcels/address?address=${encodeURIComponent(
         query
-      )}&limit=10&token=${token}`
+      )}&limit=10&return_geometry=true&token=${token}`
     );
     const data = await res.json();
 
-    const features = data.results?.features || [];
+    // v2 response: { parcels: { type: "FeatureCollection", features: [...] } }
+    const features = data.parcels?.features || data.features || [];
 
     const regridIds = features
       .map((f: { properties?: { ll_uuid?: string } }) => f.properties?.ll_uuid)
@@ -60,47 +63,30 @@ export async function GET(request: Request) {
         geometry?: { type: string; coordinates: unknown };
       }) => {
         const props = feature.properties || {};
-        const llUuid = props.ll_uuid as string;
-
-        const knownKeys = [
-          "id",
-          "ll_uuid",
-          "address",
-          "owner",
-          "ownername",
-        ];
-
-        const extra: Record<string, unknown> = {};
-        for (const [k, v] of Object.entries(props)) {
-          if (!knownKeys.includes(k)) {
-            extra[k] = v;
-          }
-        }
+        const fields = (props.fields as Record<string, unknown>) || {};
+        const llUuid = (props.ll_uuid as string) || (fields.ll_uuid as string) || "";
 
         return {
           ...feature,
           properties: {
-            id: llUuid || (props.id as string) || "",
+            id: llUuid,
             ll_uuid: llUuid,
-            address: (props.address as string) || "Sin dirección",
-            ownerName:
-              (props.owner as string) ||
-              (props.ownername as string),
+            address: (props.headline as string) || (fields.situs_address as string) || "Sin direccion",
+            ownerName: (fields.owner as string) || (fields.ownername as string),
             status: statusMap.get(llUuid) || "AVAILABLE",
-            ...extra,
           },
         };
       }
     );
 
     return NextResponse.json({
-      ...data,
       results: {
-        ...data.results,
+        type: "FeatureCollection",
         features: mappedFeatures,
       },
     });
-  } catch {
+  } catch (err) {
+    console.error("Regrid search error:", err);
     return NextResponse.json(
       { error: "Failed to fetch from Regrid" },
       { status: 500 }
