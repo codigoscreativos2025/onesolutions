@@ -106,50 +106,50 @@ export default function MapView({ center }: { center?: [number, number] | null }
             },
             filter: ["==", "ll_uuid", ""],
           });
-    });
 
-    // Click on parcel
-    m.on("click", "parcel-fills", (e) => {
-      if (!e.features?.[0]) return;
-      const props = e.features[0].properties;
-      const parcel: Parcel = {
-        id: props.ll_uuid || `regrid-${props.fid}`,
-        address: props.address || props.headline || "Sin direccion",
-        ownerName: props.owner,
-        status: "AVAILABLE",
-        geometry: JSON.stringify(e.features[0].geometry),
-        metadata: JSON.stringify({
-          regrid_id: props.ll_uuid,
-          path: props.path,
-          parcelnumb: props.parcelnumb,
-        }),
-      };
-      setSelectedParcel(parcel);
-    });
+      // Click on parcel
+      m.on("click", "parcel-fills", (e) => {
+        if (!e.features?.[0]) return;
+        const props = e.features[0].properties;
+        const parcel: Parcel = {
+          id: props.ll_uuid || `regrid-${props.fid}`,
+          address: props.address || props.headline || "Sin direccion",
+          ownerName: props.owner,
+          status: "AVAILABLE",
+          geometry: JSON.stringify(e.features[0].geometry),
+          metadata: JSON.stringify({
+            regrid_id: props.ll_uuid,
+            path: props.path,
+            parcelnumb: props.parcelnumb,
+          }),
+        };
+        setSelectedParcel(parcel);
+      });
 
-    // Hover effect
-    m.on("mousemove", "parcel-fills", (e) => {
-      if (!e.features?.[0]) return;
-      m.getCanvas().style.cursor = "pointer";
-      const llUuid = e.features[0].properties.ll_uuid;
-      m.setFilter("parcel-hover", ["==", "ll_uuid", llUuid || ""]);
-    });
+      // Hover effect
+      m.on("mousemove", "parcel-fills", (e) => {
+        if (!e.features?.[0]) return;
+        m.getCanvas().style.cursor = "pointer";
+        const llUuid = e.features[0].properties.ll_uuid;
+        m.setFilter("parcel-hover", ["==", "ll_uuid", llUuid || ""]);
+      });
 
-    m.on("mouseleave", "parcel-fills", () => {
-      m.getCanvas().style.cursor = "";
-      m.setFilter("parcel-hover", ["==", "ll_uuid", ""]);
-    });
+      m.on("mouseleave", "parcel-fills", () => {
+        m.getCanvas().style.cursor = "";
+        m.setFilter("parcel-hover", ["==", "ll_uuid", ""]);
+      });
 
-    // Click outside parcels → deselect
-    m.on("click", (e) => {
-      const features = m.queryRenderedFeatures(e.point, { layers: ["parcel-fills"] });
-      if (features.length === 0) {
-        setSelectedParcel(null);
-      }
-    });
+      // Click outside → deselect
+      m.on("click", (e) => {
+        const features = m.queryRenderedFeatures(e.point, { layers: ["parcel-fills"] });
+        if (features.length === 0) {
+          setSelectedParcel(null);
+        }
+      });
 
-    map.current = m;
-    setMapReady(true);
+      map.current = m;
+      setMapReady(true);
+    });
   }, [center]);
 
   useEffect(() => {
