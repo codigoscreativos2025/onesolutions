@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { MapContainer, TileLayer, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Polygon, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { ParcelSheet } from "./ParcelSheet";
 import { useSession } from "next-auth/react";
@@ -45,6 +45,7 @@ export default function MapView({
 }) {
   const { data: session } = useSession();
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
+  const [parcelPolygon, setParcelPolygon] = useState<[number, number][] | null>(null);
   const [fetchingParcel, setFetchingParcel] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -55,16 +56,44 @@ export default function MapView({
 
     try {
       setFetchingParcel(true);
+      setParcelPolygon(null);
+      // Use larger radius to find nearby parcels
       const res = await fetch(
         `/api/regrid/parcels?lat=${lat}&lng=${lng}`,
         { signal: controller.signal }
       );
-      if (!res.ok) return;
+      if (!res.ok) {
+        toast.error("Error al buscar la parcela");
+        return;
+      }
       const data = await res.json();
+      if (data.error) {
+        if (data.tooLarge) {
+          toast.info("Acerca el mapa para buscar parcelas");
+        } else {
+          toast.info(data.error || "No se encontro parcela. El token trial tiene acceso limitado a 7 condados.");
+        }
+        return;
+      }
       if (Array.isArray(data) && data.length > 0) {
-        setSelectedParcel(data[0]);
+        const parcel = data[0];
+        setSelectedParcel(parcel);
+        // Draw the polygon on the map
+        try {
+          if (parcel.geometry) {
+            const geo = JSON.parse(parcel.geometry);
+            if (geo.coordinates?.[0]) {
+              const coords = geo.coordinates[0].map(
+                (c: [number, number]) => [c[1], c[0]] as [number, number]
+              );
+              setParcelPolygon(coords);
+            }
+          }
+        } catch {
+          // ignore geometry parse errors
+        }
       } else {
-        toast.info("No se encontro parcela en este punto");
+        toast.info("No se encontro parcela en este punto. Prueba en otra zona.");
       }
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === "AbortError") return;
@@ -119,14 +148,26 @@ export default function MapView({
           attribution='&copy; Google Maps'
           url="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
         />
+        {/* Regrid tileserver layer */}
         <TileLayer
           attribution='&copy; Regrid'
           url="/api/regrid/tiles/{z}/{x}/{y}"
           maxZoom={21}
           minZoom={10}
-          opacity={0.85}
+          opacity={0.9}
         />
         <MapClickHandler onClick={handleMapClick} />
+        {parcelPolygon && parcelPolygon.length > 0 && (
+          <Polygon
+            positions={parcelPolygon}
+            pathOptions={{
+              color: "#006e00",
+              fillColor: "#006e00",
+              fillOpacity: 0.3,
+              weight: 3,
+            }}
+          />
+        )}
       </MapContainer>
 
       {fetchingParcel && (
@@ -137,15 +178,19 @@ export default function MapView({
       )}
 
       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[1000] glass-panel px-3 py-1.5 rounded-full text-xs text-on-surface-variant shadow-lg">
-        Toca el mapa para ver info de la parcela
+        Toca el mapa para buscar una parcela
       </div>
 
       <ParcelSheet
         parcel={selectedParcel}
-        onClose={() => setSelectedParcel(null)}
+        onClose={() => {
+          setSelectedParcel(null);
+          setParcelPolygon(null);
+        }}
         onClaim={handleClaim}
         onVisitStarted={() => {
           setSelectedParcel(null);
+          setParcelPolygon(null);
         }}
         userRole={session?.user?.role || ""}
         userId={session?.user?.id || ""}
