@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
-import { MapContainer, TileLayer, Polygon, useMapEvents } from "react-leaflet";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { MapContainer, TileLayer, Polygon, useMap, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { ParcelSheet } from "./ParcelSheet";
 import { useSession } from "next-auth/react";
-import { toast } from "sonner";
 
 interface Parcel {
   id: string;
@@ -23,93 +22,136 @@ interface Parcel {
   }[];
 }
 
-function MapClickHandler({
+interface MapBounds {
+  lat1: number;
+  lng1: number;
+  lat2: number;
+  lng2: number;
+}
+
+function MapController({
+  onMoveEnd,
+  onReady,
   onClick,
 }: {
-  onClick: (lat: number, lng: number) => void;
+  onMoveEnd: (bounds: MapBounds, zoom: number) => void;
+  onReady: (bounds: MapBounds, zoom: number) => void;
+  onClick: () => void;
 }) {
+  const map = useMap();
+  const hasFired = useRef(false);
+
+  useEffect(() => {
+    if (!hasFired.current) {
+      hasFired.current = true;
+      const bounds = map.getBounds();
+      onReady(
+        { lat1: bounds.getSouth(), lng1: bounds.getWest(), lat2: bounds.getNorth(), lng2: bounds.getEast() },
+        map.getZoom()
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useMapEvents({
-    click: (e) => {
-      onClick(e.latlng.lat, e.latlng.lng);
+    moveend: () => {
+      const bounds = map.getBounds();
+      onMoveEnd(
+        { lat1: bounds.getSouth(), lng1: bounds.getWest(), lat2: bounds.getNorth(), lng2: bounds.getEast() },
+        map.getZoom()
+      );
+    },
+    click: () => {
+      onClick();
     },
   });
+
   return null;
 }
 
+function getParcelColor(status: string) {
+  switch (status) {
+    case "AVAILABLE": return "#ba1a1a";
+    case "LEAD": return "#fb7800";
+    case "CUSTOMER": return "#006e00";
+    default: return "#6e7b68";
+  }
+}
+
+const MIN_FETCH_ZOOM = 14;
 const defaultPosition: [number, number] = [28.385, -81.365];
 
-export default function MapView({
-  center,
-}: {
-  center?: [number, number] | null;
-}) {
+export default function MapView({ center }: { center?: [number, number] | null }) {
   const { data: session } = useSession();
+  const [parcels, setParcels] = useState<Parcel[]>([]);
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
-  const [parcelPolygon, setParcelPolygon] = useState<[number, number][] | null>(null);
-  const [fetchingParcel, setFetchingParcel] = useState(false);
+  const [fetching, setFetching] = useState(false);
+  const fetchedIds = useRef<Set<string>>(new Set());
+  const lastFetchTime = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
+  const mapCenterRef = useRef<[number, number]>(defaultPosition);
 
-  const fetchParcelAtPoint = useCallback(async (lat: number, lng: number) => {
+  const fetchParcels = useCallback(async (bounds: MapBounds, zoom: number) => {
+    if (zoom < MIN_FETCH_ZOOM) return;
+
+    const now = Date.now();
+    if (now - lastFetchTime.current < 1500) return; // debounce
+    lastFetchTime.current = now;
+
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
 
     try {
-      setFetchingParcel(true);
-      setParcelPolygon(null);
-      // Use larger radius to find nearby parcels
-      const res = await fetch(
-        `/api/regrid/parcels?lat=${lat}&lng=${lng}`,
-        { signal: controller.signal }
-      );
-      if (!res.ok) {
-        toast.error("Error al buscar la parcela");
-        return;
-      }
+      setFetching(true);
+      const params = new URLSearchParams({
+        lat1: bounds.lat1.toFixed(6),
+        lng1: bounds.lng1.toFixed(6),
+        lat2: bounds.lat2.toFixed(6),
+        lng2: bounds.lng2.toFixed(6),
+      });
+      const res = await fetch(`/api/regrid/parcels?${params}`, { signal: controller.signal });
+      if (!res.ok) return;
       const data = await res.json();
-      if (data.error) {
-        if (data.tooLarge) {
-          toast.info("Acerca el mapa para buscar parcelas");
-        } else {
-          toast.info(data.error || "No se encontro parcela. El token trial tiene acceso limitado a 7 condados.");
-        }
-        return;
-      }
-      if (Array.isArray(data) && data.length > 0) {
-        const parcel = data[0];
-        setSelectedParcel(parcel);
-        // Draw the polygon on the map
-        try {
-          if (parcel.geometry) {
-            const geo = JSON.parse(parcel.geometry);
-            if (geo.coordinates?.[0]) {
-              const coords = geo.coordinates[0].map(
-                (c: [number, number]) => [c[1], c[0]] as [number, number]
-              );
-              setParcelPolygon(coords);
-            }
-          }
-        } catch {
-          // ignore geometry parse errors
-        }
-      } else {
-        toast.info("No se encontro parcela en este punto. Prueba en otra zona.");
-      }
+      if (!Array.isArray(data) || data.length === 0) return;
+
+      const newParcels = data as Parcel[];
+      setParcels((prev) => {
+        const uniqueNew = newParcels.filter((p) => p.id && !fetchedIds.current.has(p.id));
+        uniqueNew.forEach((p) => fetchedIds.current.add(p.id));
+        return [...prev, ...uniqueNew];
+      });
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === "AbortError") return;
-      console.error("Error fetching parcel:", err);
+      console.error("Error fetching parcels:", err);
     } finally {
-      setFetchingParcel(false);
+      setFetching(false);
       abortRef.current = null;
     }
   }, []);
 
-  const handleMapClick = useCallback(
-    (lat: number, lng: number) => {
-      fetchParcelAtPoint(lat, lng);
+  const handleMoveEnd = useCallback(
+    (bounds: MapBounds, zoom: number) => {
+      fetchParcels(bounds, zoom);
     },
-    [fetchParcelAtPoint]
+    [fetchParcels]
   );
+
+  const handleReady = useCallback(
+    (bounds: MapBounds, zoom: number) => {
+      if (center) mapCenterRef.current = center;
+      fetchParcels(bounds, zoom);
+    },
+    [center, fetchParcels]
+  );
+
+  const handleParcelClick = useCallback((parcel: Parcel) => {
+    setSelectedParcel(parcel);
+  }, []);
+
+  const handleMapClick = useCallback(() => {
+    setSelectedParcel(null);
+  }, []);
 
   const handleClaim = async (parcelId: string) => {
     const res = await fetch(`/api/parcels/${parcelId}/claim`, {
@@ -122,15 +164,14 @@ export default function MapView({
         metadata: selectedParcel?.metadata,
       }),
     });
-
     if (!res.ok) {
-      const err = await res
-        .json()
-        .catch(() => ({ error: "Error al reclamar parcela" }));
+      const err = await res.json().catch(() => ({ error: "Error al reclamar parcela" }));
       throw new Error(err.error);
     }
-
     const claimed = await res.json();
+    setParcels((prev) =>
+      prev.map((p) => (p.id === parcelId ? { ...p, status: "LEAD" as const } : p))
+    );
     setSelectedParcel(claimed);
     return claimed;
   };
@@ -148,49 +189,76 @@ export default function MapView({
           attribution='&copy; Google Maps'
           url="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
         />
-        {/* Regrid tileserver layer */}
         <TileLayer
           attribution='&copy; Regrid'
           url="/api/regrid/tiles/{z}/{x}/{y}"
           maxZoom={21}
           minZoom={10}
-          opacity={0.9}
+          opacity={0.85}
         />
-        <MapClickHandler onClick={handleMapClick} />
-        {parcelPolygon && parcelPolygon.length > 0 && (
-          <Polygon
-            positions={parcelPolygon}
-            pathOptions={{
-              color: "#006e00",
-              fillColor: "#006e00",
-              fillOpacity: 0.3,
-              weight: 3,
-            }}
-          />
-        )}
+        <MapController onReady={handleReady} onMoveEnd={handleMoveEnd} onClick={handleMapClick} />
+        {parcels.map((parcel) => {
+          try {
+            if (!parcel.geometry) return null;
+            const geo = JSON.parse(parcel.geometry);
+            if (!geo.coordinates?.[0] || geo.coordinates[0].length < 3) return null;
+            const coords = geo.coordinates[0].map(
+              (c: [number, number]) => [c[1], c[0]] as [number, number]
+            );
+            const isSelected = selectedParcel?.id === parcel.id;
+            return (
+              <Polygon
+                key={parcel.id}
+                positions={coords}
+                pathOptions={{
+                  color: isSelected ? "#ffffff" : getParcelColor(parcel.status),
+                  fillColor: getParcelColor(parcel.status),
+                  fillOpacity: isSelected ? 0.7 : 0.35,
+                  weight: isSelected ? 4 : 2,
+                }}
+                eventHandlers={{
+                  click: (e) => {
+                    e.originalEvent.stopPropagation();
+                    handleParcelClick(parcel);
+                  },
+                  mouseover: (e) => {
+                    e.target.setStyle({ weight: 4, fillOpacity: 0.6 });
+                    document.body.style.cursor = "pointer";
+                  },
+                  mouseout: (e) => {
+                    const sel = selectedParcel?.id === parcel.id;
+                    e.target.setStyle({
+                      weight: sel ? 4 : 2,
+                      fillOpacity: sel ? 0.7 : 0.35,
+                    });
+                    if (!isSelected) document.body.style.cursor = "default";
+                  },
+                }}
+              />
+            );
+          } catch {
+            return null;
+          }
+        })}
       </MapContainer>
 
-      {fetchingParcel && (
+      {fetching && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] glass-panel px-4 py-2 rounded-full text-sm text-on-surface flex items-center gap-2 shadow-lg">
           <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          Buscando parcela...
+          Cargando parcelas...
         </div>
       )}
 
       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[1000] glass-panel px-3 py-1.5 rounded-full text-xs text-on-surface-variant shadow-lg">
-        Toca el mapa para buscar una parcela
+        Acerca el mapa para ver parcelas (zoom 14+)
       </div>
 
       <ParcelSheet
         parcel={selectedParcel}
-        onClose={() => {
-          setSelectedParcel(null);
-          setParcelPolygon(null);
-        }}
+        onClose={() => setSelectedParcel(null)}
         onClaim={handleClaim}
         onVisitStarted={() => {
           setSelectedParcel(null);
-          setParcelPolygon(null);
         }}
         userRole={session?.user?.role || ""}
         userId={session?.user?.id || ""}
