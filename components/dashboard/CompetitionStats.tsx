@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Award, Target, DoorOpen, CheckCircle, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -111,9 +112,9 @@ export function CompetitionStats() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
-                      <span className={`text-sm font-medium truncate ${isMe ? 'text-primary' : ''}`}>
+                      <Link href={`/profile/${user.id}`} className={`text-sm font-medium truncate hover:underline ${isMe ? 'text-primary' : ''}`}>
                         {user.name} {isMe && '(Tú)'}
-                      </span>
+                      </Link>
                       <div className="flex items-center gap-2 ml-2">
                         <span className="text-sm font-bold">{user.doorsKnocked}</span>
                         {!isMe && (
@@ -173,9 +174,9 @@ export function CompetitionStats() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
-                      <span className={`text-sm font-medium truncate ${isMe ? 'text-primary' : ''}`}>
+                      <Link href={`/profile/${user.id}`} className={`text-sm font-medium truncate hover:underline ${isMe ? 'text-primary' : ''}`}>
                         {user.name} {isMe && '(Tú)'}
-                      </span>
+                      </Link>
                       <div className="flex items-center gap-2 ml-2">
                         <span className="text-sm font-bold">{user.leadsGenerated}</span>
                         {!isMe && (
@@ -235,9 +236,9 @@ export function CompetitionStats() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
-                      <span className={`text-sm font-medium truncate ${isMe ? 'text-primary' : ''}`}>
+                      <Link href={`/profile/${user.id}`} className={`text-sm font-medium truncate hover:underline ${isMe ? 'text-primary' : ''}`}>
                         {user.name} {isMe && '(Tú)'}
-                      </span>
+                      </Link>
                       <div className="flex items-center gap-2 ml-2">
                         <span className="text-sm font-bold">{user.projectsClosed}</span>
                         {!isMe && (

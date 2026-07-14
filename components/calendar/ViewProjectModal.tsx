@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { X, MapPin, User, FileText, Package, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -8,6 +9,7 @@ interface HistoryEntry {
   date: string;
   action: string;
   userName: string;
+  userId?: number;
   details: string;
 }
 
@@ -33,7 +35,7 @@ interface VisitDetails {
       visitedAt: string;
       status: string;
       notes: string | null;
-      setter: { name: string };
+          setter: { id: number; name: string };
     }[];
   };
   setter: {
@@ -125,6 +127,7 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
           date: new Date(h.visitedAt).toLocaleString(),
           action,
           userName: h.setter.name,
+          userId: h.setter.id,
           details: h.notes || '',
         });
       }
@@ -136,6 +139,7 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
       date: new Date(visit.createdAt).toLocaleString(),
       action: 'Lead creado',
       userName: visit.setter.name,
+      userId: visit.setter.id,
       details: projectNames || '',
     });
 
@@ -144,6 +148,7 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
         date: new Date(visit.createdAt).toLocaleString(),
         action: 'Propuesta aceptada',
         userName: visit.setter.name,
+        userId: visit.setter.id,
         details: projectNames ? `Seleccionó ${projectNames}` : '',
       });
     }
@@ -153,6 +158,7 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
         date: new Date(visit.projectDetails.createdAt).toLocaleString(),
         action: 'Proyecto iniciado',
         userName: visit.closer?.name || visit.setter.name,
+        userId: visit.closer?.id || visit.setter.id,
         details: 'Inició elaboración',
       });
     }
@@ -162,6 +168,7 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
         date: new Date(visit.completedAt).toLocaleString(),
         action: 'Cerrado',
         userName: visit.closer?.name || visit.setter.name,
+        userId: visit.closer?.id || visit.setter.id,
         details: 'Proyecto completado',
       });
     }
@@ -171,6 +178,7 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
         date: new Date(visit.cancelledAt).toLocaleString(),
         action: 'Cancelado',
         userName: visit.closer?.name || visit.setter.name,
+        userId: visit.closer?.id || visit.setter.id,
         details: 'Proyecto cancelado',
       });
     }
@@ -295,7 +303,7 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
                     <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
                       Nombre
                     </label>
-                    <p className="mt-1">{visit.setter.name}</p>
+                    <p className="mt-1"><Link href={`/profile/${visit.setter.id}`} className="hover:underline">{visit.setter.name}</Link></p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -318,7 +326,7 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
                       <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
                         Nombre
                       </label>
-                      <p className="mt-1">{visit.closer.name}</p>
+                      <p className="mt-1"><Link href={`/profile/${visit.closer.id}`} className="hover:underline">{visit.closer.name}</Link></p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -522,7 +530,13 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
                               {entry.date}
                             </span>
                           </div>
-                          <p className="text-sm font-medium">{entry.userName}</p>
+                          <p className="text-sm font-medium">
+                            {entry.userId ? (
+                              <Link href={`/profile/${entry.userId}`} className="hover:underline">{entry.userName}</Link>
+                            ) : (
+                              entry.userName
+                            )}
+                          </p>
                           {entry.details && (
                             <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                               {entry.details}

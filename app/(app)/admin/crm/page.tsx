@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { Search, Filter, Download, Eye, MapPin, Clock, Calendar, AlertCircle, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -374,8 +375,14 @@ export default function AdminCRMPage() {
                       <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{visit.parcel.address}</div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{visit.setter.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{visit.closer?.name || 'N/A'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                    <Link href={`/profile/${visit.setter.id}`} className="hover:underline">{visit.setter.name}</Link>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                    {visit.closer ? (
+                      <Link href={`/profile/${visit.closer.id}`} className="hover:underline">{visit.closer.name}</Link>
+                    ) : 'N/A'}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                       visit.stage === 'IN_PROGRESS' ? 'bg-yellow-100 text-yellow-800' :

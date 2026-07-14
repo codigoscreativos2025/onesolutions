@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Send, Paperclip, Loader2, MessageSquare, Package, FileText, Pencil } from "lucide-react";
@@ -49,8 +50,8 @@ interface Room {
     stage?: string;
     createdAt?: string;
     parcel: { id: string; address: string };
-    setter: { name: string };
-    closer?: { name: string };
+    setter: { id: number; name: string };
+    closer?: { id: number; name: string };
     bill?: { imageUrl: string; phone: string; clientName: string; clientEmail: string; additionalFileUrl?: string; additionalFileName?: string };
     projectDetails?: ProjectDetails;
     projects?: { projectType: ProjectType }[];
@@ -407,9 +408,18 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
                         {selectedRoom.visit.parcel.address}
                       </p>
                       <p className="text-xs text-on-surface-variant">
-                        Setter: {selectedRoom.visit.setter.name}
-                        {selectedRoom.visit.closer &&
-                          ` • Closer: ${selectedRoom.visit.closer.name}`}
+                        Setter:{' '}
+                        <Link href={`/profile/${selectedRoom.visit.setter.id}`} className="hover:underline">
+                          {selectedRoom.visit.setter.name}
+                        </Link>
+                        {selectedRoom.visit.closer && (
+                          <>
+                            {' • Closer: '}
+                            <Link href={`/profile/${selectedRoom.visit.closer.id}`} className="hover:underline">
+                              {selectedRoom.visit.closer.name}
+                            </Link>
+                          </>
+                        )}
                       </p>
                     </div>
                     <div className="flex gap-2">

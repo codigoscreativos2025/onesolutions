@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { DoorOpen, X, User } from "lucide-react";
 
@@ -23,7 +24,7 @@ interface Parcel {
 interface ParcelSheetProps {
   parcel: Parcel | null;
   onClose: () => void;
-  onClaim: (parcelId: string) => void;
+  onClaim: (parcelId: string) => Promise<{ id: string } | void>;
   onVisitStarted: () => void;
   userRole: string;
   userId: string;
@@ -54,11 +55,15 @@ export function ParcelSheet({
     setClaimError("");
     setClaiming(true);
     try {
+      let navigateId = parcel.id;
       if (isAvailable) {
-        await onClaim(parcel.id);
+        const claimed = await onClaim(parcel.id);
+        if (claimed) {
+          navigateId = claimed.id;
+        }
       }
       onVisitStarted();
-      router.push(`/visit/${parcel.id}`);
+      router.push(`/visit/${navigateId}`);
     } catch (e) {
       setClaimError(e instanceof Error ? e.message : "Error al reclamar parcela");
     } finally {
@@ -73,7 +78,10 @@ export function ParcelSheet({
           <StatusBadge status={parcel.status} />
           {parcel.setter && (
             <span className="text-on-surface-variant text-xs">
-              • {parcel.setter.name}
+              •{' '}
+              <Link href={`/profile/${parcel.setter.id}`} className="hover:underline">
+                {parcel.setter.name}
+              </Link>
             </span>
           )}
         </div>
@@ -123,7 +131,10 @@ export function ParcelSheet({
         {!isAvailable && !isTakenByMe && parcel.setter && (
           <div className="p-4 rounded-xl bg-secondary/10 border border-secondary/20">
             <p className="text-sm text-secondary font-medium">
-              Esta parcela ya fue tomada por {parcel.setter.name}
+              Esta parcela ya fue tomada por{' '}
+              <Link href={`/profile/${parcel.setter.id}`} className="hover:underline">
+                {parcel.setter.name}
+              </Link>
             </p>
           </div>
         )}

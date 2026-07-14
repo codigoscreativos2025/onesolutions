@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -34,7 +35,71 @@ export async function GET(request: Request) {
       )}&limit=10&token=${token}`
     );
     const data = await res.json();
-    return NextResponse.json(data);
+
+    const features = data.results?.features || [];
+
+    const regridIds = features
+      .map((f: { properties?: { ll_uuid?: string } }) => f.properties?.ll_uuid)
+      .filter(Boolean) as string[];
+
+    const existingParcels =
+      regridIds.length > 0
+        ? await prisma.parcel.findMany({
+            where: { externalId: { in: regridIds } },
+            select: { externalId: true, status: true },
+          })
+        : [];
+
+    const statusMap = new Map(
+      existingParcels.map((p) => [p.externalId!, p.status])
+    );
+
+    const mappedFeatures = features.map(
+      (feature: {
+        properties?: Record<string, unknown>;
+        geometry?: { type: string; coordinates: unknown };
+      }) => {
+        const props = feature.properties || {};
+        const llUuid = props.ll_uuid as string;
+
+        const knownKeys = [
+          "id",
+          "ll_uuid",
+          "address",
+          "owner",
+          "ownername",
+        ];
+
+        const extra: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(props)) {
+          if (!knownKeys.includes(k)) {
+            extra[k] = v;
+          }
+        }
+
+        return {
+          ...feature,
+          properties: {
+            id: llUuid || (props.id as string) || "",
+            ll_uuid: llUuid,
+            address: (props.address as string) || "Sin dirección",
+            ownerName:
+              (props.owner as string) ||
+              (props.ownername as string),
+            status: statusMap.get(llUuid) || "AVAILABLE",
+            ...extra,
+          },
+        };
+      }
+    );
+
+    return NextResponse.json({
+      ...data,
+      results: {
+        ...data.results,
+        features: mappedFeatures,
+      },
+    });
   } catch {
     return NextResponse.json(
       { error: "Failed to fetch from Regrid" },

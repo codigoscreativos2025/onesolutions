@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
+import Link from "next/link";
 import {
   Plus,
   Trash2,
@@ -31,7 +32,7 @@ interface Slot {
   visit?: {
     id: number;
     parcel: { id: string; address: string };
-    setter: { name: string };
+    setter: { id: number; name: string };
     projects?: { projectType: { id: number; name: string } }[];
   };
 }
@@ -104,7 +105,7 @@ export default function CalendarPage() {
       // Convertir citas asignadas a formato Slot para mostrarlas en el calendario
       const appointmentSlots: Slot[] = (appointmentsData || [])
         .filter((apt: { slot: unknown; stage: string }) => !apt.slot && apt.stage !== "CLOSED")
-        .map((apt: { id: number; parcel: { id: string; address: string }; setter: { name: string }; slot?: { startAt: string }; stage: string; projects?: { projectType: { id: number; name: string } }[] }) => ({
+        .map((apt: { id: number; parcel: { id: string; address: string }; setter: { id: number; name: string }; slot?: { startAt: string }; stage: string; projects?: { projectType: { id: number; name: string } }[] }) => ({
           id: -apt.id, // IDs negativos para diferenciar de slots reales
           startAt: apt.slot?.startAt || new Date().toISOString(),
           endAt: apt.slot?.startAt || new Date().toISOString(),
@@ -397,7 +398,11 @@ export default function CalendarPage() {
                         <Check className="w-3 h-3" /> Reservado
                       </p>
                       <p className="truncate">{slot.visit.parcel.address}</p>
-                      <p>Setter: {slot.visit.setter.name}</p>
+                      <p>Setter:{' '}
+                        <Link href={`/profile/${slot.visit.setter.id}`} className="hover:underline">
+                          {slot.visit.setter.name}
+                        </Link>
+                      </p>
                     </div>
                   )}
                   {!slot.isBooked && (
@@ -576,7 +581,10 @@ export default function CalendarPage() {
                 {selectedSlot.visit.parcel.address}
               </p>
               <p className="text-sm text-on-surface-variant">
-                Setter: {selectedSlot.visit.setter.name}
+                Setter:{' '}
+                <Link href={`/profile/${selectedSlot.visit.setter.id}`} className="hover:underline">
+                  {selectedSlot.visit.setter.name}
+                </Link>
               </p>
               <p className="text-sm text-on-surface-variant">
                 {new Date(selectedSlot.startAt).toLocaleString()}

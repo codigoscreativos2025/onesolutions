@@ -33,7 +33,7 @@ export async function GET(request: Request) {
             select: { id: true, address: true },
           },
           setter: {
-            select: { name: true },
+            select: { id: true, name: true },
           },
           projects: {
             include: {

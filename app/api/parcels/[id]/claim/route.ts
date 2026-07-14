@@ -13,6 +13,7 @@ export async function POST(
 
   const { id } = await params;
   const userId = parseInt(session.user.id);
+  const body = await request.json().catch(() => ({}));
 
   try {
     const user = await prisma.user.findUnique({
@@ -23,32 +24,68 @@ export async function POST(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const parcel = await prisma.parcel.findUnique({
-      where: { id },
+    let parcel = await prisma.parcel.findFirst({
+      where: { OR: [{ id }, { externalId: id }] },
     });
 
     if (!parcel) {
-      return NextResponse.json({ error: "Parcel not found" }, { status: 404 });
+      parcel = await prisma.parcel.create({
+        data: {
+          externalId: id,
+          address: body.address || "Sin dirección",
+          ownerName: body.ownerName || null,
+          geometry:
+            body.geometry ||
+            JSON.stringify({
+              type: "Polygon",
+              coordinates: [
+                [
+                  [0, 0],
+                  [0, 0],
+                  [0, 0],
+                ],
+              ],
+            }),
+          metadata: body.metadata || null,
+        },
+      });
     }
 
     if (parcel.status !== "AVAILABLE") {
-      return NextResponse.json(
-        { error: "Parcel already claimed" },
-        { status: 409 }
-      );
+      const existingSetter =
+        parcel.setterId !== userId && parcel.setterId !== null;
+      if (existingSetter) {
+        return NextResponse.json(
+          { error: "Parcel already claimed" },
+          { status: 409 }
+        );
+      }
     }
 
     const updated = await prisma.parcel.update({
-      where: { id },
+      where: { id: parcel.id },
       data: {
         status: "LEAD",
         setterId: userId,
+      },
+      include: {
+        setter: { select: { id: true, name: true } },
+        visits: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: {
+            id: true,
+            stage: true,
+            outcome: true,
+            setter: { select: { id: true, name: true } },
+          },
+        },
       },
     });
 
     await prisma.visit.create({
       data: {
-        parcelId: id,
+        parcelId: parcel.id,
         setterId: userId,
         stage: "IN_PROGRESS",
       },

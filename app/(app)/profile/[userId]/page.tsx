@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import Image from 'next/image';
 import { User, Mail, Phone, Calendar, Award, TrendingUp, DoorOpen, Target, CheckCircle, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -327,12 +328,12 @@ export default function PublicProfilePage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {profile.setters.map((setter) => (
-              <div key={setter.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+              <Link key={setter.id} href={`/profile/${setter.id}`} className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
                   {setter.name.charAt(0).toUpperCase()}
                 </div>
                 <span className="font-medium">{setter.name}</span>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

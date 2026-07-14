@@ -46,7 +46,7 @@ interface Metrics {
 interface Appointment {
   id: number;
   parcel: { id: string; address: string };
-  setter: { name: string };
+  setter: { id: number; name: string };
   closer?: { name: string };
   stage: string;
   slot?: { startAt: string };
@@ -315,7 +315,14 @@ export default function DashboardPage() {
                         {apt.slot
                           ? new Date(apt.slot.startAt).toLocaleString()
                           : t.common.none}
-                        {role === "CLOSER" && ` • Setter: ${apt.setter.name}`}
+                        {role === "CLOSER" && (
+                          <>
+                            {' • Setter: '}
+                            <Link href={`/profile/${apt.setter.id}`} className="hover:underline">
+                              {apt.setter.name}
+                            </Link>
+                          </>
+                        )}
                       </p>
                     </div>
                   </div>

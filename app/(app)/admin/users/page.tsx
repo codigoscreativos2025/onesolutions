@@ -9,6 +9,7 @@ import { Select } from "@/components/ui/Select";
 import { Modal } from "@/components/ui/Modal";
 import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 interface User {
   id: number;
@@ -338,7 +339,7 @@ export default function AdminUsersPage() {
                   </td>
                   <td className="p-4 text-on-surface-variant">
                     {user.role === "SETTER" && user.closer
-                      ? `Closer: ${user.closer.name}`
+                      ? <span>Closer: <Link href={`/profile/${user.closer.id}`} className="hover:underline">{user.closer.name}</Link></span>
                       : user.role === "CLOSER"
                       ? user.setters && user.setters.length > 0
                         ? <div className="flex flex-col gap-1">{user.setters.map(s => <span key={s.id} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full w-fit">{s.name}</span>)}</div>

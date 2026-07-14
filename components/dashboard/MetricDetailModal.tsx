@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { X, Calendar, MapPin, User, FileText, Filter, MessageSquare, AlertCircle } from 'lucide-react';
 
 interface ProjectType {
@@ -259,13 +260,13 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
                     <div className="flex items-center gap-2 text-sm">
                       <User className="w-4 h-4 text-gray-500" />
                       <span className="text-gray-600 dark:text-gray-400">Setter:</span>
-                      <span className="font-medium">{visit.setter.name}</span>
+                      <Link href={`/profile/${visit.setter.id}`} className="font-medium hover:underline">{visit.setter.name}</Link>
                     </div>
                     {visit.closer && (
                       <div className="flex items-center gap-2 text-sm">
                         <User className="w-4 h-4 text-gray-500" />
                         <span className="text-gray-600 dark:text-gray-400">Closer:</span>
-                        <span className="font-medium">{visit.closer.name}</span>
+                        <Link href={`/profile/${visit.closer.id}`} className="font-medium hover:underline">{visit.closer.name}</Link>
                       </div>
                     )}
                   </div>

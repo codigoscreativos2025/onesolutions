@@ -50,10 +50,10 @@ export async function GET(request: Request) {
           },
         },
         setter: {
-          select: { name: true },
+          select: { id: true, name: true },
         },
         closer: {
-          select: { name: true },
+          select: { id: true, name: true },
         },
         projects: {
           include: {

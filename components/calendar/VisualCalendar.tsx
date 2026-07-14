@@ -25,7 +25,7 @@ interface Slot {
   visit?: {
     id: number;
     parcel: { id: string; address: string };
-    setter: { name: string };
+    setter: { id: number; name: string };
     projects?: { projectType: { id: number; name: string } }[];
   };
 }

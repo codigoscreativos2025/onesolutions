@@ -48,12 +48,24 @@ export default function MapPage() {
         setSearchError(data.message || data.error || "Error en la búsqueda");
       } else {
         const features = data.results?.features || [];
-        const items: SearchResult[] = features.map((feature: { properties?: { id?: string; ll_uuid?: string; address?: string }; geometry?: SearchResult["geometry"] }) => ({
-          id: feature.properties?.id || feature.properties?.ll_uuid || "",
-          address: feature.properties?.address || "",
-          ll_uuid: feature.properties?.ll_uuid,
-          geometry: feature.geometry,
-        }));
+        const items: SearchResult[] = features.map(
+          (feature: {
+            properties?: {
+              id?: string;
+              ll_uuid?: string;
+              address?: string;
+            };
+            geometry?: SearchResult["geometry"];
+          }) => ({
+            id:
+              feature.properties?.id ||
+              feature.properties?.ll_uuid ||
+              "",
+            address: feature.properties?.address || "",
+            ll_uuid: feature.properties?.ll_uuid,
+            geometry: feature.geometry,
+          })
+        );
         setResults(items);
       }
     } catch {
@@ -74,7 +86,7 @@ export default function MapPage() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar dirección o parcela..."
+            placeholder="Buscar direcciones con Regrid..."
             className="flex-1 bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-on-surface-variant outline-none"
           />
           <button
@@ -103,9 +115,7 @@ export default function MapPage() {
             <button
               key={result.id}
               onClick={() => {
-                // Centrar mapa en el resultado si tiene geometría
                 if (result.geometry) {
-                  // Extraer centro aproximado del polígono
                   const geo = result.geometry;
                   if (geo.type === "Polygon" && geo.coordinates?.[0]?.[0]) {
                     const [lng, lat] = geo.coordinates[0][0];

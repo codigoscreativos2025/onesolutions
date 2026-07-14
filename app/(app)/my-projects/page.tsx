@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -27,8 +28,8 @@ interface Visit {
   completedAt: string | null;
   chatCreatedAt: string | null;
   parcel: { id: string; address: string; ownerName: string | null };
-  setter: { name: string };
-  closer?: { name: string };
+  setter: { id: number; name: string };
+  closer?: { id: number; name: string };
   projects: { projectType: { id: number; name: string } }[];
   projectDetails: ProjectDetails | null;
   objections: ObjectionData[];
@@ -263,8 +264,18 @@ export default function MyProjectsPage() {
                       {getStageBadge(visit.stage)}
                     </div>
                     <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                      <span>Setter: {visit.setter.name}</span>
-                      {visit.closer && <span>Closer: {visit.closer.name}</span>}
+                      <span>Setter:{' '}
+                        <Link href={`/profile/${visit.setter.id}`} className="hover:underline">
+                          {visit.setter.name}
+                        </Link>
+                      </span>
+                      {visit.closer && (
+                        <span>Closer:{' '}
+                          <Link href={`/profile/${visit.closer.id}`} className="hover:underline">
+                            {visit.closer.name}
+                          </Link>
+                        </span>
+                      )}
                       <span>Creado: {new Date(visit.createdAt).toLocaleDateString()}</span>
                     </div>
                   </div>

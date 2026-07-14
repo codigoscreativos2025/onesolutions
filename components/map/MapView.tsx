@@ -1,7 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Polygon } from "react-leaflet";
+import { useEffect, useState, useCallback, useRef } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  Polygon,
+  useMap,
+  useMapEvents,
+} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { ParcelSheet } from "./ParcelSheet";
 import { useSession } from "next-auth/react";
@@ -22,6 +28,46 @@ interface Parcel {
   }[];
 }
 
+interface MapBounds {
+  lat1: number;
+  lng1: number;
+  lat2: number;
+  lng2: number;
+}
+
+function MapEventHandler({
+  onReady,
+  onMoveEnd,
+}: {
+  onReady: (map: L.Map) => void;
+  onMoveEnd: () => void;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    onReady(map);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useMapEvents({
+    moveend: () => {
+      onMoveEnd();
+    },
+  });
+
+  return null;
+}
+
+function getBoundsFromMap(map: L.Map): MapBounds {
+  const bounds = map.getBounds();
+  return {
+    lat1: bounds.getSouth(),
+    lng1: bounds.getWest(),
+    lat2: bounds.getNorth(),
+    lng2: bounds.getEast(),
+  };
+}
+
 export default function MapView({
   center,
 }: {
@@ -31,26 +77,49 @@ export default function MapView({
   const [parcels, setParcels] = useState<Parcel[]>([]);
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
   const [loading, setLoading] = useState(true);
+  const mapBoundsRef = useRef<MapBounds | null>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
 
-  const fetchParcels = async () => {
+  const fetchParcelsByBounds = useCallback(async (bounds: MapBounds) => {
     try {
-      const res = await fetch("/api/parcels");
+      setLoading(true);
+      const params = new URLSearchParams({
+        lat1: bounds.lat1.toFixed(6),
+        lng1: bounds.lng1.toFixed(6),
+        lat2: bounds.lat2.toFixed(6),
+        lng2: bounds.lng2.toFixed(6),
+      });
+      const res = await fetch(`/api/regrid/parcels?${params}`);
       if (!res.ok) {
-        throw new Error('Failed to fetch parcels');
+        throw new Error("Failed to fetch parcels");
       }
       const data = await res.json();
       setParcels(data || []);
     } catch (error) {
-      console.error('Error fetching parcels:', error);
+      console.error("Error fetching parcels:", error);
       setParcels([]);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchParcels();
   }, []);
+
+  const handleMapReady = useCallback(
+    (map: L.Map) => {
+      mapInstanceRef.current = map;
+      const bounds = getBoundsFromMap(map);
+      mapBoundsRef.current = bounds;
+      fetchParcelsByBounds(bounds);
+    },
+    [fetchParcelsByBounds]
+  );
+
+  const handleMoveEnd = useCallback(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    const bounds = getBoundsFromMap(map);
+    mapBoundsRef.current = bounds;
+    fetchParcelsByBounds(bounds);
+  }, [fetchParcelsByBounds]);
 
   const getParcelColor = (status: string) => {
     switch (status) {
@@ -68,23 +137,36 @@ export default function MapView({
   const handleClaim = async (parcelId: string) => {
     const res = await fetch(`/api/parcels/${parcelId}/claim`, {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        address: selectedParcel?.address,
+        ownerName: selectedParcel?.ownerName,
+        geometry: selectedParcel?.geometry,
+        metadata: selectedParcel?.metadata,
+      }),
     });
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: "Error al reclamar parcela" }));
+      const err = await res
+        .json()
+        .catch(() => ({ error: "Error al reclamar parcela" }));
       throw new Error(err.error);
     }
 
-    fetchParcels();
-    const updated = await fetch(`/api/parcels/${parcelId}`);
-    const data = await updated.json();
-    setSelectedParcel(data);
+    const claimed = await res.json();
+
+    if (mapBoundsRef.current) {
+      await fetchParcelsByBounds(mapBoundsRef.current);
+    }
+
+    setSelectedParcel(claimed);
+    return claimed;
   };
 
   if (loading) {
     return (
       <div className="w-full h-full flex items-center justify-center text-on-surface-variant">
-        Cargando parcelas...
+        Cargando datos de Regrid...
       </div>
     );
   }
@@ -101,30 +183,34 @@ export default function MapView({
         className="w-full h-full"
       >
         <TileLayer
-          attribution='&copy; Google Maps'
+          attribution="&copy; Google Maps"
           url="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
         />
+        <MapEventHandler onReady={handleMapReady} onMoveEnd={handleMoveEnd} />
         {parcels.map((parcel) => {
           try {
             if (!parcel.geometry) return null;
-            
+
             const geometry = JSON.parse(parcel.geometry);
-            
-            // Validar que la geometría tenga coordenadas válidas
-            if (!geometry.coordinates || !geometry.coordinates[0] || geometry.coordinates[0].length < 3) {
+
+            if (
+              !geometry.coordinates ||
+              !geometry.coordinates[0] ||
+              geometry.coordinates[0].length < 3
+            ) {
               return null;
             }
 
             const coordinates = geometry.coordinates[0].map(
-              (coord: [number, number]) => [coord[1], coord[0]] as [number, number]
+              (coord: [number, number]) =>
+                [coord[1], coord[0]] as [number, number]
             );
 
-            // Validar que todas las coordenadas sean números válidos
             const hasValidCoords = coordinates.every(
-              (coord: [number, number]) => 
-                typeof coord[0] === 'number' && 
-                typeof coord[1] === 'number' &&
-                !isNaN(coord[0]) && 
+              (coord: [number, number]) =>
+                typeof coord[0] === "number" &&
+                typeof coord[1] === "number" &&
+                !isNaN(coord[0]) &&
                 !isNaN(coord[1])
             );
 
@@ -153,7 +239,8 @@ export default function MapView({
                   mouseout: (e) => {
                     e.target.setStyle({
                       weight: 4,
-                      fillOpacity: parcel.status === "AVAILABLE" ? 0.35 : 0.55,
+                      fillOpacity:
+                        parcel.status === "AVAILABLE" ? 0.35 : 0.55,
                     });
                     document.body.style.cursor = "default";
                   },
@@ -161,7 +248,7 @@ export default function MapView({
               />
             );
           } catch (error) {
-            console.error('Error rendering parcel:', parcel.id, error);
+            console.error("Error rendering parcel:", parcel.id, error);
             return null;
           }
         })}
@@ -172,7 +259,9 @@ export default function MapView({
         onClose={() => setSelectedParcel(null)}
         onClaim={handleClaim}
         onVisitStarted={() => {
-          fetchParcels();
+          if (mapBoundsRef.current) {
+            fetchParcelsByBounds(mapBoundsRef.current);
+          }
           setSelectedParcel(null);
         }}
         userRole={session?.user?.role || ""}
