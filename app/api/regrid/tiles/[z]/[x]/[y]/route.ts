@@ -3,8 +3,7 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-// Route: /api/regrid/tiles/[z]/[x]/[y].png
-// Proxy Regrid tileserver PNG tiles, hiding the token from the client
+// Proxy Regrid tileserver vector tiles (MVT), hiding the token from the client
 export async function GET(
   request: Request,
   { params }: { params: { z: string; x: string; y: string } }
@@ -21,11 +20,10 @@ export async function GET(
 
   const z = params.z;
   const x = params.x;
-  // Strip .png extension if present
-  const y = params.y.replace(/\.png$/, "");
+  const y = params.y;
 
   try {
-    const url = `https://tiles.regrid.com/api/v1/parcels/${z}/${x}/${y}.png?token=${token}`;
+    const url = `https://tiles.regrid.com/api/v1/parcels/${z}/${x}/${y}.mvt?token=${token}`;
     const res = await fetch(url);
     if (!res.ok) {
       return new NextResponse(null, { status: res.status });
@@ -33,9 +31,8 @@ export async function GET(
     const buffer = await res.arrayBuffer();
     return new NextResponse(buffer, {
       headers: {
-        "Content-Type": "image/png",
+        "Content-Type": "application/vnd.mapbox-vector-tile",
         "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
-        "CDN-Cache-Control": "public, max-age=86400",
       },
     });
   } catch {
