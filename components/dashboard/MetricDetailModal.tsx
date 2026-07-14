@@ -114,7 +114,7 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
       case 'parcels':
         return 'Parcelas';
       case 'leads':
-        return 'Leads';
+        return 'Leads Potenciales';
       case 'projects':
         return 'Proyectos';
       case 'closed':

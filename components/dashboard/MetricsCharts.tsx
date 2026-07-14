@@ -8,12 +8,13 @@ import {
   PointElement,
   LineElement,
   BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
   Filler,
 } from 'chart.js';
-import { Line, Bar } from 'react-chartjs-2';
+import { Bar, Doughnut } from 'react-chartjs-2';
 
 ChartJS.register(
   CategoryScale,
@@ -21,6 +22,7 @@ ChartJS.register(
   PointElement,
   LineElement,
   BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
@@ -99,60 +101,56 @@ export function MetricsCharts({ userId }: MetricsChartsProps) {
     return <div className="text-center text-gray-500">No hay datos disponibles</div>;
   }
 
-  const lineData = {
+  const barMetricsData = {
     labels: chartData.labels,
     datasets: [
       {
         label: 'Puertas Tocadas',
         data: chartData.doorsKnocked,
+        backgroundColor: COLORS.doors.border,
         borderColor: COLORS.doors.border,
-        backgroundColor: COLORS.doors.bg,
-        fill: true,
-        tension: 0.4,
+        borderWidth: 1,
       },
       {
         label: 'Leads Potenciales',
         data: chartData.leadsGenerated,
+        backgroundColor: COLORS.leads.border,
         borderColor: COLORS.leads.border,
-        backgroundColor: COLORS.leads.bg,
-        fill: true,
-        tension: 0.4,
+        borderWidth: 1,
       },
       {
         label: 'Proyectos Cerrados',
         data: chartData.projectsClosed,
+        backgroundColor: COLORS.projects.border,
         borderColor: COLORS.projects.border,
-        backgroundColor: COLORS.projects.bg,
-        fill: true,
-        tension: 0.4,
+        borderWidth: 1,
       },
       {
         label: 'Objeciones',
         data: chartData.objections,
+        backgroundColor: COLORS.objections.border,
         borderColor: COLORS.objections.border,
-        backgroundColor: COLORS.objections.bg,
-        fill: true,
-        tension: 0.4,
+        borderWidth: 1,
       },
     ],
   };
 
-  const barData = chartData.projectTypes
+  const doughnutData = chartData.projectTypes
     ? {
         labels: chartData.projectTypes.map((p) => p.name),
         datasets: [
           {
-            label: 'Proyectos por Tipo',
+            label: 'Visitas por Tipo de Proyecto',
             data: chartData.projectTypes.map((p) => p.count),
             backgroundColor: chartData.projectTypes.map((_, i) => BAR_COLORS[i % BAR_COLORS.length]),
-            borderColor: chartData.projectTypes.map((_, i) => BAR_COLORS[i % BAR_COLORS.length]),
-            borderWidth: 1,
+            borderColor: chartData.projectTypes.map(() => '#ffffff'),
+            borderWidth: 2,
           },
         ],
       }
     : null;
 
-  const options = {
+  const barOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -174,7 +172,7 @@ export function MetricsCharts({ userId }: MetricsChartsProps) {
     },
   };
 
-  const barOptions = {
+  const doughnutOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -183,15 +181,7 @@ export function MetricsCharts({ userId }: MetricsChartsProps) {
       },
       title: {
         display: true,
-        text: 'Proyectos por Tipo',
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          stepSize: 1,
-        },
+        text: 'Distribución de Visitas por Tipo de Proyecto',
       },
     },
   };
@@ -266,18 +256,18 @@ export function MetricsCharts({ userId }: MetricsChartsProps) {
         </div>
       )}
 
-      {/* Gráfica de Líneas */}
+      {/* Gráfica de Barras */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <div className="h-80">
-          <Line options={options} data={lineData} />
+          <Bar options={barOptions} data={barMetricsData} />
         </div>
       </div>
 
-      {/* Gráfica de Barras */}
-      {barData && (
+      {/* Gráfica de Dona */}
+      {doughnutData && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <div className="h-80">
-            <Bar options={barOptions} data={barData} />
+            <Doughnut options={doughnutOptions} data={doughnutData} />
           </div>
         </div>
       )}

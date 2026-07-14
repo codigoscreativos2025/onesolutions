@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
-import { User, Mail, Phone, Calendar, Award, TrendingUp, DoorOpen, Target, CheckCircle, Pencil, Camera } from 'lucide-react';
+import { User, Mail, Phone, Calendar, Award, TrendingUp, DoorOpen, Target, CheckCircle, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
@@ -61,8 +61,6 @@ export default function PublicProfilePage() {
 
   const isOwnProfile = session?.user?.id === userId;
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   const [editForm, setEditForm] = useState({
     phone: '',
     address: '',
@@ -72,9 +70,6 @@ export default function PublicProfilePage() {
     ssn: '',
     routingNumber: '',
   });
-  const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
-  const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
-
   useEffect(() => {
     fetchProfile();
   }, [userId]);
@@ -106,17 +101,7 @@ export default function PublicProfilePage() {
       ssn: '',
       routingNumber: '',
     });
-    setProfilePhotoFile(null);
-    setProfilePhotoPreview(profile.profile?.profilePhoto || null);
     setIsEditModalOpen(true);
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setProfilePhotoFile(file);
-      setProfilePhotoPreview(URL.createObjectURL(file));
-    }
   };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -124,28 +109,12 @@ export default function PublicProfilePage() {
     setSubmitting(true);
 
     try {
-      let profilePhotoUrl = profile?.profile?.profilePhoto || '';
-
-      if (profilePhotoFile) {
-        const uploadFormData = new FormData();
-        uploadFormData.append('file', profilePhotoFile);
-        const uploadRes = await fetch('/api/upload', {
-          method: 'POST',
-          body: uploadFormData,
-        });
-        if (uploadRes.ok) {
-          const uploadData = await uploadRes.json();
-          profilePhotoUrl = uploadData.url;
-        }
-      }
-
       const body: Record<string, unknown> = {
         phone: editForm.phone,
         address: editForm.address,
         dateOfBirth: editForm.dateOfBirth,
         bankName: editForm.bankName,
         zelle: editForm.zelle,
-        profilePhoto: profilePhotoUrl || undefined,
       };
 
       if (editForm.ssn) body.ssn = editForm.ssn;
@@ -159,7 +128,6 @@ export default function PublicProfilePage() {
 
       if (res.ok) {
         setIsEditModalOpen(false);
-        setProfilePhotoFile(null);
         fetchProfile();
       }
     } finally {
@@ -404,50 +372,6 @@ export default function PublicProfilePage() {
         title="Editar Perfil"
       >
         <form onSubmit={handleSaveProfile} className="space-y-4 max-h-[70vh] overflow-y-auto">
-          <div className="flex flex-col items-center gap-2">
-            {profilePhotoPreview ? (
-              <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-outline-variant">
-                <Image
-                  src={profilePhotoPreview}
-                  alt="Foto de perfil"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            ) : (
-              <div className="w-24 h-24 rounded-full bg-surface-container-low border-2 border-outline-variant flex items-center justify-center">
-                <Camera className="w-8 h-8 text-on-surface-variant" />
-              </div>
-            )}
-            <button
-              type="button"
-              className="text-xs text-primary hover:underline"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {profilePhotoPreview ? 'Cambiar foto' : 'Subir foto de perfil'}
-            </button>
-            {profilePhotoPreview && (
-              <button
-                type="button"
-                className="text-xs text-error hover:underline"
-                onClick={() => {
-                  setProfilePhotoFile(null);
-                  setProfilePhotoPreview(null);
-                  if (fileInputRef.current) fileInputRef.current.value = '';
-                }}
-              >
-                Eliminar foto
-              </button>
-            )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileSelect}
-            />
-          </div>
-
           <Input
             label="Teléfono"
             value={editForm.phone}

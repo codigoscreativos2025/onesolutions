@@ -49,7 +49,7 @@ interface Visit {
   projectDetails: ProjectDetails | null;
   objections: Objection[];
   closerObjections: CloserObjection[];
-  bill?: { imageUrl?: string; additionalFileUrl?: string; additionalFileName?: string } | null;
+  bill?: { imageUrl?: string; additionalFileUrl?: string; additionalFileName?: string; clientName?: string; phone?: string; clientEmail?: string } | null;
   chatRoom?: { id: number } | null;
   daysSinceActivity?: number;
   daysRemaining?: number;
@@ -87,7 +87,7 @@ export default function AdminCRMPage() {
 
     if (filterParam === 'doors') setFilterStage('IN_PROGRESS');
     if (filterParam === 'leads') setFilterStage('PROPOSAL_ACCEPTED');
-    if (filterParam === 'projects') setFilterStage('CLOSED');
+    if (filterParam === 'projects') setFilterStage('PROJECT');
     if (filterParam === 'objections') setFilterStage('all');
     if (filterParam === 'objections') setFilterObjectionType('setter');
     if (setterIdParam) setFilterSetter(setterIdParam);
@@ -176,7 +176,7 @@ export default function AdminCRMPage() {
 
   const handleExport = () => {
     const csv = [
-      ['ID', 'Dirección', 'Setter', 'Closer', 'Estado', 'Fecha Creación', 'Última Actividad', 'Días Restantes', 'Proyectos', 'Objeciones Setter', 'Objeciones Closer'].join(','),
+      ['ID', 'Dirección', 'Setter', 'Closer', 'Estado', 'Fecha Creación', 'Última Actividad', 'Días Restantes', 'Proyectos', 'Objeciones Setter', 'Objeciones Closer', 'Cliente', 'Fecha Cierre', 'Método Pago'].join(','),
       ...filteredVisits.map((v) => [
         v.id,
         v.parcel.address,
@@ -189,6 +189,9 @@ export default function AdminCRMPage() {
         v.projects.map((p) => p.projectType?.name || '').join('; '),
         v.objections.map(o => o.objection.name).join('; '),
         v.closerObjections.map(o => o.closerObjection.name).join('; '),
+        (v.projectDetails?.clientName as string) || v.bill?.clientName || '',
+        v.projectDetails?.closingDate ? new Date(v.projectDetails.closingDate as string).toLocaleDateString() : '',
+        (v.projectDetails?.paymentMethod as string) || '',
       ].join(',')),
     ].join('\n');
 
@@ -250,9 +253,11 @@ export default function AdminCRMPage() {
               className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
             >
               <option value="all">Todos</option>
-              <option value="IN_PROGRESS">En Progreso (Puerta Tocada)</option>
-              <option value="PROPOSAL_ACCEPTED">Propuesta Aceptada (Lead)</option>
-              <option value="CLOSED">Cerrado (Proyecto)</option>
+              <option value="IN_PROGRESS">Leads (puerta tocada)</option>
+              <option value="PROPOSAL_ACCEPTED">Leads Potenciales</option>
+              <option value="PROJECT">Proyecto</option>
+              <option value="CLOSED">Proyecto Cerrado</option>
+              <option value="CANCELLED">Proyecto Cancelado</option>
             </select>
           </div>
 
@@ -354,6 +359,9 @@ export default function AdminCRMPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Última Actividad</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tiempo Restante</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Proyectos / Objeciones</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha Cierre</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Método Pago</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
@@ -370,11 +378,19 @@ export default function AdminCRMPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{visit.closer?.name || 'N/A'}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      visit.stage === 'CLOSED' ? 'bg-green-100 text-green-800' :
+                      visit.stage === 'IN_PROGRESS' ? 'bg-yellow-100 text-yellow-800' :
                       visit.stage === 'PROPOSAL_ACCEPTED' ? 'bg-blue-100 text-blue-800' :
-                      'bg-yellow-100 text-yellow-800'
+                      visit.stage === 'PROJECT' ? 'bg-orange-100 text-orange-800' :
+                      visit.stage === 'CLOSED' ? 'bg-green-100 text-green-800' :
+                      visit.stage === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
                     }`}>
-                      {visit.stage === 'IN_PROGRESS' ? 'Puerta Tocada' : visit.stage === 'PROPOSAL_ACCEPTED' ? 'Lead' : 'Proyecto'}
+                      {visit.stage === 'IN_PROGRESS' ? 'Leads' :
+                       visit.stage === 'PROPOSAL_ACCEPTED' ? 'Leads Potenciales' :
+                       visit.stage === 'PROJECT' ? 'Proyecto' :
+                       visit.stage === 'CLOSED' ? 'Cerrado' :
+                       visit.stage === 'CANCELLED' ? 'Cancelado' :
+                       visit.stage}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
@@ -410,6 +426,21 @@ export default function AdminCRMPage() {
                         <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">{visit.closerObjections.length} obj. closer</span>
                       )}
                     </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                    {(visit.stage === 'PROJECT' || visit.stage === 'CLOSED' || visit.stage === 'CANCELLED')
+                      ? (visit.projectDetails?.clientName as string) || visit.bill?.clientName || '—'
+                      : '—'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                    {(visit.stage === 'PROJECT' || visit.stage === 'CLOSED' || visit.stage === 'CANCELLED')
+                      ? (visit.projectDetails?.closingDate ? new Date(visit.projectDetails.closingDate as string).toLocaleDateString() : '—')
+                      : '—'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                    {(visit.stage === 'PROJECT' || visit.stage === 'CLOSED' || visit.stage === 'CANCELLED')
+                      ? (visit.projectDetails?.paymentMethod as string) || '—'
+                      : '—'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end gap-2">

@@ -168,7 +168,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { phone, address, dateOfBirth, bankName, zelle, ssn, routingNumber, profilePhoto } = body;
+    const { phone, address, dateOfBirth, bankName, zelle, ssn, routingNumber } = body;
 
     if (phone !== undefined) {
       await prisma.user.update({
@@ -184,7 +184,6 @@ export async function PATCH(
     if (zelle !== undefined) profileData.zelle = zelle;
     if (ssn !== undefined) profileData.ssn = ssn ? encrypt(ssn) : null;
     if (routingNumber !== undefined) profileData.routingNumber = routingNumber ? encrypt(routingNumber) : null;
-    if (profilePhoto !== undefined) profileData.profilePhoto = profilePhoto;
 
     if (Object.keys(profileData).length > 0) {
       await prisma.userProfile.upsert({

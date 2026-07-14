@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { MapPin, Calendar, AlertCircle, Clock, XCircle } from 'lucide-react';
+import { MapPin, Calendar, AlertCircle, Clock, XCircle, Filter } from 'lucide-react';
 import Link from 'next/link';
 
 interface VisitData {
   stage: string;
   objections?: { id: number }[];
+  projects?: { projectType: { id: number; name: string } }[];
 }
 
 interface Parcel {
@@ -24,6 +25,7 @@ interface Parcel {
   isExpired: boolean;
   visits?: VisitData[];
   hasSetterObjections?: boolean;
+  projectTypeIds?: number[];
 }
 
 export default function LeadsPage() {
@@ -36,9 +38,27 @@ export default function LeadsPage() {
   const validFilters = ['all', 'expiring', 'expired', 'objections'];
   const filter = validFilters.includes(filterParam) ? filterParam : 'all';
 
+  const [projectTypeFilter, setProjectTypeFilter] = useState<string>('all');
+  const [dateFrom, setDateFrom] = useState<string>('');
+  const [dateTo, setDateTo] = useState<string>('');
+  const [projectTypes, setProjectTypes] = useState<{ id: number; name: string }[]>([]);
+
   useEffect(() => {
     fetchParcels();
+    fetchProjectTypes();
   }, []);
+
+  const fetchProjectTypes = async () => {
+    try {
+      const res = await fetch('/api/project-types');
+      if (res.ok) {
+        const data = await res.json();
+        setProjectTypes(data);
+      }
+    } catch (error) {
+      console.error('Error fetching project types:', error);
+    }
+  };
 
   const fetchParcels = async () => {
     try {
@@ -50,9 +70,10 @@ export default function LeadsPage() {
           try {
             const visitRes = await fetch(`/api/visits/active?parcelId=${p.id}`);
             if (visitRes.ok) {
-              const visit = await visitRes.json();
-              const hasObj = visit?.objections && visit.objections.length > 0;
-              return { ...p, hasSetterObjections: hasObj };
+            const visit = await visitRes.json();
+            const hasObj = visit?.objections && visit.objections.length > 0;
+            const projectTypeIds = visit?.projects?.map((p: { projectType: { id: number } }) => p.projectType.id) || [];
+            return { ...p, hasSetterObjections: hasObj, projectTypeIds };
             }
           } catch {}
           return { ...p, hasSetterObjections: false };
@@ -71,7 +92,15 @@ export default function LeadsPage() {
     if (filter === 'expiring') return parcel.isExpiringSoon && !parcel.isExpired;
     if (filter === 'expired') return parcel.isExpired;
     if (filter === 'objections') return parcel.hasSetterObjections;
-    return true;
+
+    const matchesProjectType = projectTypeFilter === 'all' ||
+      (parcel.projectTypeIds && parcel.projectTypeIds.includes(Number(projectTypeFilter)));
+
+    const parcelDate = parcel.claimedAt ? new Date(parcel.claimedAt) : null;
+    const matchesDateFrom = !dateFrom || (parcelDate && parcelDate >= new Date(dateFrom));
+    const matchesDateTo = !dateTo || (parcelDate && parcelDate <= new Date(dateTo + 'T23:59:59.999Z'));
+
+    return matchesProjectType && matchesDateFrom && matchesDateTo;
   });
 
   const getFilterCount = (f: string) => {
@@ -104,8 +133,46 @@ export default function LeadsPage() {
       <div>
         <h1 className="text-3xl font-bold mb-2">Leads</h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Leads en seguimiento activo. Los leads con propuesta aceptada o cerrados se mueven a Mis Proyectos.
+          Leads en seguimiento activo. Los leads con propuesta aceptada o cerrados se mueven a Leads Potenciales.
         </p>
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 flex flex-wrap gap-4 items-end">
+        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+          <Filter className="w-4 h-4" />
+          <span className="text-sm font-medium">Filtros</span>
+        </div>
+        <div>
+          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Tipo de Proyecto</label>
+          <select
+            value={projectTypeFilter}
+            onChange={(e) => setProjectTypeFilter(e.target.value)}
+            className="h-10 px-3 rounded-lg bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface text-sm"
+          >
+            <option value="all">Todos</option>
+            {projectTypes.map((pt) => (
+              <option key={pt.id} value={pt.id}>{pt.name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Fecha Desde</label>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="h-10 px-3 rounded-lg bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface text-sm"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Fecha Hasta</label>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="h-10 px-3 rounded-lg bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface text-sm"
+          />
+        </div>
       </div>
 
       <div className="flex gap-2 flex-wrap">

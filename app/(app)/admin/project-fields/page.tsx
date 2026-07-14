@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
-import { Plus, Pencil, Trash2, Loader2, Save } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Save, Info } from "lucide-react";
 
 interface ProjectType {
   id: number;
@@ -183,6 +183,16 @@ export default function AdminProjectFieldsPage() {
         <p className="text-on-surface-variant">
           Configura los campos personalizados para cada tipo de proyecto. Selecciona &quot;Campos Comunes&quot; para definir campos obligatorios que aplican a todos los proyectos.
         </p>
+      </div>
+
+      <div className="glass-panel p-4 rounded-2xl border-l-4 border-l-primary flex items-start gap-3">
+        <Info className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+        <div>
+          <h3 className="text-sm font-semibold text-on-surface mb-1">Campos Comunes</h3>
+          <p className="text-sm text-on-surface-variant">
+            Para definir campos que se compartan entre todos los tipos de proyecto, crea un tipo de proyecto llamado <strong>&quot;Campos Comunes&quot;</strong> desde la secci&oacute;n de configuraci&oacute;n de tipos de proyecto. Los campos definidos en ese tipo ser&aacute;n visibles en todos los proyectos nuevos.
+          </p>
+        </div>
       </div>
 
       {/* Selector de Tipo de Proyecto */}

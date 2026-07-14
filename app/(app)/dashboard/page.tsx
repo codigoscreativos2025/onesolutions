@@ -185,15 +185,13 @@ export default function DashboardPage() {
           </>
         ) : role === "SETTER" ? (
           <>
-            <Link href="/leads?filter=all" className="block">
-              <MetricCard title="Leads" value={metrics?.parcels || 0} icon={DoorOpen} color="primary" />
-            </Link>
-            <Link href="/leads?filter=objections" className="block">
-              <MetricCard title="Objeciones" value={metrics?.setterObjections || 0} icon={MessageSquareWarning} color="secondary" />
-            </Link>
-            <Link href="/my-projects?filter=leads" className="block">
-              <MetricCard title="Leads Potenciales" value={metrics?.leadsGenerated || 0} icon={PersonStanding} color="primary" />
-            </Link>
+            <MetricCard title="Puertas Tocadas" value={metrics?.doorsKnocked || 0} icon={DoorOpen} color="primary" onClick={() => setSelectedMetric('doors')} />
+            <MetricCard title="Objeciones" value={metrics?.setterObjections || 0} icon={MessageSquareWarning} color="secondary" onClick={() => setSelectedMetric('objections')} />
+            <MetricCard title="Leads Potenciales" value={metrics?.leadsGenerated || 0} icon={PersonStanding} color="primary" onClick={() => setSelectedMetric('leads')} />
+            <MetricCard title="Objeciones (Proyecto)" value={metrics?.closerObjectionsCount || 0} icon={MessageSquareWarning} color="secondary" onClick={() => setSelectedMetric('objections')} />
+            <MetricCard title="Proyecto" value={metrics?.projectsInProgress || 0} icon={FileText} color="primary" onClick={() => setSelectedMetric('projects')} />
+            <MetricCard title="Proyecto Cerrado" value={metrics?.projectsClosed || 0} icon={Handshake} color="secondary" onClick={() => setSelectedMetric('closed')} />
+            <MetricCard title="Proyecto Cancelado" value={metrics?.projectsCancelled || 0} icon={XCircle} color="primary" onClick={() => setSelectedMetric('cancelled')} />
           </>
         ) : (
           <>
@@ -204,7 +202,7 @@ export default function DashboardPage() {
               <MetricCard title="Objeciones" value={metrics?.setterObjections || 0} icon={MessageSquareWarning} color="secondary" />
             </Link>
             <Link href="/my-projects?filter=leads" className="block">
-              <MetricCard title="Leads" value={metrics?.closerLeads || 0} icon={PersonStanding} color="secondary" />
+              <MetricCard title="Leads Potenciales" value={metrics?.closerLeads || 0} icon={PersonStanding} color="secondary" />
             </Link>
             <Link href="/my-projects?filter=objections" className="block">
               <MetricCard title="Objeciones Proyecto" value={metrics?.closerObjectionsCount || 0} icon={MessageSquareWarning} color="primary" />

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { MessageSquare, CheckCircle, Edit, MapPin, XCircle, FileText, User, DoorOpen } from 'lucide-react';
+import { MessageSquare, CheckCircle, Edit, MapPin, XCircle, FileText, User, DoorOpen, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ViewProjectModal } from '@/components/calendar/ViewProjectModal';
 import { EditProjectModal } from '@/components/calendar/EditProjectModal';
@@ -29,7 +29,7 @@ interface Visit {
   parcel: { id: string; address: string };
   setter: { name: string };
   closer?: { name: string };
-  projects: { projectType: { name: string } }[];
+  projects: { projectType: { id: number; name: string } }[];
   projectDetails: ProjectDetails | null;
   objections: ObjectionData[];
   closerObjections: CloserObjectionData[];
@@ -58,6 +58,10 @@ export default function MyProjectsPage() {
   const [isViewProjectModalOpen, setIsViewProjectModalOpen] = useState(false);
   const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
   const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
+  const [projectTypeFilter, setProjectTypeFilter] = useState<string>('all');
+  const [dateFrom, setDateFrom] = useState<string>('');
+  const [dateTo, setDateTo] = useState<string>('');
+  const [projectTypes, setProjectTypes] = useState<{ id: number; name: string }[]>([]);
 
   const calculateCompletion = (projectDetails: ProjectDetails | null): number => {
     if (!projectDetails) return 0;
@@ -75,7 +79,20 @@ export default function MyProjectsPage() {
       return;
     }
     fetchProjects();
+    fetchProjectTypes();
   }, [session, router, filter]);
+
+  const fetchProjectTypes = async () => {
+    try {
+      const res = await fetch('/api/project-types');
+      if (res.ok) {
+        const data = await res.json();
+        setProjectTypes(data);
+      }
+    } catch (error) {
+      console.error('Error fetching project types:', error);
+    }
+  };
 
   const fetchProjects = async () => {
     try {
@@ -100,8 +117,22 @@ export default function MyProjectsPage() {
   };
 
   const setFilter = (f: string) => {
+    setProjectTypeFilter('all');
+    setDateFrom('');
+    setDateTo('');
     router.push(`/my-projects?filter=${f}`);
   };
+
+  const filteredVisits = visits.filter((visit) => {
+    const matchesProjectType = projectTypeFilter === 'all' ||
+      visit.projects.some(p => p.projectType.id === Number(projectTypeFilter));
+
+    const visitDate = new Date(visit.createdAt);
+    const matchesDateFrom = !dateFrom || visitDate >= new Date(dateFrom);
+    const matchesDateTo = !dateTo || visitDate <= new Date(dateTo + 'T23:59:59.999Z');
+
+    return matchesProjectType && matchesDateFrom && matchesDateTo;
+  });
 
   if (loading) {
     return (
@@ -113,7 +144,7 @@ export default function MyProjectsPage() {
 
   const getStageBadge = (stage: string) => {
     switch (stage) {
-      case 'PROPOSAL_ACCEPTED': return <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">Lead</span>;
+      case 'PROPOSAL_ACCEPTED': return <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">Leads Potenciales</span>;
       case 'PROJECT': return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">En Proyecto</span>;
       case 'CLOSED': return <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">Cerrado</span>;
       case 'CANCELLED': return <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">Cancelado</span>;
@@ -124,7 +155,7 @@ export default function MyProjectsPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Mis Proyectos</h1>
+        <h1 className="text-3xl font-bold mb-2">Leads Potenciales</h1>
         <p className="text-gray-600 dark:text-gray-400">
           Gestiona tus leads, proyectos en curso, cerrados y cancelados
         </p>
@@ -132,21 +163,59 @@ export default function MyProjectsPage() {
 
       <div className="flex gap-2 flex-wrap">
         <button onClick={() => setFilter('all')} className={`px-4 py-2 rounded-lg transition-colors ${filter === 'all' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>Todos ({visits.length})</button>
-        <button onClick={() => setFilter('leads')} className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${filter === 'leads' ? 'bg-green-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}><User className="w-4 h-4" /> Leads</button>
+        <button onClick={() => setFilter('leads')} className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${filter === 'leads' ? 'bg-green-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}><User className="w-4 h-4" /> Leads Potenciales</button>
         <button onClick={() => setFilter('objections')} className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${filter === 'objections' ? 'bg-secondary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}><XCircle className="w-4 h-4" /> Objeciones</button>
         <button onClick={() => setFilter('project')} className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${filter === 'project' ? 'bg-yellow-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}><FileText className="w-4 h-4" /> Proyecto</button>
         <button onClick={() => setFilter('closed')} className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${filter === 'closed' ? 'bg-purple-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}><CheckCircle className="w-4 h-4" /> Cerrados</button>
         <button onClick={() => setFilter('cancelled')} className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${filter === 'cancelled' ? 'bg-red-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}><XCircle className="w-4 h-4" /> Cancelados</button>
       </div>
 
-      {visits.length === 0 ? (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 flex flex-wrap gap-4 items-end">
+        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+          <Filter className="w-4 h-4" />
+          <span className="text-sm font-medium">Filtros</span>
+        </div>
+        <div>
+          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Tipo de Proyecto</label>
+          <select
+            value={projectTypeFilter}
+            onChange={(e) => setProjectTypeFilter(e.target.value)}
+            className="h-10 px-3 rounded-lg bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface text-sm"
+          >
+            <option value="all">Todos</option>
+            {projectTypes.map((pt) => (
+              <option key={pt.id} value={pt.id}>{pt.name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Fecha Desde</label>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="h-10 px-3 rounded-lg bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface text-sm"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Fecha Hasta</label>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="h-10 px-3 rounded-lg bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface text-sm"
+          />
+        </div>
+      </div>
+
+      {filteredVisits.length === 0 ? (
         <div className="text-center py-12">
           <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-500 dark:text-gray-400">No se encontraron proyectos</p>
         </div>
       ) : (
         <div className="space-y-4">
-          {visits.map((visit) => {
+          {filteredVisits.map((visit) => {
             const completion = calculateCompletion(visit.projectDetails);
             const hasChat = visit.chatRoom || visit.chatCreatedAt;
             return (
