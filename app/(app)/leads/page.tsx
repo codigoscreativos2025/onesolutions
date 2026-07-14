@@ -26,7 +26,7 @@ interface Parcel {
   hasSetterObjections?: boolean;
 }
 
-export default function MyParcelsPage() {
+export default function LeadsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [parcels, setParcels] = useState<Parcel[]>([]);
@@ -45,7 +45,6 @@ export default function MyParcelsPage() {
       const res = await fetch('/api/parcels/expiration');
       const data = await res.json();
 
-      // Enriquecer con datos de objeciones
       const enriched = await Promise.all(
         data.map(async (p: Parcel) => {
           try {
@@ -103,9 +102,9 @@ export default function MyParcelsPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Parcelas Activas</h1>
+        <h1 className="text-3xl font-bold mb-2">Leads</h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Parcelas en seguimiento activo. Las parcelas con propuesta aceptada o cerradas se mueven a Mis Proyectos.
+          Leads en seguimiento activo. Los leads con propuesta aceptada o cerrados se mueven a Mis Proyectos.
         </p>
       </div>
 
@@ -118,29 +117,7 @@ export default function MyParcelsPage() {
               : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
           }`}
         >
-          Todas ({getFilterCount('all')})
-        </button>
-        <button
-          onClick={() => setFilter('expiring')}
-          className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-            filter === 'expiring'
-              ? 'bg-yellow-500 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-          }`}
-        >
-          <AlertCircle className="w-4 h-4" />
-          Por Vencer ({getFilterCount('expiring')})
-        </button>
-        <button
-          onClick={() => setFilter('expired')}
-          className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-            filter === 'expired'
-              ? 'bg-red-500 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-          }`}
-        >
-          <Clock className="w-4 h-4" />
-          Expiradas ({getFilterCount('expired')})
+          Todos ({getFilterCount('all')})
         </button>
         <button
           onClick={() => setFilter('objections')}
@@ -153,13 +130,35 @@ export default function MyParcelsPage() {
           <XCircle className="w-4 h-4" />
           Objeciones ({getFilterCount('objections')})
         </button>
+        <button
+          onClick={() => setFilter('expiring')}
+          className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+            filter === 'expiring'
+              ? 'bg-yellow-500 text-white'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+          }`}
+        >
+          <AlertCircle className="w-4 h-4" />
+          Expirando ({getFilterCount('expiring')})
+        </button>
+        <button
+          onClick={() => setFilter('expired')}
+          className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+            filter === 'expired'
+              ? 'bg-red-500 text-white'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+          }`}
+        >
+          <Clock className="w-4 h-4" />
+          Expirados ({getFilterCount('expired')})
+        </button>
       </div>
 
       {filteredParcels.length === 0 ? (
         <div className="text-center py-12">
           <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-500 dark:text-gray-400">
-            No tienes parcelas{filter === 'objections' ? ' con objeciones' : ''}
+            No tienes leads activos
           </p>
         </div>
       ) : (
@@ -248,7 +247,7 @@ export default function MyParcelsPage() {
                   <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
                     <AlertCircle className="w-5 h-5" />
                     <span className="font-medium">
-                      ¡Atención! Esta parcela expirará en {parcel.daysRemaining} días. Realiza una visita para mantenerla.
+                      ¡Atención! Este lead expirará en {parcel.daysRemaining} días. Realiza una visita para mantenerlo.
                     </span>
                   </div>
                 </div>
@@ -259,7 +258,7 @@ export default function MyParcelsPage() {
                   <div className="flex items-center gap-2 text-red-800 dark:text-red-200">
                     <AlertCircle className="w-5 h-5" />
                     <span className="font-medium">
-                      Esta parcela ha expirado y será liberada automáticamente.
+                      Este lead ha expirado y será liberado automáticamente.
                     </span>
                   </div>
                 </div>
@@ -270,7 +269,7 @@ export default function MyParcelsPage() {
                   href={`/visit/${parcel.id}`}
                   className="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary/90 transition-colors text-center"
                 >
-                  Registrar Visita
+                  Visitar
                 </Link>
                 <Link
                   href={`/map?parcelId=${parcel.id}`}

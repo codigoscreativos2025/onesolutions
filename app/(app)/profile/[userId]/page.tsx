@@ -1,8 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { User, Mail, Phone, Calendar, Award, TrendingUp, DoorOpen, Target, CheckCircle } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import Image from 'next/image';
+import { User, Mail, Phone, Calendar, Award, TrendingUp, DoorOpen, Target, CheckCircle, Pencil, Camera } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Modal } from '@/components/ui/Modal';
 
 interface Badge {
   id: number;
@@ -34,13 +39,41 @@ interface UserProfile {
     month: string;
     count: number;
   } | null;
+  profile?: {
+    address?: string;
+    ssn?: string;
+    dateOfBirth?: string;
+    bankName?: string;
+    routingNumber?: string;
+    zelle?: string;
+    profilePhoto?: string;
+  };
 }
 
 export default function PublicProfilePage() {
   const params = useParams();
   const userId = params.userId as string;
+  const { data: session } = useSession();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const isOwnProfile = session?.user?.id === userId;
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [editForm, setEditForm] = useState({
+    phone: '',
+    address: '',
+    dateOfBirth: '',
+    bankName: '',
+    zelle: '',
+    ssn: '',
+    routingNumber: '',
+  });
+  const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProfile();
@@ -58,6 +91,90 @@ export default function PublicProfilePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const openEditModal = () => {
+    if (!profile) return;
+    setEditForm({
+      phone: profile.phone || '',
+      address: profile.profile?.address || '',
+      dateOfBirth: profile.profile?.dateOfBirth
+        ? new Date(profile.profile.dateOfBirth).toISOString().split('T')[0]
+        : '',
+      bankName: profile.profile?.bankName || '',
+      zelle: profile.profile?.zelle || '',
+      ssn: '',
+      routingNumber: '',
+    });
+    setProfilePhotoFile(null);
+    setProfilePhotoPreview(profile.profile?.profilePhoto || null);
+    setIsEditModalOpen(true);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProfilePhotoFile(file);
+      setProfilePhotoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    try {
+      let profilePhotoUrl = profile?.profile?.profilePhoto || '';
+
+      if (profilePhotoFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', profilePhotoFile);
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: uploadFormData,
+        });
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          profilePhotoUrl = uploadData.url;
+        }
+      }
+
+      const body: Record<string, unknown> = {
+        phone: editForm.phone,
+        address: editForm.address,
+        dateOfBirth: editForm.dateOfBirth,
+        bankName: editForm.bankName,
+        zelle: editForm.zelle,
+        profilePhoto: profilePhotoUrl || undefined,
+      };
+
+      if (editForm.ssn) body.ssn = editForm.ssn;
+      if (editForm.routingNumber) body.routingNumber = editForm.routingNumber;
+
+      const res = await fetch(`/api/users/${userId}/profile`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (res.ok) {
+        setIsEditModalOpen(false);
+        setProfilePhotoFile(null);
+        fetchProfile();
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const maskSSN = (ssn: string) => {
+    if (!ssn) return '';
+    return '***-**-' + ssn.slice(-4);
+  };
+
+  const maskRouting = (routing: string) => {
+    if (!routing) return '';
+    return '*****' + routing.slice(-4);
   };
 
   if (loading) {
@@ -90,25 +207,35 @@ export default function PublicProfilePage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header del Perfil */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
         <div className="flex items-start gap-6">
-          {/* Avatar */}
-          <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary text-3xl font-bold">
-            {profile.avatarUrl ? (
-              <img src={profile.avatarUrl} alt={profile.name} className="w-full h-full rounded-full object-cover" />
+          <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary text-3xl font-bold overflow-hidden relative">
+            {profile.profile?.profilePhoto ? (
+              <Image
+                src={profile.profile.profilePhoto}
+                alt={profile.name}
+                fill
+                className="object-cover"
+              />
+            ) : profile.avatarUrl ? (
+              <Image src={profile.avatarUrl} alt={profile.name} fill className="object-cover" />
             ) : (
               profile.name.charAt(0).toUpperCase()
             )}
           </div>
 
-          {/* Información Básica */}
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-2xl font-bold">{profile.name}</h1>
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${getRoleColor(profile.role)}`}>
                 {profile.role}
               </span>
+              {isOwnProfile && (
+                <Button size="sm" variant="outline" onClick={openEditModal}>
+                  <Pencil className="w-4 h-4" />
+                  Editar Perfil
+                </Button>
+              )}
             </div>
 
             <div className="space-y-2 text-gray-600 dark:text-gray-400">
@@ -131,11 +258,54 @@ export default function PublicProfilePage() {
         </div>
       </div>
 
-      {/* Estadísticas */}
+      {isOwnProfile && profile.profile && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+          <h2 className="text-xl font-bold mb-4">Mi Informaci&oacute;n</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {profile.profile.address && (
+              <div>
+                <p className="text-sm text-gray-500">Direcci&oacute;n</p>
+                <p className="font-medium">{profile.profile.address}</p>
+              </div>
+            )}
+            {profile.profile.dateOfBirth && (
+              <div>
+                <p className="text-sm text-gray-500">Fecha de Nacimiento</p>
+                <p className="font-medium">{new Date(profile.profile.dateOfBirth).toLocaleDateString()}</p>
+              </div>
+            )}
+            {profile.profile.bankName && (
+              <div>
+                <p className="text-sm text-gray-500">Banco</p>
+                <p className="font-medium">{profile.profile.bankName}</p>
+              </div>
+            )}
+            {profile.profile.zelle && (
+              <div>
+                <p className="text-sm text-gray-500">Zelle</p>
+                <p className="font-medium">{profile.profile.zelle}</p>
+              </div>
+            )}
+            {profile.profile.ssn && (
+              <div>
+                <p className="text-sm text-gray-500">SSN</p>
+                <p className="font-medium">{maskSSN(profile.profile.ssn)}</p>
+              </div>
+            )}
+            {profile.profile.routingNumber && (
+              <div>
+                <p className="text-sm text-gray-500">N&uacute;mero de Ruta</p>
+                <p className="font-medium">{maskRouting(profile.profile.routingNumber)}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
           <TrendingUp className="w-5 h-5" />
-          Estadísticas
+          Estad&iacute;sticas
         </h2>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -150,7 +320,7 @@ export default function PublicProfilePage() {
           <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
               <Target className="w-5 h-5 text-green-600" />
-              <span className="text-sm font-medium text-green-600">Leads Generados</span>
+              <span className="text-sm font-medium text-green-600">Leads Potenciales</span>
             </div>
             <p className="text-2xl font-bold">{profile.stats.leadsGenerated}</p>
           </div>
@@ -181,7 +351,6 @@ export default function PublicProfilePage() {
         )}
       </div>
 
-      {/* Setters asignados (solo closers) */}
       {profile.role === "CLOSER" && profile.setters && profile.setters.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
@@ -201,7 +370,6 @@ export default function PublicProfilePage() {
         </div>
       )}
 
-      {/* Medallas */}
       {profile.userBadges.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
@@ -229,6 +397,111 @@ export default function PublicProfilePage() {
           </div>
         </div>
       )}
+
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title="Editar Perfil"
+      >
+        <form onSubmit={handleSaveProfile} className="space-y-4 max-h-[70vh] overflow-y-auto">
+          <div className="flex flex-col items-center gap-2">
+            {profilePhotoPreview ? (
+              <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-outline-variant">
+                <Image
+                  src={profilePhotoPreview}
+                  alt="Foto de perfil"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-surface-container-low border-2 border-outline-variant flex items-center justify-center">
+                <Camera className="w-8 h-8 text-on-surface-variant" />
+              </div>
+            )}
+            <button
+              type="button"
+              className="text-xs text-primary hover:underline"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {profilePhotoPreview ? 'Cambiar foto' : 'Subir foto de perfil'}
+            </button>
+            {profilePhotoPreview && (
+              <button
+                type="button"
+                className="text-xs text-error hover:underline"
+                onClick={() => {
+                  setProfilePhotoFile(null);
+                  setProfilePhotoPreview(null);
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                }}
+              >
+                Eliminar foto
+              </button>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+          </div>
+
+          <Input
+            label="Teléfono"
+            value={editForm.phone}
+            onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+          />
+          <Input
+            label="Dirección"
+            value={editForm.address}
+            onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+          />
+          <Input
+            label="Fecha de Nacimiento"
+            type="date"
+            value={editForm.dateOfBirth}
+            onChange={(e) => setEditForm({ ...editForm, dateOfBirth: e.target.value })}
+          />
+          <Input
+            label="Banco"
+            value={editForm.bankName}
+            onChange={(e) => setEditForm({ ...editForm, bankName: e.target.value })}
+          />
+          <Input
+            label="Zelle"
+            value={editForm.zelle}
+            onChange={(e) => setEditForm({ ...editForm, zelle: e.target.value })}
+          />
+          <Input
+            label="SSN"
+            value={editForm.ssn}
+            onChange={(e) => setEditForm({ ...editForm, ssn: e.target.value })}
+            placeholder={profile.profile?.ssn ? maskSSN(profile.profile.ssn) : 'XXX-XX-XXXX'}
+          />
+          <Input
+            label="Número de Ruta"
+            value={editForm.routingNumber}
+            onChange={(e) => setEditForm({ ...editForm, routingNumber: e.target.value })}
+            placeholder={profile.profile?.routingNumber ? maskRouting(profile.profile.routingNumber) : ''}
+          />
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              onClick={() => setIsEditModalOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" className="flex-1" isLoading={submitting}>
+              Guardar Cambios
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

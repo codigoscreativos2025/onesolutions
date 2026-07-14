@@ -111,7 +111,7 @@ export function MetricsCharts({ userId }: MetricsChartsProps) {
         tension: 0.4,
       },
       {
-        label: 'Leads Generados',
+        label: 'Leads Potenciales',
         data: chartData.leadsGenerated,
         borderColor: COLORS.leads.border,
         backgroundColor: COLORS.leads.bg,

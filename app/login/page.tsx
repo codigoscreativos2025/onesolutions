@@ -24,14 +24,14 @@ export default function LoginPage() {
       email,
       password,
       redirect: false,
-      callbackUrl: "/dashboard",
+      callbackUrl: "/ranking",
     });
 
     if (result?.error) {
       setError(t.login.error);
       setLoading(false);
     } else {
-      router.push("/dashboard");
+      router.push("/ranking");
       router.refresh();
     }
   };

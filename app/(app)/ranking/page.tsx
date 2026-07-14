@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { Trophy, Medal, Target, Crown, Award, Eye } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { motion, AnimatePresence } from "framer-motion";
+import { Crown, Trophy } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Badge {
   id: number;
@@ -35,11 +35,21 @@ interface RankingData {
   myBadges: Badge[];
 }
 
+const podiumMotion = {
+  initial: { y: 40, opacity: 0, scale: 0.9 },
+  animate: { y: 0, opacity: 1, scale: 1 },
+};
+
+const listMotion = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -10 },
+};
+
 export default function RankingPage() {
   const { data: session } = useSession();
-  const router = useRouter();
   const [data, setData] = useState<RankingData | null>(null);
-  const [activeTab, setActiveTab] = useState<"doors" | "prospects" | "projects">("doors");
+  const [activeTab, setActiveTab] = useState<"setters" | "closers">("setters");
 
   useEffect(() => {
     fetch("/api/ranking")
@@ -48,111 +58,81 @@ export default function RankingPage() {
   }, []);
 
   const currentRanking =
-    activeTab === "doors"
-      ? data?.settersDoors
-      : activeTab === "prospects"
-      ? data?.settersProspects
-      : data?.closersProjects;
+    activeTab === "setters" ? data?.settersDoors : data?.closersProjects;
+
+  const top3 = currentRanking?.slice(0, 3) ?? [];
+  const rest = currentRanking?.slice(3) ?? [];
+
+  const podiumOrder =
+    top3.length >= 3 ? [top3[1], top3[0], top3[2]] : top3;
 
   const myPosition =
-    activeTab === "doors"
+    activeTab === "setters"
       ? data?.myPosition.doorsKnocked
-      : activeTab === "prospects"
-      ? data?.myPosition.prospectsGenerated
       : data?.myPosition.projectsClosed;
 
-  const isInTop10 = currentRanking?.some(
-    (item) => item.id === parseInt(session?.user?.id || "0")
+  const myRankingItem = currentRanking?.find(
+    (item) => item.id === parseInt(session?.user?.id ?? "0")
   );
 
+  const userDisplayCount = myRankingItem?.count;
+  const userDisplayPosition: number | undefined =
+    myRankingItem?.position ?? (myPosition || undefined);
+
+  const nextUpGap = (() => {
+    if (!currentRanking || !myRankingItem || myRankingItem.position <= 1)
+      return null;
+    const prevItem = currentRanking.find(
+      (item) => item.position === myRankingItem.position - 1
+    );
+    if (!prevItem) return null;
+    return prevItem.count - myRankingItem.count + 1;
+  })();
+
   const myRole = session?.user?.role;
-  const showDoorsTab = myRole === "SETTER" || myRole === "ADMIN";
-  const showProspectsTab = myRole === "SETTER" || myRole === "ADMIN";
-  const showProjectsTab = myRole === "CLOSER" || myRole === "ADMIN";
+  const showSettersTab = myRole === "SETTER" || myRole === "ADMIN";
+  const showClosersTab = myRole === "CLOSER" || myRole === "ADMIN";
+
+  const labelForCount = activeTab === "setters" ? "Sales" : "Proyectos";
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-headline text-2xl font-bold text-on-surface">
-          Ranking y Medallas
+    <div className="space-y-6 pt-4 pb-4">
+      {/* Header */}
+      <div className="flex flex-col items-center text-center">
+        <h1 className="font-headline text-2xl font-bold text-primary mb-1">
+          Ranking Global
         </h1>
-        <p className="text-on-surface-variant">
-          Top performers de la plataforma
+        <p className="text-on-surface-variant text-sm">
+          Conocimiento es poder y los resultados son consecuencia.
         </p>
       </div>
 
-      {/* Mis Medallas */}
-      {data?.myBadges && data.myBadges.length > 0 && (
-        <div className="glass-panel p-5 rounded-2xl">
-          <div className="flex items-center gap-2 mb-3">
-            <Award className="w-5 h-5 text-primary" />
-            <h2 className="font-semibold text-on-surface">Mis Medallas</h2>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {data.myBadges.map((badge) => (
-              <div
-                key={badge.id}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl border"
-                style={{ 
-                  backgroundColor: `${badge.color}15`,
-                  borderColor: `${badge.color}40`
-                }}
-              >
-                <span className="text-xl">{badge.icon}</span>
-                <div>
-                  <p className="font-semibold text-sm text-on-surface">{badge.name}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Tabs */}
-      <div className="grid grid-cols-3 gap-3">
-        {showDoorsTab && (
+      {/* Tab Switcher */}
+      <div className="flex p-1 bg-surface-container-high rounded-full">
+        {showSettersTab && (
           <button
-            onClick={() => setActiveTab("doors")}
-            className={`p-4 rounded-2xl glass-panel border-2 transition-all ${
-              activeTab === "doors"
-                ? "border-primary bg-primary/5"
-                : "border-transparent"
-            }`}
+            onClick={() => setActiveTab("setters")}
+            className={cn(
+              "flex-1 py-3 px-4 rounded-full font-semibold text-sm transition-all duration-300",
+              activeTab === "setters"
+                ? "bg-primary text-on-primary shadow-lg"
+                : "text-on-surface-variant"
+            )}
           >
-            <Target className="w-6 h-6 text-primary mb-2 mx-auto" />
-            <span className="font-semibold text-on-surface text-xs block">
-              Puertas
-            </span>
+            Top 10 Setters
           </button>
         )}
-        {showProspectsTab && (
+        {showClosersTab && (
           <button
-            onClick={() => setActiveTab("prospects")}
-            className={`p-4 rounded-2xl glass-panel border-2 transition-all ${
-              activeTab === "prospects"
-                ? "border-primary bg-primary/5"
-                : "border-transparent"
-            }`}
+            onClick={() => setActiveTab("closers")}
+            className={cn(
+              "flex-1 py-3 px-4 rounded-full font-semibold text-sm transition-all duration-300",
+              activeTab === "closers"
+                ? "bg-primary text-on-primary shadow-lg"
+                : "text-on-surface-variant"
+            )}
           >
-            <Trophy className="w-6 h-6 text-secondary mb-2 mx-auto" />
-            <span className="font-semibold text-on-surface text-xs block">
-              Prospectos
-            </span>
-          </button>
-        )}
-        {showProjectsTab && (
-          <button
-            onClick={() => setActiveTab("projects")}
-            className={`p-4 rounded-2xl glass-panel border-2 transition-all ${
-              activeTab === "projects"
-                ? "border-primary bg-primary/5"
-                : "border-transparent"
-            }`}
-          >
-            <Medal className="w-6 h-6 text-tertiary mb-2 mx-auto" />
-            <span className="font-semibold text-on-surface text-xs block">
-              Proyectos
-            </span>
+            Top 10 Closers
           </button>
         )}
       </div>
@@ -163,83 +143,211 @@ export default function RankingPage() {
         </div>
       ) : (
         <>
-          <div className="glass-panel rounded-2xl overflow-hidden">
-            {currentRanking?.map((item, index) => (
-              <div
-                key={item.id}
-                className={`flex items-center gap-4 p-4 border-b border-outline-variant/20 last:border-0 ${
-                  item.id === parseInt(session?.user?.id || "0")
-                    ? "bg-primary/5"
-                    : ""
-                }`}
-              >
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                    index === 0
-                      ? "bg-primary text-on-primary"
-                      : index === 1
-                      ? "bg-secondary text-on-secondary"
-                      : index === 2
-                      ? "bg-tertiary text-on-tertiary"
-                      : "bg-surface-container-highest text-on-surface-variant"
-                  }`}
-                >
-                  {index === 0 ? (
-                    <Crown className="w-5 h-5" />
-                  ) : index === 1 ? (
-                    <Medal className="w-5 h-5" />
-                  ) : index === 2 ? (
-                    <Medal className="w-5 h-5" />
-                  ) : (
-                    item.position
-                  )}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-semibold text-on-surface">{item.name}</p>
-                    {item.badges.length > 0 && (
-                      <div className="flex gap-1">
-                        {item.badges.slice(0, 3).map((badge) => (
-                          <span key={badge.id} title={badge.name}>
-                            {badge.icon}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-xs text-on-surface-variant uppercase">
-                    {item.role === "SETTER" ? "Setter" : "Closer"}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-display text-2xl font-bold text-primary">
-                    {item.count}
-                  </p>
-                  <p className="text-xs text-on-surface-variant">
-                    {activeTab === "doors" ? "puertas" : activeTab === "prospects" ? "prospectos" : "proyectos"}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => router.push(`/profile/${item.id}`)}
-                >
-                  <Eye className="w-4 h-4 mr-1" />
-                  Ver Perfil
-                </Button>
-              </div>
-            ))}
-          </div>
+          {/* Podium Top 3 */}
+          {podiumOrder.length > 0 && (
+            <div className="grid grid-cols-3 gap-3 items-end pt-4">
+              {podiumOrder.map((item, i) => {
+                const originalRank = top3.indexOf(item) + 1;
+                const isRank1 = originalRank === 1;
+                const isRank2 = originalRank === 2;
 
-          {!isInTop10 && myPosition && myPosition > 0 && (
-            <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 text-center">
-              <p className="text-on-surface">
-                Tu posición actual:{" "}
-                <span className="font-bold text-primary">#{myPosition}</span>
-              </p>
+                const avatarSize = isRank1 ? "w-24 h-24" : "w-16 h-16";
+                const borderColor = isRank1
+                  ? "border-primary shadow-[0_0_15px_rgba(0,110,0,0.3)]"
+                  : isRank2
+                  ? "border-circuit-grey shadow-[0_0_15px_rgba(153,71,0,0.2)]"
+                  : "shadow-[0_0_15px_rgba(153,71,0,0.2)] border-secondary-container";
+                const badgeColor = isRank1
+                  ? "bg-primary text-on-primary"
+                  : isRank2
+                  ? "bg-circuit-grey text-on-surface"
+                  : "bg-secondary-container text-on-secondary-container";
+                const badgeSize = isRank1
+                  ? "w-10 h-10 text-lg"
+                  : "w-7 h-7 text-sm";
+
+                return (
+                  <motion.div
+                    key={item.id}
+                    className="flex flex-col items-center"
+                    {...podiumMotion}
+                    transition={{
+                      type: "spring",
+                      stiffness: 200,
+                      damping: 20,
+                      delay: i * 0.15,
+                    }}
+                  >
+                    <div className={`relative ${isRank1 ? "mb-4" : "mb-3"}`}>
+                      <div
+                        className={cn(
+                          avatarSize,
+                          "rounded-full border-4 overflow-hidden",
+                          borderColor,
+                          isRank1 && "scale-110"
+                        )}
+                      >
+                        <div className="w-full h-full bg-primary/10 flex items-center justify-center">
+                          <Trophy
+                            className={cn(
+                              "text-primary",
+                              isRank1 ? "w-10 h-10" : "w-6 h-6"
+                            )}
+                          />
+                        </div>
+                      </div>
+                      <div
+                        className={cn(
+                          "absolute -top-2 -right-2 rounded-full flex items-center justify-center font-bold border-2 border-white",
+                          badgeSize,
+                          badgeColor
+                        )}
+                      >
+                        {isRank1 ? (
+                          <Crown className="w-5 h-5" />
+                        ) : (
+                          originalRank
+                        )}
+                      </div>
+                    </div>
+                    <span
+                      className={cn(
+                        "font-semibold text-center",
+                        isRank1
+                          ? "text-primary font-headline text-sm"
+                          : "text-xs"
+                      )}
+                    >
+                      {item.name}
+                    </span>
+                    <span
+                      className={cn(
+                        "font-bold",
+                        isRank1
+                          ? "text-primary text-lg"
+                          : "text-secondary text-sm"
+                      )}
+                    >
+                      {item.count} {labelForCount}
+                    </span>
+                  </motion.div>
+                );
+              })}
             </div>
           )}
+
+          {/* Leaderboard List (4-10) */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-3"
+            >
+              {rest.map((item, index) => {
+                const isCurrentUser =
+                  item.id === parseInt(session?.user?.id ?? "0");
+                return (
+                  <motion.div
+                    key={item.id}
+                    {...listMotion}
+                    transition={{
+                      duration: 0.3,
+                      delay: index * 0.05,
+                    }}
+                    className={cn(
+                      "glass-panel rounded-xl p-4 flex items-center justify-between",
+                      isCurrentUser && "border-primary/30 border-2 bg-primary/5"
+                    )}
+                  >
+                    <div className="flex items-center gap-4">
+                      <span className="w-6 font-bold text-on-surface-variant text-sm">
+                        {item.position}
+                      </span>
+                      <div className="w-12 h-12 rounded-full border-2 border-circuit-grey overflow-hidden bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <span className="text-primary font-bold text-lg">
+                          {item.name.charAt(0)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-sm">
+                          {item.name}
+                        </span>
+                        {item.badges.length > 0 && (
+                          <div className="flex gap-1 mt-0.5">
+                            {item.badges.slice(0, 3).map((badge) => (
+                              <span
+                                key={badge.id}
+                                title={badge.name}
+                                className="text-xs"
+                              >
+                                {badge.icon}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="font-bold text-primary">
+                        {item.count} {labelForCount}
+                      </p>
+                      <p className="text-[10px] text-on-surface-variant uppercase tracking-wider">
+                        {activeTab === "setters"
+                          ? "Puertas Tocadas"
+                          : "Proyectos Cerrados"}
+                      </p>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+          </AnimatePresence>
         </>
+      )}
+
+      {/* Sticky Bottom Bar */}
+      {data && userDisplayPosition !== undefined && userDisplayPosition > 0 && (
+        <div className="fixed bottom-20 left-[20px] right-[20px] z-40 max-w-2xl mx-auto">
+          <div className="glass-panel rounded-xl p-4 flex items-center justify-between border-primary/30 border-2 bg-primary/5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold text-sm flex-shrink-0">
+                {userDisplayPosition}
+              </div>
+              <div className="min-w-0">
+                <p className="font-semibold text-primary text-sm">
+                  Tu puesto actual
+                </p>
+                <p className="text-sm text-on-surface truncate">
+                  {session?.user?.name ?? "Tú"}
+                  {userDisplayCount !== undefined &&
+                    userDisplayCount !== null &&
+                    ` · ${userDisplayCount} ${labelForCount}`}
+                </p>
+              </div>
+            </div>
+            {nextUpGap && nextUpGap > 0 && (
+              <div className="flex flex-col items-end flex-shrink-0 ml-3">
+                <span className="text-xs text-on-surface-variant whitespace-nowrap">
+                  A {nextUpGap} de subir
+                </span>
+                <div className="w-16 h-1 bg-circuit-grey rounded-full mt-1 overflow-hidden">
+                  <div
+                    className="h-full bg-primary rounded-full"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        (1 / (nextUpGap + 1)) * 200
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

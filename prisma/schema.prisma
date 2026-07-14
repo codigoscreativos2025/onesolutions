@@ -91,14 +91,15 @@ model Visit {
   chatCreatedAt DateTime?
   chatCreatedBy Int?
 
-  objections       VisitObjection[]
-  closerObjections VisitCloserObjection[]
-  bill             Bill?
-  chatRoom         ChatRoom?
-  slot             CloserSlot?
-  projects         VisitProject[]
-  projectDetails   ProjectDetails?
-  location         VisitLocation?
+  objections         VisitObjection[]
+  closerObjections   VisitCloserObjection[]
+  notAvailableTags   VisitNotAvailableTag[]
+  bill               Bill?
+  chatRoom           ChatRoom?
+  slot               CloserSlot?
+  projects           VisitProject[]
+  projectDetails     ProjectDetails?
+  location           VisitLocation?
 }
 
 // Tipos de proyectos disponibles
@@ -247,10 +248,10 @@ model VisitCloserObjection {
 }
 
 model Bill {
-  id                 Int     @id @default(autoincrement())
-  visitId            Int     @unique
-  visit              Visit   @relation(fields: [visitId], references: [id])
-  imageUrl           String
+  id                 Int      @id @default(autoincrement())
+  visitId            Int      @unique
+  visit              Visit    @relation(fields: [visitId], references: [id])
+  imageUrl           String?
   phone              String
   clientName         String?
   clientEmail        String?
@@ -416,4 +417,35 @@ model AuditLog {
   oldValue        String?  // JSON
   newValue        String?  // JSON
   createdAt       DateTime @default(now())
+}
+
+// Configuración del negocio (logo, marca de agua, etc.)
+model BusinessSettings {
+  id              Int      @id @default(autoincrement())
+  logoUrl         String?  // URL del logo del negocio
+  logoUpdatedAt   DateTime?
+  watermarkedEnabled Boolean @default(true)
+  updatedAt       DateTime @updatedAt
+}
+
+// Etiquetas personalizables para "No Disponible"
+model NotAvailableTag {
+  id       Int    @id @default(autoincrement())
+  name     String
+  nameEn   String?
+  color    String @default("#fb7800")
+  isActive Boolean @default(true)
+  order    Int    @default(0)
+  visits   VisitNotAvailableTag[]
+}
+
+// Relación many-to-many entre Visit y NotAvailableTag
+model VisitNotAvailableTag {
+  visitId Int
+  tagId   Int
+  visit   Visit             @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  tag     NotAvailableTag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  notes   String?
+
+  @@id([visitId, tagId])
 }

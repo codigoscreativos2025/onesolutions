@@ -146,12 +146,12 @@ export function CompetitionStats() {
           </div>
         </div>
 
-        {/* Leads Generados */}
+        {/* Leads Potenciales */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Target className="w-5 h-5 text-green-500" />
-              <span className="font-semibold">Leads Generados</span>
+              <span className="font-semibold">Leads Potenciales</span>
             </div>
             <span className="text-sm text-gray-600 dark:text-gray-400">
               #{getMyPosition(data.rankings.leadsGenerated)} de {data.rankings.leadsGenerated.length}

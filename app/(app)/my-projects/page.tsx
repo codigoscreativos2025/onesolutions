@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { MessageSquare, CheckCircle, Edit, MapPin, XCircle, FileText, User } from 'lucide-react';
+import { MessageSquare, CheckCircle, Edit, MapPin, XCircle, FileText, User, DoorOpen } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ViewProjectModal } from '@/components/calendar/ViewProjectModal';
 import { EditProjectModal } from '@/components/calendar/EditProjectModal';
@@ -174,6 +174,9 @@ export default function MyProjectsPage() {
                     </div>
                   </div>
                   <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => router.push(`/visit/${visit.parcel.id}?mode=closer`)}>
+                      <DoorOpen className="w-4 h-4" />
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => handleViewProject(visit.id)}>Ver</Button>
                     {visit.stage !== 'CANCELLED' && (
                       <Button variant="outline" size="sm" onClick={() => handleEditProject(visit.id)}>

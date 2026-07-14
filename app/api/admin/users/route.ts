@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { encrypt } from "@/lib/encryption";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
@@ -61,10 +62,10 @@ export async function POST(request: Request) {
       closerId: role === "SETTER" && closerId ? parseInt(closerId) : null,
       profile: {
         create: {
-          ssn: ssn || null,
+          ssn: ssn ? encrypt(ssn) : null,
           dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
           bankName: bankName || null,
-          routingNumber: routingNumber || null,
+          routingNumber: routingNumber ? encrypt(routingNumber) : null,
           zelle: zelle || null,
           address: address || null,
           profilePhoto: profilePhoto || null,

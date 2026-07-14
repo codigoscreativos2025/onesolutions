@@ -185,22 +185,22 @@ export default function DashboardPage() {
           </>
         ) : role === "SETTER" ? (
           <>
-            <Link href="/my-parcels?filter=all" className="block">
-              <MetricCard title="Parcelas" value={metrics?.parcels || 0} icon={DoorOpen} color="primary" />
+            <Link href="/leads?filter=all" className="block">
+              <MetricCard title="Leads" value={metrics?.parcels || 0} icon={DoorOpen} color="primary" />
             </Link>
-            <Link href="/my-parcels?filter=objections" className="block">
+            <Link href="/leads?filter=objections" className="block">
               <MetricCard title="Objeciones" value={metrics?.setterObjections || 0} icon={MessageSquareWarning} color="secondary" />
             </Link>
             <Link href="/my-projects?filter=leads" className="block">
-              <MetricCard title="Leads Generados" value={metrics?.leadsGenerated || 0} icon={PersonStanding} color="primary" />
+              <MetricCard title="Leads Potenciales" value={metrics?.leadsGenerated || 0} icon={PersonStanding} color="primary" />
             </Link>
           </>
         ) : (
           <>
-            <Link href="/my-parcels?filter=all" className="block">
-              <MetricCard title="Mis Parcelas" value={metrics?.parcels || 0} icon={DoorOpen} color="primary" />
+            <Link href="/leads?filter=all" className="block">
+              <MetricCard title="Leads" value={metrics?.parcels || 0} icon={DoorOpen} color="primary" />
             </Link>
-            <Link href="/my-parcels?filter=objections" className="block">
+            <Link href="/leads?filter=objections" className="block">
               <MetricCard title="Objeciones" value={metrics?.setterObjections || 0} icon={MessageSquareWarning} color="secondary" />
             </Link>
             <Link href="/my-projects?filter=leads" className="block">
@@ -248,7 +248,7 @@ export default function DashboardPage() {
 
           <div className="glass-panel p-4 rounded-2xl">
             <h3 className="text-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-2">
-              <PersonStanding className="w-4 h-4" /> Top Leads Generados
+              <PersonStanding className="w-4 h-4" /> Top Leads Potenciales
             </h3>
             <div className="space-y-2">
               {metrics?.topProspects?.slice(0, 5).map((user, i) => (

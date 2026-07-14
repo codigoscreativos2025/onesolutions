@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 export const dynamic = 'force-dynamic';
 
 // Cron job que se ejecuta diariamente para verificar parcelas sin actividad por 30 días
+// Solo expiran leads con objeciones o no-disponible; avances exitosos NO expiran
 export async function POST() {
   const session = await auth();
   if (!session?.user || session.user.role !== 'ADMIN') {
@@ -16,9 +17,10 @@ export async function POST() {
 
     // Encontrar parcelas que:
     // 1. Tienen un setter asignado
-    // 2. No han tenido actividad en los últimos 30 días
-    // 3. No están en estado CUSTOMER (ya cerradas)
-    const parcelsToExpire = await prisma.parcel.findMany({
+    // 2. No están en estado CUSTOMER
+    // 3. Todas sus visitas más recientes son OBJECTION o NOT_AVAILABLE
+    //    (avances exitosos como PROPOSAL_ACCEPTED, PROJECT, CLOSED no expiran)
+    const allParcels = await prisma.parcel.findMany({
       where: {
         setterId: { not: null },
         status: { not: 'CUSTOMER' },
@@ -29,12 +31,22 @@ export async function POST() {
       },
       include: {
         setter: {
-          select: {
-            id: true,
-            name: true,
-          },
+          select: { id: true, name: true },
+        },
+        visits: {
+          orderBy: { createdAt: 'desc' },
+          select: { id: true, stage: true, outcome: true },
         },
       },
+    });
+
+    // Filtrar: solo expiran leads donde la última visita es OBJECTION o NOT_AVAILABLE
+    // Si la última visita es PROPOSAL_ACCEPTED, PROJECT, CLOSED o no tiene visitas con objeciones → NO expira
+    const parcelsToExpire = allParcels.filter((parcel) => {
+      const latestVisit = parcel.visits[0];
+      if (!latestVisit) return true; // sin visitas → expira
+      // Solo expira si la última visita fue objeción o no disponible
+      return latestVisit.stage === 'OBJECTION' || latestVisit.outcome === 'NOT_AVAILABLE';
     });
 
     const expiredParcels = [];
@@ -58,7 +70,7 @@ export async function POST() {
             userId: parcel.setterId,
             title: 'Parcela Liberada',
             body: `La parcela "${parcel.address}" ha sido liberada por inactividad (30 días sin actividad).`,
-            link: '/my-parcels',
+            link: '/leads',
           },
         });
       }
@@ -117,10 +129,12 @@ export async function GET() {
       },
     });
 
-    // Filtrar parcelas cuya última visita esté en PROPOSAL_ACCEPTED o CLOSED
+    // Filtrar parcelas cuya última visita esté en PROPOSAL_ACCEPTED, PROJECT, o CLOSED
+    // Estas NO expiran porque son avances exitosos
     const filteredParcels = parcels.filter((p) => {
       const latestVisit = p.visits?.[0];
-      return !latestVisit || !['PROPOSAL_ACCEPTED', 'CLOSED'].includes(latestVisit.stage);
+      if (!latestVisit) return true;
+      return !['PROPOSAL_ACCEPTED', 'PROJECT', 'CLOSED'].includes(latestVisit.stage);
     });
 
     const parcelsWithDaysRemaining = filteredParcels.map((parcel) => {

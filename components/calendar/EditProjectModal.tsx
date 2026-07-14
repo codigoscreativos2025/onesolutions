@@ -90,12 +90,14 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
     
     setSaving(true);
     try {
+      const cleanDetails = { ...projectDetails };
+      delete cleanDetails.phone;
       const res = await fetch('/api/project-details', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           visitId,
-          ...projectDetails,
+          ...cleanDetails,
         }),
       });
 

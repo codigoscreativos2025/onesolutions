@@ -47,7 +47,7 @@ export const translations = {
       greeting: "Hola",
       summary: "Este es tu resumen de actividad",
       doorsKnocked: "Puertas Tocadas",
-      leadsGenerated: "Leads Generados",
+      leadsGenerated: "Leads Potenciales",
       projectsClosed: "Proyectos Cerrados",
       objections: "Objeciones",
       recentAppointments: "Citas Recientes",

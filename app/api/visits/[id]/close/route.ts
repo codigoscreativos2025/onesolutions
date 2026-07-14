@@ -13,7 +13,7 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await request.json();
-  const { notes, billImageUrl, billFileName, action } = body;
+  const { notes, billImageUrl, billFileName, action, clientName, clientEmail, clientPhone, projectTypeIds } = body;
 
   try {
     const userId = parseInt(session.user.id);
@@ -56,41 +56,56 @@ export async function PATCH(
       },
     });
 
-    // Guardar archivo adjunto si se proporcionó
-    if (billImageUrl) {
-      const existingBill = await prisma.bill.findUnique({
-        where: { visitId: visit.id },
-      });
+    const existingBill = await prisma.bill.findUnique({
+      where: { visitId: visit.id },
+    });
 
+    const billData = {
+      ...(clientName && { clientName }),
+      ...(clientEmail && { clientEmail }),
+      ...(clientPhone && { phone: clientPhone }),
+      ...(billImageUrl && { imageUrl: billImageUrl, additionalFileUrl: billImageUrl, additionalFileName: billFileName || "Archivo adjunto" }),
+    };
+
+    if (Object.keys(billData).length > 0) {
       if (existingBill) {
         await prisma.bill.update({
           where: { visitId: visit.id },
-          data: {
-            additionalFileUrl: billImageUrl,
-            additionalFileName: billFileName || "Archivo adjunto",
-          },
+          data: billData,
         });
-      } else {
+      } else if (clientName || clientPhone || billImageUrl) {
         await prisma.bill.create({
           data: {
             visitId: visit.id,
-            imageUrl: billImageUrl,
-            phone: "",
-            clientName: billFileName || "Archivo adjunto",
-            notes: billFileName || "Archivo adjunto",
+            phone: clientPhone || "",
+            clientName: clientName || billFileName || "Sin nombre",
+            clientEmail: clientEmail || "",
+            ...(billImageUrl ? { imageUrl: billImageUrl, additionalFileUrl: billImageUrl, additionalFileName: billFileName || "Archivo adjunto" } : {}),
+            notes: notes || "",
           },
         });
       }
     }
 
+    if (projectTypeIds && Array.isArray(projectTypeIds) && projectTypeIds.length > 0) {
+      await prisma.visitProject.deleteMany({
+        where: { visitId: visit.id },
+      });
+
+      await prisma.visitProject.createMany({
+        data: projectTypeIds.map((projectTypeId: number) => ({
+          visitId: visit.id,
+          projectTypeId,
+        })),
+      });
+    }
+
     if (newStage === "CLOSED") {
-      // Marcar parcela como cliente
       await prisma.parcel.update({
         where: { id: visit.parcelId },
         data: { status: "CUSTOMER" },
       });
 
-      // Crear chat automáticamente al cerrar proyecto
       const existingChat = await prisma.chatRoom.findUnique({
         where: { visitId: visit.id },
       });
@@ -112,7 +127,6 @@ export async function PATCH(
       }
     }
 
-    // Liberar el slot del calendario si existe (para CLOSED o PROJECT)
     if (existingVisit.slot && newStage !== "PROJECT") {
       await prisma.closerSlot.update({
         where: { id: existingVisit.slot.id },

@@ -1,7 +1,9 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { encrypt } from "@/lib/encryption";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
+export const dynamic = 'force-dynamic';
 
 export async function PATCH(
   request: Request,
@@ -14,7 +16,7 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await request.json();
-  const { name, email, role, closerId, phone, isActive, password, ssn, dateOfBirth, bankName, routingNumber, zelle, address, profilePhoto } = body;
+  const { name, email, role, closerId, phone, isActive, locationValidationEnabled, password, ssn, dateOfBirth, bankName, routingNumber, zelle, address, profilePhoto } = body;
 
   const data: Record<string, unknown> = {
     name,
@@ -23,6 +25,10 @@ export async function PATCH(
     phone,
     isActive,
   };
+
+  if (locationValidationEnabled !== undefined) {
+    data.locationValidationEnabled = locationValidationEnabled;
+  }
 
   if (password) {
     data.password = await bcrypt.hash(password, 10);
@@ -40,13 +46,12 @@ export async function PATCH(
       data,
     });
 
-    // Update profile if any profile fields are provided
     if (ssn !== undefined || dateOfBirth !== undefined || bankName !== undefined || routingNumber !== undefined || zelle !== undefined || address !== undefined || profilePhoto !== undefined) {
       const profileData: Record<string, unknown> = {};
-      if (ssn !== undefined) profileData.ssn = ssn;
+      if (ssn !== undefined) profileData.ssn = ssn ? encrypt(ssn) : null;
       if (dateOfBirth !== undefined) profileData.dateOfBirth = dateOfBirth ? new Date(dateOfBirth) : null;
       if (bankName !== undefined) profileData.bankName = bankName;
-      if (routingNumber !== undefined) profileData.routingNumber = routingNumber;
+      if (routingNumber !== undefined) profileData.routingNumber = routingNumber ? encrypt(routingNumber) : null;
       if (zelle !== undefined) profileData.zelle = zelle;
       if (address !== undefined) profileData.address = address;
       if (profilePhoto !== undefined) profileData.profilePhoto = profilePhoto;
@@ -65,7 +70,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  request: Request,
+  _request: Request,
   { params }: { params: { id: string } }
 ) {
   const session = await auth();

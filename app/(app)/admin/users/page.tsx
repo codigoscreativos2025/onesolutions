@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Modal } from "@/components/ui/Modal";
 import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import Image from "next/image";
 
 interface User {
   id: number;
@@ -40,6 +41,7 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -55,6 +57,10 @@ export default function AdminUsersPage() {
     zelle: "",
     address: "",
   });
+
+  const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("all");
@@ -82,7 +88,6 @@ export default function AdminUsersPage() {
       const res = await fetch("/api/admin/users");
       const data = await res.json();
 
-      // Fetch profiles for each user
       const withProfiles = await Promise.all(
         data.map(async (u: User) => {
           const profileRes = await fetch(`/api/profile/${u.id}`);
@@ -102,25 +107,58 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProfilePhotoFile(file);
+      setProfilePhotoPreview(URL.createObjectURL(file));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
 
-    const url = editingUser
-      ? `/api/admin/users/${editingUser.id}`
-      : "/api/admin/users";
-    const method = editingUser ? "PATCH" : "POST";
+    try {
+      let profilePhotoUrl = editingUser?.profile?.profilePhoto || "";
 
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    });
+      if (profilePhotoFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", profilePhotoFile);
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: uploadFormData,
+        });
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          profilePhotoUrl = uploadData.url;
+        }
+      }
 
-    if (res.ok) {
-      setIsModalOpen(false);
-      setEditingUser(null);
-      resetForm();
-      fetchUsers();
+      const url = editingUser
+        ? `/api/admin/users/${editingUser.id}`
+        : "/api/admin/users";
+      const method = editingUser ? "PATCH" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          profilePhoto: profilePhotoUrl || undefined,
+        }),
+      });
+
+      if (res.ok) {
+        setIsModalOpen(false);
+        setEditingUser(null);
+        setProfilePhotoFile(null);
+        setProfilePhotoPreview(null);
+        resetForm();
+        fetchUsers();
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -143,6 +181,8 @@ export default function AdminUsersPage() {
       zelle: user.profile?.zelle || "",
       address: user.profile?.address || "",
     });
+    setProfilePhotoFile(null);
+    setProfilePhotoPreview(user.profile?.profilePhoto || null);
     setIsModalOpen(true);
   };
 
@@ -191,6 +231,8 @@ export default function AdminUsersPage() {
   const openCreateModal = () => {
     setEditingUser(null);
     resetForm();
+    setProfilePhotoFile(null);
+    setProfilePhotoPreview(null);
     setIsModalOpen(true);
   };
 
@@ -219,7 +261,6 @@ export default function AdminUsersPage() {
         </Button>
       </div>
 
-      {/* Search & Filter */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
           <Input
@@ -260,7 +301,7 @@ export default function AdminUsersPage() {
                   Estado
                 </th>
                 <th className="text-left p-4 text-sm font-semibold text-on-surface-variant uppercase">
-                  Validación GPS
+                  Validaci&oacute;n GPS
                 </th>
                 <th className="text-right p-4 text-sm font-semibold text-on-surface-variant uppercase">
                   Acciones
@@ -355,6 +396,50 @@ export default function AdminUsersPage() {
         title={editingUser ? "Editar Usuario" : "Nuevo Usuario"}
       >
         <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto">
+          <div className="flex flex-col items-center gap-2">
+            {profilePhotoPreview ? (
+              <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-outline-variant">
+                <Image
+                  src={profilePhotoPreview}
+                  alt="Foto de perfil"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-surface-container-low border-2 border-outline-variant flex items-center justify-center text-on-surface-variant text-sm">
+                Sin foto
+              </div>
+            )}
+            <button
+              type="button"
+              className="text-xs text-primary hover:underline"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {profilePhotoPreview ? "Cambiar foto" : "Subir foto"}
+            </button>
+            {profilePhotoPreview && (
+              <button
+                type="button"
+                className="text-xs text-error hover:underline"
+                onClick={() => {
+                  setProfilePhotoFile(null);
+                  setProfilePhotoPreview(null);
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
+              >
+                Eliminar foto
+              </button>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+          </div>
+
           <Input
             label="Nombre"
             value={formData.name}
@@ -465,7 +550,7 @@ export default function AdminUsersPage() {
             >
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1">
+            <Button type="submit" className="flex-1" isLoading={submitting}>
               {editingUser ? "Guardar" : "Crear"}
             </Button>
           </div>

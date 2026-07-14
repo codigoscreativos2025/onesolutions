@@ -3,8 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLocale } from "@/lib/locale-context";
-import { Map, LayoutDashboard, Trophy, MessageSquare, Shield, Calendar, MapPin, Briefcase } from "lucide-react";
+import {
+  Map,
+  LayoutDashboard,
+  Trophy,
+  MessageSquare,
+  Shield,
+  Calendar,
+  Briefcase,
+  Target,
+} from "lucide-react";
 import { useSession } from "next-auth/react";
+import { motion } from "framer-motion";
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -15,11 +25,17 @@ export function BottomNav() {
 
   const navItems = [
     { href: "/map", label: t.nav.map, icon: Map, roles: ["SETTER", "CLOSER", "ADMIN"] },
+    {
+      href: "/ranking",
+      label: t.nav.ranking,
+      icon: Trophy,
+      roles: ["SETTER", "CLOSER", "ADMIN"],
+      highlighted: true,
+    },
     { href: "/dashboard", label: t.nav.dashboard, icon: LayoutDashboard, roles: ["SETTER", "CLOSER", "ADMIN"] },
-    { href: "/my-parcels", label: "Parcelas Activas", icon: MapPin, roles: ["SETTER", "CLOSER"] },
+    { href: "/leads", label: "Leads", icon: Target, roles: ["SETTER", "CLOSER"] },
     { href: "/my-projects", label: "Mis Proyectos", icon: Briefcase, roles: ["CLOSER"] },
     { href: "/calendar", label: t.nav.calendar, icon: Calendar, roles: ["CLOSER", "ADMIN"] },
-    { href: "/ranking", label: t.nav.ranking, icon: Trophy, roles: ["SETTER", "CLOSER", "ADMIN"] },
     { href: "/chat", label: t.nav.chat, icon: MessageSquare, roles: ["SETTER", "CLOSER", "ADMIN"] },
     { href: "/admin", label: t.nav.admin, icon: Shield, roles: ["ADMIN"] },
   ];
@@ -38,14 +54,29 @@ export function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all ${
-                active
+              className={`relative flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors ${
+                item.highlighted
                   ? "text-primary bg-primary/10"
+                  : active
+                  ? "text-primary"
                   : "text-on-surface-variant hover:text-primary hover:bg-surface-container-high"
               }`}
             >
-              <Icon className="w-5 h-5" />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              {active && !item.highlighted && (
+                <motion.div
+                  layoutId="nav-active-indicator"
+                  className="absolute inset-0 rounded-xl bg-primary/10"
+                  transition={{
+                    type: "spring",
+                    stiffness: 500,
+                    damping: 35,
+                  }}
+                />
+              )}
+              <Icon className="w-5 h-5 relative z-10" />
+              <span className="text-[10px] font-medium relative z-10">
+                {item.label}
+              </span>
             </Link>
           );
         })}

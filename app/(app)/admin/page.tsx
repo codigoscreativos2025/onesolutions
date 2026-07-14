@@ -67,6 +67,13 @@ export default async function AdminPage() {
       icon: MessageCircle,
       color: "bg-primary/10 text-primary",
     },
+    {
+      title: "Configuración",
+      description: "Logo del negocio y etiquetas personalizadas",
+      href: "/admin/settings",
+      icon: Settings,
+      color: "bg-tertiary/10 text-tertiary",
+    },
   ];
 
   return (
