@@ -11,6 +11,7 @@ import {
 import "leaflet/dist/leaflet.css";
 import { ParcelSheet } from "./ParcelSheet";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 interface Parcel {
   id: string;
@@ -43,15 +44,22 @@ function MapEventHandler({
   onMoveEnd: () => void;
 }) {
   const map = useMap();
+  const hasFiredReady = useRef(false);
 
   useEffect(() => {
-    onReady(map);
+    if (!hasFiredReady.current) {
+      hasFiredReady.current = true;
+      onReady(map);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useMapEvents({
     moveend: () => {
-      onMoveEnd();
+      // don't trigger during the ready->moveend cascade
+      if (hasFiredReady.current) {
+        onMoveEnd();
+      }
     },
   });
 
@@ -68,6 +76,15 @@ function getBoundsFromMap(map: L.Map): MapBounds {
   };
 }
 
+function boundsEqual(a: MapBounds, b: MapBounds, tolerance = 0.0001): boolean {
+  return (
+    Math.abs(a.lat1 - b.lat1) < tolerance &&
+    Math.abs(a.lng1 - b.lng1) < tolerance &&
+    Math.abs(a.lat2 - b.lat2) < tolerance &&
+    Math.abs(a.lng2 - b.lng2) < tolerance
+  );
+}
+
 export default function MapView({
   center,
 }: {
@@ -76,32 +93,53 @@ export default function MapView({
   const { data: session } = useSession();
   const [parcels, setParcels] = useState<Parcel[]>([]);
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [fetching, setFetching] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
   const mapBoundsRef = useRef<MapBounds | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const fetchingRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
 
   const fetchParcelsByBounds = useCallback(async (bounds: MapBounds) => {
+    if (fetchingRef.current) {
+      abortRef.current?.abort();
+    }
+    fetchingRef.current = true;
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
-      setLoading(true);
+      setFetching(true);
       const params = new URLSearchParams({
         lat1: bounds.lat1.toFixed(6),
         lng1: bounds.lng1.toFixed(6),
         lat2: bounds.lat2.toFixed(6),
         lng2: bounds.lng2.toFixed(6),
       });
-      const res = await fetch(`/api/regrid/parcels?${params}`);
+      const res = await fetch(`/api/regrid/parcels?${params}`, {
+        signal: controller.signal,
+      });
       if (!res.ok) {
-        throw new Error("Failed to fetch parcels");
+        const errData = await res.json().catch(() => ({}));
+        if (res.status === 503 || res.status === 502) {
+          toast.error(errData.error || "Error al conectar con Regrid");
+        }
+        throw new Error(errData.error || "Failed to fetch parcels");
       }
       const data = await res.json();
       setParcels(data || []);
-    } catch (error) {
+      if (!hasFetched) setHasFetched(true);
+    } catch (error: unknown) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
       console.error("Error fetching parcels:", error);
       setParcels([]);
+      if (!hasFetched) setHasFetched(true);
     } finally {
-      setLoading(false);
+      setFetching(false);
+      fetchingRef.current = false;
+      abortRef.current = null;
     }
-  }, []);
+  }, [hasFetched]);
 
   const handleMapReady = useCallback(
     (map: L.Map) => {
@@ -117,6 +155,9 @@ export default function MapView({
     const map = mapInstanceRef.current;
     if (!map) return;
     const bounds = getBoundsFromMap(map);
+    if (mapBoundsRef.current && boundsEqual(mapBoundsRef.current, bounds)) {
+      return;
+    }
     mapBoundsRef.current = bounds;
     fetchParcelsByBounds(bounds);
   }, [fetchParcelsByBounds]);
@@ -163,14 +204,6 @@ export default function MapView({
     return claimed;
   };
 
-  if (loading) {
-    return (
-      <div className="w-full h-full flex items-center justify-center text-on-surface-variant">
-        Cargando datos de Regrid...
-      </div>
-    );
-  }
-
   const defaultPosition: [number, number] = [28.385, -81.365];
 
   return (
@@ -183,7 +216,7 @@ export default function MapView({
         className="w-full h-full"
       >
         <TileLayer
-          attribution="&copy; Google Maps"
+          attribution='&copy; Google Maps'
           url="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
         />
         <MapEventHandler onReady={handleMapReady} onMoveEnd={handleMoveEnd} />
@@ -253,6 +286,19 @@ export default function MapView({
           }
         })}
       </MapContainer>
+
+      {fetching && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] glass-panel px-4 py-2 rounded-full text-sm text-on-surface flex items-center gap-2 shadow-lg">
+          <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          Cargando datos de Regrid...
+        </div>
+      )}
+
+      {!fetching && hasFetched && parcels.length === 0 && (
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-[1000] glass-panel px-4 py-2 rounded-full text-xs text-on-surface-variant shadow-lg">
+          Sin parcelas en esta vista. Mueve el mapa o busca una direccion.
+        </div>
+      )}
 
       <ParcelSheet
         parcel={selectedParcel}
