@@ -127,6 +127,11 @@ export default function MapView({
         throw new Error(errData.error || "Failed to fetch parcels");
       }
       const data = await res.json();
+      if (data.tooLarge) {
+        setParcels([]);
+        setHasFetched(true);
+        return;
+      }
       setParcels(data || []);
       if (!hasFetched) setHasFetched(true);
     } catch (error: unknown) {
@@ -296,7 +301,7 @@ export default function MapView({
 
       {!fetching && hasFetched && parcels.length === 0 && (
         <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-[1000] glass-panel px-4 py-2 rounded-full text-xs text-on-surface-variant shadow-lg">
-          Sin parcelas en esta vista. Mueve el mapa o busca una direccion.
+          Acerca el mapa para ver parcelas o busca una direccion
         </div>
       )}
 

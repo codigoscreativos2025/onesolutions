@@ -28,15 +28,22 @@ export async function GET(request: Request) {
 
   let apiUrl: string;
 
+  // Regrid max: 386.10 sq mi ≈ 1000 km² → circle radius ≈ 17,840 m
+  // Cap at 16,000 m to stay well within limits
+  const MAX_RADIUS = 16000;
+
   if (lat1 && lng1 && lat2 && lng2) {
-    // Calculate center point and radius in meters for bounding box
     const centerLat = (parseFloat(lat1) + parseFloat(lat2)) / 2;
     const centerLng = (parseFloat(lng1) + parseFloat(lng2)) / 2;
-    // Approximate: 1 degree lat ≈ 111,320 m, 1 degree lng ≈ 111,320 * cos(lat) m
     const dlat = Math.abs(parseFloat(lat2) - parseFloat(lat1)) * 111320 / 2;
     const dlng = Math.abs(parseFloat(lng2) - parseFloat(lng1)) * 111320 * Math.cos(centerLat * Math.PI / 180) / 2;
-    const radius = Math.min(Math.round(Math.sqrt(dlat * dlat + dlng * dlng)), 32000);
-    apiUrl = `https://app.regrid.com/api/v2/parcels/point?lat=${centerLat}&lon=${centerLng}&radius=${radius}&limit=50&return_geometry=true&token=${token}`;
+    const radius = Math.round(Math.sqrt(dlat * dlat + dlng * dlng));
+
+    if (radius > MAX_RADIUS) {
+      return NextResponse.json({ error: "Acerca el mapa para ver parcelas", tooLarge: true }, { status: 200 });
+    }
+
+    apiUrl = `https://app.regrid.com/api/v2/parcels/point?lat=${centerLat}&lon=${centerLng}&radius=${Math.min(radius, MAX_RADIUS)}&limit=50&return_geometry=true&token=${token}`;
   } else if (lat && lng) {
     apiUrl = `https://app.regrid.com/api/v2/parcels/point?lat=${lat}&lon=${lng}&radius=200&limit=50&return_geometry=true&token=${token}`;
   } else {
