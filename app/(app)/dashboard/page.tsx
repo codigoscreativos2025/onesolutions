@@ -113,7 +113,7 @@ export default function DashboardPage() {
                 : t.dashboard.summary}
             </p>
           </div>
-          {(role === "SETTER" || role === "CLOSER") && (
+          {(role === "SETTER" || role === "CLOSER" || role === "ADMIN") && (
             <Button
               onClick={() => setShowCreateLeadModal(true)}
               variant="primary"
