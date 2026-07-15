@@ -12,17 +12,19 @@ export async function POST(request: Request) {
   const role = session.user.role;
 
   // Solo setters y closers pueden crear leads
-  if (role !== 'SETTER' && role !== 'CLOSER') {
+  if (role !== 'SETTER' && role !== 'CLOSER' && role !== 'ADMIN') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   try {
     const body = await request.json();
-    const { address, ownerName, phone, notes, projectTypeIds } = body;
+    const { address, ownerName, phone, notes, projectTypeIds, setterId } = body;
 
     if (!address) {
       return NextResponse.json({ error: 'Address is required' }, { status: 400 });
     }
+
+    const assignedSetterId = role === 'ADMIN' && setterId ? setterId : userId;
 
     // Generar un ID único para la parcela
     const parcelId = `manual-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -34,7 +36,7 @@ export async function POST(request: Request) {
         address,
         ownerName,
         status: 'LEAD',
-        setterId: userId,
+        setterId: assignedSetterId,
         claimedAt: new Date(),
         lastActivityAt: new Date(),
         metadata: JSON.stringify({
@@ -55,7 +57,7 @@ export async function POST(request: Request) {
     const visit = await prisma.visit.create({
       data: {
         parcelId: parcel.id,
-        setterId: userId,
+        setterId: assignedSetterId,
         stage: 'IN_PROGRESS',
         outcome: 'MANUAL_LEAD',
         notes: notes || null,
@@ -76,7 +78,7 @@ export async function POST(request: Request) {
     await prisma.parcelVisitHistory.create({
       data: {
         parcelId: parcel.id,
-        setterId: userId,
+        setterId: assignedSetterId,
         visitedAt: new Date(),
         status: 'MANUAL_LEAD',
         notes: notes || null,

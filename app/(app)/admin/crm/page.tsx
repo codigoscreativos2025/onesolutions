@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Search, Filter, Download, Eye, MapPin, Clock, Calendar, AlertCircle, MessageSquare } from 'lucide-react';
+import { Search, Filter, Download, Eye, MapPin, Clock, Calendar, AlertCircle, MessageSquare, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ViewProjectModal } from '@/components/calendar/ViewProjectModal';
+import { CreateLeadModal } from '@/components/leads/CreateLeadModal';
 
 interface ProjectDetails {
   [key: string]: string | number | boolean | null | undefined;
@@ -75,6 +76,7 @@ export default function AdminCRMPage() {
   const [filterObjectionId, setFilterObjectionId] = useState<string>('all');
   const [isViewProjectModalOpen, setIsViewProjectModalOpen] = useState(false);
   const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
+  const [showCreateLead, setShowCreateLead] = useState(false);
 
   useEffect(() => {
     if (session?.user?.role !== 'ADMIN') {
@@ -219,12 +221,26 @@ export default function AdminCRMPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">CRM - Administración Completa</h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Gestión completa de leads, puertas tocadas, visitas y proyectos. Haz clic en cualquier fila para ver detalles.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">CRM - Administración Completa</h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Gestión completa de leads, puertas tocadas, visitas y proyectos. Haz clic en cualquier fila para ver detalles.
+          </p>
+        </div>
+        <Button onClick={() => setShowCreateLead(true)} className="gap-2">
+          <Plus className="w-5 h-5" />
+          Crear Lead
+        </Button>
       </div>
+
+      {showCreateLead && (
+        <CreateLeadModal
+          isOpen={showCreateLead}
+          onClose={() => setShowCreateLead(false)}
+          onSuccess={fetchVisits}
+        />
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 space-y-4">
         <div className="flex items-center gap-2 mb-4">
