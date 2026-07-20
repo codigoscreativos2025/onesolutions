@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import Link from "next/link";
-import { Users, MessageSquareWarning, BarChart3, MessageCircle, Award, Settings, Briefcase, FileText } from "lucide-react";
+import { Users, MessageSquareWarning, BarChart3, MessageCircle, Award, Settings, Briefcase, FileText, ReceiptText } from "lucide-react";
 
 export default async function AdminPage() {
   const session = await auth();
@@ -73,6 +73,13 @@ export default async function AdminPage() {
       href: "/admin/settings",
       icon: Settings,
       color: "bg-tertiary/10 text-tertiary",
+    },
+    {
+      title: "Facturas",
+      description: "Genera facturas personalizadas y descarga PDFs",
+      href: "/admin/invoices",
+      icon: ReceiptText,
+      color: "bg-primary/10 text-primary",
     },
   ];
 
