@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { TopAppBar } from "@/components/layout/TopAppBar";
 import { BottomNav } from "@/components/layout/BottomNav";
-import { PageTransition } from "@/components/layout/PageTransition";
+import { PageLoadingTransition } from "@/components/layout/PageLoadingTransition";
 import { ParticleBackground } from "@/components/ui/ParticleBackground";
 
 export default async function AppLayout({
@@ -61,7 +61,7 @@ export default async function AppLayout({
       </div>
       <TopAppBar />
       <main className="pt-16 pb-24 px-4 md:px-6 max-w-6xl mx-auto relative z-10">
-        <PageTransition>{children}</PageTransition>
+        <PageLoadingTransition>{children}</PageLoadingTransition>
       </main>
       <BottomNav />
     </div>

@@ -1,356 +1,229 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import { Crown, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface Badge {
-  id: number;
-  name: string;
-  icon?: string;
-  color: string;
-  role: string;
-}
-
 interface RankingItem {
-  position: number;
   id: number;
   name: string;
   role: string;
-  count: number;
-  badges: Badge[];
+  phone: string | null;
+  projectsClosed?: number;
+  leads?: number;
+  doors: number;
+  leadsGenerated?: number;
 }
 
-interface RankingData {
-  settersDoors: RankingItem[];
-  settersProspects: RankingItem[];
-  closersProjects: RankingItem[];
-  myPosition: {
-    doorsKnocked: number;
-    prospectsGenerated: number;
-    projectsClosed: number;
-  };
-  myBadges: Badge[];
+function getRankInfo(rank: number) {
+  if (rank === 1) return { emoji: "🥇", color: "#ffd700", label: "ORO" };
+  if (rank === 2) return { emoji: "🥈", color: "#c0c0c0", label: "PLATA" };
+  if (rank === 3) return { emoji: "🥉", color: "#cd7f32", label: "BRONCE" };
+  return null;
 }
 
-const podiumMotion = {
-  initial: { y: 40, opacity: 0, scale: 0.9 },
-  animate: { y: 0, opacity: 1, scale: 1 },
-};
+function splitName(fullName: string): [string, string] {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length <= 1) return [fullName, ""];
+  return [parts[0], parts.slice(1).join(" ")];
+}
 
-const listMotion = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -10 },
-};
+function formatRole(role: string): string {
+  return role.replace(/_/g, " ");
+}
 
 export default function RankingPage() {
   const { data: session } = useSession();
-  const [data, setData] = useState<RankingData | null>(null);
-  const [activeTab, setActiveTab] = useState<"setters" | "closers">("setters");
+  const [data, setData] = useState<RankingItem[] | null>(null);
+  const [activeTab, setActiveTab] = useState<"trainers" | "setters">("trainers");
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetch("/api/ranking")
-      .then((res) => res.json())
-      .then((data) => setData(data));
+  const fetchData = useCallback(async (type: "trainers" | "setters") => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/ranking?type=${type}`);
+      const json = await res.json();
+      setData(json);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const currentRanking =
-    activeTab === "setters" ? data?.settersDoors : data?.closersProjects;
+  useEffect(() => {
+    const type = activeTab === "trainers" ? "trainers" : "setters";
+    fetchData(type);
+  }, [activeTab, fetchData]);
 
-  const top3 = currentRanking?.slice(0, 3) ?? [];
-  const rest = currentRanking?.slice(3) ?? [];
-
-  const podiumOrder =
-    top3.length >= 3 ? [top3[1], top3[0], top3[2]] : top3;
-
-  const myPosition =
-    activeTab === "setters"
-      ? data?.myPosition.doorsKnocked
-      : data?.myPosition.projectsClosed;
-
-  const myRankingItem = currentRanking?.find(
-    (item) => item.id === parseInt(session?.user?.id ?? "0")
-  );
-
-  const userDisplayCount = myRankingItem?.count;
-  const userDisplayPosition: number | undefined =
-    myRankingItem?.position ?? (myPosition || undefined);
-
-  const nextUpGap = (() => {
-    if (!currentRanking || !myRankingItem || myRankingItem.position <= 1)
-      return null;
-    const prevItem = currentRanking.find(
-      (item) => item.position === myRankingItem.position - 1
-    );
-    if (!prevItem) return null;
-    return prevItem.count - myRankingItem.count + 1;
-  })();
-
-  const myRole = session?.user?.role;
-  const showSettersTab = myRole === "SETTER" || myRole === "SETTER_JR" || myRole === "ADMIN";
-  const showClosersTab = myRole === "CLOSER" || myRole === "ADMIN";
-
-  const labelForCount = activeTab === "setters" ? "Sales" : "Proyectos";
+  const userId = session?.user?.id ? parseInt(session.user.id) : null;
+  const isTrainers = activeTab === "trainers";
 
   return (
-    <div className="space-y-6 pt-4 pb-4">
-      {/* Header */}
-      <div className="flex flex-col items-center text-center">
-        <h1 className="font-headline text-2xl font-bold text-primary mb-1">
-          Ranking Global
-        </h1>
-        <p className="text-on-surface-variant text-sm">
-          Conocimiento es poder y los resultados son consecuencia.
-        </p>
-      </div>
-
-      {/* Tab Switcher */}
-      <div className="flex p-1 bg-surface-container-high rounded-full">
-        {showSettersTab && (
-          <button
-            onClick={() => setActiveTab("setters")}
-            className={cn(
-              "flex-1 py-3 px-4 rounded-full font-semibold text-sm transition-all duration-300",
-              activeTab === "setters"
-                ? "bg-primary text-on-primary shadow-lg"
-                : "text-on-surface-variant"
-            )}
+    <div className="pt-4 pb-28 space-y-4">
+      <button
+        onClick={() => (window.location.href = "/ranking")}
+        className="fixed top-4 left-4 z-50 hover:opacity-80 transition-opacity"
+        title="Ranking"
+      >
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 32 32"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle
+            cx="16"
+            cy="16"
+            r="14"
+            fill="none"
+            stroke="#f48221"
+            strokeWidth="2.5"
+          />
+          <text
+            x="16"
+            y="22"
+            fontFamily="Arial, sans-serif"
+            fontWeight="900"
+            fontSize="18"
+            textAnchor="middle"
+            fill="#1d1d1b"
+            className="dark:fill-white"
           >
-            Top 10 Trainis
-          </button>
-        )}
-        {showClosersTab && (
-          <button
-            onClick={() => setActiveTab("closers")}
-            className={cn(
-              "flex-1 py-3 px-4 rounded-full font-semibold text-sm transition-all duration-300",
-              activeTab === "closers"
-                ? "bg-primary text-on-primary shadow-lg"
-                : "text-on-surface-variant"
-            )}
-          >
-            Top 10 Closers
-          </button>
-        )}
-      </div>
+            S
+          </text>
+        </svg>
+      </button>
 
-      {!data ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : (
-        <>
-          {/* Podium Top 3 */}
-          {podiumOrder.length > 0 && (
-            <div className="grid grid-cols-3 gap-3 items-end pt-4">
-              {podiumOrder.map((item, i) => {
-                const originalRank = top3.indexOf(item) + 1;
-                const isRank1 = originalRank === 1;
-                const isRank2 = originalRank === 2;
+      <div className="bg-[#1d1d1b] border-2 border-[#f48221] rounded-lg overflow-hidden shadow-[0_10px_30px_rgba(244,130,33,0.15)]">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-[#333]">
+          <div className="w-8 h-8 rounded-full bg-[#f48221] flex items-center justify-center flex-shrink-0">
+            <span className="text-[#1d1d1b] font-black text-sm">S</span>
+          </div>
 
-                const avatarSize = isRank1 ? "w-24 h-24" : "w-16 h-16";
-                const borderColor = isRank1
-                  ? "border-primary shadow-[0_0_15px_rgba(0,110,0,0.3)]"
-                  : isRank2
-                  ? "border-circuit-grey shadow-[0_0_15px_rgba(153,71,0,0.2)]"
-                  : "shadow-[0_0_15px_rgba(153,71,0,0.2)] border-secondary-container";
-                const badgeColor = isRank1
-                  ? "bg-primary text-on-primary"
-                  : isRank2
-                  ? "bg-circuit-grey text-on-surface"
-                  : "bg-secondary-container text-on-secondary-container";
-                const badgeSize = isRank1
-                  ? "w-10 h-10 text-lg"
-                  : "w-7 h-7 text-sm";
-
-                return (
-                  <motion.div
-                    key={item.id}
-                    className="flex flex-col items-center"
-                    {...podiumMotion}
-                    transition={{
-                      type: "spring",
-                      stiffness: 200,
-                      damping: 20,
-                      delay: i * 0.15,
-                    }}
-                  >
-                    <div className={`relative ${isRank1 ? "mb-4" : "mb-3"}`}>
-                      <div
-                        className={cn(
-                          avatarSize,
-                          "rounded-full border-4 overflow-hidden",
-                          borderColor,
-                          isRank1 && "scale-110"
-                        )}
-                      >
-                        <div className="w-full h-full bg-primary/10 flex items-center justify-center">
-                          <Trophy
-                            className={cn(
-                              "text-primary",
-                              isRank1 ? "w-10 h-10" : "w-6 h-6"
-                            )}
-                          />
-                        </div>
-                      </div>
-                      <div
-                        className={cn(
-                          "absolute -top-2 -right-2 rounded-full flex items-center justify-center font-bold border-2 border-white",
-                          badgeSize,
-                          badgeColor
-                        )}
-                      >
-                        {isRank1 ? (
-                          <Crown className="w-5 h-5" />
-                        ) : (
-                          originalRank
-                        )}
-                      </div>
-                    </div>
-                    <Link
-                      href={`/profile/${item.id}`}
-                      className={cn(
-                        "font-semibold text-center hover:text-primary transition-colors",
-                        isRank1
-                          ? "text-primary font-headline text-sm"
-                          : "text-xs"
-                      )}
-                    >
-                      {item.name}
-                    </Link>
-                    <span
-                      className={cn(
-                        "font-bold",
-                        isRank1
-                          ? "text-primary text-lg"
-                          : "text-secondary text-sm"
-                      )}
-                    >
-                      {item.count} {labelForCount}
-                    </span>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Leaderboard List (4-10) */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-3"
+          <div className="flex gap-1">
+            <button
+              onClick={() => setActiveTab("trainers")}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-xs font-semibold transition-colors",
+                isTrainers
+                  ? "bg-[#f48221] text-[#1d1d1b]"
+                  : "text-[#aaaaaa] hover:text-white"
+              )}
             >
-              {rest.map((item, index) => {
-                const isCurrentUser =
-                  item.id === parseInt(session?.user?.id ?? "0");
-                return (
-                  <motion.div
-                    key={item.id}
-                    {...listMotion}
-                    transition={{
-                      duration: 0.3,
-                      delay: index * 0.05,
-                    }}
-                    className={cn(
-                      "glass-panel rounded-xl p-4 flex items-center justify-between",
-                      isCurrentUser && "border-primary/30 border-2 bg-primary/5"
-                    )}
-                  >
-                    <div className="flex items-center gap-4">
-                      <span className="w-6 font-bold text-on-surface-variant text-sm">
-                        {item.position}
-                      </span>
-                      <div className="w-12 h-12 rounded-full border-2 border-circuit-grey overflow-hidden bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <span className="text-primary font-bold text-lg">
-                          {item.name.charAt(0)}
-                        </span>
-                      </div>
-                      <div>
-                        <Link href={`/profile/${item.id}`} className="font-semibold text-sm hover:text-primary transition-colors">
-                          {item.name}
-                        </Link>
-                        {item.badges.length > 0 && (
-                          <div className="flex gap-1 mt-0.5">
-                            {item.badges.slice(0, 3).map((badge) => (
-                              <span
-                                key={badge.id}
-                                title={badge.name}
-                                className="text-xs"
-                              >
-                                {badge.icon}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="font-bold text-primary">
-                        {item.count} {labelForCount}
-                      </p>
-                      <p className="text-[10px] text-on-surface-variant uppercase tracking-wider">
-                        {activeTab === "setters"
-                          ? "Puertas Tocadas"
-                          : "Proyectos Cerrados"}
-                      </p>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
-          </AnimatePresence>
-        </>
-      )}
+              Trainis &amp; Closers
+            </button>
+            <button
+              onClick={() => setActiveTab("setters")}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-xs font-semibold transition-colors",
+                !isTrainers
+                  ? "bg-[#f48221] text-[#1d1d1b]"
+                  : "text-[#aaaaaa] hover:text-white"
+              )}
+            >
+              Setters
+            </button>
+          </div>
 
-      {/* Sticky Bottom Bar */}
-      {data && userDisplayPosition !== undefined && userDisplayPosition > 0 && (
-        <div className="fixed bottom-20 left-[20px] right-[20px] z-40 max-w-2xl mx-auto">
-          <div className="glass-panel rounded-xl p-4 flex items-center justify-between border-primary/30 border-2 bg-primary/5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold text-sm flex-shrink-0">
-                {userDisplayPosition}
-              </div>
-              <div className="min-w-0">
-                <p className="font-semibold text-primary text-sm">
-                  Tu puesto actual
-                </p>
-                <Link href={`/profile/${session?.user?.id}`} className="text-sm text-on-surface truncate hover:text-primary transition-colors">
-                  {session?.user?.name ?? "Tú"}
-                  {userDisplayCount !== undefined &&
-                    userDisplayCount !== null &&
-                    ` · ${userDisplayCount} ${labelForCount}`}
-                </Link>
-              </div>
-            </div>
-            {nextUpGap && nextUpGap > 0 && (
-              <div className="flex flex-col items-end flex-shrink-0 ml-3">
-                <span className="text-xs text-on-surface-variant whitespace-nowrap">
-                  A {nextUpGap} de subir
-                </span>
-                <div className="w-16 h-1 bg-circuit-grey rounded-full mt-1 overflow-hidden">
-                  <div
-                    className="h-full bg-primary rounded-full"
-                    style={{
-                      width: `${Math.min(
-                        100,
-                        (1 / (nextUpGap + 1)) * 200
-                      )}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            )}
+          <div className="ml-auto text-[#f48221] font-bold text-sm">
+            {data !== null ? data.length : "-"}
           </div>
         </div>
-      )}
+
+        {loading && (
+          <div className="flex items-center justify-center h-48">
+            <div className="w-6 h-6 border-2 border-[#f48221] border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+
+        {!loading && data !== null && data.length === 0 && (
+          <div className="flex items-center justify-center h-32 text-[#aaaaaa] text-sm">
+            No hay datos disponibles
+          </div>
+        )}
+
+        {!loading &&
+          data !== null &&
+          data.map((item, index) => {
+            const rank = index + 1;
+            const rankInfo = getRankInfo(rank);
+            const [firstName, lastName] = splitName(item.name);
+            const isCurrentUser = userId !== null && item.id === userId;
+
+            const score1 = isTrainers
+              ? (item.projectsClosed ?? 0)
+              : (item.leadsGenerated ?? 0);
+            const score2 = isTrainers
+              ? (item.leads ?? 0) + item.doors
+              : item.doors;
+
+            return (
+              <Link
+                key={item.id}
+                href={`/profile/${item.id}`}
+                className={cn(
+                  "flex items-stretch border-b border-[#333] last:border-b-0 transition-colors",
+                  "hover:bg-[#2a2a28]",
+                  isCurrentUser && "bg-[#2a2a28] border-l-2 border-l-[#f48221]"
+                )}
+              >
+                <div className="w-[60px] flex items-center justify-center flex-shrink-0">
+                  {rankInfo ? (
+                    <div className="flex flex-col items-center leading-none">
+                      <span className="text-xl">{rankInfo.emoji}</span>
+                      <span
+                        className="text-2xl font-black italic"
+                        style={{ color: rankInfo.color }}
+                      >
+                        {rank}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-[38px] font-black italic text-[#f48221]">
+                      {rank}
+                    </span>
+                  )}
+                </div>
+
+                <div className="w-[70px] flex items-center justify-center flex-shrink-0">
+                  <div className="w-[46px] h-[46px] bg-[#555] border-2 border-[#f48221] rounded-full flex items-center justify-center overflow-hidden">
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="w-6 h-6 fill-[#ccc]"
+                    >
+                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                    </svg>
+                  </div>
+                </div>
+
+                <div className="flex flex-col justify-center px-[15px] py-[10px] flex-[2] md:flex-[1.5] min-w-0">
+                  <span className="text-[13px] font-normal text-[#aaaaaa] uppercase tracking-[1px] italic leading-tight">
+                    {firstName}
+                  </span>
+                  <span className="text-[22px] font-black uppercase tracking-[0.5px] text-white leading-tight max-sm:text-[16px]">
+                    {lastName || firstName}
+                  </span>
+                </div>
+
+                <div className="items-center px-[10px] text-xs text-[#aaaaaa] font-bold tracking-[1px] uppercase justify-start hidden lg:flex flex-[1.2]">
+                  {formatRole(item.role)}
+                </div>
+
+                <div className="w-[70px] max-sm:w-[50px] flex items-center justify-center bg-[#2b2b29] border-l border-r border-[#111] flex-shrink-0">
+                  <span className="text-[28px] max-sm:text-[20px] font-black italic text-white">
+                    {score1}
+                  </span>
+                </div>
+
+                <div className="w-[70px] max-sm:w-[50px] flex items-center justify-center bg-[#f48221] flex-shrink-0">
+                  <span className="text-[28px] max-sm:text-[20px] font-black italic text-[#1d1d1b]">
+                    {score2}
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
+      </div>
     </div>
   );
 }

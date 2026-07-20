@@ -21,33 +21,42 @@ export function TopAppBar() {
     <header className="fixed top-0 z-50 w-full h-16 glass-panel border-b border-brand-orange/20 flex justify-between items-center px-5 shadow-sm">
       <div className="flex items-center gap-3">
         <button
-          onClick={() => router.push(`/profile/${session?.user?.id}`)}
-          className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+          onClick={() => router.push("/ranking")}
+          className="shrink-0 hover:opacity-80 transition-opacity"
+          title="Ranking"
         >
           <svg
             width="32"
             height="32"
             viewBox="0 0 32 32"
-            fill="none"
             xmlns="http://www.w3.org/2000/svg"
-            className="shrink-0"
           >
-            <circle cx="16" cy="16" r="14" stroke="#FF5722" strokeWidth="2.5" />
-            <path
-              d="M16 22V12"
-              stroke="#4CAF50"
-              strokeWidth="2"
-              strokeLinecap="round"
+            <circle
+              cx="16"
+              cy="16"
+              r="14"
+              fill="none"
+              stroke="#f48221"
+              strokeWidth="2.5"
             />
-            <path
-              d="M16 14C16 14 12 12 10 8C13 9 16 14 16 14Z"
-              fill="#4CAF50"
-            />
-            <path
-              d="M16 14C16 14 20 12 22 8C19 9 16 14 16 14Z"
-              fill="#4CAF50"
-            />
+            <text
+              x="16"
+              y="22"
+              fontFamily="Arial, sans-serif"
+              fontWeight="900"
+              fontSize="18"
+              textAnchor="middle"
+              fill="#1d1d1b"
+              className="dark:fill-white"
+            >
+              S
+            </text>
           </svg>
+        </button>
+        <button
+          onClick={() => router.push(`/profile/${session?.user?.id}`)}
+          className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+        >
           <div className="flex flex-col text-left">
             <span className="font-headline text-lg font-bold text-primary tracking-tight">
               {session?.user?.name || "One Solutions"}
