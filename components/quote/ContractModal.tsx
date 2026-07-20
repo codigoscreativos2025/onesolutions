@@ -296,7 +296,7 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
 
           <motion.div
             ref={contentRef}
-            className="relative w-full max-w-4xl h-[92vh] max-h-[92vh] glass-panel rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            className="relative w-full max-w-4xl h-[80vh] max-h-[80vh] mb-16 glass-panel rounded-2xl shadow-2xl flex flex-col overflow-hidden"
             style={{ borderColor: "#f48221" }}
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
