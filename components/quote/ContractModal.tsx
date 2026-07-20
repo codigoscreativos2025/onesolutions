@@ -304,7 +304,7 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: "#f4822130" }}>
+            <div className="flex items-center justify-between p-4 border-b bg-surface-container-low shrink-0" style={{ borderColor: "#f4822130" }}>
               <h2 className="font-headline text-xl font-bold text-on-surface flex items-center gap-2">
                 <FileText className="w-5 h-5" style={{ color: "#f48221" }} />
                 Documentos
@@ -454,166 +454,59 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
                 </div>
 
                 {activeContract && (
-                  <div className="sticky bottom-0 z-10 border-t border-outline-variant/30 p-3 px-4 flex items-center justify-between gap-3 shrink-0 flex-wrap bg-white/95 backdrop-blur-sm">
-
-
+                  <div className="shrink-0 p-3 bg-surface border-t border-outline-variant flex items-center justify-between gap-3 flex-wrap">
                     <div className="flex items-center gap-2 flex-wrap">
-
-
                       <Button
-
-
                         onClick={() => { setSignMode(!signMode); setEditMode(false); }}
-
-
                         className="gap-2 text-sm"
-
-
                         style={signMode ? undefined : { backgroundColor: "#f48221" }}
-
-
                         variant={signMode ? "outline" : undefined}
-
-
                         size="sm"
-
-
                       >
-
-
                         <PenLine className="w-4 h-4" />
-
-
                         {signMode ? "Salir de Firma" : "Firmar"}
-
-
                       </Button>
-
-
                       <Button
-
-
                         variant={editMode ? undefined : "outline"}
-
-
                         onClick={() => { setEditMode(!editMode); setSignMode(false); if (!editMode) enterEditMode(); }}
-
-
                         className="gap-2 text-sm"
-
-
                         style={editMode ? { backgroundColor: "#f48221" } : undefined}
-
-
                         size="sm"
-
-
                       >
-
-
                         <Pencil className="w-4 h-4" />
-
-
                         {editMode ? "Salir Edición" : "Editar"}
-
-
                       </Button>
-
-
                       <Button
-
-
                         variant="outline"
-
-
                         onClick={handleDownloadPdf}
-
-
                         disabled={generatingPdf}
-
-
                         className="gap-2 text-sm"
-
-
                         size="sm"
-
-
                       >
-
-
                         {generatingPdf ? (
-
-
                           <Loader2 className="w-4 h-4 animate-spin" />
-
-
                         ) : (
-
-
                           <Download className="w-4 h-4" />
-
-
                         )}
-
-
                         PDF
-
-
                       </Button>
-
-
                     </div>
-
-
-
                     {signMode && signatureFields.length > 0 && (
-
-
                       <Button
-
-
                         onClick={handleSaveSignatures}
-
-
                         disabled={savingSignatures || Object.keys(signatures).length === 0}
-
-
                         className="gap-2 text-sm"
-
-
                         size="sm"
-
-
                       >
-
-
                         {savingSignatures ? (
-
-
                           <Loader2 className="w-4 h-4 animate-spin" />
-
-
                         ) : (
-
-
                           <Check className="w-4 h-4" />
-
-
                         )}
-
-
                         Guardar
-
-
                       </Button>
-
-
                     )}
-
-
                   </div>
-
-
                 )}
               </>
             )}

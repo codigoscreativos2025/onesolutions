@@ -26,7 +26,6 @@ export async function GET(request: Request) {
       id: true,
       name: true,
       email: true,
-      password: true,
       role: true,
       phone: true,
       isActive: true,
@@ -79,7 +78,7 @@ export async function POST(request: Request) {
       password: passwordHash,
       role,
       phone,
-      closerId: role === "SETTER" && closerId ? parseInt(closerId) : null,
+      closerId: (role === "SETTER" || role === "SETTER_JR") && closerId ? parseInt(closerId) : null,
       profile: {
         create: {
           ssn: ssn ? encrypt(ssn) : null,

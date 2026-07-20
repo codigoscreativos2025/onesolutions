@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Modal } from "@/components/ui/Modal";
-import { Plus, Pencil, Trash2, Loader2, Eye, EyeOff } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, KeyRound } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -15,7 +15,6 @@ interface User {
   id: number;
   name: string;
   email: string;
-  password: string;
   role: string;
   phone?: string;
   isActive: boolean;
@@ -68,7 +67,10 @@ export default function AdminUsersPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("all");
-  const [visiblePasswords, setVisiblePasswords] = useState<Set<number>>(new Set());
+
+  const [resetPasswordUserId, setResetPasswordUserId] = useState<number | null>(null);
+  const [resetPasswordValue, setResetPasswordValue] = useState("");
+  const [resetPasswordSubmitting, setResetPasswordSubmitting] = useState(false);
 
   const closers = users.filter((u) => u.role === "CLOSER");
 
@@ -216,16 +218,48 @@ export default function AdminUsersPage() {
     }
   };
 
-  const togglePasswordVisibility = (userId: number) => {
-    setVisiblePasswords((prev) => {
-      const next = new Set(prev);
-      if (next.has(userId)) {
-        next.delete(userId);
+  const handleResetPassword = async () => {
+    if (!resetPasswordValue.trim() || !resetPasswordUserId) return;
+    setResetPasswordSubmitting(true);
+
+    try {
+      const res = await fetch(`/api/admin/users/${resetPasswordUserId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: resetPasswordValue }),
+      });
+
+      if (res.ok) {
+        setResetPasswordUserId(null);
+        setResetPasswordValue("");
+        alert("Contraseña actualizada correctamente.");
       } else {
-        next.add(userId);
+        alert("Error al actualizar la contraseña.");
       }
-      return next;
-    });
+    } finally {
+      setResetPasswordSubmitting(false);
+    }
+  };
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case "SETTER": return "Traini";
+      case "SETTER_JR": return "Setter";
+      case "CLOSER": return "Closer";
+      case "PARTNER": return "Partner";
+      case "ADMIN": return "Admin";
+      default: return role;
+    }
+  };
+
+  const getRoleBadgeStyle = (role: string) => {
+    switch (role) {
+      case "ADMIN": return "bg-error/10 text-error";
+      case "CLOSER": return "bg-secondary/10 text-secondary";
+      case "PARTNER": return "bg-tertiary/10 text-tertiary";
+      case "SETTER_JR": return "bg-primary/10 text-primary";
+      default: return "bg-primary/10 text-primary";
+    }
   };
 
   const resetForm = () => {
@@ -296,7 +330,9 @@ export default function AdminUsersPage() {
           >
             <option value="all">Todos los roles</option>
             <option value="SETTER">Traini</option>
+            <option value="SETTER_JR">Setter</option>
             <option value="CLOSER">Closer</option>
+            <option value="PARTNER">Partner</option>
             <option value="ADMIN">Admin</option>
           </select>
         </div>
@@ -315,9 +351,6 @@ export default function AdminUsersPage() {
                 </th>
                 <th className="text-left p-4 text-sm font-semibold text-on-surface-variant uppercase">
                   Equipo
-                </th>
-                <th className="text-left p-4 text-sm font-semibold text-on-surface-variant uppercase">
-                  Contrase&ntilde;a
                 </th>
                 <th className="text-left p-4 text-sm font-semibold text-on-surface-variant uppercase">
                   Estado
@@ -347,45 +380,19 @@ export default function AdminUsersPage() {
                   </td>
                   <td className="p-4">
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${
-                        user.role === "ADMIN"
-                          ? "bg-error/10 text-error"
-                          : user.role === "CLOSER"
-                          ? "bg-secondary/10 text-secondary"
-                          : "bg-primary/10 text-primary"
-                      }`}
+                      className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${getRoleBadgeStyle(user.role)}`}
                     >
-                      {user.role}
+                      {getRoleLabel(user.role)}
                     </span>
                   </td>
                   <td className="p-4 text-on-surface-variant">
-                    {user.role === "SETTER" && user.closer
+                    {(user.role === "SETTER" || user.role === "SETTER_JR") && user.closer
                       ? <span>Closer: <Link href={`/profile/${user.closer.id}`} className="hover:underline">{user.closer.name}</Link></span>
                       : user.role === "CLOSER"
                       ? user.setters && user.setters.length > 0
                         ? <div className="flex flex-col gap-1">{user.setters.map(s => <span key={s.id} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full w-fit">{s.name}</span>)}</div>
                         : "0 trainers"
                       : "—"}
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center gap-2">
-                      <code className="text-xs text-on-surface-variant">
-                        {visiblePasswords.has(user.id)
-                          ? user.password
-                          : "•".repeat(12)}
-                      </code>
-                      <button
-                        onClick={() => togglePasswordVisibility(user.id)}
-                        className="p-1 rounded hover:bg-surface-container-high transition-colors"
-                        title={visiblePasswords.has(user.id) ? "Ocultar contraseña" : "Ver contraseña"}
-                      >
-                        {visiblePasswords.has(user.id) ? (
-                          <EyeOff className="w-4 h-4 text-on-surface-variant" />
-                        ) : (
-                          <Eye className="w-4 h-4 text-on-surface-variant" />
-                        )}
-                      </button>
-                    </div>
                   </td>
                   <td className="p-4">
                     <span
@@ -411,6 +418,16 @@ export default function AdminUsersPage() {
                   </td>
                   <td className="p-4 text-right">
                     <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => {
+                          setResetPasswordUserId(user.id);
+                          setResetPasswordValue("");
+                        }}
+                        className="p-2 rounded-lg hover:bg-surface-container-high transition-colors"
+                        title="Resetear contraseña"
+                      >
+                        <KeyRound className="w-4 h-4 text-on-surface-variant" />
+                      </button>
                       <button
                         onClick={() => handleEdit(user)}
                         className="p-2 rounded-lg hover:bg-surface-container-high transition-colors"
@@ -508,11 +525,13 @@ export default function AdminUsersPage() {
             onChange={(e) => setFormData({ ...formData, role: e.target.value })}
             options={[
               { value: "SETTER", label: "Traini" },
+              { value: "SETTER_JR", label: "Setter" },
               { value: "CLOSER", label: "Closer" },
+              { value: "PARTNER", label: "Partner" },
               { value: "ADMIN", label: "Administrador" },
             ]}
           />
-          {formData.role === "SETTER" && (
+          {(formData.role === "SETTER" || formData.role === "SETTER_JR") && (
             <Select
               label="Closer asignado"
               value={formData.closerId}
@@ -602,6 +621,47 @@ export default function AdminUsersPage() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        isOpen={resetPasswordUserId !== null}
+        onClose={() => setResetPasswordUserId(null)}
+        title="Resetear Contraseña"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-on-surface-variant">
+            Ingrese la nueva contraseña para{" "}
+            <strong>{users.find((u) => u.id === resetPasswordUserId)?.name}</strong>
+          </p>
+          <Input
+            label="Nueva contraseña"
+            type="password"
+            value={resetPasswordValue}
+            onChange={(e) => setResetPasswordValue(e.target.value)}
+            required
+          />
+          <div className="flex gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                setResetPasswordUserId(null);
+                setResetPasswordValue("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              className="flex-1"
+              isLoading={resetPasswordSubmitting}
+              onClick={handleResetPassword}
+            >
+              Guardar
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

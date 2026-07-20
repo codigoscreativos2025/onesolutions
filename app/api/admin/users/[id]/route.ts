@@ -34,7 +34,7 @@ export async function PATCH(
     data.password = await bcrypt.hash(password, 10);
   }
 
-  if (role === "SETTER") {
+  if (role === "SETTER" || role === "SETTER_JR") {
     data.closerId = closerId ? parseInt(closerId) : null;
   } else {
     data.closerId = null;
