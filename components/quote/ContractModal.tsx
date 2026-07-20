@@ -284,7 +284,7 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-2 md:p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-2 md:p-4 pb-20"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
