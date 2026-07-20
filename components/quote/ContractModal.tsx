@@ -296,7 +296,7 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
 
           <motion.div
             ref={contentRef}
-            className="relative w-full max-w-4xl h-[96vh] glass-panel rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            className="relative w-full max-w-4xl h-[92vh] max-h-[92vh] glass-panel rounded-2xl shadow-2xl flex flex-col overflow-hidden"
             style={{ borderColor: "#f48221" }}
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -390,134 +390,234 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
                         className="contract-html max-w-[210mm] mx-auto text-sm leading-relaxed"
                         dangerouslySetInnerHTML={{ __html: activeContract.html }}
                       />
+
+                      {/* Signature canvases rendered inside scrollable area */}
+                      {signMode && signatureFields.length > 0 && (
+                        <div className="mt-8 pt-6 border-t-2 border-outline-variant/20">
+                          <h4 className="text-sm font-semibold mb-4 flex items-center gap-2" style={{ color: "#f48221" }}>
+                            <PenLine className="w-4 h-4" />
+                            Firmas ({signatureFields.length})
+                          </h4>
+                          <div className="space-y-4 max-w-lg">
+                            {signatureFields.map((field) => (
+                              <div key={field.id} className="border border-outline-variant/30 rounded-xl overflow-hidden bg-surface-container-low">
+                                <button
+                                  onClick={() =>
+                                    setExpandedSignature(
+                                      expandedSignature === field.id ? null : field.id
+                                    )
+                                  }
+                                  className="w-full flex items-center justify-between p-3 hover:bg-surface-container-low transition-colors"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    {signatures[field.id] ? (
+                                      <img src={signatures[field.id]} alt="Firma" className="w-12 h-8 object-contain border border-outline-variant rounded" />
+                                    ) : (
+                                      <div className="w-12 h-8 border border-dashed border-outline-variant rounded flex items-center justify-center text-xs text-on-surface-variant">Sin firma</div>
+                                    )}
+                                    <span className="text-sm font-medium">{field.label || field.id}</span>
+                                  </div>
+                                  {expandedSignature === field.id ? (
+                                    <ChevronUp className="w-4 h-4 text-on-surface-variant" />
+                                  ) : (
+                                    <ChevronDown className="w-4 h-4 text-on-surface-variant" />
+                                  )}
+                                </button>
+                                <AnimatePresence>
+                                  {expandedSignature === field.id && (
+                                    <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: "auto", opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      transition={{ duration: 0.2 }}
+                                      className="overflow-hidden"
+                                    >
+                                      <div className="p-3 pt-0 border-t border-outline-variant/20">
+                                        <SignatureCanvas
+                                          onSignature={(dataUrl) =>
+                                            handleSignatureChange(field.id, dataUrl)
+                                          }
+                                          width={360}
+                                          height={120}
+                                        />
+                                      </div>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
 
                 {activeContract && (
-                  <div className="border-t border-outline-variant/30 p-3 px-4 flex items-center justify-between gap-3 shrink-0 flex-wrap">
+                  <div className="sticky bottom-0 z-10 border-t border-outline-variant/30 p-3 px-4 flex items-center justify-between gap-3 shrink-0 flex-wrap bg-white/95 backdrop-blur-sm">
+
+
                     <div className="flex items-center gap-2 flex-wrap">
+
+
                       <Button
+
+
                         onClick={() => { setSignMode(!signMode); setEditMode(false); }}
-                        className="gap-2"
+
+
+                        className="gap-2 text-sm"
+
+
                         style={signMode ? undefined : { backgroundColor: "#f48221" }}
+
+
                         variant={signMode ? "outline" : undefined}
+
+
+                        size="sm"
+
+
                       >
+
+
                         <PenLine className="w-4 h-4" />
-                        {signMode ? "Salir de Firma" : "Firmar Documento"}
+
+
+                        {signMode ? "Salir de Firma" : "Firmar"}
+
+
                       </Button>
+
+
                       <Button
+
+
                         variant={editMode ? undefined : "outline"}
+
+
                         onClick={() => { setEditMode(!editMode); setSignMode(false); if (!editMode) enterEditMode(); }}
-                        className="gap-2"
+
+
+                        className="gap-2 text-sm"
+
+
                         style={editMode ? { backgroundColor: "#f48221" } : undefined}
+
+
+                        size="sm"
+
+
                       >
+
+
                         <Pencil className="w-4 h-4" />
-                        {editMode ? "Salir de Edición" : "Editar Datos"}
+
+
+                        {editMode ? "Salir Edición" : "Editar"}
+
+
                       </Button>
+
+
                       <Button
+
+
                         variant="outline"
+
+
                         onClick={handleDownloadPdf}
+
+
                         disabled={generatingPdf}
-                        className="gap-2"
+
+
+                        className="gap-2 text-sm"
+
+
+                        size="sm"
+
+
                       >
+
+
                         {generatingPdf ? (
+
+
                           <Loader2 className="w-4 h-4 animate-spin" />
+
+
                         ) : (
+
+
                           <Download className="w-4 h-4" />
+
+
                         )}
-                        Descargar PDF
+
+
+                        PDF
+
+
                       </Button>
+
+
                     </div>
 
+
+
                     {signMode && signatureFields.length > 0 && (
+
+
                       <Button
+
+
                         onClick={handleSaveSignatures}
+
+
                         disabled={savingSignatures || Object.keys(signatures).length === 0}
-                        className="gap-2"
+
+
+                        className="gap-2 text-sm"
+
+
+                        size="sm"
+
+
                       >
+
+
                         {savingSignatures ? (
+
+
                           <Loader2 className="w-4 h-4 animate-spin" />
+
+
                         ) : (
+
+
                           <Check className="w-4 h-4" />
+
+
                         )}
-                        Guardar Firmas
+
+
+                        Guardar
+
+
                       </Button>
+
+
                     )}
+
+
                   </div>
+
+
                 )}
               </>
             )}
 
-            {signMode && signatureFields.length > 0 && (
-              <div className="border-t border-outline-variant/30 p-4 shrink-0 max-h-[40vh] overflow-y-auto">
-                <h4 className="text-sm font-semibold text-on-surface mb-3 flex items-center gap-2">
-                  <PenLine className="w-4 h-4" style={{ color: "#f48221" }} />
-                  Campos de Firma ({signatureFields.length})
-                </h4>
-                <div className="space-y-3">
-                  {signatureFields.map((field) => (
-                    <div
-                      key={field.id}
-                      className="border border-outline-variant/30 rounded-xl overflow-hidden"
-                    >
-                      <button
-                        onClick={() =>
-                          setExpandedSignature(
-                            expandedSignature === field.id ? null : field.id
-                          )
-                        }
-                        className="w-full flex items-center justify-between p-3 hover:bg-surface-container-low transition-colors"
-                      >
-                        <div className="flex items-center gap-2">
-                          {signatures[field.id] ? (
-                            <img
-                              src={signatures[field.id]}
-                              alt="Firma"
-                              className="w-12 h-8 object-contain border border-outline-variant rounded"
-                            />
-                          ) : (
-                            <div className="w-12 h-8 border border-dashed border-outline-variant rounded flex items-center justify-center text-xs text-on-surface-variant">
-                              Sin firma
-                            </div>
-                          )}
-                          <span className="text-sm font-medium text-on-surface">
-                            {field.label || field.id}
-                          </span>
-                        </div>
-                        {expandedSignature === field.id ? (
-                          <ChevronUp className="w-4 h-4 text-on-surface-variant" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4 text-on-surface-variant" />
-                        )}
-                      </button>
-
-                      <AnimatePresence>
-                        {expandedSignature === field.id && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="overflow-hidden"
-                          >
-                            <div className="p-3 pt-0 border-t border-outline-variant/20">
-                              <SignatureCanvas
-                                onSignature={(dataUrl) =>
-                                  handleSignatureChange(field.id, dataUrl)
-                                }
-                                width={400}
-                                height={140}
-                              />
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </motion.div>
         </motion.div>
       )}
