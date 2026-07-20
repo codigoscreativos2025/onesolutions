@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { MessageSquare, CheckCircle, Edit, MapPin, XCircle, User, DoorOpen, Filter, CheckCheck } from 'lucide-react';
+import { MessageSquare, CheckCircle, Edit, MapPin, XCircle, User, DoorOpen, Filter, CheckCheck, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ViewProjectModal } from '@/components/calendar/ViewProjectModal';
 import { EditProjectModal } from '@/components/calendar/EditProjectModal';
+import { ContractModal } from '@/components/quote/ContractModal';
 
 interface ProjectDetails {
   [key: string]: string | number | boolean | null | undefined;
@@ -60,6 +61,7 @@ export default function MyProjectsPage() {
   const [isViewProjectModalOpen, setIsViewProjectModalOpen] = useState(false);
   const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
   const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
+  const [showContractModal, setShowContractModal] = useState(false);
   const [projectTypeFilter, setProjectTypeFilter] = useState<string>('all');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
@@ -298,6 +300,9 @@ export default function MyProjectsPage() {
                       <DoorOpen className="w-4 h-4" />
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => handleViewProject(visit.id)}>Ver</Button>
+                    <Button variant="outline" size="sm" onClick={() => { setSelectedVisitId(visit.id); setShowContractModal(true); }}>
+                      <FileText className="w-4 h-4" />
+                    </Button>
                     {visit.stage !== 'CANCELLED' && (
                       <Button variant="outline" size="sm" onClick={() => handleEditProject(visit.id)}>
                         <Edit className="w-4 h-4" />
@@ -375,6 +380,7 @@ export default function MyProjectsPage() {
 
       <ViewProjectModal isOpen={isViewProjectModalOpen} onClose={() => setIsViewProjectModalOpen(false)} visitId={selectedVisitId} />
       <EditProjectModal isOpen={isEditProjectModalOpen} onClose={() => setIsEditProjectModalOpen(false)} visitId={selectedVisitId} onSuccess={fetchProjects} />
+      <ContractModal isOpen={showContractModal} onClose={() => setShowContractModal(false)} visitId={selectedVisitId!} />
     </div>
   );
 }

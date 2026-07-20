@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Send, Paperclip, Loader2, MessageSquare, Package, FileText, Pencil, CheckCheck } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
+import { ContractModal } from "@/components/quote/ContractModal";
 
 interface ProjectDetails {
   [key: string]: string | number | boolean | undefined;
@@ -92,6 +93,7 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
   const [sending, setSending] = useState(false);
   const [showFullInfo, setShowFullInfo] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showContractModal, setShowContractModal] = useState(false);
   const [editForm, setEditForm] = useState<ProjectDetails>({});
   const [saving, setSaving] = useState(false);
   const [mentionUsers, setMentionUsers] = useState<{ id: number; name: string; role: string }[]>([]);
@@ -441,6 +443,14 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
                     </div>
                     <div className="flex gap-2">
                       <button
+                        onClick={() => setShowContractModal(true)}
+                        className="px-3 py-1 text-xs font-medium rounded-full transition-colors"
+                        style={{ backgroundColor: "#f4822120", color: "#f48221" }}
+                      >
+                        <FileText className="w-3 h-3 inline mr-1" />
+                        Documentos
+                      </button>
+                      <button
                         onClick={() => setShowFullInfo(!showFullInfo)}
                         className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                           showFullInfo
@@ -771,6 +781,14 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
           </div>
         </div>
       </Modal>
+
+      {selectedRoom && (
+        <ContractModal
+          isOpen={showContractModal}
+          onClose={() => setShowContractModal(false)}
+          visitId={selectedRoom.visit.id}
+        />
+      )}
     </div>
   );
 }

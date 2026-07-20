@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { X, MapPin, User, FileText, Package, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { ContractModal } from '@/components/quote/ContractModal';
 
 interface HistoryEntry {
   date: string;
@@ -91,6 +92,7 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
   const [visit, setVisit] = useState<VisitDetails | null>(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'history'>('details');
+  const [showContractModal, setShowContractModal] = useState(false);
 
   useEffect(() => {
     if (isOpen && visitId) {
@@ -554,11 +556,26 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
 
         {/* Footer */}
         <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+          <Button
+            onClick={() => visitId && setShowContractModal(true)}
+            variant="outline"
+            className="flex-1 gap-2"
+          >
+            <FileText className="w-4 h-4" />
+            Documentos
+          </Button>
           <Button onClick={onClose} className="flex-1">
             Cerrar
           </Button>
         </div>
       </div>
+      {visitId && (
+        <ContractModal
+          isOpen={showContractModal}
+          onClose={() => setShowContractModal(false)}
+          visitId={visitId}
+        />
+      )}
     </div>
   );
 }

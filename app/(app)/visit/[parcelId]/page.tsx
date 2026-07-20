@@ -24,6 +24,7 @@ import {
 import { LocationValidator } from "@/components/map/LocationValidator";
 import { SlotPicker } from "@/components/calendar/SlotPicker";
 import { QuoteModal } from "@/components/quote/QuoteModal";
+import { ContractModal } from "@/components/quote/ContractModal";
 
 interface NotAvailableTag {
   id: number;
@@ -214,6 +215,7 @@ export default function VisitPage() {
 
   const [showCelebration, setShowCelebration] = useState(false);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [showContractModal, setShowContractModal] = useState(false);
   const [showProjectTypeSelector, setShowProjectTypeSelector] = useState(false);
 
   const isCloser = session?.user?.role === "CLOSER";
@@ -804,6 +806,12 @@ export default function VisitPage() {
         visitId={visit.id}
       />
 
+      <ContractModal
+        isOpen={showContractModal}
+        onClose={() => setShowContractModal(false)}
+        visitId={visit.id}
+      />
+
       <motion.header
         className="flex items-center gap-3"
         initial={{ opacity: 0, x: -20 }}
@@ -838,6 +846,15 @@ export default function VisitPage() {
         >
           <FileText className="w-4 h-4" />
           Ver Cotización
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowContractModal(true)}
+          className="text-xs gap-1.5"
+        >
+          <FileText className="w-4 h-4" />
+          Documentos
         </Button>
       </motion.header>
 
