@@ -112,11 +112,6 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
     setSignMode(false);
   };
 
-  const exitEditMode = () => {
-    setEditMode(false);
-    setFieldValues({});
-  };
-
   const regenerateContract = useCallback(async (values: Record<string, string>) => {
     setRegenerating(true);
     try {
@@ -402,46 +397,24 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
                 {activeContract && (
                   <div className="border-t border-outline-variant/30 p-3 px-4 flex items-center justify-between gap-3 shrink-0 flex-wrap">
                     <div className="flex items-center gap-2 flex-wrap">
-                      {!signMode && !editMode && (
-                        <>
-                          <Button
-                            onClick={() => setSignMode(true)}
-                            className="gap-2"
-                            style={{ backgroundColor: "#f48221" }}
-                          >
-                            <PenLine className="w-4 h-4" />
-                            Firmar Documento
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={enterEditMode}
-                            className="gap-2"
-                          >
-                            <Pencil className="w-4 h-4" />
-                            Editar Datos
-                          </Button>
-                        </>
-                      )}
-                      {signMode && (
-                        <Button
-                          variant="outline"
-                          onClick={() => setSignMode(false)}
-                          className="gap-2"
-                        >
-                          <X className="w-4 h-4" />
-                          Salir de Modo Firma
-                        </Button>
-                      )}
-                      {editMode && (
-                        <Button
-                          variant="outline"
-                          onClick={exitEditMode}
-                          className="gap-2"
-                        >
-                          <X className="w-4 h-4" />
-                          Salir de Edición
-                        </Button>
-                      )}
+                      <Button
+                        onClick={() => { setSignMode(!signMode); setEditMode(false); }}
+                        className="gap-2"
+                        style={signMode ? undefined : { backgroundColor: "#f48221" }}
+                        variant={signMode ? "outline" : undefined}
+                      >
+                        <PenLine className="w-4 h-4" />
+                        {signMode ? "Salir de Firma" : "Firmar Documento"}
+                      </Button>
+                      <Button
+                        variant={editMode ? undefined : "outline"}
+                        onClick={() => { setEditMode(!editMode); setSignMode(false); if (!editMode) enterEditMode(); }}
+                        className="gap-2"
+                        style={editMode ? { backgroundColor: "#f48221" } : undefined}
+                      >
+                        <Pencil className="w-4 h-4" />
+                        {editMode ? "Salir de Edición" : "Editar Datos"}
+                      </Button>
                       <Button
                         variant="outline"
                         onClick={handleDownloadPdf}
