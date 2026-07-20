@@ -2,15 +2,17 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, FileText, X, Download, PenLine, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, FileText, X, Download, PenLine, Check, ChevronDown, ChevronUp, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SignatureCanvas } from "./SignatureCanvas";
+import { toast } from "sonner";
 
 interface ContractType {
   type: string;
   name: string;
   html: string;
   fields?: { key: string; label: string; type: string }[];
+  data?: Record<string, string>;
 }
 
 interface ContractData {
@@ -40,6 +42,9 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
   const [signatureFields, setSignatureFields] = useState<SignatureField[]>([]);
   const [savingSignatures, setSavingSignatures] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
+  const [regenerating, setRegenerating] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const contractContentRef = useRef<HTMLDivElement>(null);
 
@@ -69,6 +74,7 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
       }
     } catch (error) {
       console.error(error);
+      toast.error("Error al cargar los contratos");
     } finally {
       setLoading(false);
     }
@@ -90,9 +96,56 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
 
   useEffect(() => {
     if (!signMode) return;
-    const timer = requestAnimationFrame(() => parseSignatureFields());
-    return () => cancelAnimationFrame(timer);
+    parseSignatureFields();
   }, [signMode, activeTab, data, parseSignatureFields]);
+
+  const enterEditMode = () => {
+    const contract = data?.contracts?.find((c) => c.type === activeTab);
+    const initialValues: Record<string, string> = {};
+    contract?.fields?.forEach((f) => {
+      if (f.type !== "signature") {
+        initialValues[f.key] = contract.data?.[f.key] || "";
+      }
+    });
+    setFieldValues(initialValues);
+    setEditMode(true);
+    setSignMode(false);
+  };
+
+  const exitEditMode = () => {
+    setEditMode(false);
+    setFieldValues({});
+  };
+
+  const regenerateContract = useCallback(async (values: Record<string, string>) => {
+    setRegenerating(true);
+    try {
+      const res = await fetch("/api/contract/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visitId, fieldValues: values }),
+      });
+      if (!res.ok) throw new Error("Error regenerating contract");
+      const json: ContractData = await res.json();
+      setData(json);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setRegenerating(false);
+    }
+  }, [visitId]);
+
+  useEffect(() => {
+    if (!editMode || Object.keys(fieldValues).length === 0) return;
+    const timer = setTimeout(() => {
+      regenerateContract(fieldValues);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [fieldValues, editMode, regenerateContract]);
+
+  const handleFieldChange = (key: string, value: string) => {
+    setFieldValues((prev) => ({ ...prev, [key]: value }));
+  };
 
   const handleSignatureChange = (fieldId: string, dataUrl: string) => {
     setSignatures((prev) => ({ ...prev, [fieldId]: dataUrl }));
@@ -110,16 +163,37 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
         }),
       });
       if (!res.ok) throw new Error("Error saving signatures");
+      toast.success("Firmas guardadas");
     } catch (error) {
       console.error(error);
+      toast.error("Error al guardar firmas");
     } finally {
       setSavingSignatures(false);
     }
   };
 
   const handleDownloadPdf = async () => {
-    if (!contentRef.current || !contractContentRef.current) return;
+    if (!contentRef.current || !contractContentRef.current || !activeContract) return;
     setGeneratingPdf(true);
+
+    const sigFieldDefs = activeContract.fields?.filter(f => f.type === "signature") || [];
+    const lineDivs = contractContentRef.current.querySelectorAll(".signature-line");
+    const replacements: Array<{ element: Element; originalHTML: string }> = [];
+
+    lineDivs.forEach((lineDiv) => {
+      const block = lineDiv.closest(".signature-block");
+      if (!block) return;
+      const labelEl = block.querySelector(".signature-label");
+      const labelText = labelEl?.textContent?.trim().toLowerCase() || "";
+      const matchingField = sigFieldDefs.find(f =>
+        labelText.includes(f.label.toLowerCase()) || f.label.toLowerCase().includes(labelText)
+      );
+      if (matchingField && signatures[matchingField.key]) {
+        replacements.push({ element: lineDiv, originalHTML: lineDiv.innerHTML });
+        lineDiv.innerHTML = `<img src="${signatures[matchingField.key]}" alt="Signature" style="max-width:100%;height:35px;object-fit:contain;" />`;
+      }
+    });
+
     try {
       const html2canvas = (await import("html2canvas")).default;
       const { jsPDF } = await import("jspdf");
@@ -167,11 +241,49 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
     } catch (error) {
       console.error("Error generating PDF:", error);
     } finally {
+      replacements.forEach(r => { r.element.innerHTML = r.originalHTML; });
       setGeneratingPdf(false);
     }
   };
 
   const activeContract = data?.contracts?.find((c) => c.type === activeTab);
+
+  const nonSignatureFields = activeContract?.fields?.filter((f) => f.type !== "signature") || [];
+
+  const renderFieldInput = (field: { key: string; label: string; type: string }) => {
+    const value = fieldValues[field.key] ?? "";
+    const baseClass = "w-full px-3 py-2 rounded-lg bg-white border border-outline-variant focus:border-primary outline-none text-on-surface text-sm";
+
+    if (field.type === "date") {
+      return (
+        <input
+          type="date"
+          value={value}
+          onChange={(e) => handleFieldChange(field.key, e.target.value)}
+          className={baseClass}
+        />
+      );
+    }
+    if (field.type === "money") {
+      return (
+        <input
+          type="number"
+          step="0.01"
+          value={value}
+          onChange={(e) => handleFieldChange(field.key, e.target.value)}
+          className={baseClass}
+        />
+      );
+    }
+    return (
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => handleFieldChange(field.key, e.target.value)}
+        className={baseClass}
+      />
+    );
+  };
 
   return (
     <AnimatePresence>
@@ -255,25 +367,60 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
                   style={{ backgroundColor: "#ffffff", color: "#000000" }}
                 >
                   {activeContract && (
-                    <div
-                      className="contract-html max-w-[210mm] mx-auto text-sm leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: activeContract.html }}
-                    />
+                    <>
+                      {editMode && nonSignatureFields.length > 0 && (
+                        <div className="mb-4 p-4 bg-surface-container-low rounded-xl border border-outline-variant/30">
+                          <h4 className="text-sm font-semibold text-on-surface mb-3 flex items-center gap-2">
+                            <Pencil className="w-4 h-4" style={{ color: "#f48221" }} />
+                            Editar Campos
+                          </h4>
+                          <div className="space-y-3">
+                            {nonSignatureFields.map((field) => (
+                              <div key={field.key}>
+                                <label className="block text-xs font-medium text-on-surface-variant mb-1">
+                                  {field.label}
+                                </label>
+                                {renderFieldInput(field)}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {regenerating && (
+                        <div className="flex items-center justify-center py-4">
+                          <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#f48221" }} />
+                        </div>
+                      )}
+                      <div
+                        className="contract-html max-w-[210mm] mx-auto text-sm leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: activeContract.html }}
+                      />
+                    </>
                   )}
                 </div>
 
                 {activeContract && (
                   <div className="border-t border-outline-variant/30 p-3 px-4 flex items-center justify-between gap-3 shrink-0 flex-wrap">
                     <div className="flex items-center gap-2 flex-wrap">
-                      {!signMode && (
-                        <Button
-                          onClick={() => setSignMode(true)}
-                          className="gap-2"
-                          style={{ backgroundColor: "#f48221" }}
-                        >
-                          <PenLine className="w-4 h-4" />
-                          Firmar Documento
-                        </Button>
+                      {!signMode && !editMode && (
+                        <>
+                          <Button
+                            onClick={() => setSignMode(true)}
+                            className="gap-2"
+                            style={{ backgroundColor: "#f48221" }}
+                          >
+                            <PenLine className="w-4 h-4" />
+                            Firmar Documento
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={enterEditMode}
+                            className="gap-2"
+                          >
+                            <Pencil className="w-4 h-4" />
+                            Editar Datos
+                          </Button>
+                        </>
                       )}
                       {signMode && (
                         <Button
@@ -283,6 +430,16 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
                         >
                           <X className="w-4 h-4" />
                           Salir de Modo Firma
+                        </Button>
+                      )}
+                      {editMode && (
+                        <Button
+                          variant="outline"
+                          onClick={exitEditMode}
+                          className="gap-2"
+                        >
+                          <X className="w-4 h-4" />
+                          Salir de Edición
                         </Button>
                       )}
                       <Button

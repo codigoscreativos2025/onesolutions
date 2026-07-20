@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { MapPin, Calendar, AlertCircle, Clock, XCircle, Filter } from 'lucide-react';
+import { MapPin, Calendar, AlertCircle, Clock, XCircle, Filter, FileText } from 'lucide-react';
+import { ContractModal } from '@/components/quote/ContractModal';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 
@@ -41,6 +42,8 @@ export default function LeadsPage() {
   const validFilters = ['all', 'expiring', 'expired', 'objections'];
   const filter = validFilters.includes(filterParam) ? filterParam : 'all';
 
+  const [showContractModal, setShowContractModal] = useState(false);
+  const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
   const [projectTypeFilter, setProjectTypeFilter] = useState<string>('all');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
@@ -383,11 +386,37 @@ export default function LeadsPage() {
                     </Link>
                   </>
                 )}
+                {parcel.visits && parcel.visits.length > 0 && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(`/api/visits/active?parcelId=${parcel.id}`);
+                        if (res.ok) {
+                          const visit = await res.json();
+                          setSelectedVisitId(visit.id);
+                          setShowContractModal(true);
+                        }
+                      } catch (error) {
+                        console.error(error);
+                      }
+                    }}
+                    className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-center text-sm"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Documentos
+                  </button>
+                )}
               </div>
             </div>
           ))}
         </div>
       )}
+
+      <ContractModal
+        isOpen={showContractModal}
+        onClose={() => setShowContractModal(false)}
+        visitId={selectedVisitId!}
+      />
     </div>
   );
 }

@@ -104,6 +104,13 @@ export async function GET(request: Request) {
       return v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
+    let savedSigs: Record<string, Record<string, string>> = {};
+    if (visit.contractSignatures) {
+      try {
+        savedSigs = JSON.parse(visit.contractSignatures);
+      } catch {}
+    }
+
     const contracts = matchingTemplates.map(template => {
       const data: Record<string, string> = {};
       data.clientName = clientName;
@@ -138,11 +145,178 @@ export async function GET(request: Request) {
         data.cancelSignature = "";
       }
 
+      const typeSigs = savedSigs[template.projectType];
+      if (typeSigs) {
+        Object.assign(data, typeSigs);
+      }
+
       return {
-        projectType: template.projectType,
+        type: template.projectType,
         name: template.name,
         html: template.html(data),
         fields: template.fields,
+        data,
+      };
+    });
+
+    return NextResponse.json({ contracts });
+  } catch (error) {
+    console.error("Error generating contracts:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+export async function POST(request: Request) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const body = await request.json();
+    const { visitId, fieldValues } = body;
+
+    if (!visitId) {
+      return NextResponse.json({ error: "visitId is required" }, { status: 400 });
+    }
+
+    const visit = await prisma.visit.findUnique({
+      where: { id: visitId },
+      include: {
+        parcel: {
+          select: {
+            id: true,
+            address: true,
+            ownerName: true,
+          },
+        },
+        setter: {
+          select: { id: true, name: true },
+        },
+        closer: {
+          select: { id: true, name: true },
+        },
+        bill: {
+          select: {
+            clientName: true,
+            clientEmail: true,
+            phone: true,
+          },
+        },
+        projectDetails: true,
+        projects: {
+          include: {
+            projectType: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!visit) {
+      return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+    }
+
+    const role = session.user.role;
+    const userId = parseInt(session.user.id);
+    const isAuthorized =
+      role === "CLOSER" ||
+      role === "ADMIN" ||
+      visit.setter.id === userId;
+    if (!isAuthorized) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const projectTypeNames = visit.projects.map(p => p.projectType.name);
+    const matchingTemplates = getTemplatesByProjectTypes(projectTypeNames);
+
+    const details = visit.projectDetails;
+    const clientName =
+      details?.clientName ||
+      visit.bill?.clientName ||
+      visit.parcel.ownerName ||
+      "";
+
+    const fmtDate = (d: Date | string | null | undefined): string => {
+      if (!d) return "";
+      try {
+        const date = new Date(d);
+        return date.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+      } catch {
+        return "";
+      }
+    };
+
+    const fmtMoney = (v: number | null | undefined): string => {
+      if (v == null) return "";
+      return v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+
+    let savedSigs: Record<string, Record<string, string>> = {};
+    if (visit.contractSignatures) {
+      try {
+        savedSigs = JSON.parse(visit.contractSignatures);
+      } catch {}
+    }
+
+    const contracts = matchingTemplates.map(template => {
+      const data: Record<string, string> = {};
+      data.clientName = clientName;
+      data.date = fmtDate(details?.closingDate) || fmtDate(new Date());
+
+      if (template.projectType === "Techo") {
+        data.roofColor = "";
+        data.shingleTotal = fmtMoney(details?.roofSalePrice);
+        data.optionalWarrantyCost = "";
+        data.optionalUpgradeCost = "";
+        data.companySignature = "";
+        data.companyDate = "";
+        data.customerSignature1 = "";
+        data.customerDate1 = "";
+        data.customerSignature2 = "";
+        data.customerDate2 = "";
+      }
+
+      if (template.projectType === "Purificador de Agua") {
+        data.clientName = clientName;
+        data.clientAddress = visit.parcel.address || "";
+        data.clientCity = "Orlando";
+        data.clientEmail = visit.bill?.clientEmail || "";
+        data.clientZip = "";
+        data.clientPhone = visit.bill?.phone || "";
+        data.rep = visit.setter.name || "";
+        data.totalPrice = fmtMoney(details?.waterSalePrice || details?.otherSalePrice);
+        data.companySignature = "";
+        data.companyDate = "";
+        data.customerSignature = "";
+        data.customerDate = "";
+        data.cancelSignature = "";
+      }
+
+      const typeSigs = savedSigs[template.projectType];
+      if (typeSigs) {
+        Object.assign(data, typeSigs);
+      }
+
+      if (fieldValues) {
+        Object.assign(data, fieldValues);
+      }
+
+      return {
+        type: template.projectType,
+        name: template.name,
+        html: template.html(data),
+        fields: template.fields,
+        data,
       };
     });
 

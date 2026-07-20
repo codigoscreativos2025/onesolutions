@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { X, Calendar, MapPin, User, FileText, Filter, MessageSquare, AlertCircle } from 'lucide-react';
+import { ContractModal } from '@/components/quote/ContractModal';
 
 interface ProjectType {
   id: number;
@@ -75,6 +76,8 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
   const [loading, setLoading] = useState(false);
   const [filterStartDate, setFilterStartDate] = useState<string>('');
   const [filterEndDate, setFilterEndDate] = useState<string>('');
+  const [showContractModal, setShowContractModal] = useState(false);
+  const [contractVisitId, setContractVisitId] = useState<number | null>(null);
 
   useEffect(() => {
     if (isOpen && metricType) {
@@ -242,6 +245,17 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
                       <div className="flex items-center gap-2 mb-1">
                         <MapPin className="w-4 h-4 text-gray-500" />
                         <h3 className="font-semibold">{visit.parcel.address}</h3>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setContractVisitId(visit.id);
+                            setShowContractModal(true);
+                          }}
+                          className="ml-auto p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                          title="Documentos"
+                        >
+                          <FileText className="w-4 h-4" />
+                        </button>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                         <Calendar className="w-4 h-4" />
@@ -463,6 +477,12 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
           )}
         </div>
       </div>
+
+      <ContractModal
+        isOpen={showContractModal}
+        onClose={() => setShowContractModal(false)}
+        visitId={contractVisitId!}
+      />
     </div>
   );
 }

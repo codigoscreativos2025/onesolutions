@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Search, Filter, Download, Eye, MapPin, Clock, Calendar, AlertCircle, MessageSquare, Plus, UserPlus } from 'lucide-react';
+import { Search, Filter, Download, Eye, MapPin, Clock, Calendar, AlertCircle, MessageSquare, Plus, UserPlus, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ViewProjectModal } from '@/components/calendar/ViewProjectModal';
 import { CreateLeadModal } from '@/components/leads/CreateLeadModal';
+import { ContractModal } from '@/components/quote/ContractModal';
 
 interface ProjectDetails {
   [key: string]: string | number | boolean | null | undefined;
@@ -78,6 +79,7 @@ export default function AdminCRMPage() {
   const [filterObjectionId, setFilterObjectionId] = useState<string>('all');
   const [isViewProjectModalOpen, setIsViewProjectModalOpen] = useState(false);
   const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
+  const [showContractModal, setShowContractModal] = useState(false);
   const [showCreateLead, setShowCreateLead] = useState(false);
   const [partners, setPartners] = useState<{ id: number; name: string }[]>([]);
   const [showPartnerSelect, setShowPartnerSelect] = useState<number | null>(null);
@@ -550,6 +552,9 @@ export default function AdminCRMPage() {
                       <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleViewDetails(visit.id); }}>
                         <Eye className="w-4 h-4 mr-1" /> Ver
                       </Button>
+                      <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedVisitId(visit.id); setShowContractModal(true); }}>
+                        <FileText className="w-4 h-4" />
+                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -569,6 +574,12 @@ export default function AdminCRMPage() {
         isOpen={isViewProjectModalOpen}
         onClose={() => setIsViewProjectModalOpen(false)}
         visitId={selectedVisitId}
+      />
+
+      <ContractModal
+        isOpen={showContractModal}
+        onClose={() => setShowContractModal(false)}
+        visitId={selectedVisitId!}
       />
     </div>
   );

@@ -94,6 +94,7 @@ model Visit {
   createdAt   DateTime   @default(now())
   chatCreatedAt DateTime?
   chatCreatedBy Int?
+  contractSignatures String?
 
   objections         VisitObjection[]
   closerObjections   VisitCloserObjection[]
