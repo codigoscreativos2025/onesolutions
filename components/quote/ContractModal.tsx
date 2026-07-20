@@ -10,12 +10,12 @@ interface ContractType {
   type: string;
   name: string;
   html: string;
+  fields?: { key: string; label: string; type: string }[];
 }
 
 interface ContractData {
   contracts: ContractType[];
   stage: string;
-  allowSigning: boolean;
 }
 
 interface ContractModalProps {
@@ -75,19 +75,17 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
   };
 
   const parseSignatureFields = useCallback(() => {
-    const container = contractContentRef.current;
-    if (!container || !data?.contracts) return;
+    const activeContract = data?.contracts?.find((c) => c.type === activeTab);
+    if (!activeContract?.fields) return;
 
-    const activeContract = data.contracts.find((c) => c.type === activeTab);
-    if (!activeContract) return;
-
-    const fields: SignatureField[] = [];
-    container.querySelectorAll("[data-signature]").forEach((el) => {
-      const id = el.getAttribute("data-signature") || "";
-      const label = el.textContent?.trim() || id;
-      fields.push({ id, label, element: el as HTMLElement });
-    });
-    setSignatureFields(fields);
+    const sigFields = activeContract.fields
+      .filter((f) => f.type === "signature")
+      .map((f) => ({
+        id: f.key,
+        label: f.label,
+        element: undefined as HTMLElement | undefined,
+      }));
+    setSignatureFields(sigFields);
   }, [activeTab, data]);
 
   useEffect(() => {
@@ -174,8 +172,6 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
   };
 
   const activeContract = data?.contracts?.find((c) => c.type === activeTab);
-
-  const canSign = data?.allowSigning ?? false;
 
   return (
     <AnimatePresence>
@@ -269,7 +265,7 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
                 {activeContract && (
                   <div className="border-t border-outline-variant/30 p-3 px-4 flex items-center justify-between gap-3 shrink-0 flex-wrap">
                     <div className="flex items-center gap-2 flex-wrap">
-                      {canSign && !signMode && (
+                      {!signMode && (
                         <Button
                           onClick={() => setSignMode(true)}
                           className="gap-2"
@@ -279,7 +275,7 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
                           Firmar Documento
                         </Button>
                       )}
-                      {canSign && signMode && (
+                      {signMode && (
                         <Button
                           variant="outline"
                           onClick={() => setSignMode(false)}

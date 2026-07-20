@@ -481,363 +481,6 @@ function techoHtml(data: Record<string, string>): string {
   return out;
 }
 
-function panelSolarHtml(data: Record<string, string>): string {
-  const d = (k: string) => data[k] || "";
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Solar Panel Contract - One Solutions</title>
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700;900&display=swap');
-
-    :root {
-        --primary-color: #f48221;
-        --secondary-color: #1d1d1b;
-        --bg-color: #f9f9f9;
-        --text-color: #333333;
-        --border-color: #e0e0e0;
-    }
-
-    body {
-        font-family: 'Roboto', sans-serif;
-        color: var(--text-color);
-        background-color: var(--bg-color);
-        margin: 0;
-        padding: 40px 20px;
-        line-height: 1.6;
-    }
-
-    .document-container {
-        max-width: 900px;
-        margin: 0 auto;
-        background-color: #ffffff;
-        padding: 60px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        border-top: 8px solid var(--primary-color);
-    }
-
-    .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        border-bottom: 2px solid var(--border-color);
-        padding-bottom: 20px;
-        margin-bottom: 30px;
-    }
-
-    .logo-area {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-    }
-
-    .logo-s {
-        width: 60px;
-        height: 60px;
-        border: 4px solid var(--secondary-color);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 40px;
-        font-weight: 900;
-        color: var(--secondary-color);
-    }
-
-    .brand-text {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .brand-one {
-        font-size: 32px;
-        font-weight: 900;
-        color: var(--primary-color);
-        line-height: 1;
-        letter-spacing: 1px;
-    }
-
-    .brand-solutions {
-        font-size: 14px;
-        font-weight: 900;
-        color: var(--secondary-color);
-        letter-spacing: 2px;
-    }
-
-    .company-info {
-        text-align: right;
-        font-size: 13px;
-        color: #555;
-    }
-
-    .company-info strong {
-        color: var(--secondary-color);
-        font-size: 15px;
-        display: block;
-        margin-bottom: 5px;
-    }
-
-    .client-info {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-        margin-bottom: 30px;
-        background-color: #fcfcfc;
-        padding: 20px;
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-    }
-
-    .form-group {
-        display: flex;
-        align-items: center;
-    }
-
-    .form-group label {
-        font-weight: 700;
-        margin-right: 10px;
-        color: var(--secondary-color);
-        min-width: 60px;
-    }
-
-    .form-group .line {
-        flex: 1;
-        border-bottom: 1px solid #ccc;
-        height: 20px;
-    }
-
-    h2 {
-        background-color: var(--secondary-color);
-        color: #ffffff;
-        padding: 10px 15px;
-        font-size: 18px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-top: 40px;
-        margin-bottom: 20px;
-        border-left: 5px solid var(--primary-color);
-    }
-
-    h3 {
-        color: var(--primary-color);
-        font-size: 16px;
-        margin-top: 25px;
-        margin-bottom: 10px;
-        text-transform: uppercase;
-    }
-
-    .quote-valid {
-        font-weight: 700;
-        color: #d32f2f;
-        text-align: center;
-        margin-bottom: 20px;
-        font-size: 15px;
-    }
-
-    p {
-        margin-bottom: 15px;
-        font-size: 14px;
-        text-align: justify;
-    }
-
-    ul {
-        margin-top: 0;
-        padding-left: 20px;
-        font-size: 14px;
-    }
-
-    li {
-        margin-bottom: 10px;
-    }
-
-    .highlight-box {
-        background-color: rgba(244, 130, 33, 0.1);
-        border: 1px solid var(--primary-color);
-        padding: 15px;
-        border-radius: 4px;
-        margin: 20px 0;
-    }
-
-    .price-tag {
-        font-weight: 700;
-        background-color: #eee;
-        padding: 2px 15px;
-        border-bottom: 1px solid #000;
-        display: inline-block;
-        min-width: 100px;
-        text-align: right;
-    }
-
-    .total-box {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        margin-top: 20px;
-        font-size: 20px;
-        font-weight: 900;
-    }
-
-    .total-box span {
-        margin-left: 15px;
-        border-bottom: 2px solid #000;
-        min-width: 150px;
-        display: inline-block;
-    }
-
-    .payment-terms {
-        font-size: 16px;
-        font-weight: 900;
-        text-align: center;
-        color: var(--secondary-color);
-        padding: 15px;
-        border: 2px dashed var(--primary-color);
-        margin: 30px 0;
-    }
-
-    .signatures-container {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        margin-top: 60px;
-        gap: 40px;
-    }
-
-    .signature-block {
-        flex: 1;
-        min-width: 250px;
-    }
-
-    .signature-line {
-        border-bottom: 1px solid #000;
-        height: 40px;
-        margin-bottom: 5px;
-    }
-
-    .signature-label {
-        font-size: 12px;
-        font-weight: 700;
-        text-transform: uppercase;
-        color: #555;
-    }
-
-    .legal-text {
-        font-size: 12px;
-        color: #555;
-    }
-
-    @media print {
-        body { background-color: white; padding: 0; }
-        .document-container { box-shadow: none; border-top: none; padding: 0; }
-        h2 { border-left-color: black !important; }
-    }
-</style>
-</head>
-<body>
-
-<div class="document-container">
-    <div class="header">
-        <div class="logo-area">
-            <div class="logo-s">S</div>
-            <div class="brand-text">
-                <span class="brand-one">ONE</span>
-                <span class="brand-solutions">SOLUTIONS</span>
-            </div>
-        </div>
-        <div class="company-info">
-            <strong>ONE SOLUTIONS COMPANIES LLC</strong>
-            2419 Lake Orange Dr<br>
-            Suite 120<br>
-            Orlando, Florida 32837
-        </div>
-    </div>
-
-    <div class="client-info">
-        <div class="form-group">
-            <label>DATE:</label>
-            ${textOrLine(d("date"))}
-        </div>
-        <div class="form-group">
-            <label>NAME:</label>
-            ${textOrLine(d("clientName"))}
-        </div>
-    </div>
-
-    <div class="quote-valid">QUOTE VALID FOR THIRTY (30) DAYS.</div>
-
-    <h2>Solar Panel System</h2>
-
-    <p>Thank you for choosing One Solutions Companies LLC for your solar energy needs. This contract outlines the terms and conditions for the installation of your photovoltaic solar panel system.</p>
-
-    <h3>System Specifications</h3>
-    <ul>
-        <li><strong>System Size:</strong> <span style="border-bottom:1px solid #000;min-width:100px;display:inline-block;">${d("systemSize") || ""}</span></li>
-        <li><strong>Price Per Watt Sold:</strong> <span style="border-bottom:1px solid #000;min-width:100px;display:inline-block;">${d("ppwSold") || ""}</span></li>
-        <li><strong>Financier:</strong> <span style="border-bottom:1px solid #000;min-width:100px;display:inline-block;">${d("solarFinancier") || ""}</span></li>
-    </ul>
-
-    <h3>Scope of Work</h3>
-    <ul>
-        <li>Complete site survey and engineering assessment</li>
-        <li>Permitting and interconnection application with the local utility company</li>
-        <li>Installation of photovoltaic solar panels on the roof</li>
-        <li>Installation of inverter system and electrical connections</li>
-        <li>System testing and commissioning</li>
-        <li>Final inspection and utility approval</li>
-    </ul>
-
-    <h2>Warranty</h2>
-    <div class="highlight-box">
-        <strong>MANUFACTURER WARRANTY AS PROVIDED BY THE EQUIPMENT MANUFACTURER & FIVE (5) YEAR WORKMANSHIP FROM FINAL PAYMENT.</strong>
-        <p style="margin-top: 10px; margin-bottom: 0;">Solar panels carry a 25-year performance warranty. Inverters carry a 10-25 year warranty depending on the manufacturer.</p>
-    </div>
-
-    <div class="payment-terms">
-        PAYMENT TERMS: 50% DEPOSIT & THE BALANCE DUE UPON JOB COMPLETION.
-    </div>
-
-    <div class="total-box">
-        System TOTAL: <span>${d("totalPrice") ? "$" + d("totalPrice") : ""}</span>
-    </div>
-
-    <h2>Terms and Conditions</h2>
-    <div class="legal-text">
-        <p>The homeowner shall pay all costs and expenses incurred by One Solutions Companies LLC (including, without limitation, court costs and reasonable attorney's fees) in connection with collection efforts in the event the homeowner fails to pay the balance due upon completion of the scope of work.</p>
-        <p>Should I elect to cancel this agreement outside of the statutory three-day (3) time frame, a cancellation fee of 20% of the estimate shall apply to compensate the contractor for the time, expenses, and professional services rendered to the owner or agent.</p>
-        <p>The Agreement will be subject to all applicable laws, regulations, and ordinances. As per Florida Statutes, individuals who perform work on your property or furnish materials and are not compensated in full have the right to assert their claim for payment against your property.</p>
-        <p>This agreement constitutes the entirety of the agreement between the parties. It can only be modified through a written instrument signed by both parties. If any provision of this Agreement is held to be invalid or unenforceable, the validity and enforceability of the remaining provisions will not be affected.</p>
-        <p><strong>I have read and understand my responsibilities, so this job is completed in the safest manner possible.</strong></p>
-    </div>
-
-    <div class="signatures-container">
-        <div class="signature-block">
-            ${d("companySignature") ? imgTag(d("companySignature")) : '<div class="signature-line"></div>'}
-            <div class="signature-label">Company Authorized Signature</div>
-        </div>
-        <div class="signature-block">
-            ${d("companyDate") ? `<div style="height:40px;display:flex;align-items:flex-end;padding-bottom:5px;font-weight:600;">${d("companyDate")}</div>` : '<div class="signature-line"></div>'}
-            <div class="signature-label">Date</div>
-        </div>
-    </div>
-
-    <div class="signatures-container" style="margin-top: 30px;">
-        <div class="signature-block">
-            ${d("customerSignature1") ? imgTag(d("customerSignature1")) : '<div class="signature-line"></div>'}
-            <div class="signature-label">Customer Signature</div>
-        </div>
-        <div class="signature-block">
-            ${d("customerDate1") ? `<div style="height:40px;display:flex;align-items:flex-end;padding-bottom:5px;font-weight:600;">${d("customerDate1")}</div>` : '<div class="signature-line"></div>'}
-            <div class="signature-label">Date</div>
-        </div>
-    </div>
-
-</div>
-
-</body>
-</html>`;
-}
-
 function purificadorAguaHtml(data: Record<string, string>): string {
   const d = (k: string) => data[k] || "";
   return `<!DOCTYPE html>
@@ -845,7 +488,7 @@ function purificadorAguaHtml(data: Record<string, string>): string {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Water Purifier Contract - One Solutions</title>
+<title>Water Purification Agreement - One Solutions</title>
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700;900&display=swap');
 
@@ -936,33 +579,36 @@ function purificadorAguaHtml(data: Record<string, string>): string {
         margin-bottom: 5px;
     }
 
-    .client-info {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-        margin-bottom: 30px;
+    .customer-info {
         background-color: #fcfcfc;
         padding: 20px;
         border: 1px solid var(--border-color);
         border-radius: 4px;
+        margin-bottom: 30px;
     }
 
     .form-group {
         display: flex;
         align-items: center;
+        margin-bottom: 10px;
     }
 
     .form-group label {
         font-weight: 700;
         margin-right: 10px;
         color: var(--secondary-color);
-        min-width: 60px;
+        min-width: 70px;
+        white-space: nowrap;
     }
 
     .form-group .line {
         flex: 1;
         border-bottom: 1px solid #ccc;
-        height: 20px;
+        height: 22px;
+        display: flex;
+        align-items: flex-end;
+        font-weight: 600;
+        font-size: 14px;
     }
 
     h2 {
@@ -985,28 +631,42 @@ function purificadorAguaHtml(data: Record<string, string>): string {
         text-transform: uppercase;
     }
 
-    .quote-valid {
-        font-weight: 700;
-        color: #d32f2f;
-        text-align: center;
-        margin-bottom: 20px;
-        font-size: 15px;
-    }
-
     p {
         margin-bottom: 15px;
         font-size: 14px;
         text-align: justify;
     }
 
-    ul {
-        margin-top: 0;
-        padding-left: 20px;
-        font-size: 14px;
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
     }
 
-    li {
-        margin-bottom: 10px;
+    th {
+        background-color: var(--secondary-color);
+        color: #ffffff;
+        padding: 10px 15px;
+        font-size: 13px;
+        font-weight: bold;
+        text-align: left;
+    }
+
+    td {
+        padding: 10px 15px;
+        font-size: 13px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .price-col {
+        text-align: right;
+        width: 25%;
+    }
+
+    .total-row td {
+        font-weight: 900;
+        font-size: 15px;
+        background-color: #f4f4f4;
     }
 
     .highlight-box {
@@ -1017,40 +677,18 @@ function purificadorAguaHtml(data: Record<string, string>): string {
         margin: 20px 0;
     }
 
-    .price-tag {
-        font-weight: 700;
-        background-color: #eee;
-        padding: 2px 15px;
-        border-bottom: 1px solid #000;
-        display: inline-block;
-        min-width: 100px;
-        text-align: right;
+    .cancellation-box {
+        border: 2px solid var(--secondary-color);
+        padding: 20px;
+        font-size: 12px;
+        margin: 20px 0;
+        border-radius: 4px;
     }
 
-    .total-box {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        margin-top: 20px;
-        font-size: 20px;
-        font-weight: 900;
-    }
-
-    .total-box span {
-        margin-left: 15px;
-        border-bottom: 2px solid #000;
-        min-width: 150px;
-        display: inline-block;
-    }
-
-    .payment-terms {
-        font-size: 16px;
-        font-weight: 900;
+    .cancellation-box h3 {
         text-align: center;
+        margin-top: 0;
         color: var(--secondary-color);
-        padding: 15px;
-        border: 2px dashed var(--primary-color);
-        margin: 30px 0;
     }
 
     .signatures-container {
@@ -1110,58 +748,46 @@ function purificadorAguaHtml(data: Record<string, string>): string {
         </div>
     </div>
 
-    <div class="client-info">
-        <div class="form-group">
-            <label>DATE:</label>
-            ${textOrLine(d("date"))}
-        </div>
-        <div class="form-group">
-            <label>NAME:</label>
-            ${textOrLine(d("clientName"))}
+    <div class="customer-info">
+        <div class="form-group"><label>CUSTOMER NAME:</label><div class="line">${textOrLine(d("clientName"))}</div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div class="form-group"><label>ADDRESS:</label><div class="line">${textOrLine(d("clientAddress"))}</div></div>
+            <div class="form-group"><label>CITY:</label><div class="line">${textOrLine(d("clientCity"))}</div></div>
+            <div class="form-group"><label>EMAIL:</label><div class="line">${textOrLine(d("clientEmail"))}</div></div>
+            <div class="form-group"><label>ZIP:</label><div class="line">${textOrLine(d("clientZip"))}</div></div>
+            <div class="form-group"><label>PHONE:</label><div class="line">${textOrLine(d("clientPhone"))}</div></div>
+            <div class="form-group"><label>REP:</label><div class="line">${textOrLine(d("rep"))}</div></div>
         </div>
     </div>
 
-    <div class="quote-valid">QUOTE VALID FOR THIRTY (30) DAYS.</div>
+    <h2>Water Purification Services</h2>
+    <p><strong>PLEASE ENTER MY ORDER FOR:</strong></p>
+    <table>
+        <thead>
+            <tr><th>SERVICE TO BE PROVIDED</th><th class="price-col">PRICE</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>${d("service1") || "&nbsp;"}</td><td class="price-col">${d("price1") ? "$" + d("price1") : "$"}</td></tr>
+            <tr><td>${d("service2") || "&nbsp;"}</td><td class="price-col">${d("price2") ? "$" + d("price2") : "$"}</td></tr>
+            <tr><td>${d("service3") || "&nbsp;"}</td><td class="price-col">${d("price3") ? "$" + d("price3") : "$"}</td></tr>
+            <tr><td>${d("service4") || "&nbsp;"}</td><td class="price-col">${d("price4") ? "$" + d("price4") : "$"}</td></tr>
+            <tr class="total-row"><td>TOTAL:</td><td class="price-col">${d("totalPrice") ? "$" + d("totalPrice") : "$"}</td></tr>
+        </tbody>
+    </table>
 
-    <h2>Water Purification System</h2>
-
-    <p>Thank you for choosing One Solutions Companies LLC for your water purification needs. This contract outlines the terms and conditions for the installation of your water treatment system.</p>
-
-    <h3>System Specifications</h3>
-    <ul>
-        <li><strong>System Type:</strong> <span style="border-bottom:1px solid #000;min-width:100px;display:inline-block;">${d("waterSystemType") || ""}</span></li>
-    </ul>
-
-    <h3>Scope of Work</h3>
-    <ul>
-        <li>Complete water quality assessment and system sizing</li>
-        <li>Installation of the water purification system</li>
-        <li>Connection to existing plumbing</li>
-        <li>System testing and water quality verification</li>
-        <li>Customer education on system operation and maintenance</li>
-    </ul>
-
-    <h2>Warranty</h2>
     <div class="highlight-box">
-        <strong>MANUFACTURER WARRANTY AS PROVIDED BY THE EQUIPMENT MANUFACTURER & FIVE (5) YEAR WORKMANSHIP FROM FINAL PAYMENT.</strong>
-        <p style="margin-top: 10px; margin-bottom: 0;">This coverage reflects our commitment to quality and gives you long-term peace of mind, knowing your water purification system is backed by both durable products and expert installation.</p>
+        <strong>Warranty:</strong> 1 year in all workmanship (parts and labor). All work will be guaranteed for a period of one (1) year. All warranties are contingent upon the Contractor being allowed to complete the entire job and upon receiving payment in full.
     </div>
 
-    <div class="payment-terms">
-        PAYMENT TERMS: 50% DEPOSIT & THE BALANCE DUE UPON JOB COMPLETION.
-    </div>
-
-    <div class="total-box">
-        System TOTAL: <span>${d("totalPrice") ? "$" + d("totalPrice") : ""}</span>
-    </div>
-
-    <h2>Terms and Conditions</h2>
-    <div class="legal-text">
-        <p>The homeowner shall pay all costs and expenses incurred by One Solutions Companies LLC (including, without limitation, court costs and reasonable attorney's fees) in connection with collection efforts in the event the homeowner fails to pay the balance due upon completion of the scope of work.</p>
-        <p>Should I elect to cancel this agreement outside of the statutory three-day (3) time frame, a cancellation fee of 20% of the estimate shall apply to compensate the contractor for the time, expenses, and professional services rendered to the owner or agent.</p>
-        <p>The Agreement will be subject to all applicable laws, regulations, and ordinances. As per Florida Statutes, individuals who perform work on your property or furnish materials and are not compensated in full have the right to assert their claim for payment against your property.</p>
-        <p>This agreement constitutes the entirety of the agreement between the parties. It can only be modified through a written instrument signed by both parties. If any provision of this Agreement is held to be invalid or unenforceable, the validity and enforceability of the remaining provisions will not be affected.</p>
-        <p><strong>I have read and understand my responsibilities, so this job is completed in the safest manner possible.</strong></p>
+    <div class="cancellation-box">
+        <h3>NOTICE OF RIGHT TO CANCEL</h3>
+        <p>DATE: ${d("cancellationDate") || "_______________________"}</p>
+        <p>YOU MAY CANCEL THIS TRANSACTION, WITHOUT ANY PENALTY OR OBLIGATION, WITHIN 3 BUSINESS DAYS FROM THE ABOVE DATE. IF YOU CANCEL, ANY PROPERTY TRADED IN, ANY PAYMENTS MADE BY YOU, AND ANY NEGOTIABLE INSTRUMENT EXECUTED BY YOU UNDER THE CONTRACT OR TRANSACTION WILL BE RETURNED WITHIN 10 BUSINESS DAYS FOLLOWING RECEIPT BY THE SELLER OF YOUR CANCELLATION NOTICE, AND ANY SECURITY INTEREST ARISING OUT OF THE TRANSACTION WILL BE CANCELLED. IF YOU CANCEL, YOU MUST MAKE AVAILABLE TO THE SELLER AT YOUR RESIDENCE IN SUBSTANTIALLY AS GOOD A CONDITION AS WHEN RECEIVED, ANY GOODS DELIVERED TO YOU UNDER THIS CONTRACT OR TRANSACTION. TO CANCEL THIS TRANSACTION, MAIL OR DELIVER A SIGNED AND DATED COPY OF THIS CANCELLATION NOTICE TO ONE SOLUTIONS COMPANIES LLC, AT 2419 Lake Orange Dr Suite 5, Orlando FL 32837 NOT LATER THAN MIDNIGHT OF ${d("cancellationDeadline") || "_______________________"}</p>
+        <p>I HEREBY CANCEL THIS TRANSACTION.</p>
+        <div class="signature-block" style="margin-top:15px;">
+            ${d("cancelSignature") ? imgTag(d("cancelSignature")) : '<div class="signature-line"></div>'}
+            <div class="signature-label">Cancellation Signature</div>
+        </div>
     </div>
 
     <div class="signatures-container">
@@ -1177,11 +803,11 @@ function purificadorAguaHtml(data: Record<string, string>): string {
 
     <div class="signatures-container" style="margin-top: 30px;">
         <div class="signature-block">
-            ${d("customerSignature1") ? imgTag(d("customerSignature1")) : '<div class="signature-line"></div>'}
+            ${d("customerSignature") ? imgTag(d("customerSignature")) : '<div class="signature-line"></div>'}
             <div class="signature-label">Customer Signature</div>
         </div>
         <div class="signature-block">
-            ${d("customerDate1") ? `<div style="height:40px;display:flex;align-items:flex-end;padding-bottom:5px;font-weight:600;">${d("customerDate1")}</div>` : '<div class="signature-line"></div>'}
+            ${d("customerDate") ? `<div style="height:40px;display:flex;align-items:flex-end;padding-bottom:5px;font-weight:600;">${d("customerDate")}</div>` : '<div class="signature-line"></div>'}
             <div class="signature-label">Date</div>
         </div>
     </div>
@@ -1207,34 +833,33 @@ const techoFields: ContractField[] = [
   { key: "customerDate2", label: "Customer Date 2", type: "date" },
 ];
 
-const panelSolarFields: ContractField[] = [
-  { key: "clientName", label: "Client Name", type: "text" },
-  { key: "date", label: "Date", type: "date" },
-  { key: "systemSize", label: "System Size", type: "text" },
-  { key: "ppwSold", label: "PPW Sold", type: "text" },
-  { key: "solarFinancier", label: "Solar Financier", type: "text" },
-  { key: "totalPrice", label: "Total Price", type: "money" },
-  { key: "companySignature", label: "Company Signature", type: "signature" },
-  { key: "companyDate", label: "Company Date", type: "date" },
-  { key: "customerSignature1", label: "Customer Signature", type: "signature" },
-  { key: "customerDate1", label: "Customer Date", type: "date" },
-];
-
 const purificadorAguaFields: ContractField[] = [
-  { key: "clientName", label: "Client Name", type: "text" },
-  { key: "date", label: "Date", type: "date" },
-  { key: "waterSystemType", label: "Water System Type", type: "text" },
-  { key: "totalPrice", label: "Total Price", type: "money" },
+  { key: "clientName", label: "Customer Name", type: "text" },
+  { key: "clientAddress", label: "Address", type: "text" },
+  { key: "clientCity", label: "City", type: "text" },
+  { key: "clientEmail", label: "Email", type: "text" },
+  { key: "clientZip", label: "ZIP", type: "text" },
+  { key: "clientPhone", label: "Phone", type: "text" },
+  { key: "rep", label: "Rep", type: "text" },
+  { key: "service1", label: "Service 1", type: "text" },
+  { key: "price1", label: "Price 1", type: "money" },
+  { key: "service2", label: "Service 2", type: "text" },
+  { key: "price2", label: "Price 2", type: "money" },
+  { key: "service3", label: "Service 3", type: "text" },
+  { key: "price3", label: "Price 3", type: "money" },
+  { key: "service4", label: "Service 4", type: "text" },
+  { key: "price4", label: "Price 4", type: "money" },
+  { key: "totalPrice", label: "Total", type: "money" },
   { key: "companySignature", label: "Company Signature", type: "signature" },
   { key: "companyDate", label: "Company Date", type: "date" },
-  { key: "customerSignature1", label: "Customer Signature", type: "signature" },
-  { key: "customerDate1", label: "Customer Date", type: "date" },
+  { key: "customerSignature", label: "Customer Signature", type: "signature" },
+  { key: "customerDate", label: "Customer Date", type: "date" },
+  { key: "cancelSignature", label: "Cancellation Signature", type: "signature" },
 ];
 
 const templates: ContractTemplate[] = [
   { projectType: "Techo", name: "Roofing Contract", html: techoHtml, fields: techoFields },
-  { projectType: "Panel Solar", name: "Solar Panel Contract", html: panelSolarHtml, fields: panelSolarFields },
-  { projectType: "Purificador de Agua", name: "Water Purifier Contract", html: purificadorAguaHtml, fields: purificadorAguaFields },
+  { projectType: "Purificador de Agua", name: "Water Purification Agreement", html: purificadorAguaHtml, fields: purificadorAguaFields },
 ];
 
 export function getTemplatesByProjectTypes(projectTypeNames: string[]): ContractTemplate[] {

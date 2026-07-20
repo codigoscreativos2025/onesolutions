@@ -122,24 +122,20 @@ export async function GET(request: Request) {
         data.customerDate2 = "";
       }
 
-      if (template.projectType === "Panel Solar") {
-        data.systemSize = details?.systemSize || "";
-        data.ppwSold = details?.ppwSold || "";
-        data.solarFinancier = details?.solarFinancier || "";
-        data.totalPrice = fmtMoney(details?.roofSalePrice);
-        data.companySignature = "";
-        data.companyDate = "";
-        data.customerSignature1 = "";
-        data.customerDate1 = "";
-      }
-
       if (template.projectType === "Purificador de Agua") {
-        data.waterSystemType = details?.waterSystemType || "";
-        data.totalPrice = fmtMoney(details?.waterSalePrice);
+        data.clientName = clientName;
+        data.clientAddress = visit.parcel.address || "";
+        data.clientCity = "Orlando";
+        data.clientEmail = visit.bill?.clientEmail || "";
+        data.clientZip = "";
+        data.clientPhone = visit.bill?.phone || "";
+        data.rep = visit.setter.name || "";
+        data.totalPrice = fmtMoney(details?.waterSalePrice || details?.otherSalePrice);
         data.companySignature = "";
         data.companyDate = "";
-        data.customerSignature1 = "";
-        data.customerDate1 = "";
+        data.customerSignature = "";
+        data.customerDate = "";
+        data.cancelSignature = "";
       }
 
       return {
