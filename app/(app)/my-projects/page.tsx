@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { MessageSquare, CheckCircle, Edit, MapPin, XCircle, FileText, User, DoorOpen, Filter } from 'lucide-react';
+import { MessageSquare, CheckCircle, Edit, MapPin, XCircle, User, DoorOpen, Filter, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ViewProjectModal } from '@/components/calendar/ViewProjectModal';
 import { EditProjectModal } from '@/components/calendar/EditProjectModal';
@@ -27,6 +27,7 @@ interface Visit {
   createdAt: string;
   completedAt: string | null;
   chatCreatedAt: string | null;
+  finalizedAt: string | null;
   parcel: { id: string; address: string; ownerName: string | null };
   setter: { id: number; name: string };
   closer?: { id: number; name: string };
@@ -51,7 +52,7 @@ export default function MyProjectsPage() {
   const searchParams = useSearchParams();
   const filterParam = searchParams.get('filter') || 'all';
 
-  const validFilters = ['all', 'leads', 'objections', 'project', 'closed', 'cancelled'];
+  const validFilters = ['all', 'leads', 'closed', 'cancelled'];
   const filter = validFilters.includes(filterParam) ? filterParam : 'all';
 
   const [visits, setVisits] = useState<Visit[]>([]);
@@ -77,7 +78,7 @@ export default function MyProjectsPage() {
   };
 
   useEffect(() => {
-    if (session?.user?.role === 'SETTER') {
+    if (session?.user?.role === 'SETTER' || session?.user?.role === 'SETTER_JR') {
       router.push('/dashboard');
       return;
     }
@@ -149,13 +150,28 @@ export default function MyProjectsPage() {
     );
   }
 
-  const getStageBadge = (stage: string) => {
-    switch (stage) {
+  const getStageBadge = (visit: Visit) => {
+    if (visit.stage === 'CLOSED' && visit.finalizedAt) {
+      return <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-medium">Finalizado</span>;
+    }
+    switch (visit.stage) {
       case 'PROPOSAL_ACCEPTED': return <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">Leads Potenciales</span>;
       case 'PROJECT': return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">En Proyecto</span>;
       case 'CLOSED': return <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">Cerrado</span>;
       case 'CANCELLED': return <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">Cancelado</span>;
-      default: return <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">{stage}</span>;
+      default: return <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">{visit.stage}</span>;
+    }
+  };
+
+  const handleFinalize = async (visitId: number) => {
+    try {
+      const res = await fetch(`/api/visits/${visitId}/finalize`, { method: 'PATCH' });
+      if (res.ok) {
+        const updated = await res.json();
+        setVisits(prev => prev.map(v => v.id === visitId ? { ...v, finalizedAt: updated.finalizedAt } : v));
+      }
+    } catch (error) {
+      console.error('Error finalizing project:', error);
     }
   };
 
@@ -171,8 +187,6 @@ export default function MyProjectsPage() {
       <div className="flex gap-2 flex-wrap">
         <button onClick={() => setFilter('all')} className={`px-4 py-2 rounded-lg transition-colors ${filter === 'all' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>Todos ({visits.length})</button>
         <button onClick={() => setFilter('leads')} className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${filter === 'leads' ? 'bg-green-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}><User className="w-4 h-4" /> Leads Potenciales</button>
-        <button onClick={() => setFilter('objections')} className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${filter === 'objections' ? 'bg-secondary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}><XCircle className="w-4 h-4" /> Objeciones</button>
-        <button onClick={() => setFilter('project')} className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${filter === 'project' ? 'bg-yellow-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}><FileText className="w-4 h-4" /> Proyecto</button>
         <button onClick={() => setFilter('closed')} className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${filter === 'closed' ? 'bg-purple-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}><CheckCircle className="w-4 h-4" /> Cerrados</button>
         <button onClick={() => setFilter('cancelled')} className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${filter === 'cancelled' ? 'bg-red-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}><XCircle className="w-4 h-4" /> Cancelados</button>
       </div>
@@ -261,10 +275,10 @@ export default function MyProjectsPage() {
                     <div className="flex items-center gap-2 mb-2">
                       <MapPin className="w-5 h-5 text-gray-500" />
                       <h3 className="text-lg font-semibold">{visit.parcel.address}</h3>
-                      {getStageBadge(visit.stage)}
+                      {getStageBadge(visit)}
                     </div>
                     <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                      <span>Setter:{' '}
+                      <span>Traini:{' '}
                         <Link href={`/profile/${visit.setter.id}`} className="hover:underline">
                           {visit.setter.name}
                         </Link>
@@ -294,6 +308,11 @@ export default function MyProjectsPage() {
                         <MessageSquare className="w-4 h-4" />
                       </Button>
                     )}
+                    {visit.stage === 'CLOSED' && !visit.finalizedAt && (
+                      <Button variant="outline" size="sm" onClick={() => handleFinalize(visit.id)} className="text-emerald-600 border-emerald-300 hover:bg-emerald-50">
+                        <CheckCheck className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
 
@@ -307,7 +326,7 @@ export default function MyProjectsPage() {
 
                 {visit.objections.length > 0 && (
                   <div className="mb-2">
-                    <span className="text-xs font-medium text-gray-500">Objeciones Setter: </span>
+                    <span className="text-xs font-medium text-gray-500">Objeciones Traini: </span>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {visit.objections.map((o, idx) => (
                         <span key={idx} className="px-2 py-0.5 rounded text-xs font-medium" style={{ backgroundColor: o.objection.color + '20', color: o.objection.color }}>{o.objection.name}</span>

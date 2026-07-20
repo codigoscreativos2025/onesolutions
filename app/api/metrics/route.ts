@@ -13,7 +13,7 @@ export async function GET() {
   const role = session.user.role;
 
   let whereClause: Record<string, unknown> = {};
-  if (role === "SETTER") {
+  if (role === "SETTER" || role === "SETTER_JR") {
     whereClause = { setterId: userId };
   } else if (role === "CLOSER") {
     whereClause = { closerId: userId };

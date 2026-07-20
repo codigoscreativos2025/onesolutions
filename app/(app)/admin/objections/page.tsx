@@ -143,7 +143,7 @@ export default function AdminObjectionsPage() {
             Objeciones
           </h1>
           <p className="text-on-surface-variant">
-            Configura las objeciones para setters y closers
+            Configura las objeciones para trainers y closers
           </p>
         </div>
         <Button onClick={openCreateModal}>
@@ -165,7 +165,7 @@ export default function AdminObjectionsPage() {
           <Users className={`w-6 h-6 ${activeTab === "setter" ? "text-primary" : "text-on-surface-variant"}`} />
           <div className="text-left">
             <span className="font-semibold text-on-surface text-sm block">
-              Objeciones Setter
+              Objeciones Traini
             </span>
             <span className="text-xs text-on-surface-variant">
               {setterObjections.length} configuradas
@@ -234,7 +234,7 @@ export default function AdminObjectionsPage() {
 
       {currentObjections.length === 0 && (
         <div className="text-center py-12 text-on-surface-variant">
-          <p>No hay objeciones configuradas para {activeTab === "setter" ? "setters" : "closers"}</p>
+          <p>No hay objeciones configuradas para {activeTab === "setter" ? "trainis" : "closers"}</p>
         </div>
       )}
 
@@ -242,7 +242,7 @@ export default function AdminObjectionsPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingObjection ? "Editar Objeción" : `Nueva Objeción ${activeTab === "setter" ? "Setter" : "Closer"}`}
+        title={editingObjection ? "Editar Objeción" : `Nueva Objeción ${activeTab === "setter" ? "Traini" : "Closer"}`}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input

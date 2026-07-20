@@ -91,7 +91,7 @@ export default function RankingPage() {
   })();
 
   const myRole = session?.user?.role;
-  const showSettersTab = myRole === "SETTER" || myRole === "ADMIN";
+  const showSettersTab = myRole === "SETTER" || myRole === "SETTER_JR" || myRole === "ADMIN";
   const showClosersTab = myRole === "CLOSER" || myRole === "ADMIN";
 
   const labelForCount = activeTab === "setters" ? "Sales" : "Proyectos";
@@ -120,7 +120,7 @@ export default function RankingPage() {
                 : "text-on-surface-variant"
             )}
           >
-            Top 10 Setters
+            Top 10 Trainis
           </button>
         )}
         {showClosersTab && (

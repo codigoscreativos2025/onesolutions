@@ -16,7 +16,7 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await request.json();
-  const { name, email, role, closerId, phone, isActive, locationValidationEnabled, password, ssn, dateOfBirth, bankName, routingNumber, zelle, address, profilePhoto } = body;
+  const { name, email, role, closerId, phone, isActive, locationValidationEnabled, password, ssn, dateOfBirth, bankName, routingNumber, zelle, accountNumber, address, profilePhoto } = body;
 
   const data: Record<string, unknown> = {
     name,
@@ -46,13 +46,14 @@ export async function PATCH(
       data,
     });
 
-    if (ssn !== undefined || dateOfBirth !== undefined || bankName !== undefined || routingNumber !== undefined || zelle !== undefined || address !== undefined || profilePhoto !== undefined) {
+    if (ssn !== undefined || dateOfBirth !== undefined || bankName !== undefined || routingNumber !== undefined || zelle !== undefined || accountNumber !== undefined || address !== undefined || profilePhoto !== undefined) {
       const profileData: Record<string, unknown> = {};
       if (ssn !== undefined) profileData.ssn = ssn ? encrypt(ssn) : null;
-      if (dateOfBirth !== undefined) profileData.dateOfBirth = dateOfBirth ? new Date(dateOfBirth) : null;
+      if (dateOfBirth !== undefined) profileData.dateOfBirth = dateOfBirth ? new Date(dateOfBirth + "T12:00:00") : null;
       if (bankName !== undefined) profileData.bankName = bankName;
       if (routingNumber !== undefined) profileData.routingNumber = routingNumber ? encrypt(routingNumber) : null;
       if (zelle !== undefined) profileData.zelle = zelle;
+      if (accountNumber !== undefined) profileData.accountNumber = accountNumber;
       if (address !== undefined) profileData.address = address;
       if (profilePhoto !== undefined) profileData.profilePhoto = profilePhoto;
 

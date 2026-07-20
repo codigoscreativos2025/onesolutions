@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Modal } from "@/components/ui/Modal";
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -15,6 +15,7 @@ interface User {
   id: number;
   name: string;
   email: string;
+  password: string;
   role: string;
   phone?: string;
   isActive: boolean;
@@ -29,6 +30,7 @@ interface User {
     bankName?: string;
     routingNumber?: string;
     zelle?: string;
+    accountNumber?: string;
     address?: string;
     profilePhoto?: string;
   };
@@ -56,6 +58,7 @@ export default function AdminUsersPage() {
     bankName: "",
     routingNumber: "",
     zelle: "",
+    accountNumber: "",
     address: "",
   });
 
@@ -65,6 +68,7 @@ export default function AdminUsersPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("all");
+  const [visiblePasswords, setVisiblePasswords] = useState<Set<number>>(new Set());
 
   const closers = users.filter((u) => u.role === "CLOSER");
 
@@ -180,6 +184,7 @@ export default function AdminUsersPage() {
       bankName: user.profile?.bankName || "",
       routingNumber: user.profile?.routingNumber || "",
       zelle: user.profile?.zelle || "",
+      accountNumber: user.profile?.accountNumber || "",
       address: user.profile?.address || "",
     });
     setProfilePhotoFile(null);
@@ -211,6 +216,18 @@ export default function AdminUsersPage() {
     }
   };
 
+  const togglePasswordVisibility = (userId: number) => {
+    setVisiblePasswords((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
+    });
+  };
+
   const resetForm = () => {
     setFormData({
       name: "",
@@ -225,6 +242,7 @@ export default function AdminUsersPage() {
       bankName: "",
       routingNumber: "",
       zelle: "",
+      accountNumber: "",
       address: "",
     });
   };
@@ -253,7 +271,7 @@ export default function AdminUsersPage() {
             Usuarios
           </h1>
           <p className="text-on-surface-variant">
-            Gestiona setters, closers y administradores
+            Gestiona trainers, closers y administradores
           </p>
         </div>
         <Button onClick={openCreateModal}>
@@ -277,7 +295,7 @@ export default function AdminUsersPage() {
             className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
           >
             <option value="all">Todos los roles</option>
-            <option value="SETTER">Setter</option>
+            <option value="SETTER">Traini</option>
             <option value="CLOSER">Closer</option>
             <option value="ADMIN">Admin</option>
           </select>
@@ -297,6 +315,9 @@ export default function AdminUsersPage() {
                 </th>
                 <th className="text-left p-4 text-sm font-semibold text-on-surface-variant uppercase">
                   Equipo
+                </th>
+                <th className="text-left p-4 text-sm font-semibold text-on-surface-variant uppercase">
+                  Contrase&ntilde;a
                 </th>
                 <th className="text-left p-4 text-sm font-semibold text-on-surface-variant uppercase">
                   Estado
@@ -343,8 +364,28 @@ export default function AdminUsersPage() {
                       : user.role === "CLOSER"
                       ? user.setters && user.setters.length > 0
                         ? <div className="flex flex-col gap-1">{user.setters.map(s => <span key={s.id} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full w-fit">{s.name}</span>)}</div>
-                        : "0 setters"
+                        : "0 trainers"
                       : "—"}
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-2">
+                      <code className="text-xs text-on-surface-variant">
+                        {visiblePasswords.has(user.id)
+                          ? user.password
+                          : "•".repeat(12)}
+                      </code>
+                      <button
+                        onClick={() => togglePasswordVisibility(user.id)}
+                        className="p-1 rounded hover:bg-surface-container-high transition-colors"
+                        title={visiblePasswords.has(user.id) ? "Ocultar contraseña" : "Ver contraseña"}
+                      >
+                        {visiblePasswords.has(user.id) ? (
+                          <EyeOff className="w-4 h-4 text-on-surface-variant" />
+                        ) : (
+                          <Eye className="w-4 h-4 text-on-surface-variant" />
+                        )}
+                      </button>
+                    </div>
                   </td>
                   <td className="p-4">
                     <span
@@ -466,7 +507,7 @@ export default function AdminUsersPage() {
             value={formData.role}
             onChange={(e) => setFormData({ ...formData, role: e.target.value })}
             options={[
-              { value: "SETTER", label: "Setter" },
+              { value: "SETTER", label: "Traini" },
               { value: "CLOSER", label: "Closer" },
               { value: "ADMIN", label: "Administrador" },
             ]}
@@ -519,9 +560,14 @@ export default function AdminUsersPage() {
                 onChange={(e) => setFormData({ ...formData, routingNumber: e.target.value })}
               />
               <Input
-                label="Zelle / Account Number"
+                label="Zelle"
                 value={formData.zelle}
                 onChange={(e) => setFormData({ ...formData, zelle: e.target.value })}
+              />
+              <Input
+                label="Número de Cuenta"
+                value={formData.accountNumber}
+                onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
               />
             </div>
             <p className="text-xs text-on-surface-variant mt-2">

@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { TopAppBar } from "@/components/layout/TopAppBar";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { PageTransition } from "@/components/layout/PageTransition";
+import { ParticleBackground } from "@/components/ui/ParticleBackground";
 
 export default async function AppLayout({
   children,
@@ -17,6 +18,7 @@ export default async function AppLayout({
 
   return (
     <div className="min-h-screen bg-background text-on-background relative">
+      <ParticleBackground />
       <div className="fixed inset-0 pointer-events-none z-0" aria-hidden="true">
         <div
           className="floating-hex"

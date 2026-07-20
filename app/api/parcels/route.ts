@@ -9,9 +9,24 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const userId = parseInt(session.user.id);
+  const role = session.user.role;
+
+  const whereClause: Record<string, unknown> = {};
+
+  if (role === "PARTNER") {
+    whereClause.partnerId = userId;
+  } else if (role !== "ADMIN") {
+    whereClause.setterId = userId;
+  }
+
   const parcels = await prisma.parcel.findMany({
+    where: whereClause,
     include: {
       setter: {
+        select: { id: true, name: true },
+      },
+      partner: {
         select: { id: true, name: true },
       },
       visits: {

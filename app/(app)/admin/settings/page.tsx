@@ -295,7 +295,7 @@ export default function AdminSettingsPage() {
           Etiquetas &quot;No Disponible&quot;
         </h2>
         <p className="text-sm text-on-surface-variant">
-          Configura las razones por las que un setter puede marcar una parcela como no disponible
+          Configura las razones por las que un traini puede marcar una parcela como no disponible
         </p>
 
         <div className="flex items-end gap-3">

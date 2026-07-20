@@ -3,7 +3,7 @@ export const translations = {
   es: {
     roles: {
       ADMIN: "Administrador",
-      SETTER: "Setter",
+      SETTER: "Traini",
       CLOSER: "Closer",
     },
     nav: {
@@ -124,7 +124,7 @@ export const translations = {
       title: "Administración",
       subtitle: "Panel de control general de la plataforma",
       users: "Usuarios",
-      usersDesc: "Gestiona setters, closers y administradores",
+      usersDesc: "Gestiona trainers, closers y administradores",
       objections: "Objeciones",
       objectionsDesc: "Configura las objeciones del equipo",
       metrics: "Métricas",
@@ -145,9 +145,9 @@ export const translations = {
       conversionRates: "Tasas de Conversión",
       doorsToProspects: "Puertas → Prospectos",
       prospectsToClosed: "Prospectos → Cerrados",
-      bestSetter: "Mejor Setter",
+      bestSetter: "Mejor Traini",
       bestCloser: "Mejor Closer",
-      setterObjections: "Objeciones Setter",
+      setterObjections: "Objeciones Traini",
       closerObjections: "Objeciones Closer",
       viewDetail: "Ver detalle",
       projectsByType: "Proyectos por Tipo",
@@ -189,7 +189,7 @@ export const translations = {
   en: {
     roles: {
       ADMIN: "Administrator",
-      SETTER: "Setter",
+      SETTER: "Traini",
       CLOSER: "Closer",
     },
     nav: {
@@ -310,7 +310,7 @@ export const translations = {
       title: "Administration",
       subtitle: "General platform control panel",
       users: "Users",
-      usersDesc: "Manage setters, closers and administrators",
+      usersDesc: "Manage trainers, closers and administrators",
       objections: "Objections",
       objectionsDesc: "Configure team objections",
       metrics: "Metrics",
@@ -331,9 +331,9 @@ export const translations = {
       conversionRates: "Conversion Rates",
       doorsToProspects: "Doors → Prospects",
       prospectsToClosed: "Prospects → Closed",
-      bestSetter: "Best Setter",
+      bestSetter: "Best Traini",
       bestCloser: "Best Closer",
-      setterObjections: "Setter Objections",
+      setterObjections: "Traini Objections",
       closerObjections: "Closer Objections",
       viewDetail: "View detail",
       projectsByType: "Projects by Type",

@@ -60,6 +60,7 @@ export async function GET(
               bankName: true,
               routingNumber: true,
               zelle: true,
+              accountNumber: true,
               profilePhoto: true,
             },
           },
@@ -168,7 +169,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { phone, address, dateOfBirth, bankName, zelle, ssn, routingNumber } = body;
+    const { phone, address, dateOfBirth, bankName, zelle, accountNumber, ssn, routingNumber } = body;
 
     if (phone !== undefined) {
       await prisma.user.update({
@@ -179,9 +180,10 @@ export async function PATCH(
 
     const profileData: Record<string, unknown> = {};
     if (address !== undefined) profileData.address = address;
-    if (dateOfBirth !== undefined) profileData.dateOfBirth = dateOfBirth ? new Date(dateOfBirth) : null;
+    if (dateOfBirth !== undefined) profileData.dateOfBirth = dateOfBirth ? new Date(dateOfBirth + "T12:00:00") : null;
     if (bankName !== undefined) profileData.bankName = bankName;
     if (zelle !== undefined) profileData.zelle = zelle;
+    if (accountNumber !== undefined) profileData.accountNumber = accountNumber;
     if (ssn !== undefined) profileData.ssn = ssn ? encrypt(ssn) : null;
     if (routingNumber !== undefined) profileData.routingNumber = routingNumber ? encrypt(routingNumber) : null;
 

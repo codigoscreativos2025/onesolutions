@@ -398,7 +398,7 @@ export default function CalendarPage() {
                         <Check className="w-3 h-3" /> Reservado
                       </p>
                       <p className="truncate">{slot.visit.parcel.address}</p>
-                      <p>Setter:{' '}
+                       <p>Traini:{' '}
                         <Link href={`/profile/${slot.visit.setter.id}`} className="hover:underline">
                           {slot.visit.setter.name}
                         </Link>
@@ -581,7 +581,7 @@ export default function CalendarPage() {
                 {selectedSlot.visit.parcel.address}
               </p>
               <p className="text-sm text-on-surface-variant">
-                Setter:{' '}
+                Traini:{' '}
                 <Link href={`/profile/${selectedSlot.visit.setter.id}`} className="hover:underline">
                   {selectedSlot.visit.setter.name}
                 </Link>

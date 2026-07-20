@@ -47,6 +47,7 @@ interface UserProfile {
     bankName?: string;
     routingNumber?: string;
     zelle?: string;
+    accountNumber?: string;
     profilePhoto?: string;
   };
 }
@@ -68,6 +69,7 @@ export default function PublicProfilePage() {
     dateOfBirth: '',
     bankName: '',
     zelle: '',
+    accountNumber: '',
     ssn: '',
     routingNumber: '',
   });
@@ -99,6 +101,7 @@ export default function PublicProfilePage() {
         : '',
       bankName: profile.profile?.bankName || '',
       zelle: profile.profile?.zelle || '',
+      accountNumber: profile.profile?.accountNumber || '',
       ssn: '',
       routingNumber: '',
     });
@@ -116,6 +119,7 @@ export default function PublicProfilePage() {
         dateOfBirth: editForm.dateOfBirth,
         bankName: editForm.bankName,
         zelle: editForm.zelle,
+        accountNumber: editForm.accountNumber,
       };
 
       if (editForm.ssn) body.ssn = editForm.ssn;
@@ -255,6 +259,12 @@ export default function PublicProfilePage() {
                 <p className="font-medium">{profile.profile.zelle}</p>
               </div>
             )}
+            {profile.profile.accountNumber && (
+              <div>
+                <p className="text-sm text-gray-500">N&uacute;mero de Cuenta</p>
+                <p className="font-medium">{profile.profile.accountNumber}</p>
+              </div>
+            )}
             {profile.profile.ssn && (
               <div>
                 <p className="text-sm text-gray-500">SSN</p>
@@ -324,7 +334,7 @@ export default function PublicProfilePage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
             <User className="w-5 h-5" />
-            Setters Asignados
+            Trainis Asignados
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {profile.setters.map((setter) => (
@@ -398,6 +408,11 @@ export default function PublicProfilePage() {
             label="Zelle"
             value={editForm.zelle}
             onChange={(e) => setEditForm({ ...editForm, zelle: e.target.value })}
+          />
+          <Input
+            label="Número de Cuenta"
+            value={editForm.accountNumber}
+            onChange={(e) => setEditForm({ ...editForm, accountNumber: e.target.value })}
           />
           <Input
             label="SSN"

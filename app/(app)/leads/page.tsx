@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { MapPin, Calendar, AlertCircle, Clock, XCircle, Filter } from 'lucide-react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 
 interface VisitData {
   stage: string;
@@ -31,6 +32,8 @@ interface Parcel {
 export default function LeadsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { data: session } = useSession();
+  const isPartner = session?.user?.role === "PARTNER";
   const [parcels, setParcels] = useState<Parcel[]>([]);
   const [loading, setLoading] = useState(true);
   const filterParam = searchParams.get('filter') || 'all';
@@ -360,18 +363,26 @@ export default function LeadsPage() {
               )}
 
               <div className="flex gap-3">
-                <Link
-                  href={`/visit/${parcel.id}`}
-                  className="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary/90 transition-colors text-center"
-                >
-                  Visitar
-                </Link>
-                <Link
-                  href={`/map?parcelId=${parcel.id}`}
-                  className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-center"
-                >
-                  Ver en Mapa
-                </Link>
+                {isPartner ? (
+                  <div className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg text-center text-sm">
+                    Lead asignado — solo visualización
+                  </div>
+                ) : (
+                  <>
+                    <Link
+                      href={`/visit/${parcel.id}`}
+                      className="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary/90 transition-colors text-center"
+                    >
+                      Visitar
+                    </Link>
+                    <Link
+                      href={`/map?parcelId=${parcel.id}`}
+                      className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-center"
+                    >
+                      Ver en Mapa
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           ))}

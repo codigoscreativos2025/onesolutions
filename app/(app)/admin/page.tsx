@@ -13,7 +13,7 @@ export default async function AdminPage() {
   const menuItems = [
     {
       title: "Usuarios",
-      description: "Gestiona setters, closers y administradores",
+      description: "Gestiona trainers, closers y administradores",
       href: "/admin/users",
       icon: Users,
       color: "bg-primary/10 text-primary",

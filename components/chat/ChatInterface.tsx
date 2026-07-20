@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Send, Paperclip, Loader2, MessageSquare, Package, FileText, Pencil } from "lucide-react";
+import { Send, Paperclip, Loader2, MessageSquare, Package, FileText, Pencil, CheckCheck } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 
 interface ProjectDetails {
@@ -49,6 +49,7 @@ interface Room {
     closerId?: number;
     stage?: string;
     createdAt?: string;
+    finalizedAt?: string;
     parcel: { id: string; address: string };
     setter: { id: number; name: string };
     closer?: { id: number; name: string };
@@ -199,6 +200,22 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
       console.error(error);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleFinalize = async () => {
+    if (!selectedRoom) return;
+    try {
+      const res = await fetch(`/api/visits/${selectedRoom.visit.id}/finalize`, { method: 'PATCH' });
+      if (res.ok) {
+        const updated = await res.json();
+        if (selectedRoom) {
+          setSelectedRoom({ ...selectedRoom, visit: { ...selectedRoom.visit, finalizedAt: updated.finalizedAt } });
+          setRooms(prev => prev.map(r => r.id === selectedRoom.id ? { ...r, visit: { ...r.visit, finalizedAt: updated.finalizedAt } } : r));
+        }
+      }
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -408,7 +425,7 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
                         {selectedRoom.visit.parcel.address}
                       </p>
                       <p className="text-xs text-on-surface-variant">
-                        Setter:{' '}
+                        Traini:{' '}
                         <Link href={`/profile/${selectedRoom.visit.setter.id}`} className="hover:underline">
                           {selectedRoom.visit.setter.name}
                         </Link>
@@ -441,6 +458,15 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
                         >
                           <Pencil className="w-3 h-3 inline mr-1" />
                           Editar
+                        </button>
+                      )}
+                      {selectedRoom.visit.stage === 'CLOSED' && !selectedRoom.visit.finalizedAt && (session?.user?.role === 'ADMIN' || (session?.user?.role === 'CLOSER' && selectedRoom.visit.closerId === parseInt(session?.user?.id || '0'))) && (
+                        <button
+                          onClick={handleFinalize}
+                          className="px-3 py-1 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-full hover:bg-emerald-200 transition-colors"
+                        >
+                          <CheckCheck className="w-3 h-3 inline mr-1" />
+                          Finalizar
                         </button>
                       )}
                     </div>
@@ -503,7 +529,9 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
                           }`}
                         >
                           <p className="text-xs opacity-70 mb-1">
-                            {msg.user.name}
+                            {session?.user?.role === "PARTNER" && !isMe
+                              ? "OneSolutions"
+                              : msg.user.name}
                           </p>
                           <p className="text-sm">{renderMessageWithMentions(msg.body)}</p>
                           {msg.fileUrl && (
@@ -865,7 +893,7 @@ function ProjectInfoPanel({
 
         {visit.objections && visit.objections.length > 0 && (
           <div className="col-span-2 md:col-span-3">
-            <p className="text-xs text-on-surface-variant mb-1">Objeciones (Setter)</p>
+            <p className="text-xs text-on-surface-variant mb-1">Objeciones (Traini)</p>
             <div className="flex flex-wrap gap-1">
               {visit.objections.map((o, i) => (
                 <span

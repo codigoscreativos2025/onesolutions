@@ -104,11 +104,16 @@ export async function GET() {
   const role = session.user.role;
 
   try {
+    let whereClause: Record<string, unknown> = {};
+
+    if (role === "PARTNER") {
+      whereClause = { partnerId: userId, status: { not: 'CUSTOMER' } };
+    } else if (role !== 'ADMIN') {
+      whereClause = { setterId: userId, status: { not: 'CUSTOMER' } };
+    }
+
     const parcels = await prisma.parcel.findMany({
-      where: {
-        setterId: role === 'ADMIN' ? undefined : userId,
-        status: { not: 'CUSTOMER' },
-      },
+      where: whereClause,
       include: {
         setter: {
           select: {

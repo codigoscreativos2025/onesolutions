@@ -65,7 +65,7 @@ interface Visit {
 interface MetricDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  metricType: 'doors' | 'leads' | 'projects' | 'objections' | 'parcels' | 'closed' | 'cancelled' | null;
+  metricType: 'doors' | 'leads' | 'potential' | 'parcels' | 'closed' | 'cancelled' | null;
   userId?: number;
 }
 
@@ -115,15 +115,13 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
       case 'parcels':
         return 'Parcelas';
       case 'leads':
+        return 'Leads';
+      case 'potential':
         return 'Leads Potenciales';
-      case 'projects':
-        return 'Proyectos';
       case 'closed':
         return 'Proyectos Cerrados';
       case 'cancelled':
         return 'Proyectos Cancelados';
-      case 'objections':
-        return 'Objeciones';
       default:
         return 'Detalles';
     }
@@ -259,7 +257,7 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                     <div className="flex items-center gap-2 text-sm">
                       <User className="w-4 h-4 text-gray-500" />
-                      <span className="text-gray-600 dark:text-gray-400">Setter:</span>
+                      <span className="text-gray-600 dark:text-gray-400">Traini:</span>
                       <Link href={`/profile/${visit.setter.id}`} className="font-medium hover:underline">{visit.setter.name}</Link>
                     </div>
                     {visit.closer && (
@@ -275,7 +273,7 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
                   {visit.objections.length > 0 && (
                     <div className="mb-3">
                       <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                        Objeciones de Setter:
+                        Objeciones de Traini:
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {visit.objections.map((obj, idx) => (

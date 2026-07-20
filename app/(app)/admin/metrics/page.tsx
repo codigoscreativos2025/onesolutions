@@ -225,7 +225,7 @@ export default function AdminMetricsPage() {
           clickable
         />
         <MetricCard
-          title="Objeciones Setter"
+          title="Objeciones Traini"
           value={metrics?.topSetterObjections.reduce((sum, o) => sum + o.count, 0) || 0}
           icon={MessageSquareWarning}
           onClick={() => setActiveDetail("setterObjections")}
@@ -252,7 +252,7 @@ export default function AdminMetricsPage() {
             </p>
             {metrics?.topConversionBySetter && metrics.topConversionBySetter.length > 0 && (
               <div className="mt-3 pt-3 border-t border-outline-variant/20">
-                <p className="text-xs text-on-surface-variant mb-1">Mejor Setter:</p>
+                <p className="text-xs text-on-surface-variant mb-1">Mejor Traini:</p>
                 <p className="text-sm font-semibold text-on-surface">
                   {metrics.topConversionBySetter[0].name} - {metrics.topConversionBySetter[0].rate.toFixed(1)}%
                 </p>
@@ -381,7 +381,7 @@ export default function AdminMetricsPage() {
             : activeDetail === "projects"
             ? "Top Proyectos Cerrados"
             : activeDetail === "setterObjections"
-            ? "Objeciones Setter"
+            ? "Objeciones Traini"
             : activeDetail === "closerObjections"
             ? "Objeciones Closer"
             : "Detalle"

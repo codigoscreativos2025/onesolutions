@@ -12,6 +12,7 @@ import {
   Calendar,
   Briefcase,
   Target,
+  User,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
@@ -24,20 +25,21 @@ export function BottomNav() {
   const isActive = (path: string) => pathname.includes(path);
 
   const navItems = [
-    { href: "/map", label: t.nav.map, icon: Map, roles: ["SETTER", "CLOSER", "ADMIN"] },
+    { href: "/map", label: t.nav.map, icon: Map, roles: ["SETTER", "SETTER_JR", "CLOSER", "ADMIN"] },
     {
       href: "/ranking",
       label: t.nav.ranking,
       icon: Trophy,
-      roles: ["SETTER", "CLOSER", "ADMIN"],
+      roles: ["SETTER", "SETTER_JR", "CLOSER", "ADMIN"],
       highlighted: true,
     },
-    { href: "/dashboard", label: t.nav.dashboard, icon: LayoutDashboard, roles: ["SETTER", "CLOSER", "ADMIN"] },
-    { href: "/leads", label: "Leads", icon: Target, roles: ["SETTER", "CLOSER"] },
+    { href: "/dashboard", label: t.nav.dashboard, icon: LayoutDashboard, roles: ["SETTER", "SETTER_JR", "CLOSER", "ADMIN"] },
+    { href: "/leads", label: "Leads", icon: Target, roles: ["SETTER", "SETTER_JR", "CLOSER", "PARTNER"] },
     { href: "/my-projects", label: "Leads Potenciales", icon: Briefcase, roles: ["CLOSER"] },
     { href: "/calendar", label: t.nav.calendar, icon: Calendar, roles: ["CLOSER", "ADMIN"] },
-    { href: "/chat", label: t.nav.chat, icon: MessageSquare, roles: ["SETTER", "CLOSER", "ADMIN"] },
+    { href: "/chat", label: t.nav.chat, icon: MessageSquare, roles: ["SETTER", "SETTER_JR", "CLOSER", "ADMIN", "PARTNER"] },
     { href: "/admin", label: t.nav.admin, icon: Shield, roles: ["ADMIN"] },
+    { href: "/profile", label: "Perfil", icon: User, roles: ["PARTNER"] },
   ];
 
   const visibleItems = navItems.filter((item) =>

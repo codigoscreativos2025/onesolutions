@@ -17,6 +17,10 @@ export async function GET() {
           select: {
             id: true,
             address: true,
+            partnerId: true,
+            partner: {
+              select: { id: true, name: true },
+            },
           },
         },
         setter: {

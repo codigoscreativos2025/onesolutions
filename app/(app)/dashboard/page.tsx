@@ -9,13 +9,12 @@ import {
   DoorOpen,
   PersonStanding,
   Handshake,
-  MessageSquareWarning,
   TrendingUp,
   Calendar,
   ChevronRight,
   Plus,
-  FileText,
   XCircle,
+  Target,
 } from "lucide-react";
 import { MetricsCharts } from "@/components/dashboard/MetricsCharts";
 import { MiniRanking } from "@/components/dashboard/MiniRanking";
@@ -60,26 +59,46 @@ export default function DashboardPage() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedMetric, setSelectedMetric] = useState<'doors' | 'leads' | 'projects' | 'objections' | 'parcels' | 'closed' | 'cancelled' | null>(null);
+  const [selectedMetric, setSelectedMetric] = useState<'doors' | 'leads' | 'potential' | 'parcels' | 'closed' | 'cancelled' | null>(null);
   const [showCreateLeadModal, setShowCreateLeadModal] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
-      const modeParam = session?.user?.role === 'CLOSER' ? '?mode=own' : '';
-      const [metricsRes, appointmentsRes] = await Promise.all([
-        fetch(`/api/metrics${modeParam}`),
-        fetch("/api/appointments"),
-      ]);
-      const metricsData = await metricsRes.json();
-      const appointmentsData = await appointmentsRes.json();
-      setMetrics(metricsData);
-      setAppointments(appointmentsData.slice(0, 5));
+      if (session?.user?.role === "PARTNER") {
+        const parcelsRes = await fetch("/api/parcels/expiration");
+        const parcelsData = await parcelsRes.json();
+        setMetrics({ ...defaultMetrics, parcels: Array.isArray(parcelsData) ? parcelsData.length : 0 });
+      } else {
+        const modeParam = session?.user?.role === 'CLOSER' ? '?mode=own' : '';
+        const [metricsRes, appointmentsRes] = await Promise.all([
+          fetch(`/api/metrics${modeParam}`),
+          fetch("/api/appointments"),
+        ]);
+        const metricsData = await metricsRes.json();
+        const appointmentsData = await appointmentsRes.json();
+        setMetrics(metricsData);
+        setAppointments(appointmentsData.slice(0, 5));
+      }
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
     }
-  }, [session?.user?.role]);
+  }, [session?.user?.role, session?.user?.id]);
+
+  const defaultMetrics: Metrics = {
+    doorsKnocked: 0,
+    parcels: 0,
+    setterObjections: 0,
+    leadsGenerated: 0,
+    closerLeads: 0,
+    projectsInProgress: 0,
+    projectsClosed: 0,
+    projectsCancelled: 0,
+    closerObjectionsCount: 0,
+    appointments: 0,
+    teamGoal: 0,
+  };
 
   useEffect(() => {
     fetchData();
@@ -95,6 +114,48 @@ export default function DashboardPage() {
 
   const role = session?.user?.role;
   const isAdmin = role === "ADMIN";
+  const isPartner = role === "PARTNER";
+  const isSetterJr = role === "SETTER_JR";
+
+  if (isPartner) {
+    return (
+      <div className="space-y-6">
+        <section className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <span className="inline-block px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-wider mb-2">
+                Partner
+              </span>
+              <h1 className="font-headline text-2xl font-bold text-on-surface">
+                Panel de Socio
+              </h1>
+              <p className="text-on-surface-variant">
+                Leads asignados para seguimiento
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="glass-panel p-5 rounded-2xl col-span-2">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-primary/10 text-primary">
+                <Target className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-on-surface-variant text-xs uppercase tracking-wider font-semibold">
+                  Mis Leads Asignados
+                </h3>
+                <p className="font-display text-3xl font-bold text-on-surface mt-1">
+                  {metrics?.parcels || 0}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -102,7 +163,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <span className="inline-block px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-wider mb-2">
-              {isAdmin ? "Admin - Vista General de la Empresa" : role === "CLOSER" ? "Closer" : "Setter"}
+              {isAdmin ? "Admin - Vista General de la Empresa" : isSetterJr ? "Setter" : role === "CLOSER" ? "Closer" : "Traini"}
             </span>
             <h1 className="font-headline text-2xl font-bold text-on-surface">
               {isAdmin ? "Panel de Control" : `${t.dashboard.greeting}, ${session?.user?.name}`}
@@ -110,10 +171,12 @@ export default function DashboardPage() {
             <p className="text-on-surface-variant">
               {isAdmin
                 ? "Métrica general de toda la empresa: puertas tocadas, leads generados y proyectos cerrados"
+                : isSetterJr
+                ? "Visualiza tus leads asignados y su estado actual"
                 : t.dashboard.summary}
             </p>
           </div>
-          {(role === "SETTER" || role === "CLOSER" || role === "ADMIN") && (
+          {(role === "SETTER" || role === "CLOSER" || role === "ADMIN" || role === "SETTER_JR") && (
             <Button
               onClick={() => setShowCreateLeadModal(true)}
               variant="primary"
@@ -130,7 +193,7 @@ export default function DashboardPage() {
           <>
             <Link href="/admin/crm?filter=doors" className="block">
               <MetricCard
-                title={t.dashboard.doorsKnocked}
+                title="Leads"
                 value={metrics?.doorsKnocked || 0}
                 icon={DoorOpen}
                 color="primary"
@@ -138,55 +201,47 @@ export default function DashboardPage() {
             </Link>
             <Link href="/admin/crm?filter=leads" className="block">
               <MetricCard
-                title={t.dashboard.leadsGenerated}
+                title="Leads Potenciales"
                 value={metrics?.leadsGenerated || 0}
                 icon={PersonStanding}
                 color="secondary"
               />
             </Link>
-            <Link href="/admin/crm?filter=projects" className="block">
+            <Link href="/admin/crm?filter=closed" className="block">
               <MetricCard
-                title={t.dashboard.projectsClosed}
+                title="Proyecto Cerrado"
                 value={metrics?.projectsClosed || 0}
                 icon={Handshake}
                 color="primary"
               />
             </Link>
-            <Link href="/admin/crm?filter=objections" className="block">
+            <Link href="/admin/crm?filter=cancelled" className="block">
               <MetricCard
-                title={t.dashboard.objections}
-                value={(metrics?.setterObjections || 0) + (metrics?.closerObjectionsCount || 0)}
-                icon={MessageSquareWarning}
+                title="Proyecto Cancelado"
+                value={metrics?.projectsCancelled || 0}
+                icon={XCircle}
                 color="secondary"
               />
             </Link>
           </>
-        ) : role === "SETTER" ? (
+        ) : role === "SETTER" || role === "SETTER_JR" ? (
           <>
-            <MetricCard title="Puertas Tocadas" value={metrics?.doorsKnocked || 0} icon={DoorOpen} color="primary" onClick={() => setSelectedMetric('doors')} />
-            <MetricCard title="Objeciones" value={metrics?.setterObjections || 0} icon={MessageSquareWarning} color="secondary" onClick={() => setSelectedMetric('objections')} />
-            <MetricCard title="Leads Potenciales" value={metrics?.leadsGenerated || 0} icon={PersonStanding} color="primary" onClick={() => setSelectedMetric('leads')} />
-            <MetricCard title="Objeciones (Proyecto)" value={metrics?.closerObjectionsCount || 0} icon={MessageSquareWarning} color="secondary" onClick={() => setSelectedMetric('objections')} />
-            <MetricCard title="Proyecto" value={metrics?.projectsInProgress || 0} icon={FileText} color="primary" onClick={() => setSelectedMetric('projects')} />
-            <MetricCard title="Proyecto Cerrado" value={metrics?.projectsClosed || 0} icon={Handshake} color="secondary" onClick={() => setSelectedMetric('closed')} />
-            <MetricCard title="Proyecto Cancelado" value={metrics?.projectsCancelled || 0} icon={XCircle} color="primary" onClick={() => setSelectedMetric('cancelled')} />
+            <MetricCard title="Leads" value={metrics?.parcels || 0} icon={DoorOpen} color="primary" onClick={() => setSelectedMetric('leads')} />
+            {role === "SETTER_JR" ? null : (
+              <>
+                <MetricCard title="Leads Potenciales" value={metrics?.leadsGenerated || 0} icon={PersonStanding} color="secondary" onClick={() => setSelectedMetric('potential')} />
+                <MetricCard title="Proyecto Cerrado" value={metrics?.projectsClosed || 0} icon={Handshake} color="primary" onClick={() => setSelectedMetric('closed')} />
+                <MetricCard title="Proyecto Cancelado" value={metrics?.projectsCancelled || 0} icon={XCircle} color="secondary" onClick={() => setSelectedMetric('cancelled')} />
+              </>
+            )}
           </>
         ) : (
           <>
             <Link href="/leads?filter=all" className="block">
               <MetricCard title="Leads" value={metrics?.parcels || 0} icon={DoorOpen} color="primary" />
             </Link>
-            <Link href="/leads?filter=objections" className="block">
-              <MetricCard title="Objeciones" value={metrics?.setterObjections || 0} icon={MessageSquareWarning} color="secondary" />
-            </Link>
             <Link href="/my-projects?filter=leads" className="block">
               <MetricCard title="Leads Potenciales" value={metrics?.closerLeads || 0} icon={PersonStanding} color="secondary" />
-            </Link>
-            <Link href="/my-projects?filter=objections" className="block">
-              <MetricCard title="Objeciones Proyecto" value={metrics?.closerObjectionsCount || 0} icon={MessageSquareWarning} color="primary" />
-            </Link>
-            <Link href="/my-projects?filter=project" className="block">
-              <MetricCard title="Proyecto" value={metrics?.projectsInProgress || 0} icon={FileText} color="secondary" />
             </Link>
             <Link href="/my-projects?filter=closed" className="block">
               <MetricCard title="Proyecto Cerrado" value={metrics?.projectsClosed || 0} icon={Handshake} color="primary" />
@@ -267,6 +322,7 @@ export default function DashboardPage() {
       )}
 
       {/* Gráficas y Ranking */}
+      {!isSetterJr && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <MetricsCharts userId={isAdmin ? undefined : (session?.user?.id ? parseInt(session.user.id) : undefined)} />
@@ -275,9 +331,10 @@ export default function DashboardPage() {
           <MiniRanking currentUserId={session?.user?.id ? parseInt(session.user.id) : undefined} />
         </div>
       </div>
+      )}
 
       {/* Citas Recientes (solo para Closers y Admin) */}
-      {role !== 'SETTER' && (
+      {role !== 'SETTER' && role !== 'SETTER_JR' && (
         <section className="glass-panel rounded-2xl p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="font-headline text-lg font-bold text-on-surface">
@@ -317,7 +374,7 @@ export default function DashboardPage() {
                           : t.common.none}
                         {role === "CLOSER" && (
                           <>
-                            {' • Setter: '}
+                            {' • Traini: '}
                             <Link href={`/profile/${apt.setter.id}`} className="hover:underline">
                               {apt.setter.name}
                             </Link>

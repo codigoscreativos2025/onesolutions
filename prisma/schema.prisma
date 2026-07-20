@@ -26,6 +26,7 @@ model User {
   setters  User[] @relation("CloserToSetters")
 
   parcelsTaken   Parcel[]       @relation("ParcelSetter")
+  parcelsPartnered Parcel[]      @relation("ParcelPartner")
   visitsAsSetter Visit[]        @relation("VisitSetter")
   visitsAsCloser Visit[]        @relation("VisitCloser")
   slots          CloserSlot[]
@@ -67,6 +68,8 @@ model Parcel {
 
   setterId Int?
   setter   User?   @relation("ParcelSetter", fields: [setterId], references: [id])
+  partnerId Int?
+  partner   User?   @relation("ParcelPartner", fields: [partnerId], references: [id])
 
   visits        Visit[]
   visitHistory  ParcelVisitHistory[] @relation("ParcelToVisitHistory")
@@ -87,6 +90,7 @@ model Visit {
   notes       String?
   cancelledAt DateTime?
   cancellationReason String?
+  finalizedAt DateTime?
   createdAt   DateTime   @default(now())
   chatCreatedAt DateTime?
   chatCreatedBy Int?
@@ -377,6 +381,7 @@ model UserProfile {
   bankName        String?
   routingNumber   String?  // Encriptado
   zelle           String?
+  accountNumber   String?
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

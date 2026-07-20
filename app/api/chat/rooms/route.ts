@@ -21,8 +21,33 @@ export async function GET() {
         visit: {
           include: {
             parcel: { select: { address: true } },
-            setter: { select: { name: true } },
-            closer: { select: { name: true } },
+            setter: { select: { id: true, name: true } },
+            closer: { select: { id: true, name: true } },
+          },
+        },
+        messages: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          include: {
+            user: { select: { name: true } },
+          },
+        },
+      },
+    });
+  } else if (role === "PARTNER") {
+    rooms = await prisma.chatRoom.findMany({
+      where: {
+        visit: {
+          parcel: { partnerId: userId },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      include: {
+        visit: {
+          include: {
+            parcel: { select: { address: true } },
+            setter: { select: { id: true, name: true } },
+            closer: { select: { id: true, name: true } },
           },
         },
         messages: {
@@ -46,8 +71,8 @@ export async function GET() {
         visit: {
           include: {
             parcel: { select: { address: true } },
-            setter: { select: { name: true } },
-            closer: { select: { name: true } },
+            setter: { select: { id: true, name: true } },
+            closer: { select: { id: true, name: true } },
           },
         },
         messages: {

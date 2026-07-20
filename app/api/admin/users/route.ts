@@ -5,15 +5,35 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await auth();
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { searchParams } = new URL(request.url);
+  const roleFilter = searchParams.get("role");
+
+  const whereClause: Record<string, unknown> = {};
+  if (roleFilter) {
+    whereClause.role = roleFilter;
+  }
+
   const users = await prisma.user.findMany({
+    where: whereClause,
     orderBy: { createdAt: "desc" },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      password: true,
+      role: true,
+      phone: true,
+      isActive: true,
+      locationValidationEnabled: true,
+      closerId: true,
+      avatarUrl: true,
+      createdAt: true,
       closer: {
         select: { id: true, name: true },
       },
@@ -36,7 +56,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { name, email, password, role, closerId, phone, ssn, dateOfBirth, bankName, routingNumber, zelle, address, profilePhoto } = body;
+  const { name, email, password, role, closerId, phone, ssn, dateOfBirth, bankName, routingNumber, zelle, accountNumber, address, profilePhoto } = body;
 
   if (!name || !email || !password || !role) {
     return NextResponse.json(
@@ -63,10 +83,11 @@ export async function POST(request: Request) {
       profile: {
         create: {
           ssn: ssn ? encrypt(ssn) : null,
-          dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+          dateOfBirth: dateOfBirth ? new Date(dateOfBirth + "T12:00:00") : null,
           bankName: bankName || null,
           routingNumber: routingNumber ? encrypt(routingNumber) : null,
           zelle: zelle || null,
+          accountNumber: accountNumber || null,
           address: address || null,
           profilePhoto: profilePhoto || null,
         },

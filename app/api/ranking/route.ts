@@ -10,10 +10,13 @@ export async function GET() {
   }
 
   const userId = parseInt(session.user.id);
+  const myRole = session.user.role;
+
+  const setterRole = myRole === "SETTER_JR" ? "SETTER_JR" : "SETTER";
 
   // Ranking de setters por puertas tocadas
   const settersDoors = await prisma.user.findMany({
-    where: { role: "SETTER" },
+    where: { role: setterRole },
     select: {
       id: true,
       name: true,
@@ -33,7 +36,7 @@ export async function GET() {
 
   // Ranking de setters por prospectos generados
   const settersProspects = await prisma.user.findMany({
-    where: { role: "SETTER" },
+    where: { role: setterRole },
     select: {
       id: true,
       name: true,
@@ -89,7 +92,7 @@ export async function GET() {
 
   // Posición propia del usuario
   const allSettersDoors = await prisma.user.findMany({
-    where: { role: "SETTER" },
+    where: { role: setterRole },
     select: {
       id: true,
       _count: {
@@ -112,16 +115,16 @@ export async function GET() {
     },
   });
 
-  const myRole = session.user.role;
+  const myRoleInRanking = session.user.role;
   let myDoorsPosition = 0;
   let myProspectsPosition = 0;
   let myProjectsPosition = 0;
 
-  if (myRole === "SETTER") {
+  if (myRoleInRanking === "SETTER" || myRoleInRanking === "SETTER_JR") {
     myDoorsPosition = allSettersDoors.findIndex((u) => u.id === userId) + 1 || allSettersDoors.length + 1;
     
     const allSettersProspects = await prisma.user.findMany({
-      where: { role: "SETTER" },
+      where: { role: setterRole },
       select: {
         id: true,
         visitsAsSetter: {
@@ -137,7 +140,7 @@ export async function GET() {
     myProspectsPosition = sorted.findIndex((u) => u.id === userId) + 1 || sorted.length + 1;
   }
 
-  if (myRole === "CLOSER") {
+  if (myRoleInRanking === "CLOSER") {
     const sorted = allClosersProjects
       .map((u) => ({ id: u.id, count: u.visitsAsCloser.length }))
       .sort((a, b) => b.count - a.count);

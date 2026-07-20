@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Search, Filter, Download, Eye, MapPin, Clock, Calendar, AlertCircle, MessageSquare, Plus } from 'lucide-react';
+import { Search, Filter, Download, Eye, MapPin, Clock, Calendar, AlertCircle, MessageSquare, Plus, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ViewProjectModal } from '@/components/calendar/ViewProjectModal';
@@ -33,6 +33,8 @@ interface Visit {
   parcel: {
     id: string;
     address: string;
+    partnerId?: number | null;
+    partner?: { id: number; name: string } | null;
   };
   setter: {
     id: number;
@@ -77,6 +79,9 @@ export default function AdminCRMPage() {
   const [isViewProjectModalOpen, setIsViewProjectModalOpen] = useState(false);
   const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
   const [showCreateLead, setShowCreateLead] = useState(false);
+  const [partners, setPartners] = useState<{ id: number; name: string }[]>([]);
+  const [showPartnerSelect, setShowPartnerSelect] = useState<number | null>(null);
+  const [partnerParcelIds, setPartnerParcelIds] = useState<Record<string, number | null>>({});
 
   useEffect(() => {
     if (session?.user?.role !== 'ADMIN') {
@@ -91,13 +96,28 @@ export default function AdminCRMPage() {
     if (filterParam === 'doors') setFilterStage('IN_PROGRESS');
     if (filterParam === 'leads') setFilterStage('PROPOSAL_ACCEPTED');
     if (filterParam === 'projects') setFilterStage('PROJECT');
+    if (filterParam === 'closed') setFilterStage('CLOSED');
+    if (filterParam === 'cancelled') setFilterStage('CANCELLED');
     if (filterParam === 'objections') setFilterStage('all');
     if (filterParam === 'objections') setFilterObjectionType('setter');
     if (setterIdParam) setFilterSetter(setterIdParam);
     if (closerIdParam) setFilterSetter(closerIdParam);
 
     fetchVisits();
+    fetchPartners();
   }, [session, router, searchParams]);
+
+  const fetchPartners = async () => {
+    try {
+      const res = await fetch(`/api/admin/users?role=PARTNER`);
+      if (res.ok) {
+        const data = await res.json();
+        setPartners(data);
+      }
+    } catch (error) {
+      console.error('Error fetching partners:', error);
+    }
+  };
 
   const fetchVisits = async () => {
     try {
@@ -120,10 +140,34 @@ export default function AdminCRMPage() {
       });
 
       setVisits(enriched);
+
+      const partnerMap: Record<string, number | null> = {};
+      enriched.forEach((v: Visit) => {
+        if (v.parcel.partnerId !== undefined) {
+          partnerMap[v.parcel.id] = v.parcel.partnerId;
+        }
+      });
+      setPartnerParcelIds(partnerMap);
     } catch (error) {
       console.error('Error fetching visits:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAssignPartner = async (parcelId: string, partnerId: number | null) => {
+    try {
+      const res = await fetch(`/api/parcels/${parcelId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ partnerId }),
+      });
+      if (res.ok) {
+        setPartnerParcelIds(prev => ({ ...prev, [parcelId]: partnerId }));
+        setShowPartnerSelect(null);
+      }
+    } catch (error) {
+      console.error('Error assigning partner:', error);
     }
   };
 
@@ -179,7 +223,7 @@ export default function AdminCRMPage() {
 
   const handleExport = () => {
     const csv = [
-      ['ID', 'Dirección', 'Setter', 'Closer', 'Estado', 'Fecha Creación', 'Última Actividad', 'Días Restantes', 'Proyectos', 'Objeciones Setter', 'Objeciones Closer', 'Cliente', 'Fecha Cierre', 'Método Pago'].join(','),
+      ['ID', 'Dirección', 'Traini', 'Closer', 'Estado', 'Fecha Creación', 'Última Actividad', 'Días Restantes', 'Proyectos', 'Objeciones Traini', 'Objeciones Closer', 'Cliente', 'Fecha Cierre', 'Método Pago'].join(','),
       ...filteredVisits.map((v) => [
         v.id,
         v.parcel.address,
@@ -256,7 +300,7 @@ export default function AdminCRMPage() {
               <Input
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Buscar por dirección, setter o closer..."
+                placeholder="Buscar por dirección, traini o closer..."
                 className="pl-10"
               />
             </div>
@@ -270,7 +314,7 @@ export default function AdminCRMPage() {
               className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
             >
               <option value="all">Todos</option>
-              <option value="IN_PROGRESS">Leads (puerta tocada)</option>
+              <option value="IN_PROGRESS">Leads</option>
               <option value="PROPOSAL_ACCEPTED">Leads Potenciales</option>
               <option value="PROJECT">Proyecto</option>
               <option value="CLOSED">Proyecto Cerrado</option>
@@ -279,7 +323,7 @@ export default function AdminCRMPage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Setter</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Traini</label>
             <select
               value={filterSetter}
               onChange={(e) => setFilterSetter(e.target.value)}
@@ -317,7 +361,7 @@ export default function AdminCRMPage() {
               className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
             >
               <option value="all">Todos</option>
-              <option value="setter">Objeciones Setter</option>
+              <option value="setter">Objeciones Traini</option>
               <option value="closer">Objeciones Closer</option>
             </select>
           </div>
@@ -369,8 +413,9 @@ export default function AdminCRMPage() {
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Dirección</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Setter</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Traini</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Closer</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Partner</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Creado</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Última Actividad</th>
@@ -398,6 +443,36 @@ export default function AdminCRMPage() {
                     {visit.closer ? (
                       <Link href={`/profile/${visit.closer.id}`} className="hover:underline">{visit.closer.name}</Link>
                     ) : 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>
+                    {showPartnerSelect === visit.id ? (
+                      <div className="flex items-center gap-1">
+                        <select
+                          className="h-8 px-2 rounded border text-xs"
+                          value={partnerParcelIds[visit.parcel.id] ?? ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            handleAssignPartner(visit.parcel.id, val ? parseInt(val) : null);
+                          }}
+                        >
+                          <option value="">Sin partner</option>
+                          {partners.map((p) => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                          ))}
+                        </select>
+                        <button onClick={() => setShowPartnerSelect(null)} className="text-xs text-gray-400 hover:text-gray-600">✕</button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setShowPartnerSelect(visit.id)}
+                        className="flex items-center gap-1 text-xs text-primary hover:underline"
+                      >
+                        <UserPlus className="w-3 h-3" />
+                        {visit.parcel.partner?.name || (partnerParcelIds[visit.parcel.id] 
+                          ? partners.find(p => p.id === partnerParcelIds[visit.parcel.id])?.name || `ID ${partnerParcelIds[visit.parcel.id]}`
+                          : 'Asignar')}
+                      </button>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
