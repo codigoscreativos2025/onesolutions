@@ -75,16 +75,8 @@ function techoHtml(data: Record<string, string>): string {
     }
 
     .logo-s {
-        width: 60px;
-        height: 60px;
-        border: 4px solid var(--secondary-color);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 40px;
-        font-weight: 900;
-        color: var(--secondary-color);
+        width: 80px;
+        height: 100px;
     }
 
     .brand-text {
@@ -304,7 +296,13 @@ function techoHtml(data: Record<string, string>): string {
 <div class="document-container">
     <div class="header">
         <div class="logo-area">
-            <div class="logo-s">S</div>
+            <svg class="logo-s" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="5,45 40,15 75,45" fill="#f48221"/>
+                <circle cx="40" cy="50" r="22" fill="none" stroke="#1d1d1b" stroke-width="6"/>
+                <path d="M 35 60 Q 32 45 26 38 Q 32 37 40 50 Z" fill="#4CAF50"/>
+                <path d="M 45 60 Q 48 45 54 38 Q 48 37 40 50 Z" fill="#388E3C"/>
+                <text x="40" y="72" font-family="Arial,sans-serif" font-weight="900" font-size="28" text-anchor="middle" fill="#1d1d1b">S</text>
+            </svg>
             <div class="brand-text">
                 <span class="brand-one">ONE</span>
                 <span class="brand-solutions">SOLUTIONS</span>
@@ -534,16 +532,8 @@ function purificadorAguaHtml(data: Record<string, string>): string {
     }
 
     .logo-s {
-        width: 60px;
-        height: 60px;
-        border: 4px solid var(--secondary-color);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 40px;
-        font-weight: 900;
-        color: var(--secondary-color);
+        width: 80px;
+        height: 100px;
     }
 
     .brand-text {
@@ -734,7 +724,13 @@ function purificadorAguaHtml(data: Record<string, string>): string {
 <div class="document-container">
     <div class="header">
         <div class="logo-area">
-            <div class="logo-s">S</div>
+            <svg class="logo-s" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="5,45 40,15 75,45" fill="#f48221"/>
+                <circle cx="40" cy="50" r="22" fill="none" stroke="#1d1d1b" stroke-width="6"/>
+                <path d="M 35 60 Q 32 45 26 38 Q 32 37 40 50 Z" fill="#4CAF50"/>
+                <path d="M 45 60 Q 48 45 54 38 Q 48 37 40 50 Z" fill="#388E3C"/>
+                <text x="40" y="72" font-family="Arial,sans-serif" font-weight="900" font-size="28" text-anchor="middle" fill="#1d1d1b">S</text>
+            </svg>
             <div class="brand-text">
                 <span class="brand-one">ONE</span>
                 <span class="brand-solutions">SOLUTIONS</span>

@@ -2,6 +2,9 @@
 
 import { useEffect, useRef } from "react";
 
+const NODE_COUNT = 60;
+const CONNECTION_DIST = 150;
+
 class Node {
   x: number;
   y: number;
@@ -12,15 +15,15 @@ class Node {
   constructor(w: number, h: number) {
     this.x = Math.random() * w;
     this.y = Math.random() * h;
-    this.vx = (Math.random() - 0.5) * 1;
-    this.vy = (Math.random() - 0.5) * 1;
-    this.size = 3;
+    this.vx = (Math.random() - 0.5) * 0.4;
+    this.vy = (Math.random() - 0.5) * 0.4;
+    this.size = 2 + Math.random() * 2;
   }
 
   draw(ctx: CanvasRenderingContext2D) {
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(0,255,255,0.9)";
+    ctx.fillStyle = "rgba(242,130,33,0.7)";
     ctx.fill();
   }
 
@@ -31,47 +34,6 @@ class Node {
     if (this.y < 0 || this.y > h) this.vy *= -1;
   }
 }
-
-class WaveParticle {
-  baseX: number;
-  baseY: number;
-  speed: number;
-  amplitude: number;
-  type: "sin" | "cos";
-  index: number;
-  period: number;
-  size: number;
-  alpha: number;
-
-  constructor(index: number, type: "sin" | "cos", w: number, h: number) {
-    this.index = index;
-    this.type = type;
-    this.baseX = Math.random() * w;
-    this.baseY = h / 2 + (Math.random() - 0.5) * 50;
-    this.speed = 0.005 + Math.random() * 0.01;
-    this.amplitude = 100 + Math.random() * 50;
-    this.period = (Math.random() + 0.1) * (type === "cos" ? 1.5 : 1);
-    this.size = Math.random() * 1.5;
-    this.alpha = 0.3 + Math.random() * 0.4;
-  }
-
-  draw(ctx: CanvasRenderingContext2D, time: number) {
-    let y: number;
-    if (this.type === "sin") {
-      y = this.baseY + Math.sin(this.index * 0.05 + time * this.speed * 1.2) * this.amplitude;
-    } else {
-      y = this.baseY + Math.cos(this.index * 0.03 + time * this.speed) * (this.amplitude * 1.5);
-    }
-    ctx.beginPath();
-    ctx.arc(this.baseX, y, this.size, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(0,255,255,${this.alpha})`;
-    ctx.fill();
-  }
-}
-
-const NODE_COUNT = 80;
-const WAVE_COUNT = 1000;
-const CONNECTION_DIST = 150;
 
 export function ParticleBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -96,14 +58,9 @@ export function ParticleBackground() {
     const nodes: Node[] = [];
     for (let i = 0; i < NODE_COUNT; i++) nodes.push(new Node(w, h));
 
-    const waves: WaveParticle[] = [];
-    for (let i = 0; i < WAVE_COUNT; i++)
-      waves.push(new WaveParticle(i, i % 2 === 0 ? "sin" : "cos", w, h));
-
     function animate(time: number) {
       if (!time) time = 0;
       ctx!.clearRect(0, 0, w, h);
-      for (let i = 0; i < WAVE_COUNT; i++) waves[i].draw(ctx!, time);
       for (let i = 0; i < NODE_COUNT; i++) {
         nodes[i].update(w, h);
         nodes[i].draw(ctx!);
@@ -116,7 +73,7 @@ export function ParticleBackground() {
             ctx!.moveTo(nodes[i].x, nodes[i].y);
             ctx!.lineTo(nodes[j].x, nodes[j].y);
             const opacity = 1 - dist / CONNECTION_DIST;
-            ctx!.strokeStyle = `rgba(180,180,180,${opacity * 0.5})`;
+            ctx!.strokeStyle = `rgba(242,130,33,${opacity * 0.3})`;
             ctx!.stroke();
           }
         }
