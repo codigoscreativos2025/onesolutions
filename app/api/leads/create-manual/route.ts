@@ -18,13 +18,14 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { address, ownerName, phone, notes, projectTypeIds, setterId } = body;
+    const { address, ownerName, phone, notes, projectTypeIds, setterId, closerId, scheduledDate } = body;
 
     if (!address) {
       return NextResponse.json({ error: 'Address is required' }, { status: 400 });
     }
 
     const assignedSetterId = role === 'ADMIN' && setterId ? setterId : userId;
+    const assignedCloserId = closerId ? parseInt(closerId) : (role === 'CLOSER' ? userId : null);
 
     // Generar un ID único para la parcela
     const parcelId = `manual-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -58,9 +59,11 @@ export async function POST(request: Request) {
       data: {
         parcelId: parcel.id,
         setterId: assignedSetterId,
+        closerId: assignedCloserId,
         stage: 'IN_PROGRESS',
         outcome: 'MANUAL_LEAD',
         notes: notes || null,
+        scheduledAt: scheduledDate ? new Date(scheduledDate) : null,
       },
     });
 

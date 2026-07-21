@@ -202,6 +202,11 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
       contractEl.style.overflow = "visible";
       contractEl.style.maxHeight = "none";
 
+      // Wait for all fonts to load
+      await document.fonts.ready;
+      // Small delay for rendering
+      await new Promise(r => setTimeout(r, 200));
+
       const canvas = await html2canvas(contractEl, {
         scale: 2,
         useCORS: true,

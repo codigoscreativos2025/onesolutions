@@ -83,9 +83,9 @@ export default function AdminInvoicesPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="flex flex-col lg:flex-row gap-4">
         {/* FORM */}
-        <div className="space-y-4 glass-panel rounded-xl p-6">
+          <div className="space-y-4 glass-panel rounded-xl p-6 lg:w-[45%] lg:shrink-0">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Eye className="w-5 h-5" /> Datos de la Factura
           </h2>
@@ -177,19 +177,19 @@ export default function AdminInvoicesPage() {
         </div>
 
         {/* PREVIEW - matches MuestraInvoice.html design */}
-        <div className="overflow-auto max-h-[90vh] sticky top-4">
+          <div className="flex-1 lg:min-w-0 max-h-[90vh] sticky top-4">
           <div ref={previewRef} className="bg-white shadow-lg" style={{ fontFamily: "Arial, sans-serif", minWidth: "400px" }}>
             {/* Header */}
-            <div style={{ display: "flex", minHeight: 220 }}>
+            <div style={{ display: "flex", minHeight: 160 }}>
               <div style={{ backgroundColor: "#f19e38", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column" }}>
                 <div style={{ textAlign: "center", color: "black" }}>
-                  <div style={{ fontSize: 45, fontWeight: 900, lineHeight: 1, border: "4px solid black", borderRadius: "50%", width: 65, height: 65, display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 5 }}>S</div>
-                  <div style={{ fontWeight: 900, fontSize: 32, letterSpacing: 1, lineHeight: 1 }}>ONE</div>
-                  <div style={{ fontSize: 11, letterSpacing: 1.5, fontWeight: 600, marginTop: 4 }}>SOLUTIONS</div>
+                  <div style={{ fontSize: 32, fontWeight: 900, lineHeight: 1, border: "4px solid black", borderRadius: "50%", width: 50, height: 50, display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 5 }}>S</div>
+                  <div style={{ fontWeight: 900, fontSize: 24, letterSpacing: 1, lineHeight: 1 }}>ONE</div>
+                  <div style={{ fontSize: 9, letterSpacing: 1.5, fontWeight: 600, marginTop: 4 }}>SOLUTIONS</div>
                 </div>
               </div>
               <div style={{ backgroundColor: "#dfe26a", color: "white", flex: 1, textAlign: "right", display: "flex", flexDirection: "column", justifyContent: "center", paddingRight: 50 }}>
-                <h1 style={{ margin: 0, fontSize: 38, textTransform: "uppercase", fontWeight: "bold", letterSpacing: 1 }}>Invoice</h1>
+                <h1 style={{ margin: 0, fontSize: 28, textTransform: "uppercase", fontWeight: "bold", letterSpacing: 1 }}>Invoice</h1>
                 <p style={{ margin: "10px 0 0", fontSize: 13, lineHeight: 1.6, color: "rgba(255,255,255,0.9)" }}>
                   Number: {invoiceNum}<br />Date: {new Date(date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}<br />Due date: {dueDate}
                 </p>
@@ -197,7 +197,7 @@ export default function AdminInvoicesPage() {
             </div>
 
             {/* Addresses */}
-            <div style={{ display: "flex", padding: 50, gap: 60 }}>
+            <div style={{ display: "flex", padding: 25, gap: 30 }}>
               <div style={{ flex: 1, fontSize: 13, color: "#777", lineHeight: 1.6 }}>
                 <div style={{ color: "#f19e38", fontSize: 11, fontWeight: "bold", textTransform: "uppercase", marginBottom: 12 }}>BILL TO:</div>
                 {billToName && <div style={{ fontWeight: "bold", color: "#222", fontSize: 14, marginBottom: 5 }}>{billToName}</div>}
@@ -218,22 +218,22 @@ export default function AdminInvoicesPage() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
-                  <th style={{ backgroundColor: "#f19e38", color: "white", textAlign: "left", padding: "15px 50px", fontSize: 13, fontWeight: "bold" }}>Description</th>
-                  <th style={{ backgroundColor: "#eec15b", color: "white", textAlign: "right", padding: "15px 50px", fontSize: 13, fontWeight: "bold" }}>Quantity</th>
-                  <th style={{ backgroundColor: "#eec15b", color: "white", textAlign: "right", padding: "15px 50px", fontSize: 13, fontWeight: "bold" }}>Unit price</th>
-                  <th style={{ backgroundColor: "#eec15b", color: "white", textAlign: "right", padding: "15px 50px", fontSize: 13, fontWeight: "bold" }}>Amount</th>
+                  <th style={{ backgroundColor: "#f19e38", color: "white", textAlign: "left", padding: "12px 20px", fontSize: 13, fontWeight: "bold" }}>Description</th>
+                  <th style={{ backgroundColor: "#eec15b", color: "white", textAlign: "right", padding: "12px 20px", fontSize: 13, fontWeight: "bold" }}>Quantity</th>
+                  <th style={{ backgroundColor: "#eec15b", color: "white", textAlign: "right", padding: "12px 20px", fontSize: 13, fontWeight: "bold" }}>Unit price</th>
+                  <th style={{ backgroundColor: "#eec15b", color: "white", textAlign: "right", padding: "12px 20px", fontSize: 13, fontWeight: "bold" }}>Amount</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((item) => (
                   <tr key={item.id}>
-                    <td style={{ padding: "25px 50px", fontSize: 13, color: "#444", borderBottom: "1px solid #f0f0f0", verticalAlign: "top", fontStyle: item.isDiscount ? "italic" : "normal" }}>
+                    <td style={{ padding: "12px 20px", fontSize: 13, color: "#444", borderBottom: "1px solid #f0f0f0", verticalAlign: "top", fontStyle: item.isDiscount ? "italic" : "normal" }}>
                       <div style={{ fontWeight: "bold", color: "#222", fontSize: 13 }}>{item.description || "Sin descripcion"} {item.isDiscount && "(Descuento)"}</div>
                       {item.detail && <div style={{ color: "#999", fontSize: 12, marginTop: 8 }}>{item.detail}</div>}
                     </td>
-                    <td style={{ padding: "25px 50px", fontSize: 13, color: "#444", borderBottom: "1px solid #f0f0f0", textAlign: "right", verticalAlign: "top" }}>{item.quantity}</td>
-                    <td style={{ padding: "25px 50px", fontSize: 13, color: "#444", borderBottom: "1px solid #f0f0f0", textAlign: "right", verticalAlign: "top" }}>${item.unitPrice.toFixed(2)}</td>
-                    <td style={{ padding: "25px 50px", fontSize: 13, color: item.isDiscount ? "#c00" : "#444", borderBottom: "1px solid #f0f0f0", textAlign: "right", verticalAlign: "top" }}>
+                    <td style={{ padding: "12px 20px", fontSize: 13, color: "#444", borderBottom: "1px solid #f0f0f0", textAlign: "right", verticalAlign: "top" }}>{item.quantity}</td>
+                    <td style={{ padding: "12px 20px", fontSize: 13, color: "#444", borderBottom: "1px solid #f0f0f0", textAlign: "right", verticalAlign: "top" }}>${item.unitPrice.toFixed(2)}</td>
+                    <td style={{ padding: "12px 20px", fontSize: 13, color: item.isDiscount ? "#c00" : "#444", borderBottom: "1px solid #f0f0f0", textAlign: "right", verticalAlign: "top" }}>
                       {item.isDiscount ? "-" : ""}${(item.quantity * item.unitPrice).toFixed(2)}
                     </td>
                   </tr>
@@ -248,7 +248,7 @@ export default function AdminInvoicesPage() {
 
             {/* Totals */}
             <div style={{ display: "flex", justifyContent: "flex-end", padding: "30px 50px 0" }}>
-              <table style={{ width: 350, fontSize: 13 }}>
+              <table style={{ width: 280, fontSize: 13 }}>
                 <tbody>
                   <tr>
                     <td style={{ padding: "10px 15px", border: "none", fontWeight: "bold", textAlign: "left" }}>SUBTOTAL:</td>

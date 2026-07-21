@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { X, MapPin, User, Phone, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -17,9 +18,13 @@ interface ProjectType {
 }
 
 export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalProps) {
+  const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [projectTypes, setProjectTypes] = useState<ProjectType[]>([]);
   const [selectedProjects, setSelectedProjects] = useState<number[]>([]);
+  const [closers, setClosers] = useState<{id: number, name: string}[]>([]);
+  const [selectedCloserId, setSelectedCloserId] = useState("");
+  const [scheduledDate, setScheduledDate] = useState("");
   const [formData, setFormData] = useState({
     address: '',
     ownerName: '',
@@ -30,6 +35,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalP
   useEffect(() => {
     if (isOpen) {
       fetchProjectTypes();
+      fetchClosers();
     }
   }, [isOpen]);
 
@@ -40,6 +46,19 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalP
       setProjectTypes(data);
     } catch (error) {
       console.error('Error fetching project types:', error);
+    }
+  };
+
+  const fetchClosers = async () => {
+    try {
+      const res = await fetch('/api/closers');
+      const data = await res.json();
+      setClosers(data);
+      if (session?.user?.role === 'CLOSER') {
+        setSelectedCloserId(String(session.user.id));
+      }
+    } catch (error) {
+      console.error('Error fetching closers:', error);
     }
   };
 
@@ -54,6 +73,8 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalP
         body: JSON.stringify({
           ...formData,
           projectTypeIds: selectedProjects,
+          closerId: selectedCloserId || undefined,
+          scheduledDate: scheduledDate || undefined,
         }),
       });
 
@@ -62,6 +83,8 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalP
         onClose();
         setFormData({ address: '', ownerName: '', phone: '', notes: '' });
         setSelectedProjects([]);
+        setSelectedCloserId('');
+        setScheduledDate('');
       }
     } catch (error) {
       console.error('Error creating lead:', error);
@@ -169,7 +192,37 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalP
             </div>
           </div>
 
-          {/* Botones dentro del form para que sean visibles en móvil */}
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <User className="w-4 h-4" />
+              Closer (opcional)
+            </label>
+            <select
+              value={selectedCloserId}
+              onChange={(e) => setSelectedCloserId(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            >
+              <option value="">Seleccionar closer...</option>
+              {closers.map((closer) => (
+                <option key={closer.id} value={closer.id}>
+                  {closer.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+              Fecha de Visita (opcional)
+            </label>
+            <Input
+              type="date"
+              value={scheduledDate}
+              onChange={(e) => setScheduledDate(e.target.value)}
+            />
+          </div>
+
+          {/* Botones dentro del form para que sean visibles en movil */}
           <div className="flex gap-3 pt-4 sticky bottom-0 bg-white dark:bg-gray-800">
             <Button
               type="button"
