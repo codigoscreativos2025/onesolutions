@@ -129,6 +129,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalP
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               placeholder="123 Main St, Orlando, FL 32801"
               required
+              maxLength={200}
             />
           </div>
 
@@ -141,6 +142,8 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalP
               value={formData.ownerName}
               onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
               placeholder="John Doe"
+              minLength={2}
+              maxLength={100}
             />
           </div>
 
@@ -154,6 +157,8 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalP
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               placeholder="(407) 555-0123"
               type="tel"
+              inputMode="tel"
+              pattern="[0-9\-\+\(\) ]*"
             />
           </div>
 
@@ -167,6 +172,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalP
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Información adicional sobre el lead..."
               className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              maxLength={500}
             />
           </div>
 
@@ -219,6 +225,10 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalP
               type="date"
               value={scheduledDate}
               onChange={(e) => setScheduledDate(e.target.value)}
+              min="1900-01-01"
+              max="2100-12-31"
+              onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity("Fecha fuera de rango")}
+              onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")}
             />
           </div>
 

@@ -298,7 +298,7 @@ export default function AdminSettingsPage() {
           Configura las razones por las que un trainee puede marcar una parcela como no disponible
         </p>
 
-        <div className="flex items-end gap-3">
+        <div className="flex items-center gap-3">
           <Input
             label="Nombre"
             value={newTagName}

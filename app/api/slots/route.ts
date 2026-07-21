@@ -83,6 +83,27 @@ export async function POST(request: Request) {
   const endAt = new Date(startAt);
   endAt.setHours(startAt.getHours() + 1);
 
+  const slotDateStr = startAt.toISOString().split("T")[0];
+  const existingSlots = await prisma.closerSlot.findMany({
+    where: {
+      closerId: userId,
+      startAt: {
+        gte: new Date(`${slotDateStr}T00:00:00`),
+        lt: new Date(`${slotDateStr}T23:59:59`),
+      },
+    },
+  });
+
+  const isOverlapping = existingSlots.some(
+    (s) => startAt < s.endAt && s.startAt < endAt
+  );
+  if (isOverlapping) {
+    return NextResponse.json(
+      { error: "El horario se solapa con un slot existente" },
+      { status: 400 }
+    );
+  }
+
   const slot = await prisma.closerSlot.create({
     data: {
       closerId: userId,

@@ -289,6 +289,8 @@ export default function AdminProjectFieldsPage() {
             onChange={(e) => setFormData({ ...formData, fieldName: e.target.value.replace(/\s/g, "_") })}
             placeholder="ej: nombre_cliente"
             required
+            minLength={2}
+            maxLength={50}
           />
           <Input
             label="Etiqueta (nombre visible)"
@@ -326,6 +328,7 @@ export default function AdminProjectFieldsPage() {
             type="number"
             value={formData.order}
             onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 0 })}
+            min={0}
           />
           <div className="flex items-center gap-2">
             <input

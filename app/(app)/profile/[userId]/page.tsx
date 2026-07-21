@@ -287,8 +287,8 @@ export default function PublicProfilePage() {
           Estad&iacute;sticas
         </h2>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+        <div className="flex flex-wrap gap-4">
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 min-w-[80px] text-center flex-1">
             <div className="flex items-center gap-2 mb-2">
               <DoorOpen className="w-5 h-5 text-blue-600" />
               <span className="text-sm font-medium text-blue-600">Puertas Tocadas</span>
@@ -296,7 +296,7 @@ export default function PublicProfilePage() {
             <p className="text-2xl font-bold">{profile.stats.doorsKnocked}</p>
           </div>
 
-          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 min-w-[80px] text-center flex-1">
             <div className="flex items-center gap-2 mb-2">
               <Target className="w-5 h-5 text-green-600" />
               <span className="text-sm font-medium text-green-600">Leads Potenciales</span>
@@ -304,7 +304,7 @@ export default function PublicProfilePage() {
             <p className="text-2xl font-bold">{profile.stats.leadsGenerated}</p>
           </div>
 
-          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 min-w-[80px] text-center flex-1">
             <div className="flex items-center gap-2 mb-2">
               <CheckCircle className="w-5 h-5 text-purple-600" />
               <span className="text-sm font-medium text-purple-600">Proyectos Cerrados</span>
@@ -312,7 +312,7 @@ export default function PublicProfilePage() {
             <p className="text-2xl font-bold">{profile.stats.projectsClosed}</p>
           </div>
 
-          <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
+          <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 min-w-[80px] text-center flex-1">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="w-5 h-5 text-orange-600" />
               <span className="text-sm font-medium text-orange-600">Total Visitas</span>

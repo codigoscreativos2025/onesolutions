@@ -145,6 +145,7 @@ export default function AdminInvoicesPage() {
                 onChange={(e) => setSendToEmail(e.target.value)}
                 placeholder={billToEmail || "Email destinatario"}
                 className="h-10 w-64 text-sm"
+                type="email"
               />
               <Button onClick={handleSendEmail} disabled={sendingEmail} className="gap-2">
                 {sendingEmail ? (
@@ -188,7 +189,7 @@ export default function AdminInvoicesPage() {
             </div>
             <div>
               <label className="text-xs font-medium text-on-surface-variant">Fecha</label>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-10" />
+              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-10" min="1900-01-01" max="2100-12-31" onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity("Fecha fuera de rango")} onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")} />
             </div>
           </div>
 
@@ -199,7 +200,7 @@ export default function AdminInvoicesPage() {
             </div>
             <div>
               <label className="text-xs font-medium text-on-surface-variant">Pagado ($)</label>
-              <Input type="number" value={paid} onChange={(e) => setPaid(Number(e.target.value))} className="h-10" />
+              <Input type="number" value={paid} onChange={(e) => setPaid(Number(e.target.value))} className="h-10" inputMode="decimal" step="0.01" min="0" />
             </div>
           </div>
 
@@ -207,8 +208,8 @@ export default function AdminInvoicesPage() {
             <h3 className="text-sm font-semibold mb-2">Facturar A (Bill To):</h3>
             <div className="space-y-2">
               <Input value={billToName} onChange={(e) => setBillToName(e.target.value)} placeholder="Nombre / Empresa" />
-              <Input value={billToPhone} onChange={(e) => setBillToPhone(e.target.value)} placeholder="Telefono" />
-              <Input value={billToEmail} onChange={(e) => setBillToEmail(e.target.value)} placeholder="Email" />
+              <Input value={billToPhone} onChange={(e) => setBillToPhone(e.target.value)} placeholder="Telefono" inputMode="tel" pattern="[0-9\-\+\(\) ]*" />
+              <Input value={billToEmail} onChange={(e) => setBillToEmail(e.target.value)} placeholder="Email" type="email" />
             </div>
           </div>
 
@@ -216,8 +217,8 @@ export default function AdminInvoicesPage() {
             <h3 className="text-sm font-semibold mb-2">Desde (Invoice From):</h3>
             <div className="space-y-2">
               <Input value={fromName} onChange={(e) => setFromName(e.target.value)} placeholder="Nombre" />
-              <Input value={fromPhone} onChange={(e) => setFromPhone(e.target.value)} placeholder="Telefono" />
-              <Input value={fromEmail} onChange={(e) => setFromEmail(e.target.value)} placeholder="Email" />
+              <Input value={fromPhone} onChange={(e) => setFromPhone(e.target.value)} placeholder="Telefono" inputMode="tel" pattern="[0-9\-\+\(\) ]*" />
+              <Input value={fromEmail} onChange={(e) => setFromEmail(e.target.value)} placeholder="Email" type="email" />
               <Input value={fromAddress} onChange={(e) => setFromAddress(e.target.value)} placeholder="Direccion" />
             </div>
           </div>
@@ -233,12 +234,14 @@ export default function AdminInvoicesPage() {
                       onChange={(e) => updateItem(item.id, "description", e.target.value)}
                       placeholder="Descripcion del item"
                       className="flex-1 h-9 text-sm"
+                      maxLength={200}
                     />
                     <Input
                       value={item.detail}
                       onChange={(e) => updateItem(item.id, "detail", e.target.value)}
                       placeholder="Detalle extra"
                       className="flex-1 h-9 text-sm"
+                      maxLength={200}
                     />
                     <button onClick={() => removeItem(item.id)} className="p-2 text-error hover:bg-error/10 rounded-lg">
                       <Trash2 className="w-4 h-4" />
@@ -246,9 +249,9 @@ export default function AdminInvoicesPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <label className="text-xs w-16">Cant:</label>
-                    <Input type="number" value={item.quantity} onChange={(e) => updateItem(item.id, "quantity", Math.max(1, Number(e.target.value)))} className="w-20 h-9 text-sm" />
+                    <Input type="number" value={item.quantity} onChange={(e) => updateItem(item.id, "quantity", Math.max(1, Number(e.target.value)))} className="w-20 h-9 text-sm" inputMode="numeric" min="1" />
                     <label className="text-xs w-16">Precio:</label>
-                    <Input type="number" value={item.unitPrice} onChange={(e) => updateItem(item.id, "unitPrice", Number(e.target.value))} className="w-28 h-9 text-sm" />
+                    <Input type="number" value={item.unitPrice} onChange={(e) => updateItem(item.id, "unitPrice", Number(e.target.value))} className="w-28 h-9 text-sm" inputMode="decimal" pattern="[0-9]*\.?[0-9]*" min="0" step="0.01" />
                     <label className="text-xs">Total: ${(item.quantity * item.unitPrice).toFixed(2)}</label>
                     <button
                       onClick={() => updateItem(item.id, "isDiscount", !item.isDiscount)}

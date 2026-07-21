@@ -41,6 +41,27 @@ export async function POST(request: Request) {
 
     const { dayOfWeek, startHour, endHour, slotDuration, isWorkday } = await request.json();
 
+    const existingPatterns = await prisma.weeklyPattern.findMany({
+      where: { closerId: userId, dayOfWeek },
+    });
+
+    const isDuplicate = existingPatterns.some(
+      (p) => p.startHour === startHour && p.endHour === endHour
+    );
+    if (isDuplicate) {
+      return NextResponse.json({ error: "Ya existe un patrón idéntico" }, { status: 400 });
+    }
+
+    const isOverlapping = existingPatterns.some(
+      (p) => startHour < p.endHour && p.startHour < endHour
+    );
+    if (isOverlapping) {
+      return NextResponse.json(
+        { error: "El horario se solapa con un patrón existente" },
+        { status: 400 }
+      );
+    }
+
     const pattern = await prisma.weeklyPattern.create({
       data: {
         closerId: userId,

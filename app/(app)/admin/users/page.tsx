@@ -454,7 +454,7 @@ export default function AdminUsersPage() {
         onClose={() => setIsModalOpen(false)}
         title={editingUser ? "Editar Usuario" : "Nuevo Usuario"}
       >
-        <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-4">
           <div className="flex flex-col items-center gap-2">
             {profilePhotoPreview ? (
               <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-outline-variant">
@@ -504,6 +504,9 @@ export default function AdminUsersPage() {
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             required
+            minLength={2}
+            maxLength={100}
+            pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+"
           />
           <Input
             label="Email"
@@ -518,6 +521,7 @@ export default function AdminUsersPage() {
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             required={!editingUser}
+            minLength={6}
           />
           <Select
             label="Rol"
@@ -550,6 +554,8 @@ export default function AdminUsersPage() {
                 label="Teléfono"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                inputMode="tel"
+                pattern="[0-9\-\+\(\) ]*"
               />
               <Input
                 label="Dirección"
@@ -561,6 +567,10 @@ export default function AdminUsersPage() {
                 type="date"
                 value={formData.dateOfBirth}
                 onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                min="1900-01-01"
+                max="2100-12-31"
+                onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity("Fecha fuera de rango")}
+                onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")}
               />
               <Input
                 label="SSN (Social Security Number)"
@@ -639,6 +649,7 @@ export default function AdminUsersPage() {
             value={resetPasswordValue}
             onChange={(e) => setResetPasswordValue(e.target.value)}
             required
+            minLength={6}
           />
           <div className="flex gap-3 pt-2">
             <Button

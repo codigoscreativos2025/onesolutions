@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -59,6 +60,7 @@ export function MetricsCharts({ userId }: MetricsChartsProps) {
   const [period, setPeriod] = useState<'7d' | '30d' | 'month' | 'custom'>('7d');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
+  const [dateError, setDateError] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -234,25 +236,50 @@ export function MetricsCharts({ userId }: MetricsChartsProps) {
 
       {/* Fechas personalizadas */}
       {period === 'custom' && (
-        <div className="flex gap-3 items-end">
-          <div>
-            <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Desde</label>
-            <input
-              type="date"
-              value={customStart}
-              onChange={(e) => setCustomStart(e.target.value)}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
-            />
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-3 items-end">
+            <div>
+              <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Desde</label>
+              <input
+                type="date"
+                value={customStart}
+                onChange={(e) => {
+                  setCustomStart(e.target.value);
+                  setDateError('');
+                }}
+                min="1900-01-01"
+                max="2100-12-31"
+                onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity("Fecha fuera de rango")}
+                onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Hasta</label>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={(e) => {
+                  const newEnd = e.target.value;
+                  setCustomEnd(newEnd);
+                  if (customStart && newEnd && customStart > newEnd) {
+                    setDateError('La fecha "Desde" no puede ser mayor que "Hasta"');
+                    toast.error('La fecha "Desde" no puede ser mayor que "Hasta"');
+                  } else {
+                    setDateError('');
+                  }
+                }}
+                min="1900-01-01"
+                max="2100-12-31"
+                onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity("Fecha fuera de rango")}
+                onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
+              />
+            </div>
           </div>
-          <div>
-            <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Hasta</label>
-            <input
-              type="date"
-              value={customEnd}
-              onChange={(e) => setCustomEnd(e.target.value)}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
-            />
-          </div>
+          {dateError && (
+            <p className="text-xs text-error">{dateError}</p>
+          )}
         </div>
       )}
 

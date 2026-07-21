@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { VisualCalendar } from "@/components/calendar/VisualCalendar";
 import { ViewProjectModal } from "@/components/calendar/ViewProjectModal";
+import { toast } from "sonner";
 
 interface Slot {
   id: number;
@@ -132,7 +133,7 @@ export default function CalendarPage() {
     e.preventDefault();
     setSaving(true);
 
-    await fetch("/api/weekly-patterns", {
+    const res = await fetch("/api/weekly-patterns", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -143,6 +144,13 @@ export default function CalendarPage() {
         isWorkday: patternIsWorkday,
       }),
     });
+
+    if (!res.ok) {
+      const data = await res.json();
+      toast.error(data.error || "Error al crear patrón");
+      setSaving(false);
+      return;
+    }
 
     setSaving(false);
     setIsPatternModalOpen(false);
@@ -169,11 +177,18 @@ export default function CalendarPage() {
     e.preventDefault();
     setSaving(true);
 
-    await fetch("/api/slots", {
+    const res = await fetch("/api/slots", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ date, hour: hour.split(":")[0], isWorkday }),
     });
+
+    if (!res.ok) {
+      const data = await res.json();
+      toast.error(data.error || "Error al crear slot");
+      setSaving(false);
+      return;
+    }
 
     setSaving(false);
     setIsSlotModalOpen(false);

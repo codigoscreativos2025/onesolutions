@@ -167,6 +167,10 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
                   type="date"
                   value={projectDetails.closingDate ? new Date(projectDetails.closingDate as string).toISOString().split('T')[0] : ''}
                   onChange={(e) => handleFieldChange('closingDate', e.target.value)}
+                  min="1900-01-01"
+                  max="2100-12-31"
+                  onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity("Fecha fuera de rango")}
+                  onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")}
                 />
                 <div>
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
@@ -246,6 +250,10 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
                           type="date"
                           value={projectDetails[field.fieldName] ? new Date(projectDetails[field.fieldName] as string).toISOString().split('T')[0] : ''}
                           onChange={(e) => handleFieldChange(field.fieldName, e.target.value)}
+                          min="1900-01-01"
+                          max="2100-12-31"
+                          onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity("Fecha fuera de rango")}
+                          onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")}
                         />
                       ) : field.fieldType === "number" ? (
                         <Input
