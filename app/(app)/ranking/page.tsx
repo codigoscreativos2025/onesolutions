@@ -92,23 +92,23 @@ export default function RankingPage() {
       </button>
 
       <div className="bg-[#1d1d1b] border-2 border-[#f48221] rounded-lg overflow-hidden shadow-[0_10px_30px_rgba(244,130,33,0.15)] relative">
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.08] select-none">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-10" style={{ opacity: 0.12 }}>
           <svg viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg" style={{ width: "35vw", maxWidth: "400px" }}>
-            <polygon points="30,100 150,30 270,100 270,120 150,50 30,120" fill="#f48221"/>
-            <polygon points="210,115 235,95 255,115 230,135" fill="#1d1d1b"/>
-            <circle cx="150" cy="180" r="65" fill="none" stroke="#1d1d1b" strokeWidth="18"/>
-            <text x="150" y="228" fontFamily="Arial,sans-serif" fontWeight="900" fontSize="130" textAnchor="middle" fill="#1d1d1b">S</text>
-            <g fill="#f48221">
+            <polygon points="30,100 150,30 270,100 270,120 150,50 30,120" fill="white"/>
+            <polygon points="210,115 235,95 255,115 230,135" fill="white"/>
+            <circle cx="150" cy="180" r="65" fill="none" stroke="white" strokeWidth="18"/>
+            <text x="150" y="228" fontFamily="Arial,sans-serif" fontWeight="900" fontSize="130" textAnchor="middle" fill="white">S</text>
+            <g fill="white">
               <text x="150" y="325" fontFamily="Arial Black,Impact,sans-serif" fontWeight="900" fontSize="95" textAnchor="middle" letterSpacing="1">ONE</text>
-              <rect x="73" y="240" width="6" height="90" fill="#ffffff"/>
-              <rect x="135" y="240" width="6" height="90" fill="#ffffff" transform="skewX(-25)"/>
-              <rect x="228" y="240" width="8" height="90" fill="#ffffff"/>
+              <rect x="73" y="240" width="6" height="90" fill="#1d1d1b"/>
+              <rect x="135" y="240" width="6" height="90" fill="#1d1d1b" transform="skewX(-25)"/>
+              <rect x="228" y="240" width="8" height="90" fill="#1d1d1b"/>
             </g>
-            <text x="150" y="375" fontFamily="Arial,sans-serif" fontWeight="900" fontSize="36" textAnchor="middle" fill="#000000" letterSpacing="2">SOLUTIONS</text>
+            <text x="150" y="375" fontFamily="Arial,sans-serif" fontWeight="900" fontSize="36" textAnchor="middle" fill="white" letterSpacing="2">SOLUTIONS</text>
           </svg>
         </div>
 
-        <div className="relative z-10">
+        <div className="relative z-20">
           <div className="flex items-center gap-3 px-4 py-3 border-b border-[#333]">
             <div className="w-8 h-8 rounded-full bg-[#f48221] flex items-center justify-center flex-shrink-0">
               <span className="text-[#1d1d1b] font-black text-sm">S</span>
@@ -124,7 +124,7 @@ export default function RankingPage() {
                     : "text-[#aaaaaa] hover:text-white"
                 )}
               >
-                Trainis &amp; Closers
+                Trainees &amp; Closers
               </button>
               <button
                 onClick={() => setActiveTab("setters")}
@@ -177,8 +177,8 @@ export default function RankingPage() {
               if (rank === 1) rankBg = "border-l-4";
               else if (rank === 2) rankBg = "border-l-4";
               else if (rank === 3) rankBg = "border-l-4";
-              const rankBorderColor = rank === 1 ? "#EFBF04" : rank === 2 ? "#C4C4C4" : rank === 3 ? "#CE8946" : undefined;
-              const rankBgColor = rank === 1 ? "rgba(239,191,4,0.18)" : rank === 2 ? "rgba(196,196,196,0.18)" : rank === 3 ? "rgba(206,137,70,0.18)" : undefined;
+              const rankBorder = rank === 1 ? "#EFBF04" : rank === 2 ? "#C4C4C4" : rank === 3 ? "#CE8946" : undefined;
+              const rankBgInline = rank === 1 ? "rgba(239,191,4,0.35)" : rank === 2 ? "rgba(196,196,196,0.35)" : rank === 3 ? "rgba(206,137,70,0.35)" : undefined;
 
               return (
                 <Link
@@ -190,7 +190,7 @@ export default function RankingPage() {
                     isTop3 ? rankBg : "bg-transparent",
                     isCurrentUser && !isTop3 && "bg-[#2a2a28] border-l-2 border-l-[#f48221]"
                   )}
-                  style={isTop3 ? { backgroundColor: rankBgColor, borderLeftColor: rankBorderColor } : undefined}
+                  style={isTop3 ? { backgroundColor: rankBgInline, borderLeftColor: rankBorder, backgroundClip: "padding-box" } : undefined}
                 >
                   <div className="w-[60px] flex items-center justify-center flex-shrink-0">
                     {isTop3 ? (
