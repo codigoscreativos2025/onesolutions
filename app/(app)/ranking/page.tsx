@@ -92,7 +92,7 @@ export default function RankingPage() {
       </button>
 
       <div className="bg-[#1d1d1b] border-2 border-[#f48221] rounded-lg overflow-hidden shadow-[0_10px_30px_rgba(244,130,33,0.15)] relative">
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-10" style={{ opacity: 0.15 }}>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-30" style={{ opacity: 0.12 }}>
           <div style={{ background: "radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)", width: "50vw", height: "50vw", maxWidth: "500px", maxHeight: "500px", position: "absolute" }} />
           <svg viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg" style={{ width: "35vw", maxWidth: "400px" }}>
             <polygon points="30,100 150,30 270,100 270,120 150,50 30,120" fill="#f48221"/>
@@ -191,7 +191,7 @@ export default function RankingPage() {
                     isTop3 ? rankBg : "bg-transparent",
                     isCurrentUser && !isTop3 && "bg-[#2a2a28] border-l-2 border-l-[#f48221]"
                   )}
-                  style={isTop3 ? { backgroundColor: rankBgInline, borderLeftColor: rankBorder, backgroundClip: "padding-box" } : undefined}
+                  style={isTop3 ? { background: `linear-gradient(to right, ${rankBgInline || '#EFBF04'} 0%, transparent 85%)`, borderLeftColor: rankBorder } : undefined}
                 >
                   <div className="w-[60px] flex items-center justify-center flex-shrink-0">
                     {isTop3 ? (

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, FileText, X, Download, PenLine, Check, ChevronDown, ChevronUp, Pencil } from "lucide-react";
+import { Loader2, FileText, X, Download, PenLine, Check, ChevronDown, ChevronUp, Pencil, Send } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SignatureCanvas } from "./SignatureCanvas";
 import { toast } from "sonner";
@@ -45,6 +45,9 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
   const [editMode, setEditMode] = useState(false);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [regenerating, setRegenerating] = useState(false);
+  const [showSendEmail, setShowSendEmail] = useState(false);
+  const [sendToEmail, setSendToEmail] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const contractContentRef = useRef<HTMLDivElement>(null);
 
@@ -243,6 +246,112 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
     } finally {
       replacements.forEach(r => { r.element.innerHTML = r.originalHTML; });
       setGeneratingPdf(false);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!sendToEmail) {
+      toast.error("Ingresa un email para enviar");
+      return;
+    }
+    if (!contentRef.current || !contractContentRef.current || !activeContract) return;
+    setSendingEmail(true);
+
+    const sigFieldDefs = activeContract.fields?.filter(f => f.type === "signature") || [];
+    const lineDivs = contractContentRef.current.querySelectorAll(".signature-line");
+    const replacements: Array<{ element: Element; originalHTML: string }> = [];
+
+    lineDivs.forEach((lineDiv) => {
+      const block = lineDiv.closest(".signature-block");
+      if (!block) return;
+      const labelEl = block.querySelector(".signature-label");
+      const labelText = labelEl?.textContent?.trim().toLowerCase() || "";
+      const matchingField = sigFieldDefs.find(f =>
+        labelText.includes(f.label.toLowerCase()) || f.label.toLowerCase().includes(labelText)
+      );
+      if (matchingField && signatures[matchingField.key]) {
+        replacements.push({ element: lineDiv, originalHTML: lineDiv.innerHTML });
+        lineDiv.innerHTML = `<img src="${signatures[matchingField.key]}" alt="Signature" style="max-width:100%;height:35px;object-fit:contain;" />`;
+      }
+    });
+
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
+
+      const contractEl = contractContentRef.current;
+      const originalHeight = contractEl.style.height;
+      const originalOverflow = contractEl.style.overflow;
+      const originalMaxHeight = contractEl.style.maxHeight;
+
+      contractEl.style.height = "auto";
+      contractEl.style.overflow = "visible";
+      contractEl.style.maxHeight = "none";
+
+      await document.fonts.ready;
+      await new Promise(r => setTimeout(r, 200));
+
+      const canvas = await html2canvas(contractEl, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+      });
+
+      contractEl.style.height = originalHeight;
+      contractEl.style.overflow = originalOverflow;
+      contractEl.style.maxHeight = originalMaxHeight;
+
+      const imgData = canvas.toDataURL("image/png");
+      const imgWidth = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      const pdf = new jsPDF("p", "mm", "a4");
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= 297;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= 297;
+      }
+
+      const arrayBuffer = pdf.output("arraybuffer");
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const pdfBase64 = btoa(binary);
+
+      const res = await fetch("/api/email/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: sendToEmail,
+          subject: `Contrato - Visita #${visitId}`,
+          html: `<p>Adjunto encontrara el contrato de la visita #${visitId}.</p>`,
+          pdfBase64,
+          pdfFilename: `contrato_${visitId}.pdf`,
+        }),
+      });
+
+      if (res.ok) {
+        toast.success("Contrato enviado por email");
+        setShowSendEmail(false);
+      } else {
+        toast.error("Error al enviar el email");
+      }
+    } catch (error) {
+      console.error("Error sending email:", error);
+      toast.error("Error al enviar el email");
+    } finally {
+      replacements.forEach(r => { r.element.innerHTML = r.originalHTML; });
+      setSendingEmail(false);
     }
   };
 
@@ -495,6 +604,48 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
                         )}
                         PDF
                       </Button>
+                      {showSendEmail ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            value={sendToEmail}
+                            onChange={(e) => setSendToEmail(e.target.value)}
+                            placeholder="Email destinatario"
+                            className="px-3 py-1.5 rounded-lg bg-white border border-outline-variant focus:border-primary outline-none text-sm w-48"
+                          />
+                          <Button
+                            onClick={handleSendEmail}
+                            disabled={sendingEmail}
+                            className="gap-2 text-sm"
+                            size="sm"
+                          >
+                            {sendingEmail ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Send className="w-4 h-4" />
+                            )}
+                            Enviar
+                          </Button>
+                          <button
+                            onClick={() => setShowSendEmail(false)}
+                            className="p-1.5 rounded-full hover:bg-surface-container-highest transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setSendToEmail("");
+                            setShowSendEmail(true);
+                          }}
+                          className="gap-2 text-sm"
+                          size="sm"
+                        >
+                          <Send className="w-4 h-4" />
+                          Enviar por Email
+                        </Button>
+                      )}
                     </div>
                     {signMode && signatureFields.length > 0 && (
                       <Button

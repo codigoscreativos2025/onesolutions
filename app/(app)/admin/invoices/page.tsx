@@ -4,7 +4,8 @@ import { useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Plus, Trash2, FileDown, Eye } from "lucide-react";
+import { Plus, Trash2, FileDown, Eye, Send } from "lucide-react";
+import { toast } from "sonner";
 
 interface Item {
   id: number;
@@ -30,6 +31,9 @@ export default function AdminInvoicesPage() {
   const [fromEmail, setFromEmail] = useState("payments@onesolutionscompanies.com");
   const [fromAddress, setFromAddress] = useState("2419 Lake Orange Dr Suite 5, Orlando FL 32837");
   const [paid, setPaid] = useState(0);
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [showEmailInput, setShowEmailInput] = useState(false);
+  const [sendToEmail, setSendToEmail] = useState("");
   const [items, setItems] = useState<Item[]>([
     { id: 1, description: "Servicio de instalacion", detail: "Incluye materiales y mano de obra", quantity: 1, unitPrice: 0, isDiscount: false },
   ]);
@@ -66,6 +70,58 @@ export default function AdminInvoicesPage() {
     pdf.save(`Invoice_${invoiceNum}.pdf`);
   };
 
+  const generatePdfBase64 = async (): Promise<string> => {
+    const { default: jsPDF } = await import("jspdf");
+    const { default: html2canvas } = await import("html2canvas");
+    if (!previewRef.current) throw new Error("No preview");
+    const canvas = await html2canvas(previewRef.current, { scale: 2, backgroundColor: "#ffffff" });
+    const img = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("p", "mm", "a4");
+    const w = pdf.internal.pageSize.getWidth();
+    const h = (canvas.height * w) / canvas.width;
+    pdf.addImage(img, "PNG", 0, 0, w, h);
+    const arrayBuffer = pdf.output("arraybuffer");
+    const bytes = new Uint8Array(arrayBuffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  };
+
+  const handleSendEmail = async () => {
+    const email = sendToEmail || billToEmail;
+    if (!email) {
+      toast.error("Ingresa un email para enviar");
+      return;
+    }
+    setSendingEmail(true);
+    try {
+      const pdfBase64 = await generatePdfBase64();
+      const res = await fetch("/api/email/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: email,
+          subject: `Factura ${invoiceNum}`,
+          html: `<p>Adjunto encontrara la factura ${invoiceNum}.</p>`,
+          pdfBase64,
+          pdfFilename: `Factura_${invoiceNum}.pdf`,
+        }),
+      });
+      if (res.ok) {
+        toast.success("Factura enviada por email");
+        setShowEmailInput(false);
+      } else {
+        toast.error("Error al enviar el email");
+      }
+    } catch {
+      toast.error("Error al enviar el email");
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
   if (session?.user?.role !== "ADMIN") {
     return <div className="p-8 text-center">Acceso restringido a administradores.</div>;
   }
@@ -77,10 +133,45 @@ export default function AdminInvoicesPage() {
           <h1 className="text-3xl font-bold">Facturas / Invoices</h1>
           <p className="text-on-surface-variant">Genera facturas personalizadas y descargalas en PDF</p>
         </div>
-        <Button onClick={downloadPDF} className="gap-2">
-          <FileDown className="w-5 h-5" />
-          Descargar PDF
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={downloadPDF} className="gap-2">
+            <FileDown className="w-5 h-5" />
+            Descargar PDF
+          </Button>
+          {showEmailInput ? (
+            <div className="flex items-center gap-2">
+              <Input
+                value={sendToEmail}
+                onChange={(e) => setSendToEmail(e.target.value)}
+                placeholder={billToEmail || "Email destinatario"}
+                className="h-10 w-64 text-sm"
+              />
+              <Button onClick={handleSendEmail} disabled={sendingEmail} className="gap-2">
+                {sendingEmail ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+                Enviar
+              </Button>
+              <Button variant="outline" onClick={() => setShowEmailInput(false)} size="sm">
+                X
+              </Button>
+            </div>
+          ) : (
+            <Button
+              onClick={() => {
+                setSendToEmail(billToEmail);
+                setShowEmailInput(true);
+              }}
+              variant="outline"
+              className="gap-2"
+            >
+              <Send className="w-5 h-5" />
+              Enviar por Email
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-4">
