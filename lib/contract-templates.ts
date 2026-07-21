@@ -75,8 +75,8 @@ function techoHtml(data: Record<string, string>): string {
     }
 
     .logo-s {
-        width: 80px;
-        height: 100px;
+        width: 90px;
+        height: 120px;
     }
 
     .brand-text {
@@ -296,19 +296,21 @@ function techoHtml(data: Record<string, string>): string {
 <div class="document-container">
     <div class="header">
         <div class="logo-area">
-            <svg class="logo-s" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
-                <polygon points="5,45 40,15 75,45" fill="#f48221"/>
-                <circle cx="40" cy="50" r="22" fill="none" stroke="#1d1d1b" stroke-width="6"/>
-                <path d="M 35 60 Q 32 45 26 38 Q 32 37 40 50 Z" fill="#4CAF50"/>
-                <path d="M 45 60 Q 48 45 54 38 Q 48 37 40 50 Z" fill="#388E3C"/>
-                <text x="40" y="72" font-family="Arial,sans-serif" font-weight="900" font-size="28" text-anchor="middle" fill="#1d1d1b">S</text>
+            <svg class="logo-s" viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="30,100 150,30 270,100 270,120 150,50 30,120" fill="#f48221"/>
+                <polygon points="210,115 235,95 255,115 230,135" fill="#1d1d1b"/>
+                <circle cx="150" cy="180" r="65" fill="none" stroke="#1d1d1b" stroke-width="18"/>
+                <text x="150" y="228" font-family="Arial,sans-serif" font-weight="900" font-size="130" text-anchor="middle" fill="#1d1d1b">S</text>
+                <g fill="#f48221">
+                    <text x="150" y="325" font-family="Arial Black,Impact,sans-serif" font-weight="900" font-size="95" text-anchor="middle" letter-spacing="1">ONE</text>
+                    <rect x="73" y="240" width="6" height="90" fill="#ffffff"/>
+                    <rect x="135" y="240" width="6" height="90" fill="#ffffff" transform="skewX(-25)"/>
+                    <rect x="228" y="240" width="8" height="90" fill="#ffffff"/>
+                </g>
+                <text x="150" y="375" font-family="Arial,sans-serif" font-weight="900" font-size="36" text-anchor="middle" fill="#000000" letter-spacing="2">SOLUTIONS</text>
             </svg>
-            <div class="brand-text">
-                <span class="brand-one">ONE</span>
-                <span class="brand-solutions">SOLUTIONS</span>
-            </div>
-        </div>
-        <div class="company-info">
+          </div>
+          <div class="company-info">
             <strong>ONE SOLUTIONS COMPANIES LLC</strong>
             2419 Lake Orange Dr<br>
             Suite 120<br>
@@ -532,8 +534,8 @@ function purificadorAguaHtml(data: Record<string, string>): string {
     }
 
     .logo-s {
-        width: 80px;
-        height: 100px;
+        width: 90px;
+        height: 120px;
     }
 
     .brand-text {
@@ -724,19 +726,21 @@ function purificadorAguaHtml(data: Record<string, string>): string {
 <div class="document-container">
     <div class="header">
         <div class="logo-area">
-            <svg class="logo-s" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
-                <polygon points="5,45 40,15 75,45" fill="#f48221"/>
-                <circle cx="40" cy="50" r="22" fill="none" stroke="#1d1d1b" stroke-width="6"/>
-                <path d="M 35 60 Q 32 45 26 38 Q 32 37 40 50 Z" fill="#4CAF50"/>
-                <path d="M 45 60 Q 48 45 54 38 Q 48 37 40 50 Z" fill="#388E3C"/>
-                <text x="40" y="72" font-family="Arial,sans-serif" font-weight="900" font-size="28" text-anchor="middle" fill="#1d1d1b">S</text>
+            <svg class="logo-s" viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="30,100 150,30 270,100 270,120 150,50 30,120" fill="#f48221"/>
+                <polygon points="210,115 235,95 255,115 230,135" fill="#1d1d1b"/>
+                <circle cx="150" cy="180" r="65" fill="none" stroke="#1d1d1b" stroke-width="18"/>
+                <text x="150" y="228" font-family="Arial,sans-serif" font-weight="900" font-size="130" text-anchor="middle" fill="#1d1d1b">S</text>
+                <g fill="#f48221">
+                    <text x="150" y="325" font-family="Arial Black,Impact,sans-serif" font-weight="900" font-size="95" text-anchor="middle" letter-spacing="1">ONE</text>
+                    <rect x="73" y="240" width="6" height="90" fill="#ffffff"/>
+                    <rect x="135" y="240" width="6" height="90" fill="#ffffff" transform="skewX(-25)"/>
+                    <rect x="228" y="240" width="8" height="90" fill="#ffffff"/>
+                </g>
+                <text x="150" y="375" font-family="Arial,sans-serif" font-weight="900" font-size="36" text-anchor="middle" fill="#000000" letter-spacing="2">SOLUTIONS</text>
             </svg>
-            <div class="brand-text">
-                <span class="brand-one">ONE</span>
-                <span class="brand-solutions">SOLUTIONS</span>
-            </div>
-        </div>
-        <div class="company-info">
+          </div>
+          <div class="company-info">
             <strong>ONE SOLUTIONS COMPANIES LLC</strong>
             2419 Lake Orange Dr<br>
             Suite 120<br>

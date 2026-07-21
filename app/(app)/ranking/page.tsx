@@ -165,9 +165,9 @@ export default function RankingPage() {
               const col3 = item.doors;
 
               let rankBg = "";
-              if (rank === 1) rankBg = "bg-yellow-50/80 dark:bg-yellow-900/15 border-l-4 border-yellow-400";
-              else if (rank === 2) rankBg = "bg-gray-50/80 dark:bg-gray-800/20 border-l-4 border-gray-300";
-              else if (rank === 3) rankBg = "bg-orange-50/80 dark:bg-orange-900/15 border-l-4 border-orange-400";
+              if (rank === 1) rankBg = "bg-yellow-400/25 border-l-4 border-yellow-500";
+              else if (rank === 2) rankBg = "bg-gray-200/25 border-l-4 border-gray-400";
+              else if (rank === 3) rankBg = "bg-amber-600/25 border-l-4 border-amber-700";
 
               return (
                 <Link
@@ -204,10 +204,10 @@ export default function RankingPage() {
                   )}
 
                   <div className="flex flex-col justify-center px-[15px] py-[10px] flex-1 min-w-0">
-                    <span className="text-[13px] font-normal text-[#aaaaaa] uppercase tracking-[1px] italic leading-tight">
+                    <span className={cn("text-[13px] font-normal uppercase tracking-[1px] italic leading-tight", isTop3 ? "text-[#1d1d1b]" : "text-[#aaaaaa]")}>
                       {firstName}
                     </span>
-                    <span className="text-[22px] font-black uppercase tracking-[0.5px] text-white leading-tight max-sm:text-[16px]">
+                    <span className={cn("text-[22px] font-black uppercase tracking-[0.5px] leading-tight max-sm:text-[16px]", isTop3 ? "text-[#1d1d1b]" : "text-white")}>
                       {lastName || firstName}
                     </span>
                   </div>
@@ -215,15 +215,15 @@ export default function RankingPage() {
                   <div className="flex items-stretch flex-shrink-0 ml-auto">
                     <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
                       <CheckCircle className="w-4 h-4 text-green-400 mb-1" />
-                      <span className="text-sm font-bold text-white">{col1}</span>
+                      <span className={cn("text-sm font-bold", isTop3 ? "text-[#1d1d1b]" : "text-white")}>{col1}</span>
                     </div>
                     <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
                       <UserPlus className="w-4 h-4 text-blue-400 mb-1" />
-                      <span className="text-sm font-bold text-white">{col2}</span>
+                      <span className={cn("text-sm font-bold", isTop3 ? "text-[#1d1d1b]" : "text-white")}>{col2}</span>
                     </div>
                     <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
                       <DoorOpen className="w-4 h-4 text-orange-400 mb-1" />
-                      <span className="text-sm font-bold text-white">{col3}</span>
+                      <span className={cn("text-sm font-bold", isTop3 ? "text-[#1d1d1b]" : "text-white")}>{col3}</span>
                     </div>
                   </div>
                 </Link>

@@ -165,7 +165,7 @@ export default function AdminObjectionsPage() {
           <Users className={`w-6 h-6 ${activeTab === "setter" ? "text-primary" : "text-on-surface-variant"}`} />
           <div className="text-left">
             <span className="font-semibold text-on-surface text-sm block">
-              Objeciones Traini
+              Objeciones Trainee
             </span>
             <span className="text-xs text-on-surface-variant">
               {setterObjections.length} configuradas
@@ -234,7 +234,7 @@ export default function AdminObjectionsPage() {
 
       {currentObjections.length === 0 && (
         <div className="text-center py-12 text-on-surface-variant">
-          <p>No hay objeciones configuradas para {activeTab === "setter" ? "trainis" : "closers"}</p>
+          <p>No hay objeciones configuradas para {activeTab === "setter" ? "trainees" : "closers"}</p>
         </div>
       )}
 
@@ -242,7 +242,7 @@ export default function AdminObjectionsPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingObjection ? "Editar Objeción" : `Nueva Objeción ${activeTab === "setter" ? "Traini" : "Closer"}`}
+        title={editingObjection ? "Editar Objeción" : `Nueva Objeción ${activeTab === "setter" ? "Trainee" : "Closer"}`}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input

@@ -243,7 +243,7 @@ export default function AdminUsersPage() {
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case "SETTER": return "Traini";
+      case "SETTER": return "Trainee";
       case "SETTER_JR": return "Setter";
       case "CLOSER": return "Closer";
       case "PARTNER": return "Partner";
@@ -329,7 +329,7 @@ export default function AdminUsersPage() {
             className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
           >
             <option value="all">Todos los roles</option>
-            <option value="SETTER">Traini</option>
+            <option value="SETTER">Trainee</option>
             <option value="SETTER_JR">Setter</option>
             <option value="CLOSER">Closer</option>
             <option value="PARTNER">Partner</option>
@@ -524,7 +524,7 @@ export default function AdminUsersPage() {
             value={formData.role}
             onChange={(e) => setFormData({ ...formData, role: e.target.value })}
             options={[
-              { value: "SETTER", label: "Traini" },
+              { value: "SETTER", label: "Trainee" },
               { value: "SETTER_JR", label: "Setter" },
               { value: "CLOSER", label: "Closer" },
               { value: "PARTNER", label: "Partner" },

@@ -225,7 +225,7 @@ export default function AdminCRMPage() {
 
   const handleExport = () => {
     const csv = [
-      ['ID', 'Dirección', 'Traini', 'Closer', 'Estado', 'Fecha Creación', 'Última Actividad', 'Días Restantes', 'Proyectos', 'Objeciones Traini', 'Objeciones Closer', 'Cliente', 'Fecha Cierre', 'Método Pago'].join(','),
+      ['ID', 'Dirección', 'Trainee', 'Closer', 'Estado', 'Fecha Creación', 'Última Actividad', 'Días Restantes', 'Proyectos', 'Objeciones Trainee', 'Objeciones Closer', 'Cliente', 'Fecha Cierre', 'Método Pago'].join(','),
       ...filteredVisits.map((v) => [
         v.id,
         v.parcel.address,
@@ -302,7 +302,7 @@ export default function AdminCRMPage() {
               <Input
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Buscar por dirección, traini o closer..."
+                placeholder="Buscar por dirección, trainee o closer..."
                 className="pl-10"
               />
             </div>
@@ -325,7 +325,7 @@ export default function AdminCRMPage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Traini</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Trainee</label>
             <select
               value={filterSetter}
               onChange={(e) => setFilterSetter(e.target.value)}
@@ -363,7 +363,7 @@ export default function AdminCRMPage() {
               className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
             >
               <option value="all">Todos</option>
-              <option value="setter">Objeciones Traini</option>
+              <option value="setter">Objeciones Trainee</option>
               <option value="closer">Objeciones Closer</option>
             </select>
           </div>
@@ -415,7 +415,7 @@ export default function AdminCRMPage() {
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Dirección</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Traini</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trainee</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Closer</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Partner</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
