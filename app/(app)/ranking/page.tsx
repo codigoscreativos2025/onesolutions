@@ -217,10 +217,10 @@ export default function RankingPage() {
                   )}
 
                   <div className="flex flex-col justify-center px-[15px] py-[10px] flex-1 min-w-0">
-                    <span className={cn("text-[13px] font-normal uppercase tracking-[1px] italic leading-tight", isTop3 ? "text-[#1d1d1b]" : "text-[#aaaaaa]")}>
+                    <span className="text-[13px] font-normal text-white uppercase tracking-[1px] italic leading-tight">
                       {firstName}
                     </span>
-                    <span className={cn("text-[22px] font-black uppercase tracking-[0.5px] leading-tight max-sm:text-[16px]", isTop3 ? "text-[#1d1d1b]" : "text-white")}>
+                    <span className="text-[22px] font-black text-white uppercase tracking-[0.5px] leading-tight max-sm:text-[16px]">
                       {lastName || firstName}
                     </span>
                   </div>
@@ -228,15 +228,15 @@ export default function RankingPage() {
                   <div className="flex items-stretch flex-shrink-0 ml-auto">
                     <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
                       <CheckCircle className="w-4 h-4 text-green-400 mb-1" />
-                      <span className={cn("text-sm font-bold", isTop3 ? "text-[#1d1d1b]" : "text-white")}>{col1}</span>
+                      <span className="text-sm font-bold text-white">{col1}</span>
                     </div>
                     <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
                       <UserPlus className="w-4 h-4 text-blue-400 mb-1" />
-                      <span className={cn("text-sm font-bold", isTop3 ? "text-[#1d1d1b]" : "text-white")}>{col2}</span>
+                      <span className="text-sm font-bold text-white">{col2}</span>
                     </div>
                     <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
                       <DoorOpen className="w-4 h-4 text-orange-400 mb-1" />
-                      <span className={cn("text-sm font-bold", isTop3 ? "text-[#1d1d1b]" : "text-white")}>{col3}</span>
+                      <span className="text-sm font-bold text-white">{col3}</span>
                     </div>
                   </div>
                 </Link>

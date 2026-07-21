@@ -4,7 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "@/lib/locale-context";
-import { DoorOpen, Mail, Lock, Loader2 } from "lucide-react";
+import { Mail, Lock, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const { t } = useLocale();
@@ -42,8 +42,20 @@ export default function LoginPage() {
 
       <div className="w-full max-w-md glass-panel rounded-3xl p-8 shadow-2xl relative z-10">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-primary text-on-primary flex items-center justify-center mb-4 shadow-lg shadow-primary/20">
-            <DoorOpen className="w-8 h-8" />
+          <div className="mb-4">
+            <svg viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg" className="w-24 h-32 mx-auto">
+              <polygon points="30,100 150,30 270,100 270,120 150,50 30,120" fill="#f48221"/>
+              <polygon points="210,115 235,95 255,115 230,135" fill="#1d1d1b"/>
+              <circle cx="150" cy="180" r="65" fill="none" stroke="#1d1d1b" strokeWidth="18"/>
+              <text x="150" y="228" fontFamily="Arial,sans-serif" fontWeight="900" fontSize="130" textAnchor="middle" fill="#1d1d1b">S</text>
+              <g fill="#f48221">
+                <text x="150" y="325" fontFamily="Arial Black,Impact,sans-serif" fontWeight="900" fontSize="95" textAnchor="middle" letterSpacing="1">ONE</text>
+                <rect x="73" y="240" width="6" height="90" fill="#ffffff"/>
+                <rect x="135" y="240" width="6" height="90" fill="#ffffff" transform="skewX(-25)"/>
+                <rect x="228" y="240" width="8" height="90" fill="#ffffff"/>
+              </g>
+              <text x="150" y="375" fontFamily="Arial,sans-serif" fontWeight="900" fontSize="36" textAnchor="middle" fill="#000000" letterSpacing="2">SOLUTIONS</text>
+            </svg>
           </div>
           <h1 className="font-display text-3xl font-bold text-on-surface">
             One Solutions
