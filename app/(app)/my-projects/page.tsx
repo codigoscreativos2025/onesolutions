@@ -280,7 +280,7 @@ export default function MyProjectsPage() {
                       {getStageBadge(visit)}
                     </div>
                     <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                      <span>Traini:{' '}
+                      <span>Trainee:{' '}
                         <Link href={`/profile/${visit.setter.id}`} className="hover:underline">
                           {visit.setter.name}
                         </Link>
@@ -331,7 +331,7 @@ export default function MyProjectsPage() {
 
                 {visit.objections.length > 0 && (
                   <div className="mb-2">
-                    <span className="text-xs font-medium text-gray-500">Objeciones Traini: </span>
+                    <span className="text-xs font-medium text-gray-500">Objeciones Trainee: </span>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {visit.objections.map((o, idx) => (
                         <span key={idx} className="px-2 py-0.5 rounded text-xs font-medium" style={{ backgroundColor: o.objection.color + '20', color: o.objection.color }}>{o.objection.name}</span>

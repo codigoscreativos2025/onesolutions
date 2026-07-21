@@ -271,7 +271,7 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                     <div className="flex items-center gap-2 text-sm">
                       <User className="w-4 h-4 text-gray-500" />
-                      <span className="text-gray-600 dark:text-gray-400">Traini:</span>
+                      <span className="text-gray-600 dark:text-gray-400">Trainee:</span>
                       <Link href={`/profile/${visit.setter.id}`} className="font-medium hover:underline">{visit.setter.name}</Link>
                     </div>
                     {visit.closer && (
@@ -287,7 +287,7 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
                   {visit.objections.length > 0 && (
                     <div className="mb-3">
                       <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                        Objeciones de Traini:
+                        Objeciones de Trainee:
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {visit.objections.map((obj, idx) => (

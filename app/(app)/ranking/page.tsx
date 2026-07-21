@@ -92,19 +92,20 @@ export default function RankingPage() {
       </button>
 
       <div className="bg-[#1d1d1b] border-2 border-[#f48221] rounded-lg overflow-hidden shadow-[0_10px_30px_rgba(244,130,33,0.15)] relative">
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-10" style={{ opacity: 0.12 }}>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-10" style={{ opacity: 0.15 }}>
+          <div style={{ background: "radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)", width: "50vw", height: "50vw", maxWidth: "500px", maxHeight: "500px", position: "absolute" }} />
           <svg viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg" style={{ width: "35vw", maxWidth: "400px" }}>
-            <polygon points="30,100 150,30 270,100 270,120 150,50 30,120" fill="white"/>
-            <polygon points="210,115 235,95 255,115 230,135" fill="white"/>
-            <circle cx="150" cy="180" r="65" fill="none" stroke="white" strokeWidth="18"/>
-            <text x="150" y="228" fontFamily="Arial,sans-serif" fontWeight="900" fontSize="130" textAnchor="middle" fill="white">S</text>
-            <g fill="white">
+            <polygon points="30,100 150,30 270,100 270,120 150,50 30,120" fill="#f48221"/>
+            <polygon points="210,115 235,95 255,115 230,135" fill="#1d1d1b"/>
+            <circle cx="150" cy="180" r="65" fill="none" stroke="#ddd" strokeWidth="18"/>
+            <text x="150" y="228" fontFamily="Arial,sans-serif" fontWeight="900" fontSize="130" textAnchor="middle" fill="#ddd">S</text>
+            <g fill="#f48221">
               <text x="150" y="325" fontFamily="Arial Black,Impact,sans-serif" fontWeight="900" fontSize="95" textAnchor="middle" letterSpacing="1">ONE</text>
               <rect x="73" y="240" width="6" height="90" fill="#1d1d1b"/>
               <rect x="135" y="240" width="6" height="90" fill="#1d1d1b" transform="skewX(-25)"/>
               <rect x="228" y="240" width="8" height="90" fill="#1d1d1b"/>
             </g>
-            <text x="150" y="375" fontFamily="Arial,sans-serif" fontWeight="900" fontSize="36" textAnchor="middle" fill="white" letterSpacing="2">SOLUTIONS</text>
+            <text x="150" y="375" fontFamily="Arial,sans-serif" fontWeight="900" fontSize="36" textAnchor="middle" fill="#ddd" letterSpacing="2">SOLUTIONS</text>
           </svg>
         </div>
 
@@ -178,7 +179,7 @@ export default function RankingPage() {
               else if (rank === 2) rankBg = "border-l-4";
               else if (rank === 3) rankBg = "border-l-4";
               const rankBorder = rank === 1 ? "#EFBF04" : rank === 2 ? "#C4C4C4" : rank === 3 ? "#CE8946" : undefined;
-              const rankBgInline = rank === 1 ? "rgba(239,191,4,0.35)" : rank === 2 ? "rgba(196,196,196,0.35)" : rank === 3 ? "rgba(206,137,70,0.35)" : undefined;
+              const rankBgInline = rank === 1 ? "#EFBF04" : rank === 2 ? "#C4C4C4" : rank === 3 ? "#CE8946" : undefined;
 
               return (
                 <Link

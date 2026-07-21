@@ -581,7 +581,7 @@ export default function CalendarPage() {
                 {selectedSlot.visit.parcel.address}
               </p>
               <p className="text-sm text-on-surface-variant">
-                Traini:{' '}
+                Trainee:{' '}
                 <Link href={`/profile/${selectedSlot.visit.setter.id}`} className="hover:underline">
                   {selectedSlot.visit.setter.name}
                 </Link>

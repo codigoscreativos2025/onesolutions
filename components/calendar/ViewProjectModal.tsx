@@ -294,11 +294,11 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
                 </div>
               </div>
 
-              {/* Información del Traini */}
+              {/* Información del Trainee */}
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                 <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
                   <User className="w-5 h-5" />
-                  Traini
+                  Trainee
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -417,10 +417,10 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
                 </div>
               )}
 
-              {/* Objeciones del Traini */}
+              {/* Objeciones del Trainee */}
               {visit.objections.length > 0 && (
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                  <h3 className="font-semibold text-lg mb-3">Objeciones del Traini</h3>
+                  <h3 className="font-semibold text-lg mb-3">Objeciones del Trainee</h3>
                   <div className="space-y-2">
                     {visit.objections.map((obj, idx) => (
                       <div key={idx} className="flex items-start gap-2">

@@ -334,7 +334,7 @@ export default function PublicProfilePage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
             <User className="w-5 h-5" />
-            Trainis Asignados
+            Trainees Asignados
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {profile.setters.map((setter) => (

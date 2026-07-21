@@ -427,7 +427,7 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
                         {selectedRoom.visit.parcel.address}
                       </p>
                       <p className="text-xs text-on-surface-variant">
-                        Traini:{' '}
+                        Trainee:{' '}
                         <Link href={`/profile/${selectedRoom.visit.setter.id}`} className="hover:underline">
                           {selectedRoom.visit.setter.name}
                         </Link>
@@ -911,7 +911,7 @@ function ProjectInfoPanel({
 
         {visit.objections && visit.objections.length > 0 && (
           <div className="col-span-2 md:col-span-3">
-            <p className="text-xs text-on-surface-variant mb-1">Objeciones (Traini)</p>
+            <p className="text-xs text-on-surface-variant mb-1">Objeciones (Trainee)</p>
             <div className="flex flex-wrap gap-1">
               {visit.objections.map((o, i) => (
                 <span

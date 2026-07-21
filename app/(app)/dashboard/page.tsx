@@ -163,7 +163,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <span className="inline-block px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-wider mb-2">
-              {isAdmin ? "Admin - Vista General de la Empresa" : isSetterJr ? "Setter" : role === "CLOSER" ? "Closer" : "Traini"}
+              {isAdmin ? "Admin - Vista General de la Empresa" : isSetterJr ? "Setter" : role === "CLOSER" ? "Closer" : "Trainee"}
             </span>
             <h1 className="font-headline text-2xl font-bold text-on-surface">
               {isAdmin ? "Panel de Control" : `${t.dashboard.greeting}, ${session?.user?.name}`}
@@ -374,7 +374,7 @@ export default function DashboardPage() {
                           : t.common.none}
                         {role === "CLOSER" && (
                           <>
-                            {' • Traini: '}
+                            {' • Trainee: '}
                             <Link href={`/profile/${apt.setter.id}`} className="hover:underline">
                               {apt.setter.name}
                             </Link>
