@@ -49,6 +49,9 @@ interface UserProfile {
     zelle?: string;
     accountNumber?: string;
     profilePhoto?: string;
+    representativeName?: string;
+    companyName?: string;
+    itinNumber?: string;
   };
 }
 
@@ -72,6 +75,9 @@ export default function PublicProfilePage() {
     accountNumber: '',
     ssn: '',
     routingNumber: '',
+    representativeName: '',
+    companyName: '',
+    itinNumber: '',
   });
   useEffect(() => {
     fetchProfile();
@@ -104,6 +110,9 @@ export default function PublicProfilePage() {
       accountNumber: profile.profile?.accountNumber || '',
       ssn: '',
       routingNumber: '',
+      representativeName: profile.profile?.representativeName || '',
+      companyName: profile.profile?.companyName || '',
+      itinNumber: profile.profile?.itinNumber || '',
     });
     setIsEditModalOpen(true);
   };
@@ -120,6 +129,9 @@ export default function PublicProfilePage() {
         bankName: editForm.bankName,
         zelle: editForm.zelle,
         accountNumber: editForm.accountNumber,
+        representativeName: editForm.representativeName,
+        companyName: editForm.companyName,
+        itinNumber: editForm.itinNumber,
       };
 
       if (editForm.ssn) body.ssn = editForm.ssn;
@@ -231,7 +243,7 @@ export default function PublicProfilePage() {
         </div>
       </div>
 
-      {isOwnProfile && profile.profile && (
+      {(isOwnProfile || session?.user?.role === 'ADMIN') && profile.profile && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
           <h2 className="text-xl font-bold mb-4">Mi Informaci&oacute;n</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -275,6 +287,24 @@ export default function PublicProfilePage() {
               <div>
                 <p className="text-sm text-gray-500">N&uacute;mero de Ruta</p>
                 <p className="font-medium">{maskRouting(profile.profile.routingNumber)}</p>
+              </div>
+            )}
+            {profile.profile.representativeName && (
+              <div>
+                <p className="text-sm text-gray-500">Nombre del Representante</p>
+                <p className="font-medium">{profile.profile.representativeName}</p>
+              </div>
+            )}
+            {profile.profile.companyName && (
+              <div>
+                <p className="text-sm text-gray-500">Nombre de la Compa&ntilde;&iacute;a</p>
+                <p className="font-medium">{profile.profile.companyName}</p>
+              </div>
+            )}
+            {profile.profile.itinNumber && (
+              <div>
+                <p className="text-sm text-gray-500">ITIN Number</p>
+                <p className="font-medium">{profile.profile.itinNumber}</p>
               </div>
             )}
           </div>
@@ -425,6 +455,21 @@ export default function PublicProfilePage() {
             value={editForm.routingNumber}
             onChange={(e) => setEditForm({ ...editForm, routingNumber: e.target.value })}
             placeholder={profile.profile?.routingNumber ? maskRouting(profile.profile.routingNumber) : ''}
+          />
+          <Input
+            label="Nombre del Representante"
+            value={editForm.representativeName}
+            onChange={(e) => setEditForm({ ...editForm, representativeName: e.target.value })}
+          />
+          <Input
+            label="Nombre de la Compañía"
+            value={editForm.companyName}
+            onChange={(e) => setEditForm({ ...editForm, companyName: e.target.value })}
+          />
+          <Input
+            label="ITIN Number"
+            value={editForm.itinNumber}
+            onChange={(e) => setEditForm({ ...editForm, itinNumber: e.target.value })}
           />
 
           <div className="flex gap-3 pt-4">

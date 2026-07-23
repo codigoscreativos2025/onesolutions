@@ -8,9 +8,38 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Mail, Send, Eye, Users, Loader2, RefreshCw } from "lucide-react";
 
-type TemplateKey = keyof typeof emailTemplates;
+type TemplateKey = keyof typeof emailTemplates | "custom";
+
+function wrapCustomHtml(body: string): string {
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f4f4f6;font-family:Arial,Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f6;padding:40px 0;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+<tr><td style="padding:32px 40px;text-align:center;">
+<svg viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg" style="width:80px;height:106px;">
+<polygon points="30,100 150,30 270,100 270,120 150,50 30,120" fill="#f48221"/>
+<polygon points="210,115 235,95 255,115 230,135" fill="#1d1d1b"/>
+<circle cx="150" cy="180" r="65" fill="none" stroke="#1d1d1b" stroke-width="18"/>
+<text x="150" y="228" font-family="Arial,sans-serif" font-weight="900" font-size="130" text-anchor="middle" fill="#1d1d1b">S</text>
+<g fill="#f48221"><text x="150" y="325" font-family="Arial Black,Impact,sans-serif" font-weight="900" font-size="95" text-anchor="middle" letter-spacing="1">ONE</text>
+<rect x="73" y="240" width="6" height="90" fill="#fff"/>
+<rect x="135" y="240" width="6" height="90" fill="#fff" transform="skewX(-25)"/>
+<rect x="228" y="240" width="8" height="90" fill="#fff"/></g>
+<text x="150" y="375" font-family="Arial,sans-serif" font-weight="900" font-size="36" text-anchor="middle" fill="#000" letter-spacing="2">SOLUTIONS</text>
+</svg>
+</td></tr>
+<tr><td style="padding:0 40px 32px;">${body}</td></tr>
+<tr><td style="padding:24px 40px;background:#1d1d1b;text-align:center;">
+<p style="margin:0;color:#aaa;font-size:11px;">&copy; ${new Date().getFullYear()} One Solutions Companies. Todos los derechos reservados.</p>
+</td></tr></table></td></tr></table></body></html>`;
+}
 
 const templateMeta: { key: TemplateKey; label: string; desc: string; fields: { name: string; label: string; placeholder: string }[] }[] = [
+  {
+    key: "custom", label: "Personalizado", desc: "Escribe tu propio asunto y contenido sin plantilla predefinida.",
+    fields: [],
+  },
   {
     key: "onboarding", label: "Bienvenida (Onboarding)", desc: "Se envía al crear un usuario para que configure su contraseña.",
     fields: [
@@ -90,6 +119,8 @@ export default function AdminEmailsPage() {
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [recipients, setRecipients] = useState<UserRecipient[]>([]);
   const [sending, setSending] = useState(false);
+  const [customSubject, setCustomSubject] = useState("");
+  const [customBody, setCustomBody] = useState("");
 
   const activeMeta = templateMeta.find((m) => m.key === selectedTemplate)!;
   const roles = ["ALL", "ADMIN", "SETTER", "SETTER_JR", "CLOSER", "PARTNER"];
@@ -123,19 +154,28 @@ export default function AdminEmailsPage() {
   const selectAll = () => setRecipients([...filteredUsers]);
   const clearAll = () => setRecipients([]);
 
-  const templateFn = emailTemplates[selectedTemplate];
+  const isCustom = selectedTemplate === "custom";
+  const templateFn = isCustom ? undefined : emailTemplates[selectedTemplate as keyof typeof emailTemplates];
   const previewHtml = useMemo(() => {
+    if (isCustom) {
+      if (!customBody) return "<p style='color:#888;text-align:center;padding:40px;'>Escribe el contenido del correo...</p>";
+      return wrapCustomHtml(customBody);
+    }
     try {
       const args = activeMeta.fields.map((f) => fieldValues[f.name] || `[${f.label}]`);
       return (templateFn as (...a: string[]) => string)(...args);
     } catch {
       return "<p>Completa los campos para previsualizar</p>";
     }
-  }, [selectedTemplate, fieldValues, activeMeta, templateFn]);
+  }, [isCustom, customBody, selectedTemplate, fieldValues, activeMeta, templateFn]);
 
   const handleSend = async () => {
     if (recipients.length === 0) {
       toast.error("Selecciona al menos un destinatario");
+      return;
+    }
+    if (isCustom && (!customSubject.trim() || !customBody.trim())) {
+      toast.error("Define el asunto y contenido del correo");
       return;
     }
     setSending(true);
@@ -143,12 +183,13 @@ export default function AdminEmailsPage() {
     let failed = 0;
     for (const recipient of recipients) {
       try {
+        const subject = isCustom ? customSubject : `One Solutions - ${activeMeta.label}`;
         const res = await fetch("/api/email/send", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             to: recipient.email,
-            subject: `One Solutions - ${activeMeta.label}`,
+            subject,
             html: previewHtml,
           }),
         });
@@ -207,22 +248,45 @@ export default function AdminEmailsPage() {
             <p className="text-xs text-on-surface-variant mt-2">{activeMeta.desc}</p>
           </div>
 
-          {/* Variable fields */}
+          {/* Variable fields or Custom form */}
           <div className="glass-panel rounded-xl p-4 space-y-3">
             <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider block">
-              Variables
+              {isCustom ? "Correo Personalizado" : "Variables"}
             </label>
-            {activeMeta.fields.map((f) => (
-              <div key={f.name}>
-                <label className="text-xs text-on-surface-variant mb-1 block">{f.label}</label>
-                <Input
-                  value={fieldValues[f.name] || ""}
-                  onChange={(e) => updateField(f.name, e.target.value)}
-                  placeholder={f.placeholder}
-                  className="h-10 text-sm"
-                />
-              </div>
-            ))}
+            {isCustom ? (
+              <>
+                <div>
+                  <label className="text-xs text-on-surface-variant mb-1 block">Asunto</label>
+                  <Input
+                    value={customSubject}
+                    onChange={(e) => setCustomSubject(e.target.value)}
+                    placeholder="Asunto del correo..."
+                    className="h-10 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-on-surface-variant mb-1 block">Contenido (HTML)</label>
+                  <textarea
+                    value={customBody}
+                    onChange={(e) => setCustomBody(e.target.value)}
+                    placeholder="<h2>Hola</h2><p>Escribe tu mensaje aquí...</p>"
+                    className="w-full h-40 rounded-lg bg-surface-container-low border border-outline-variant px-3 py-2 text-sm text-on-surface resize-y font-mono"
+                  />
+                </div>
+              </>
+            ) : (
+              activeMeta.fields.map((f) => (
+                <div key={f.name}>
+                  <label className="text-xs text-on-surface-variant mb-1 block">{f.label}</label>
+                  <Input
+                    value={fieldValues[f.name] || ""}
+                    onChange={(e) => updateField(f.name, e.target.value)}
+                    placeholder={f.placeholder}
+                    className="h-10 text-sm"
+                  />
+                </div>
+              ))
+            )}
           </div>
 
           {/* Recipients */}

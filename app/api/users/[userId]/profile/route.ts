@@ -52,7 +52,7 @@ export async function GET(
           },
         },
         ...(isOwnProfile || isAdmin ? {
-          profile: {
+              profile: {
             select: {
               address: true,
               ssn: true,
@@ -62,6 +62,9 @@ export async function GET(
               zelle: true,
               accountNumber: true,
               profilePhoto: true,
+              representativeName: true,
+              companyName: true,
+              itinNumber: true,
             },
           },
         } : {}),
@@ -169,7 +172,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { phone, address, dateOfBirth, bankName, zelle, accountNumber, ssn, routingNumber } = body;
+    const { phone, address, dateOfBirth, bankName, zelle, accountNumber, ssn, routingNumber, representativeName, companyName, itinNumber } = body;
 
     if (phone !== undefined) {
       await prisma.user.update({
@@ -184,6 +187,9 @@ export async function PATCH(
     if (bankName !== undefined) profileData.bankName = bankName;
     if (zelle !== undefined) profileData.zelle = zelle;
     if (accountNumber !== undefined) profileData.accountNumber = accountNumber;
+    if (representativeName !== undefined) profileData.representativeName = representativeName;
+    if (companyName !== undefined) profileData.companyName = companyName;
+    if (itinNumber !== undefined) profileData.itinNumber = itinNumber;
     if (ssn !== undefined) profileData.ssn = ssn ? encrypt(ssn) : null;
     if (routingNumber !== undefined) profileData.routingNumber = routingNumber ? encrypt(routingNumber) : null;
 

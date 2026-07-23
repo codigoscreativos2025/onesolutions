@@ -385,7 +385,12 @@ model UserProfile {
   routingNumber   String?  // Encriptado
   zelle           String?
   accountNumber   String?
-  
+
+  // Datos de Partner
+  representativeName String?
+  companyName        String?
+  itinNumber         String?  // ITIN number
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
