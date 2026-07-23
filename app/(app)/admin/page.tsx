@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import Link from "next/link";
-import { Users, MessageSquareWarning, BarChart3, MessageCircle, Award, Settings, Briefcase, FileText, ReceiptText } from "lucide-react";
+import { Users, MessageSquareWarning, BarChart3, MessageCircle, Award, Settings, Briefcase, FileText, ReceiptText, Mail } from "lucide-react";
 
 export default async function AdminPage() {
   const session = await auth();
@@ -80,6 +80,13 @@ export default async function AdminPage() {
       href: "/admin/invoices",
       icon: ReceiptText,
       color: "bg-primary/10 text-primary",
+    },
+    {
+      title: "Correos",
+      description: "Envía correos con plantillas predeterminadas a usuarios y clientes",
+      href: "/admin/emails",
+      icon: Mail,
+      color: "bg-secondary/10 text-secondary",
     },
   ];
 
