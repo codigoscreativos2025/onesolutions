@@ -83,12 +83,11 @@ export default function CalendarPage() {
   const [reassignReason, setReassignReason] = useState("");
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [setterAppointments, setSetterAppointments] = useState<Slot[]>([]);
+
+  const isSetter = session?.user?.role === "SETTER";
 
   useEffect(() => {
-    if (session?.user?.role === "SETTER") {
-      router.push("/dashboard");
-      return;
-    }
     fetchData();
   }, [session, router]);
 
@@ -107,9 +106,24 @@ export default function CalendarPage() {
       const appointmentSlots: Slot[] = (appointmentsData || [])
         .filter((apt: { slot: unknown; stage: string }) => !apt.slot && apt.stage !== "CLOSED")
         .map((apt: { id: number; parcel: { id: string; address: string }; setter: { id: number; name: string }; slot?: { startAt: string }; stage: string; projects?: { projectType: { id: number; name: string } }[] }) => ({
-          id: -apt.id, // IDs negativos para diferenciar de slots reales
+          id: -apt.id,
           startAt: apt.slot?.startAt || new Date().toISOString(),
           endAt: apt.slot?.startAt || new Date().toISOString(),
+          isBooked: true,
+          visit: {
+            id: apt.id,
+            parcel: apt.parcel,
+            setter: apt.setter,
+            projects: apt.projects,
+          },
+        }));
+
+      const setterSlots: Slot[] = (appointmentsData || [])
+        .filter((apt: { slot: { startAt: string } | null }) => apt.slot && apt.slot.startAt)
+        .map((apt: { id: number; parcel: { id: string; address: string }; setter: { id: number; name: string }; closer?: { name: string }; slot: { startAt: string; endAt: string }; projects?: { projectType: { id: number; name: string } }[] }) => ({
+          id: apt.id,
+          startAt: apt.slot.startAt,
+          endAt: apt.slot.endAt || apt.slot.startAt,
           isBooked: true,
           visit: {
             id: apt.id,
@@ -122,6 +136,7 @@ export default function CalendarPage() {
       setSlots(slotsData);
       setPatterns(patternsData);
       setAppointments(appointmentSlots);
+      setSetterAppointments(setterSlots);
     } catch (error) {
       console.error(error);
     } finally {
@@ -298,19 +313,23 @@ export default function CalendarPage() {
               <LayoutGrid className="w-5 h-5" />
             </button>
           </div>
-          <Button variant="outline" onClick={() => setIsPatternModalOpen(true)}>
-            <Plus className="w-5 h-5" />
-            Patrón
-          </Button>
-          <Button onClick={() => setIsSlotModalOpen(true)}>
-            <Plus className="w-5 h-5" />
-            Slot
-          </Button>
+          {!isSetter && (
+            <>
+              <Button variant="outline" onClick={() => setIsPatternModalOpen(true)}>
+                <Plus className="w-5 h-5" />
+                Patrón
+              </Button>
+              <Button onClick={() => setIsSlotModalOpen(true)}>
+                <Plus className="w-5 h-5" />
+                Slot
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
       {/* Patrones Semanales */}
-      {patterns.length > 0 && (
+      {!isSetter && patterns.length > 0 && (
         <div className="glass-panel rounded-2xl p-4">
           <div className="flex justify-between items-center mb-3">
             <h3 className="font-semibold text-on-surface">Patrones Semanales</h3>
@@ -349,10 +368,115 @@ export default function CalendarPage() {
         </div>
       )}
 
+      {/* Citas con tus Closers (Trainee) */}
+      {isSetter && (
+        <div className="glass-panel rounded-2xl p-4">
+          <h3 className="font-semibold text-on-surface mb-3 flex items-center gap-2">
+            <CalendarIcon className="w-5 h-5" style={{ color: "#f48221" }} />
+            Citas con tus Closers
+          </h3>
+          {setterAppointments.length === 0 ? (
+            <div className="text-center py-8 text-on-surface-variant">
+              <CalendarIcon className="w-10 h-10 mx-auto mb-3 opacity-40" />
+              <p>No tienes citas agendadas</p>
+              <p className="text-sm mt-1">Cuando envíes una propuesta y se agende con un closer, aparecerá aquí.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {setterAppointments.map((apt) => (
+                <div
+                  key={apt.id}
+                  className="p-4 rounded-xl bg-primary/5 border border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors"
+                  onClick={() => {
+                    setSelectedSlot(apt);
+                    setSelectedVisitId(apt.visit?.id || null);
+                    setIsViewProjectModalOpen(true);
+                  }}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-semibold text-on-surface">
+                        {apt.visit?.parcel.address || "Sin dirección"}
+                      </p>
+                      <p className="text-sm text-on-surface-variant">
+                        {new Date(apt.startAt).toLocaleDateString("es-MX", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </p>
+                      <p className="text-sm font-medium text-primary">
+                        {new Date(apt.startAt).toLocaleTimeString("es-MX", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        })}
+                        {" — "}
+                        {new Date(apt.endAt).toLocaleTimeString("es-MX", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        })}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
+                        Agendada
+                      </span>
+                      {apt.visit?.projects && apt.visit.projects.length > 0 && (
+                        <div className="flex flex-wrap gap-1 justify-end">
+                          {apt.visit.projects.map((p) => (
+                            <span
+                              key={p.projectType.id}
+                              className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full"
+                            >
+                              {p.projectType.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (apt.visit) {
+                          router.push(`/visit/${apt.visit.parcel.id}`);
+                        }
+                      }}
+                    >
+                      <MapPin className="w-4 h-4 mr-1" />
+                      Visitar
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedSlot(apt);
+                        setSelectedVisitId(apt.visit?.id || null);
+                        setIsViewProjectModalOpen(true);
+                      }}
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      Ver Proyecto
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Vista de Calendario Visual */}
       {viewMode === 'calendar' && (
         <VisualCalendar
-          slots={slots}
+          slots={isSetter ? setterAppointments : slots}
+          patterns={isSetter ? undefined : patterns}
           onSlotSelect={(slot) => {
             if (slot.isBooked) {
               handleSlotClick(slot);
@@ -362,7 +486,7 @@ export default function CalendarPage() {
       )}
 
       {/* Vista de Lista */}
-      {viewMode === 'list' && (
+      {viewMode === 'list' && !isSetter && (
         <>
           {/* Slots */}
           {Object.keys(grouped).length === 0 && (
@@ -390,9 +514,10 @@ export default function CalendarPage() {
                 >
                   <div className="flex justify-between items-start">
                     <span className="font-semibold text-on-surface">
-                      {new Date(slot.startAt).toLocaleTimeString([], {
+                      {new Date(slot.startAt).toLocaleTimeString("es-MX", {
                         hour: "2-digit",
                         minute: "2-digit",
+                        hour12: false,
                       })}
                     </span>
                     {!slot.isBooked && (
@@ -553,6 +678,7 @@ export default function CalendarPage() {
             type="time"
             value={hour}
             onChange={(e) => setHour(e.target.value)}
+            step="1"
             required
           />
           <div className="flex items-center gap-2">

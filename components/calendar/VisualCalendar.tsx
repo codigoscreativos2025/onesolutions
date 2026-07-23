@@ -14,7 +14,16 @@ import {
   endOfWeek,
 } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Pencil, Trash2 } from 'lucide-react';
+
+interface WeeklyPattern {
+  id: number;
+  dayOfWeek: number;
+  startHour: number;
+  endHour: number;
+  slotDuration: number;
+  isWorkday: boolean;
+}
 
 interface Slot {
   id: number;
@@ -34,9 +43,12 @@ interface VisualCalendarProps {
   slots: Slot[];
   onSlotSelect?: (slot: Slot) => void;
   selectedSlotId?: number;
+  onSlotEdit?: (slot: Slot) => void;
+  onSlotDelete?: (slot: Slot) => void;
+  patterns?: WeeklyPattern[];
 }
 
-export function VisualCalendar({ slots, onSlotSelect, selectedSlotId }: VisualCalendarProps) {
+export function VisualCalendar({ slots, onSlotSelect, selectedSlotId, onSlotEdit, onSlotDelete, patterns }: VisualCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
@@ -49,6 +61,11 @@ export function VisualCalendar({ slots, onSlotSelect, selectedSlotId }: VisualCa
 
   const getSlotsForDate = (date: Date) => {
     return slots.filter((slot) => isSameDay(new Date(slot.startAt), date));
+  };
+
+  const getPatternsForDay = (date: Date) => {
+    if (!patterns || patterns.length === 0) return [];
+    return patterns.filter((p) => p.dayOfWeek === date.getDay());
   };
 
   const handleDayClick = (day: Date) => {
@@ -100,9 +117,11 @@ export function VisualCalendar({ slots, onSlotSelect, selectedSlotId }: VisualCa
       <div className="grid grid-cols-7 gap-2">
         {days.map((day, index) => {
           const daySlots = getSlotsForDate(day);
+          const dayPatterns = getPatternsForDay(day);
           const isCurrentMonth = isSameMonth(day, currentMonth);
           const isSelected = selectedDate && isSameDay(day, selectedDate);
           const hasAvailableSlots = daySlots.some((slot) => !slot.isBooked);
+          const hasPatterns = dayPatterns.length > 0;
 
           return (
             <div
@@ -124,6 +143,26 @@ export function VisualCalendar({ slots, onSlotSelect, selectedSlotId }: VisualCa
               <div className="text-sm font-medium mb-1">
                 {format(day, 'd')}
               </div>
+              {hasPatterns && (
+                <div className="space-y-0.5 mb-1">
+                  {dayPatterns.map((p) => {
+                    const wInt = Math.max(0, p.endHour - p.startHour);
+                    const width = Math.min(100, wInt * 100 / 14);
+                    return (
+                      <div
+                        key={p.id}
+                        className="h-1 rounded-full"
+                        style={{
+                          width: `${width}%`,
+                          backgroundColor: p.isWorkday ? "#f48221" : "#9CA3AF",
+                          opacity: 0.8,
+                        }}
+                        title={`${p.startHour}:00 - ${p.endHour}:00 (${p.slotDuration}min)`}
+                      />
+                    );
+                  })}
+                </div>
+              )}
               {daySlots.length > 0 && (
                 <div className="text-xs text-gray-600 dark:text-gray-400">
                   {daySlots.filter((s) => !s.isBooked).length} disp.
@@ -167,12 +206,40 @@ export function VisualCalendar({ slots, onSlotSelect, selectedSlotId }: VisualCa
                     <div className="flex items-center justify-center gap-1 mb-1">
                       <Clock className="w-4 h-4" />
                       <span className="font-semibold">
-                        {format(new Date(slot.startAt), 'h:mm a')}
+                        {format(new Date(slot.startAt), 'HH:mm')}
                       </span>
                     </div>
                     <div className="text-xs">
                       {slot.isBooked ? 'Reservado' : 'Disponible'}
                     </div>
+                    {(onSlotEdit || onSlotDelete) && !slot.isBooked && (
+                      <div className="flex gap-1 mt-2 justify-center">
+                        {onSlotEdit && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSlotEdit(slot);
+                            }}
+                            className="p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-600 transition-colors"
+                            title="Editar"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {onSlotDelete && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSlotDelete(slot);
+                            }}
+                            className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900 text-red-600 transition-colors"
+                            title="Eliminar"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </button>
                 );
               })

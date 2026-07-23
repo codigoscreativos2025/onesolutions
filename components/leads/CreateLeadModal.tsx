@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { X, MapPin, User, Phone, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { toast } from 'sonner';
 
 interface CreateLeadModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ interface ProjectType {
 export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalProps) {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
+  const [loadingClosers, setLoadingClosers] = useState(false);
   const [projectTypes, setProjectTypes] = useState<ProjectType[]>([]);
   const [selectedProjects, setSelectedProjects] = useState<number[]>([]);
   const [closers, setClosers] = useState<{id: number, name: string}[]>([]);
@@ -50,8 +52,14 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalP
   };
 
   const fetchClosers = async () => {
+    setLoadingClosers(true);
     try {
-      const res = await fetch('/api/closers');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const res = await fetch('/api/closers', { signal: controller.signal });
+      clearTimeout(timeoutId);
+
       const data = await res.json();
       setClosers(data);
       if (session?.user?.role === 'CLOSER') {
@@ -59,6 +67,10 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalP
       }
     } catch (error) {
       console.error('Error fetching closers:', error);
+      setClosers([]);
+      toast.error('No se pudieron cargar los closers');
+    } finally {
+      setLoadingClosers(false);
     }
   };
 
@@ -79,15 +91,20 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalP
       });
 
       if (res.ok) {
+        toast.success('Lead creado correctamente');
         onSuccess();
         onClose();
         setFormData({ address: '', ownerName: '', phone: '', notes: '' });
         setSelectedProjects([]);
         setSelectedCloserId('');
         setScheduledDate('');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || 'Error al crear lead');
       }
     } catch (error) {
       console.error('Error creating lead:', error);
+      toast.error('Error al crear lead');
     } finally {
       setLoading(false);
     }
@@ -206,9 +223,12 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalP
             <select
               value={selectedCloserId}
               onChange={(e) => setSelectedCloserId(e.target.value)}
+              disabled={loadingClosers}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
-              <option value="">Seleccionar closer...</option>
+              <option value="">
+                {loadingClosers ? 'Cargando closers...' : 'Seleccionar closer...'}
+              </option>
               {closers.map((closer) => (
                 <option key={closer.id} value={closer.id}>
                   {closer.name}

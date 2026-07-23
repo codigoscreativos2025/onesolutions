@@ -41,6 +41,7 @@ model User {
   profile        UserProfile?
   parcelHistory  ParcelVisitHistory[] @relation("ParcelVisitHistory")
   auditLogs      AuditLog[] @relation("AuditLog")
+  commissions    CloserCommission[]
 }
 
 model CloserSlot {
@@ -105,6 +106,7 @@ model Visit {
   chatRoom           ChatRoom?
   slot               CloserSlot?
   projects           VisitProject[]
+  commissions        CloserCommission[]
   projectDetails     ProjectDetails?
   location           VisitLocation?
 }
@@ -439,6 +441,16 @@ model BusinessSettings {
   logoUpdatedAt   DateTime?
   watermarkedEnabled Boolean @default(true)
   updatedAt       DateTime @updatedAt
+}
+
+model CloserCommission {
+  id         Int    @id @default(autoincrement())
+  visitId    Int
+  visit      Visit  @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  userId     Int
+  user       User   @relation(fields: [userId], references: [id])
+  percentage Float
+  role       String @default("CLOSER")
 }
 
 // Etiquetas personalizables para "No Disponible"

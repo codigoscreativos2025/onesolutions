@@ -3,7 +3,7 @@ export const translations = {
   es: {
     roles: {
       ADMIN: "Administrador",
-      SETTER: "Traini",
+      SETTER: "Trainee",
       CLOSER: "Closer",
     },
     nav: {
@@ -145,9 +145,9 @@ export const translations = {
       conversionRates: "Tasas de Conversión",
       doorsToProspects: "Puertas → Prospectos",
       prospectsToClosed: "Prospectos → Cerrados",
-      bestSetter: "Mejor Traini",
+      bestSetter: "Mejor Trainee",
       bestCloser: "Mejor Closer",
-      setterObjections: "Objeciones Traini",
+      setterObjections: "Objeciones Trainee",
       closerObjections: "Objeciones Closer",
       viewDetail: "Ver detalle",
       projectsByType: "Proyectos por Tipo",
@@ -189,7 +189,7 @@ export const translations = {
   en: {
     roles: {
       ADMIN: "Administrator",
-      SETTER: "Traini",
+      SETTER: "Trainee",
       CLOSER: "Closer",
     },
     nav: {
@@ -331,9 +331,9 @@ export const translations = {
       conversionRates: "Conversion Rates",
       doorsToProspects: "Doors → Prospects",
       prospectsToClosed: "Prospects → Closed",
-      bestSetter: "Best Traini",
+      bestSetter: "Best Trainee",
       bestCloser: "Best Closer",
-      setterObjections: "Traini Objections",
+      setterObjections: "Trainee Objections",
       closerObjections: "Closer Objections",
       viewDetail: "View detail",
       projectsByType: "Projects by Type",

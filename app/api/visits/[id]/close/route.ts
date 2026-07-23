@@ -15,7 +15,7 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await request.json();
-  const { notes, billImageUrl, billFileName, action, clientName, clientEmail, clientPhone, projectTypeIds } = body;
+  const { notes, billImageUrl, billFileName, action, clientName, clientEmail, clientPhone, projectTypeIds, commissions } = body;
 
   try {
     const userId = parseInt(session.user.id);
@@ -129,12 +129,20 @@ export async function PATCH(
       }
 
       try {
-        const admins = await prisma.user.findMany({ where: { role: "ADMIN" }, select: { email: true, name: true } });
+        const admins = await prisma.user.findMany({ where: { role: "ADMIN" }, select: { email: true, name: true, id: true } });
         for (const admin of admins) {
           await sendEmail({
             to: admin.email,
             subject: "Proyecto Cerrado - One Solutions",
             html: emailTemplates.projectClosed(admin.name, visit.parcel.address, "Proyecto Cerrado"),
+          });
+          await prisma.notification.create({
+            data: {
+              userId: admin.id,
+              title: "Proyecto Cerrado",
+              body: `Se ha cerrado un proyecto en ${visit.parcel.address}.`,
+              link: `/my-projects`,
+            },
           });
         }
 
@@ -144,9 +152,56 @@ export async function PATCH(
             subject: "Proyecto Cerrado - One Solutions",
             html: emailTemplates.projectProgress(visit.setter.name, visit.parcel.address, "Proyecto Cerrado"),
           });
+          await prisma.notification.create({
+            data: {
+              userId: visit.setter.id,
+              title: "Proyecto Cerrado",
+              body: `Tu proyecto en ${visit.parcel.address} ha sido cerrado.`,
+              link: `/my-projects`,
+            },
+          });
         }
       } catch (emailError) {
         console.error("Error sending close notification emails:", emailError);
+      }
+    }
+
+    if (commissions && Array.isArray(commissions) && commissions.length > 0) {
+      await prisma.closerCommission.deleteMany({
+        where: { visitId: visit.id },
+      });
+
+      const validCommissions = commissions.filter(
+        (c: { userId: number; percentage: number }) =>
+          c.userId && c.percentage !== undefined && c.percentage > 0
+      );
+
+      if (validCommissions.length > 0) {
+        await prisma.closerCommission.createMany({
+          data: validCommissions.map((c: { userId: number; percentage: number }) => ({
+            visitId: visit.id,
+            userId: c.userId,
+            percentage: c.percentage,
+            role: "TRAINEE",
+          })),
+        });
+      }
+
+      const traineeTotal = validCommissions.reduce(
+        (sum: number, c: { percentage: number }) => sum + c.percentage,
+        0
+      );
+      const closerPct = Math.max(0, 100 - traineeTotal);
+      const closerUser = user;
+      if (closerUser && closerPct > 0) {
+        await prisma.closerCommission.create({
+          data: {
+            visitId: visit.id,
+            userId: closerUser.id,
+            percentage: closerPct,
+            role: "CLOSER",
+          },
+        });
       }
     }
 

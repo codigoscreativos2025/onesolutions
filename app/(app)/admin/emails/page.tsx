@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { emailTemplates } from "@/lib/email-templates";
@@ -121,6 +121,7 @@ export default function AdminEmailsPage() {
   const [sending, setSending] = useState(false);
   const [customSubject, setCustomSubject] = useState("");
   const [customBody, setCustomBody] = useState("");
+  const editorRef = useRef<HTMLDivElement>(null);
 
   const activeMeta = templateMeta.find((m) => m.key === selectedTemplate)!;
   const roles = ["ALL", "ADMIN", "SETTER", "SETTER_JR", "CLOSER", "PARTNER"];
@@ -155,6 +156,14 @@ export default function AdminEmailsPage() {
   const clearAll = () => setRecipients([]);
 
   const isCustom = selectedTemplate === "custom";
+
+  useEffect(() => {
+    if (isCustom && editorRef.current) {
+      editorRef.current.innerHTML = customBody;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCustom]);
+
   const templateFn = isCustom ? undefined : emailTemplates[selectedTemplate as keyof typeof emailTemplates];
   const previewHtml = useMemo(() => {
     if (isCustom) {
@@ -265,13 +274,71 @@ export default function AdminEmailsPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-on-surface-variant mb-1 block">Contenido (HTML)</label>
-                  <textarea
-                    value={customBody}
-                    onChange={(e) => setCustomBody(e.target.value)}
-                    placeholder="<h2>Hola</h2><p>Escribe tu mensaje aquí...</p>"
-                    className="w-full h-40 rounded-lg bg-surface-container-low border border-outline-variant px-3 py-2 text-sm text-on-surface resize-y font-mono"
-                  />
+                  <label className="text-xs text-on-surface-variant mb-1 block">Contenido</label>
+                  <div className="rounded-lg border border-outline-variant overflow-hidden">
+                    <div className="flex gap-1 p-2 border-b border-outline-variant/30 bg-surface-container-low">
+                      <button
+                        type="button"
+                        onClick={() => document.execCommand("bold")}
+                        className="w-7 h-7 flex items-center justify-center rounded hover:bg-surface-container-high text-sm font-bold"
+                        title="Negrita"
+                      >
+                        B
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => document.execCommand("italic")}
+                        className="w-7 h-7 flex items-center justify-center rounded hover:bg-surface-container-high text-sm italic"
+                        title="Cursiva"
+                      >
+                        I
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => document.execCommand("underline")}
+                        className="w-7 h-7 flex items-center justify-center rounded hover:bg-surface-container-high text-sm underline"
+                        title="Subrayado"
+                      >
+                        U
+                      </button>
+                      <div className="w-px bg-outline-variant/30 mx-1" />
+                      <button
+                        type="button"
+                        onClick={() => document.execCommand("insertUnorderedList")}
+                        className="w-7 h-7 flex items-center justify-center rounded hover:bg-surface-container-high text-sm"
+                        title="Lista"
+                      >
+                        •
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => document.execCommand("insertOrderedList")}
+                        className="w-7 h-7 flex items-center justify-center rounded hover:bg-surface-container-high text-sm"
+                        title="Lista numerada"
+                      >
+                        1.
+                      </button>
+                      <div className="w-px bg-outline-variant/30 mx-1" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const url = prompt("URL:");
+                          if (url) document.execCommand("createLink", false, url);
+                        }}
+                        className="w-7 h-7 flex items-center justify-center rounded hover:bg-surface-container-high text-sm"
+                        title="Enlace"
+                      >
+                        🔗
+                      </button>
+                    </div>
+                    <div
+                      ref={editorRef}
+                      contentEditable
+                      suppressContentEditableWarning
+                      onInput={(e) => setCustomBody(e.currentTarget.innerHTML)}
+                      className="w-full min-h-[200px] rounded-b-lg bg-surface-container-low p-3 text-sm text-on-surface focus:outline-none"
+                    />
+                  </div>
                 </div>
               </>
             ) : (

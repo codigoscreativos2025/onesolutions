@@ -123,7 +123,7 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-y-auto pb-20">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-2xl font-bold">Editar Información del Proyecto</h2>
@@ -182,11 +182,15 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
                     className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
                   >
                     <option value="">Seleccionar...</option>
-                    <option value="efectivo">Efectivo</option>
-                    <option value="transferencia">Transferencia</option>
-                    <option value="cheque">Cheque</option>
-                    <option value="financiamiento">Financiamiento</option>
-                    <option value="tarjeta de credito">Tarjeta de Crédito</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Transferencia">Transferencia</option>
+                    <option value="Cheques">Cheques</option>
+                    <option value="LightReach">LightReach</option>
+                    <option value="SkyLight">SkyLight</option>
+                    <option value="SunGage">SunGage</option>
+                    <option value="Sunrise Capital">Sunrise Capital</option>
+                    <option value="Foundations Finance">Foundations Finance</option>
+                    <option value="Otro">Otro</option>
                   </select>
                 </div>
               </div>

@@ -35,6 +35,16 @@ export default function RankingPage() {
   const [data, setData] = useState<RankingItem[] | null>(null);
   const [activeTab, setActiveTab] = useState<"trainers" | "setters">("trainers");
   const [loading, setLoading] = useState(true);
+  const [defaultTabSet, setDefaultTabSet] = useState(false);
+
+  useEffect(() => {
+    if (!defaultTabSet && session?.user?.role === "SETTER_JR") {
+      setActiveTab("setters");
+    }
+    if (session) {
+      setDefaultTabSet(true);
+    }
+  }, [session, defaultTabSet]);
 
   const fetchData = useCallback(async (type: "trainers" | "setters") => {
     setLoading(true);

@@ -59,32 +59,9 @@ export default function DashboardPage() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedMetric, setSelectedMetric] = useState<'doors' | 'leads' | 'potential' | 'parcels' | 'closed' | 'cancelled' | null>(null);
   const [showCreateLeadModal, setShowCreateLeadModal] = useState(false);
-
-  const fetchData = useCallback(async () => {
-    try {
-      if (session?.user?.role === "PARTNER") {
-        const parcelsRes = await fetch("/api/parcels/expiration");
-        const parcelsData = await parcelsRes.json();
-        setMetrics({ ...defaultMetrics, parcels: Array.isArray(parcelsData) ? parcelsData.length : 0 });
-      } else {
-        const modeParam = session?.user?.role === 'CLOSER' ? '?mode=own' : '';
-        const [metricsRes, appointmentsRes] = await Promise.all([
-          fetch(`/api/metrics${modeParam}`),
-          fetch("/api/appointments"),
-        ]);
-        const metricsData = await metricsRes.json();
-        const appointmentsData = await appointmentsRes.json();
-        setMetrics(metricsData);
-        setAppointments(appointmentsData.slice(0, 5));
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  }, [session?.user?.role, session?.user?.id]);
 
   const defaultMetrics: Metrics = {
     doorsKnocked: 0,
@@ -100,14 +77,57 @@ export default function DashboardPage() {
     teamGoal: 0,
   };
 
+  const fetchData = useCallback(async () => {
+    setError(null);
+    try {
+      if (session?.user?.role === "PARTNER") {
+        const parcelsRes = await fetch("/api/parcels/expiration").catch(() => null);
+        const parcelsData = parcelsRes ? await parcelsRes.json() : [];
+        setMetrics({ ...defaultMetrics, parcels: Array.isArray(parcelsData) ? parcelsData.length : 0 });
+      } else {
+        const modeParam = session?.user?.role === 'CLOSER' ? '?mode=own' : '';
+        const [metricsRes, appointmentsRes] = await Promise.all([
+          fetch(`/api/metrics${modeParam}`).catch(() => null),
+          fetch("/api/appointments").catch(() => null),
+        ]);
+        const metricsData = metricsRes ? await metricsRes.json() : defaultMetrics;
+        const appointmentsData = appointmentsRes ? await appointmentsRes.json() : [];
+        setMetrics(metricsData);
+        setAppointments(appointmentsData.slice(0, 5));
+      }
+    } catch (fetchError) {
+      console.error(fetchError);
+      setError("Error al cargar los datos. Intenta de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  }, [session?.user?.role, session?.user?.id]);
+
   useEffect(() => {
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 15000);
+
     fetchData();
+
+    return () => clearTimeout(safetyTimer);
   }, [fetchData]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-4">
+        <p className="text-on-surface-variant">{error}</p>
+        <Button variant="outline" onClick={fetchData}>
+          Reintentar
+        </Button>
       </div>
     );
   }

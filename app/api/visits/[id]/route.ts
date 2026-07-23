@@ -24,7 +24,39 @@ export async function PATCH(
   }
 
   const body = await request.json();
-  const { contractSignatures, contractType } = body;
+  const { contractSignatures, contractType, commissions } = body;
+
+  if (commissions && session.user.role !== "ADMIN") {
+    return NextResponse.json(
+      { error: "Only admins can update commissions" },
+      { status: 403 }
+    );
+  }
+
+  if (commissions && Array.isArray(commissions)) {
+    await prisma.closerCommission.deleteMany({
+      where: { visitId },
+    });
+
+    const validCommissions = commissions.filter(
+      (c: { userId: number; percentage: number }) =>
+        c.userId && c.percentage !== undefined
+    );
+
+    if (validCommissions.length > 0) {
+      const roleType = (c: { role?: string }) => c.role || "TRAINEE";
+      await prisma.closerCommission.createMany({
+        data: validCommissions.map((c: { userId: number; percentage: number; role?: string }) => ({
+          visitId,
+          userId: c.userId,
+          percentage: c.percentage,
+          role: roleType(c),
+        })),
+      });
+    }
+
+    return NextResponse.json({ success: true });
+  }
 
   if (contractSignatures && contractType) {
     let existing: Record<string, Record<string, string>> = {};

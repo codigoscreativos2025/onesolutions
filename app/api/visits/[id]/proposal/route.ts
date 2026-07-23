@@ -15,9 +15,16 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await request.json();
-  const { phone, clientName, clientEmail, billImageUrl, notes, slotId, closerId, projectTypeIds } = body;
+  const { phone, clientName, clientEmail, billImageUrl, notes, slotId, closerId, projectTypeIds, directSale } = body;
 
-  if (!phone || !slotId || !closerId) {
+  if (!phone) {
+    return NextResponse.json(
+      { error: "Missing required fields" },
+      { status: 400 }
+    );
+  }
+
+  if (!directSale && (!slotId || !closerId)) {
     return NextResponse.json(
       { error: "Missing required fields" },
       { status: 400 }
@@ -55,20 +62,29 @@ export async function PATCH(
       });
     }
 
-    await prisma.closerSlot.update({
-      where: { id: parseInt(slotId) },
-      data: { isBooked: true },
-    });
+    if (!directSale && slotId) {
+      await prisma.closerSlot.update({
+        where: { id: parseInt(slotId) },
+        data: { isBooked: true },
+      });
+    }
+
+    const effectiveCloserId = directSale ? parseInt(session.user.id) : parseInt(closerId);
+
+    const visitUpdateData: Record<string, unknown> = {
+      stage: "PROPOSAL_ACCEPTED",
+      outcome: "PROPOSAL_ACCEPTED",
+      closerId: effectiveCloserId,
+      notes,
+    };
+
+    if (!directSale && slotId) {
+      visitUpdateData.slot = { connect: { id: parseInt(slotId) } };
+    }
 
     const visit = await prisma.visit.update({
       where: { id: parseInt(id) },
-      data: {
-        stage: "PROPOSAL_ACCEPTED",
-        outcome: "PROPOSAL_ACCEPTED",
-        closerId: parseInt(closerId),
-        slot: { connect: { id: parseInt(slotId) } },
-        notes,
-      },
+      data: visitUpdateData,
       include: {
         parcel: { select: { address: true } },
       },
@@ -91,18 +107,20 @@ export async function PATCH(
     }
 
     // Crear notificación para el closer
-    await prisma.notification.create({
-      data: {
-        userId: parseInt(closerId),
-        title: "Nueva cita asignada",
-        body: `Te han asignado una nueva cita de un setter.`,
-        link: `/dashboard`,
-      },
-    });
+    if (!directSale) {
+      await prisma.notification.create({
+        data: {
+          userId: effectiveCloserId,
+          title: "Nueva cita asignada",
+          body: `Te han asignado una nueva cita de un Trainee.`,
+          link: `/my-projects`,
+        },
+      });
+    }
 
     try {
       const closer = await prisma.user.findUnique({
-        where: { id: parseInt(closerId) },
+        where: { id: effectiveCloserId },
         select: { email: true, name: true },
       });
       if (closer?.email) {
