@@ -1,5 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { sendEmail } from "@/lib/email";
+import { emailTemplates } from "@/lib/email-templates";
 import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
 
@@ -112,6 +114,27 @@ export async function POST(request: Request) {
       isWorkday: isWorkday !== false,
     },
   });
+
+  try {
+    const { setterId, address } = body;
+    if (setterId) {
+      const setter = await prisma.user.findUnique({
+        where: { id: parseInt(String(setterId)) },
+        select: { email: true, name: true },
+      });
+      if (setter?.email) {
+        const formattedDate = startAt.toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" });
+        const formattedTime = startAt.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+        await sendEmail({
+          to: setter.email,
+          subject: "Recordatorio de Visita - One Solutions",
+          html: emailTemplates.reminderVisit(setter.name, address || "Visita agendada", formattedDate, formattedTime),
+        });
+      }
+    }
+  } catch (emailError) {
+    console.error("Error sending slot reminder email:", emailError);
+  }
 
   return NextResponse.json(slot, { status: 201 });
 }

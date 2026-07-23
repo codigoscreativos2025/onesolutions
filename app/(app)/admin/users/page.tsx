@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Modal } from "@/components/ui/Modal";
 import { Plus, Pencil, Trash2, Loader2, KeyRound } from "lucide-react";
+import { toast } from "sonner";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -52,6 +53,7 @@ export default function AdminUsersPage() {
     closerId: "",
     phone: "",
     isActive: true,
+    sendOnboarding: false,
     ssn: "",
     dateOfBirth: "",
     bankName: "",
@@ -163,6 +165,7 @@ export default function AdminUsersPage() {
         setProfilePhotoPreview(null);
         resetForm();
         fetchUsers();
+        toast.success(editingUser ? "Usuario actualizado" : "Usuario creado");
       }
     } finally {
       setSubmitting(false);
@@ -179,6 +182,7 @@ export default function AdminUsersPage() {
       closerId: user.closerId?.toString() || "",
       phone: user.phone || "",
       isActive: user.isActive,
+      sendOnboarding: false,
       ssn: user.profile?.ssn || "",
       dateOfBirth: user.profile?.dateOfBirth
         ? new Date(user.profile.dateOfBirth).toISOString().split("T")[0]
@@ -271,6 +275,7 @@ export default function AdminUsersPage() {
       closerId: "",
       phone: "",
       isActive: true,
+      sendOnboarding: false,
       ssn: "",
       dateOfBirth: "",
       bankName: "",
@@ -616,6 +621,21 @@ export default function AdminUsersPage() {
               Usuario activo
             </label>
           </div>
+
+          {!editingUser && (
+            <div className="flex items-center gap-2 pt-2">
+              <input
+                type="checkbox"
+                id="sendOnboarding"
+                checked={formData.sendOnboarding}
+                onChange={(e) => setFormData({ ...formData, sendOnboarding: e.target.checked })}
+                className="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary"
+              />
+              <label htmlFor="sendOnboarding" className="text-on-surface">
+                Enviar email de configuración de cuenta
+              </label>
+            </div>
+          )}
 
           <div className="flex gap-3 pt-4">
             <Button

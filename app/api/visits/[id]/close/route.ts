@@ -1,5 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { sendEmail } from "@/lib/email";
+import { emailTemplates } from "@/lib/email-templates";
 import { NextResponse } from "next/server";
 
 export async function PATCH(
@@ -49,8 +51,8 @@ export async function PATCH(
         completedAt: newStage === "CLOSED" ? new Date() : undefined,
       },
       include: {
-        setter: { select: { id: true } },
-        closer: { select: { id: true } },
+        setter: { select: { id: true, email: true, name: true } },
+        closer: { select: { id: true, name: true } },
         parcel: { select: { address: true } },
         slot: true,
       },
@@ -124,6 +126,27 @@ export async function PATCH(
             chatCreatedBy: userId,
           },
         });
+      }
+
+      try {
+        const admins = await prisma.user.findMany({ where: { role: "ADMIN" }, select: { email: true, name: true } });
+        for (const admin of admins) {
+          await sendEmail({
+            to: admin.email,
+            subject: "Proyecto Cerrado - One Solutions",
+            html: emailTemplates.projectClosed(admin.name, visit.parcel.address, "Proyecto Cerrado"),
+          });
+        }
+
+        if (visit.setter.email) {
+          await sendEmail({
+            to: visit.setter.email,
+            subject: "Proyecto Cerrado - One Solutions",
+            html: emailTemplates.projectProgress(visit.setter.name, visit.parcel.address, "Proyecto Cerrado"),
+          });
+        }
+      } catch (emailError) {
+        console.error("Error sending close notification emails:", emailError);
       }
     }
 

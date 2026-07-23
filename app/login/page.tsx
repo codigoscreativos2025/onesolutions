@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "@/lib/locale-context";
 import { Mail, Lock, Loader2 } from "lucide-react";
@@ -31,7 +31,12 @@ export default function LoginPage() {
       setError(t.login.error);
       setLoading(false);
     } else {
-      router.push("/ranking");
+      const session = await getSession();
+      if (session?.user?.role === "PARTNER") {
+        router.push("/leads");
+      } else {
+        router.push("/ranking");
+      }
       router.refresh();
     }
   };

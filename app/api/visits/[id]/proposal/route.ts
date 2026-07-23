@@ -1,5 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { sendEmail } from "@/lib/email";
+import { emailTemplates } from "@/lib/email-templates";
 import { NextResponse } from "next/server";
 
 export async function PATCH(
@@ -67,6 +69,9 @@ export async function PATCH(
         slot: { connect: { id: parseInt(slotId) } },
         notes,
       },
+      include: {
+        parcel: { select: { address: true } },
+      },
     });
 
     // Guardar proyectos seleccionados
@@ -94,6 +99,22 @@ export async function PATCH(
         link: `/dashboard`,
       },
     });
+
+    try {
+      const closer = await prisma.user.findUnique({
+        where: { id: parseInt(closerId) },
+        select: { email: true, name: true },
+      });
+      if (closer?.email) {
+        await sendEmail({
+          to: closer.email,
+          subject: "Propuesta Aceptada - One Solutions",
+          html: emailTemplates.projectProgress(closer.name, visit.parcel.address, "Propuesta Aceptada"),
+        });
+      }
+    } catch (emailError) {
+      console.error("Error sending proposal notification:", emailError);
+    }
 
     return NextResponse.json(visit);
   } catch (error) {

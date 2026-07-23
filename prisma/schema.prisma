@@ -18,6 +18,8 @@ model User {
   avatarUrl String?
   isActive  Boolean  @default(true)
   locationValidationEnabled Boolean @default(true)
+  onboardingToken       String?
+  onboardingTokenExpires DateTime?
   createdAt DateTime @default(now())
 
   // Relación closer -> setters
