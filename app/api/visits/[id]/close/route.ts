@@ -23,8 +23,6 @@ export async function PATCH(
   }
 
   const { id } = await params;
-  const body = await request.json();
-  const { notes, billImageUrl, billFileName, action, clientName, clientEmail, clientPhone, projectTypeIds, commissions } = body;
 
   try {
     const userId = parseInt(session.user.id);
