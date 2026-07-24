@@ -116,7 +116,7 @@ export async function GET(request: Request) {
       data.clientName = clientName;
       data.date = fmtDate(details?.closingDate) || fmtDate(new Date());
 
-      if (template.projectType === "Techo") {
+      if (template.projectType === "Techo" || template.projectType === "Flat Roofing") {
         data.roofColor = "";
         data.shingleTotal = fmtMoney(details?.roofSalePrice);
         data.optionalWarrantyCost = "";
@@ -143,6 +143,21 @@ export async function GET(request: Request) {
         data.customerSignature = "";
         data.customerDate = "";
         data.cancelSignature = "";
+      }
+
+      if (template.projectType === "Fence") {
+        data.clientName = clientName;
+        data.clientAddress = visit.parcel.address || "";
+        data.date = fmtDate(details?.closingDate) || fmtDate(new Date());
+        data.clientPhone = visit.bill?.phone || "";
+        data.serviceType = "";
+        data.paymentTerms = "";
+        data.detailLine1 = "";
+        data.detailLine2 = "";
+        data.detailLine3 = "";
+        data.totalAmount = fmtMoney(details?.otherSalePrice);
+        data.clientSignature = "";
+        data.signatureDate = "";
       }
 
       const typeSigs = savedSigs[template.projectType];
@@ -273,7 +288,7 @@ export async function POST(request: Request) {
       data.clientName = clientName;
       data.date = fmtDate(details?.closingDate) || fmtDate(new Date());
 
-      if (template.projectType === "Techo") {
+      if (template.projectType === "Techo" || template.projectType === "Flat Roofing") {
         data.roofColor = "";
         data.shingleTotal = fmtMoney(details?.roofSalePrice);
         data.optionalWarrantyCost = "";
@@ -300,6 +315,21 @@ export async function POST(request: Request) {
         data.customerSignature = "";
         data.customerDate = "";
         data.cancelSignature = "";
+      }
+
+      if (template.projectType === "Fence") {
+        data.clientName = clientName;
+        data.clientAddress = visit.parcel.address || "";
+        data.date = fmtDate(details?.closingDate) || fmtDate(new Date());
+        data.clientPhone = visit.bill?.phone || "";
+        data.serviceType = "";
+        data.paymentTerms = "";
+        data.detailLine1 = "";
+        data.detailLine2 = "";
+        data.detailLine3 = "";
+        data.totalAmount = fmtMoney(details?.otherSalePrice);
+        data.clientSignature = "";
+        data.signatureDate = "";
       }
 
       const typeSigs = savedSigs[template.projectType];

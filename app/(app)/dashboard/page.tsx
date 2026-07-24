@@ -51,6 +51,20 @@ interface Appointment {
   slot?: { startAt: string };
 }
 
+const defaultMetrics: Metrics = {
+  doorsKnocked: 0,
+  parcels: 0,
+  setterObjections: 0,
+  leadsGenerated: 0,
+  closerLeads: 0,
+  projectsInProgress: 0,
+  projectsClosed: 0,
+  projectsCancelled: 0,
+  closerObjectionsCount: 0,
+  appointments: 0,
+  teamGoal: 0,
+};
+
 export default function DashboardPage() {
   const { data: session } = useSession();
   const router = useRouter();
@@ -77,7 +91,7 @@ export default function DashboardPage() {
         const metricsData = await metricsRes.json();
         const appointmentsData = await appointmentsRes.json();
         setMetrics(metricsData);
-        setAppointments(appointmentsData.slice(0, 5));
+        setAppointments(Array.isArray(appointmentsData) ? appointmentsData.slice(0, 5) : []);
       }
     } catch (error) {
       console.error(error);
@@ -86,19 +100,6 @@ export default function DashboardPage() {
     }
   }, [session?.user?.role, session?.user?.id]);
 
-  const defaultMetrics: Metrics = {
-    doorsKnocked: 0,
-    parcels: 0,
-    setterObjections: 0,
-    leadsGenerated: 0,
-    closerLeads: 0,
-    projectsInProgress: 0,
-    projectsClosed: 0,
-    projectsCancelled: 0,
-    closerObjectionsCount: 0,
-    appointments: 0,
-    teamGoal: 0,
-  };
 
   useEffect(() => {
     fetchData();
@@ -261,7 +262,7 @@ export default function DashboardPage() {
               <DoorOpen className="w-4 h-4" /> Top Puertas Tocadas
             </h3>
             <div className="space-y-2">
-              {metrics?.topDoorsKnocked?.slice(0, 5).map((user, i) => (
+              {metrics?.topDoorsKnocked?.slice(0, 5)?.map((user, i) => (
                 <Link
                   key={user.id}
                   href={`/admin/crm?setterId=${user.id}`}
@@ -282,7 +283,7 @@ export default function DashboardPage() {
               <PersonStanding className="w-4 h-4" /> Top Leads Potenciales
             </h3>
             <div className="space-y-2">
-              {metrics?.topProspects?.slice(0, 5).map((user, i) => (
+              {metrics?.topProspects?.slice(0, 5)?.map((user, i) => (
                 <Link
                   key={user.id}
                   href={`/admin/crm?setterId=${user.id}&filter=leads`}
@@ -303,7 +304,7 @@ export default function DashboardPage() {
               <Handshake className="w-4 h-4" /> Top Proyectos Cerrados
             </h3>
             <div className="space-y-2">
-              {metrics?.topProjectsClosed?.slice(0, 5).map((user, i) => (
+              {metrics?.topProjectsClosed?.slice(0, 5)?.map((user, i) => (
                 <Link
                   key={user.id}
                   href={`/admin/crm?closerId=${user.id}&filter=projects`}

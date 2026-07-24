@@ -1,0 +1,12 @@
+export const metalRoofFields: ContractField[] = [
+  { key: "dripEdgeColor", label: "Drip Edge Color", type: "text" },
+  { key: "leadBoots2In", label: "2 in. Lead Boots", type: "text" },
+  { key: "leadBoots3In", label: "3 in. Lead Boots", type: "text" },
+  { key: "exhaustVents", label: "Exhaust Vents", type: "text" },
+  { key: "ridgeVentsFt", label: "Ridge Vents (ft)", type: "text" },
+  { key: "companySignature", label: "Company Signature", type: "signature" },
+  { key: "companyDate", label: "Company Date", type: "date" },
+  { key: "representativeSignature", label: "Representative Signature", type: "signature" },
+  { key: "representativeDate", label: "Representative Date", type: "date" }
+];
+
