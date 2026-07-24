@@ -4,6 +4,60 @@ import { auth } from '@/auth';
 import { decrypt } from '@/lib/encryption';
 export const dynamic = 'force-dynamic';
 
+export async function PATCH(
+  request: Request,
+  { params }: { params: { userId: string } }
+) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const role = session.user.role;
+  const currentUserId = parseInt(session.user.id);
+  const targetUserId = parseInt(params.userId);
+
+  if (role !== 'ADMIN' && currentUserId !== targetUserId) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  try {
+    const body = await request.json();
+    const { workSchedule } = body;
+
+    const profile = await prisma.userProfile.upsert({
+      where: { userId: targetUserId },
+      update: { workSchedule },
+      create: {
+        userId: targetUserId,
+        joinDate: new Date(),
+        workSchedule,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            createdAt: true,
+            userBadges: {
+              include: {
+                badge: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(profile);
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 export async function GET(
   request: Request,
   { params }: { params: { userId: string } }

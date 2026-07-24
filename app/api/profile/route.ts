@@ -110,6 +110,7 @@ export async function POST(request: Request) {
       bankName,
       routingNumber,
       zelle,
+      workSchedule,
     } = body;
 
     // Verificar si el perfil existe
@@ -126,12 +127,14 @@ export async function POST(request: Request) {
       zelle?: string;
       ssn?: string;
       routingNumber?: string;
+      workSchedule?: string;
     } = {
       profilePhoto,
       address,
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
       bankName,
       zelle,
+      workSchedule,
     };
 
     // Encriptar datos sensibles

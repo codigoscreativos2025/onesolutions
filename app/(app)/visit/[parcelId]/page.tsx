@@ -295,14 +295,19 @@ export default function VisitPage() {
         );
       }
 
+      let effectiveClientName = "";
+      let effectiveClientEmail = "";
+      let effectivePhone = "";
+      let effectiveProposalNotes = "";
+
       if (visitData?.parcel?.metadata) {
         try {
           const metadata = JSON.parse(visitData.parcel.metadata);
           if (metadata.isManual) {
-            setPhone(metadata.phone || "");
-            setClientName(visitData.parcel.ownerName || metadata.ownerName || "");
-            setClientEmail(metadata.email || "");
-            setProposalNotes(metadata.notes || "");
+            effectivePhone = metadata.phone || "";
+            effectiveClientName = visitData.parcel.ownerName || metadata.ownerName || "";
+            effectiveClientEmail = metadata.email || "";
+            effectiveProposalNotes = metadata.notes || "";
           }
         } catch {
           // metadata parse failed, ignore
@@ -310,10 +315,21 @@ export default function VisitPage() {
       }
 
       if (visitData?.bill) {
-        if (visitData.bill.clientName) setClientName(visitData.bill.clientName);
-        if (visitData.bill.phone) setPhone(visitData.bill.phone);
-        if (visitData.bill.clientEmail) setClientEmail(visitData.bill.clientEmail);
+        if (visitData.bill.clientName) effectiveClientName = visitData.bill.clientName;
+        if (visitData.bill.phone) effectivePhone = visitData.bill.phone;
+        if (visitData.bill.clientEmail) effectiveClientEmail = visitData.bill.clientEmail;
+        if (visitData.bill.notes) setClosingNotes(visitData.bill.notes);
+        if (visitData.bill.additionalFileName) setBillFileName(visitData.bill.additionalFileName);
       }
+
+      if (!effectiveClientName && visitData?.parcel?.ownerName) {
+        effectiveClientName = visitData.parcel.ownerName;
+      }
+
+      setPhone(effectivePhone);
+      setClientName(effectiveClientName);
+      setClientEmail(effectiveClientEmail);
+      setProposalNotes(effectiveProposalNotes);
 
       if (visitData?.projectDetails) {
         const raw = visitData.projectDetails as Record<string, unknown>;
@@ -327,8 +343,8 @@ export default function VisitPage() {
       } else {
         setProjectDetailsForm({
           address: visitData?.parcel?.address || "",
-          clientName: clientName || visitData?.parcel?.ownerName || "",
-          clientEmail: clientEmail || "",
+          clientName: effectiveClientName,
+          clientEmail: effectiveClientEmail,
         });
       }
     } catch (error) {

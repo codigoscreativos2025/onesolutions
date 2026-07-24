@@ -388,6 +388,9 @@ model UserProfile {
   zelle           String?
   accountNumber   String?
 
+  // Work schedule (JSON string)
+  workSchedule    String?
+
   // Datos de Partner
   representativeName String?
   companyName        String?
