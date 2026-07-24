@@ -167,28 +167,34 @@ model ProjectDetails {
   systemSize        String?
   hoaInfo           String?
   ppwSold           String?
-  umbrella          String?
+  umbrella          String?   // "SI" o "NO"
+  clientIncentive   String?   // incentivo al cliente
   mpuPanels         String?
   siteSurveyDate    DateTime?
-  panelsUp          Boolean @default(false)
-  panelsDown        Boolean @default(false)
+  panelsUpCount     Int?      // cantidad de paneles a subir
+  panelsDownCount   Int?      // cantidad de paneles a bajar
   panelsPhotoUrl    String?
+  solarCostPrice    Float?    // precio costo panel solar
+  solarSalePrice    Float?    // precio venta panel solar  
+  solarCommission   Float?    // comision panel solar
 
   // Archivos generales
   electricBillUrl   String?
   closingFormUrl    String?
   homeInsuranceUrl  String?
   homeTitleUrl      String?
+  idDocumentUrl     String?   // ID del cliente
 
   // Techo
-  roofType          String? // reemplazo, reparacion, gutters
+  roofType          String? // reemplazo, reparacion, gutters, skylights
   roofCostPrice     Float?
   roofSalePrice     Float?
   roofCommission    Float?
   nocUrl            String?
   materialsOrderUrl String?
   roofReportUrl     String?
-  propertyPhotosUrl String?
+  exteriorScopeUrl  String?   // exterior scope work
+  propertyPhotosJson String?  // JSON array de URLs de fotos
 
   // Purificador
   waterSystemType   String? // sistema completo, softener, R.O, sistema de pozo
