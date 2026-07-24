@@ -6,6 +6,17 @@ import { X, MapPin, User, FileText, Package, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ContractModal } from '@/components/quote/ContractModal';
 
+function extractFirstUrl(raw: string | undefined): string {
+  if (!raw) return "";
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) return String(parsed[0]);
+    return raw;
+  } catch {
+    return raw;
+  }
+}
+
 interface HistoryEntry {
   date: string;
   action: string;
@@ -549,7 +560,7 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
                             </label>
                             <p className="mt-1">
                               {isFile && rawValue ? (
-                                <a href={rawValue.split(/[,\[\]]/).filter(Boolean)[0] || rawValue} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm flex items-center gap-1">
+                                <a href={extractFirstUrl(rawValue)} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm flex items-center gap-1">
                                   <FileText className="w-3 h-3" /> Ver documento
                                 </a>
                               ) : rawValue || "—"}
@@ -570,7 +581,7 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
                             <p className="mt-1">
                               {strVal ? (
                                 looksLikeUrl ? (
-                                  <a href={strVal} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm flex items-center gap-1">
+                                  <a href={strVal.split(/[,\[\]]/).filter(Boolean)[0]?.replace(/[\"]/g, "") || strVal} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm flex items-center gap-1">
                                     <FileText className="w-3 h-3" /> Ver documento
                                   </a>
                                 ) : strVal
