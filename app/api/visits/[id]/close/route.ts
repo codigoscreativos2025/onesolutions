@@ -9,12 +9,17 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   const session = await auth();
-  if (!session) {
+  if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden: only admins can close projects" }, { status: 403 });
+  const body = await request.json();
+  const { notes, billImageUrl, billFileName, action, clientName, clientEmail, clientPhone, projectTypeIds, commissions } = body;
+
+  if (!action || action !== "start-project") {
+    if (session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden: only admins can close projects" }, { status: 403 });
+    }
   }
 
   const { id } = await params;
