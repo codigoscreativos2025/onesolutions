@@ -362,33 +362,29 @@ export default function VisitPage() {
   const handleNotAvailable = async () => {
     if (selectedNotAvailableTags.length === 0 || !visit) return;
 
-    const doSubmit = async () => {
-      setSaving(true);
-      try {
-        const res = await fetch(`/api/visits/${visit.id}/not-available`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tagIds: selectedNotAvailableTags,
-            notes: notAvailableNotes || null,
-          }),
-        });
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/visits/${visit.id}/not-available`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tagIds: selectedNotAvailableTags,
+          notes: notAvailableNotes || null,
+        }),
+      });
 
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || "Error al registrar");
-        }
-
-        toast.success("No disponible registrado correctamente");
-        router.push("/map");
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Error al registrar");
-      } finally {
-        setSaving(false);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Error al registrar");
       }
-    };
 
-    executeWithLocationCheck("notAvailable", doSubmit);
+      toast.success("Visita registrada como no disponible");
+      router.push("/dashboard");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error al registrar");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleObjection = async () => {
@@ -538,6 +534,29 @@ export default function VisitPage() {
       }
 
       setShowCelebration(true);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error al procesar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRequestClose = async () => {
+    if (!visit) return;
+
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/visits/${visit.id}/request-close`, {
+        method: "POST",
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Error al enviar solicitud");
+      }
+
+      toast.success("Solicitud enviada al administrador");
+      router.push("/my-projects");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Error al procesar");
     } finally {
@@ -1197,6 +1216,7 @@ export default function VisitPage() {
             savingProjectDetails={savingProjectDetails}
             handleStartProject={handleStartProject}
             handleCloseProject={handleCloseProject}
+            handleRequestClose={handleRequestClose}
             handleCancel={handleCancel}
             handleSaveProjectDetails={handleSaveProjectDetails}
             handleCreateChat={handleCreateChat}
@@ -1207,6 +1227,7 @@ export default function VisitPage() {
             fileCategory={fileCategory}
             setFileCategory={setFileCategory}
             documentCategories={DOCUMENT_CATEGORIES}
+            userRole={session?.user?.role || ""}
           />
         )}
 
@@ -1546,6 +1567,7 @@ function CloserForm({
   savingProjectDetails,
   handleStartProject,
   handleCloseProject,
+  handleRequestClose,
   handleCancel,
   handleSaveProjectDetails,
   handleCreateChat,
@@ -1556,6 +1578,7 @@ function CloserForm({
   fileCategory,
   setFileCategory,
   documentCategories,
+  userRole,
 }: {
   visit: Visit;
   clientName: string;
@@ -1580,6 +1603,7 @@ function CloserForm({
   savingProjectDetails: boolean;
   handleStartProject: () => void;
   handleCloseProject: () => void;
+  handleRequestClose: () => void;
   handleCancel: () => void;
   handleSaveProjectDetails: () => void;
   handleCreateChat: () => void;
@@ -1590,6 +1614,7 @@ function CloserForm({
   fileCategory: string;
   setFileCategory: (v: string) => void;
   documentCategories: string[];
+  userRole: string;
 }) {
   const isStartProject =
     visit.stage === "PROPOSAL_ACCEPTED" || visit.stage === "IN_PROGRESS";
@@ -1905,7 +1930,13 @@ function CloserForm({
         )}
 
         <Button
-          onClick={isProject ? handleCloseProject : handleStartProject}
+          onClick={
+            isProject
+              ? userRole === "ADMIN"
+                ? handleCloseProject
+                : handleRequestClose
+              : handleStartProject
+          }
           disabled={
             isProject
               ? !isFullyComplete || saving
@@ -1919,8 +1950,10 @@ function CloserForm({
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : isStartProject ? (
             "Iniciar Proyecto"
+          ) : isProject ? (
+            userRole === "ADMIN" ? "Cerrar Proyecto" : "Solicitar Cierre"
           ) : (
-            "Cerrar Proyecto"
+            ""
           )}
         </Button>
 

@@ -14,6 +14,7 @@ export async function GET(request: Request) {
   const userId = searchParams.get('userId');
   const startDate = searchParams.get('startDate');
   const endDate = searchParams.get('endDate');
+  const filter = searchParams.get('filter');
 
   const currentUserId = parseInt(session.user.id);
   const role = session.user.role;
@@ -21,31 +22,52 @@ export async function GET(request: Request) {
   try {
     const whereClause: Record<string, unknown> = {};
 
+    if (filter === 'scheduled') {
+      whereClause.scheduledAt = { not: null };
+      whereClause.completedAt = null;
+    }
+
     if (userId) {
       const uid = parseInt(userId);
-      if (role === 'CLOSER' && userId === session.user.id) {
+      if (filter === 'scheduled') {
+        whereClause.OR = [{ setterId: uid }, { closerId: uid }];
+      } else if (role === 'CLOSER' && userId === session.user.id) {
         whereClause.OR = [{ closerId: uid }, { setterId: uid }];
       } else {
         whereClause.setterId = uid;
       }
     } else if (role === 'SETTER') {
-      whereClause.setterId = currentUserId;
+      if (!filter) {
+        whereClause.setterId = currentUserId;
+      }
     } else if (role === 'CLOSER') {
-      whereClause.OR = [{ closerId: currentUserId }, { setterId: currentUserId }];
+      if (!filter) {
+        whereClause.OR = [{ closerId: currentUserId }, { setterId: currentUserId }];
+      }
     }
 
-    // Filtrar por fecha si se proporciona
     if (startDate || endDate) {
-      whereClause.createdAt = {};
-      if (startDate) {
-        (whereClause.createdAt as Record<string, unknown>).gte = new Date(startDate);
-      }
-      if (endDate) {
-        (whereClause.createdAt as Record<string, unknown>).lte = new Date(endDate + 'T23:59:59.999Z');
+      if (filter === 'scheduled') {
+        whereClause.scheduledAt = {
+          ...(whereClause.scheduledAt as Record<string, unknown> || {}),
+        };
+        if (startDate) {
+          (whereClause.scheduledAt as Record<string, unknown>).gte = new Date(startDate);
+        }
+        if (endDate) {
+          (whereClause.scheduledAt as Record<string, unknown>).lte = new Date(endDate + 'T23:59:59.999Z');
+        }
+      } else {
+        whereClause.createdAt = {};
+        if (startDate) {
+          (whereClause.createdAt as Record<string, unknown>).gte = new Date(startDate);
+        }
+        if (endDate) {
+          (whereClause.createdAt as Record<string, unknown>).lte = new Date(endDate + 'T23:59:59.999Z');
+        }
       }
     }
 
-    // Filtrar según el tipo de métrica
     if (type === 'doors' || type === 'parcels') {
       whereClause.stage = 'IN_PROGRESS';
     } else if (type === 'leads') {
@@ -65,7 +87,7 @@ export async function GET(request: Request) {
 
     const visits = await prisma.visit.findMany({
       where: whereClause,
-      orderBy: { createdAt: 'desc' },
+      orderBy: filter === 'scheduled' ? { scheduledAt: 'asc' } : { createdAt: 'desc' },
       include: {
         parcel: {
           select: {

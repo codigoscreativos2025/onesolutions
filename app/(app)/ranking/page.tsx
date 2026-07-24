@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { CheckCircle, UserPlus, DoorOpen } from "lucide-react";
@@ -32,16 +33,28 @@ function splitName(fullName: string): [string, string] {
 
 export default function RankingPage() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [data, setData] = useState<RankingItem[] | null>(null);
   const [activeTab, setActiveTab] = useState<"trainers" | "setters">("trainers");
   const [loading, setLoading] = useState(true);
   const [defaultTabSet, setDefaultTabSet] = useState(false);
 
+  const role = session?.user?.role;
+
   useEffect(() => {
-    if (!defaultTabSet && session?.user?.role === "SETTER_JR") {
-      setActiveTab("setters");
+    if (role === "PARTNER") {
+      router.push("/leads");
+      return;
     }
-    if (session) {
+  }, [role, router]);
+
+  useEffect(() => {
+    if (!defaultTabSet && session?.user?.role) {
+      if (session.user.role === "SETTER_JR") {
+        setActiveTab("setters");
+      } else if (session.user.role === "SETTER" || session.user.role === "CLOSER") {
+        setActiveTab("trainers");
+      }
       setDefaultTabSet(true);
     }
   }, [session, defaultTabSet]);
@@ -58,12 +71,14 @@ export default function RankingPage() {
   }, []);
 
   useEffect(() => {
+    if (role === "PARTNER") return;
     const type = activeTab === "trainers" ? "trainers" : "setters";
     fetchData(type);
-  }, [activeTab, fetchData]);
+  }, [activeTab, fetchData, role]);
 
   const userId = session?.user?.id ? parseInt(session.user.id) : null;
   const isTrainers = activeTab === "trainers";
+  const showTabSwitcher = role === "ADMIN";
 
   return (
     <div className="pt-4 pb-28 space-y-4">
@@ -126,28 +141,37 @@ export default function RankingPage() {
             </div>
 
             <div className="flex gap-1">
-              <button
-                onClick={() => setActiveTab("trainers")}
-                className={cn(
-                  "px-3 py-1.5 rounded-full text-xs font-semibold transition-colors",
-                  isTrainers
-                    ? "bg-[#f48221] text-[#1d1d1b]"
-                    : "text-[#aaaaaa] hover:text-white"
-                )}
-              >
-                Trainees &amp; Closers
-              </button>
-              <button
-                onClick={() => setActiveTab("setters")}
-                className={cn(
-                  "px-3 py-1.5 rounded-full text-xs font-semibold transition-colors",
-                  !isTrainers
-                    ? "bg-[#f48221] text-[#1d1d1b]"
-                    : "text-[#aaaaaa] hover:text-white"
-                )}
-              >
-                Setters
-              </button>
+              {showTabSwitcher && (
+                <>
+                  <button
+                    onClick={() => setActiveTab("trainers")}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-xs font-semibold transition-colors",
+                      isTrainers
+                        ? "bg-[#f48221] text-[#1d1d1b]"
+                        : "text-[#aaaaaa] hover:text-white"
+                    )}
+                  >
+                    Trainees &amp; Closers
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("setters")}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-xs font-semibold transition-colors",
+                      !isTrainers
+                        ? "bg-[#f48221] text-[#1d1d1b]"
+                        : "text-[#aaaaaa] hover:text-white"
+                    )}
+                  >
+                    Setters
+                  </button>
+                </>
+              )}
+              {!showTabSwitcher && (
+                <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[#f48221] text-[#1d1d1b]">
+                  {activeTab === "trainers" ? "Trainees & Closers" : "Setters"}
+                </span>
+              )}
             </div>
 
             <div className="ml-auto text-[#f48221] font-bold text-sm">

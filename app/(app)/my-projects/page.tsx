@@ -296,25 +296,25 @@ export default function MyProjectsPage() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => router.push(`/visit/${visit.parcel.id}?mode=closer`)}>
+                    <Button variant="outline" size="sm" onClick={() => router.push(`/visit/${visit.parcel.id}?mode=closer`)} title="Visitar">
                       <DoorOpen className="w-4 h-4" />
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => handleViewProject(visit.id)}>Ver</Button>
-                    <Button variant="outline" size="sm" onClick={() => { setSelectedVisitId(visit.id); setShowContractModal(true); }}>
+                    <Button variant="outline" size="sm" onClick={() => { setSelectedVisitId(visit.id); setShowContractModal(true); }} title="Documentos">
                       <FileText className="w-4 h-4" />
                     </Button>
                     {visit.stage !== 'CANCELLED' && (
-                      <Button variant="outline" size="sm" onClick={() => handleEditProject(visit.id)}>
+                      <Button variant="outline" size="sm" onClick={() => handleEditProject(visit.id)} title="Editar Proyecto">
                         <Edit className="w-4 h-4" />
                       </Button>
                     )}
                     {hasChat && (
-                      <Button variant="outline" size="sm" onClick={() => router.push('/chat')}>
+                      <Button variant="outline" size="sm" onClick={() => router.push('/chat')} title="Chat">
                         <MessageSquare className="w-4 h-4" />
                       </Button>
                     )}
-                    {visit.stage === 'CLOSED' && !visit.finalizedAt && (
-                      <Button variant="outline" size="sm" onClick={() => handleFinalize(visit.id)} className="text-emerald-600 border-emerald-300 hover:bg-emerald-50">
+                    {visit.stage === 'CLOSED' && !visit.finalizedAt && session?.user?.role === "ADMIN" && (
+                      <Button variant="outline" size="sm" onClick={() => handleFinalize(visit.id)} className="text-emerald-600 border-emerald-300 hover:bg-emerald-50" title="Finalizar Proyecto">
                         <CheckCheck className="w-4 h-4" />
                       </Button>
                     )}

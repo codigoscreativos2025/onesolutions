@@ -27,6 +27,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalP
   const [closers, setClosers] = useState<{id: number, name: string}[]>([]);
   const [selectedCloserId, setSelectedCloserId] = useState("");
   const [scheduledDate, setScheduledDate] = useState("");
+  const [scheduledTime, setScheduledTime] = useState("");
   const [formData, setFormData] = useState({
     address: '',
     ownerName: '',
@@ -86,7 +87,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalP
           ...formData,
           projectTypeIds: selectedProjects,
           closerId: selectedCloserId || undefined,
-          scheduledDate: scheduledDate || undefined,
+          scheduledDate: scheduledDate ? new Date(scheduledDate + "T" + (scheduledTime || "00:00")).toISOString() : undefined,
         }),
       });
 
@@ -98,6 +99,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalP
         setSelectedProjects([]);
         setSelectedCloserId('');
         setScheduledDate('');
+        setScheduledTime('');
       } else {
         const err = await res.json().catch(() => ({}));
         toast.error(err.error || 'Error al crear lead');
@@ -241,15 +243,24 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalP
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
               Fecha de Visita (opcional)
             </label>
-            <Input
-              type="date"
-              value={scheduledDate}
-              onChange={(e) => setScheduledDate(e.target.value)}
-              min="1900-01-01"
-              max="2100-12-31"
-              onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity("Fecha fuera de rango")}
-              onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")}
-            />
+            <div className="flex gap-2">
+              <Input
+                type="date"
+                value={scheduledDate}
+                onChange={(e) => setScheduledDate(e.target.value)}
+                min="1900-01-01"
+                max="2100-12-31"
+                onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity("Fecha fuera de rango")}
+                onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")}
+                className="flex-1"
+              />
+              <input
+                type="time"
+                value={scheduledTime}
+                onChange={(e) => setScheduledTime(e.target.value)}
+                className="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
           </div>
 
           {/* Botones dentro del form para que sean visibles en movil */}
