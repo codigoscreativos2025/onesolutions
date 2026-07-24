@@ -536,21 +536,33 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                   <h3 className="font-semibold text-lg mb-3">Detalles del Proyecto</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {Object.entries(visit.projectDetails).map(([key, value]) => {
-                      if (key === 'id' || key === 'visitId' || key === 'createdAt' || key === 'updatedAt') return null;
-                      if (value && typeof value !== 'object') {
-                        const label = fieldLabels[key];
+                    {/* Show ALL configured fields, even empty ones */}
+                    {Object.keys(fieldLabels).length > 0 ? (
+                      Object.entries(fieldLabels).map(([key, meta]) => {
+                        if (key === 'id' || key === 'visitId' || key === 'createdAt' || key === 'updatedAt') return null;
+                        const value = visit.projectDetails?.[key as keyof typeof visit.projectDetails] as string | undefined;
                         return (
                           <div key={key}>
                             <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                              {label ? label.label : key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}
+                              {meta.label}
                             </label>
-                            <p className="mt-1">{String(value)}</p>
+                            <p className="mt-1">{value || "—"}</p>
                           </div>
                         );
-                      }
-                      return null;
-                    })}
+                      })
+                    ) : (
+                      Object.entries(visit.projectDetails).map(([key, value]) => {
+                        if (key === 'id' || key === 'visitId' || key === 'createdAt' || key === 'updatedAt') return null;
+                        return (
+                          <div key={key}>
+                            <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                              {key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}
+                            </label>
+                            <p className="mt-1">{value ? String(value) : "—"}</p>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                   {Object.keys(fieldLabels).length === 0 && (
                     <p className="text-xs text-gray-400 mt-2">Configura los campos en Admin &gt; Campos de Proyectos para ver etiquetas personalizadas.</p>

@@ -163,9 +163,9 @@ function CelebrationOverlay({ onComplete }: { onComplete: () => void }) {
   );
 }
 
-function calculateProjectCompletion(details: Record<string, string>): number {
-  const requiredFields = ["clientName", "clientEmail", "address", "closingDate", "paymentMethod"];
-  const filled = requiredFields.filter((f) => details[f] && details[f] !== "");
+function calculateProjectCompletion(details: Record<string, string>, extraFields: string[] = []): number {
+  const requiredFields = ["clientName", "clientEmail", "address", "closingDate", "paymentMethod", ...extraFields];
+  const filled = requiredFields.filter((f) => details[f] && details[f] !== "" && details[f] !== "[]");
   return filled.length === 0 ? 0 : Math.round((filled.length / requiredFields.length) * 100);
 }
 

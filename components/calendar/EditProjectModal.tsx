@@ -191,6 +191,67 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
                             ))}
                           </select>
                         </div>
+                      ) : field.fieldType === "file" || field.fieldType === "photos" ? (
+                        <div>
+                          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+                            {field.fieldLabel}
+                          </label>
+                          <input
+                            type="file"
+                            accept={field.fieldType === "photos" ? "image/*" : undefined}
+                            multiple={field.fieldType === "photos"}
+                            onChange={async (e) => {
+                              const files = e.target.files;
+                              if (!files || files.length === 0) return;
+                              const urls: string[] = [];
+                              for (let i = 0; i < files.length; i++) {
+                                const formData = new FormData();
+                                formData.append("file", files[i]);
+                                try {
+                                  const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+                                  const uploadData = await uploadRes.json();
+                                  urls.push(uploadData.url);
+                                } catch {}
+                              }
+                              if (field.fieldType === "photos") {
+                                const existing = projectDetails[field.fieldName];
+                                let existingArr: string[] = [];
+                                if (existing) {
+                                  try { existingArr = JSON.parse(existing as string); } catch { existingArr = [existing as string]; }
+                                }
+                                handleFieldChange(field.fieldName, JSON.stringify([...existingArr, ...urls]));
+                              } else {
+                                handleFieldChange(field.fieldName, urls[0]);
+                              }
+                            }}
+                            className="w-full text-sm text-on-surface file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-on-primary file:text-xs file:font-medium hover:file:opacity-90"
+                          />
+                          {projectDetails[field.fieldName] && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {(() => {
+                                const val = projectDetails[field.fieldName] as string;
+                                let urls: string[] = [];
+                                if (val.startsWith("[")) {
+                                  try { urls = JSON.parse(val); } catch { urls = [val]; }
+                                } else {
+                                  urls = [val];
+                                }
+                                return urls.map((url, i) => (
+                                  <div key={i} className="relative group">
+                                    <img src={url} alt="" className="h-10 w-10 object-cover rounded border" />
+                                    <button
+                                      onClick={() => {
+                                        const newUrls = urls.filter((_, j) => j !== i);
+                                        handleFieldChange(field.fieldName, field.fieldType === "photos" ? JSON.stringify(newUrls) : "");
+                                      }}
+                                      className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 flex items-center justify-center"
+                                    >x</button>
+                                  </div>
+                                ));
+                              })()}
+                            </div>
+                          )}
+                        </div>
                       ) : field.fieldType === "date" ? (
                         <Input
                           label={field.fieldLabel}
