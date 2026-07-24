@@ -102,6 +102,7 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'history'>('details');
   const [showContractModal, setShowContractModal] = useState(false);
+  const [fieldLabels, setFieldLabels] = useState<Record<string, { label: string; type: string; group: string }>>({});
 
   useEffect(() => {
     if (isOpen && visitId) {
@@ -117,6 +118,24 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
       const res = await fetch(`/api/visits/${visitId}/details`);
       const data = await res.json();
       setVisit(data);
+
+      // Fetch field labels for all project types
+      if (data.projects?.length > 0) {
+        const typeIds = data.projects.map((p: { projectType: { id: number } }) => p.projectType.id);
+        const labels: Record<string, { label: string; type: string; group: string }> = {};
+        for (const typeId of Array.from(new Set(typeIds))) {
+          try {
+            const fRes = await fetch(`/api/admin/project-type-fields?projectTypeId=${typeId}`);
+            const fields = await fRes.json();
+            if (Array.isArray(fields)) {
+              fields.forEach((f: { fieldName: string; fieldLabel: string; fieldType: string }) => {
+                labels[f.fieldName] = { label: f.fieldLabel, type: f.fieldType, group: String(typeId) };
+              });
+            }
+          } catch { /* skip failed fetches */ }
+        }
+        setFieldLabels(labels);
+      }
     } catch (error) {
       console.error('Error fetching visit details:', error);
     } finally {
@@ -518,11 +537,13 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
                   <h3 className="font-semibold text-lg mb-3">Detalles del Proyecto</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {Object.entries(visit.projectDetails).map(([key, value]) => {
+                      if (key === 'id' || key === 'visitId' || key === 'createdAt' || key === 'updatedAt') return null;
                       if (value && typeof value !== 'object') {
+                        const label = fieldLabels[key];
                         return (
                           <div key={key}>
-                            <label className="text-sm font-medium text-gray-600 dark:text-gray-400 capitalize">
-                              {key.replace(/([A-Z])/g, ' $1').trim()}
+                            <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                              {label ? label.label : key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}
                             </label>
                             <p className="mt-1">{String(value)}</p>
                           </div>
@@ -531,6 +552,9 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
                       return null;
                     })}
                   </div>
+                  {Object.keys(fieldLabels).length === 0 && (
+                    <p className="text-xs text-gray-400 mt-2">Configura los campos en Admin &gt; Campos de Proyectos para ver etiquetas personalizadas.</p>
+                  )}
                 </div>
               )}
             </div>

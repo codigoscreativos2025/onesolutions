@@ -30,7 +30,7 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
   const [projectDetails, setProjectDetails] = useState<ProjectDetails>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [commonFields, setCommonFields] = useState<ProjectTypeField[]>([]);
+  const [projectFields, setProjectFields] = useState<{ typeName: string; fields: ProjectTypeField[] }[]>([]);
 
   useEffect(() => {
     if (isOpen && visitId) {
@@ -48,7 +48,6 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
         const data = await res.json();
         const bill = data.bill || {};
         const details = data.projectDetails || {};
-        // Merge bill data into projectDetails for pre-filling general info
         setProjectDetails({
           ...details,
           clientName: details.clientName || bill.clientName || '',
@@ -56,6 +55,14 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
           address: details.address || data.parcel?.address || '',
           phone: bill.phone || '',
         });
+
+        // Fetch project type fields for all selected project types
+        if (data.projects?.length > 0) {
+          fetchProjectTypeFields(data.projects.map((p: { projectType: { id: number; name: string } }) => p.projectType));
+        } else {
+          // Fallback: fetch all fields for all project types
+          fetchAllProjectFields();
+        }
       }
     } catch (error) {
       console.error('Error fetching project details:', error);
@@ -64,26 +71,45 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
     }
   };
 
-  const fetchCommonFields = async () => {
+  const fetchProjectTypeFields = async (projectTypes: { id: number; name: string }[]) => {
+    try {
+      const fieldsByType = await Promise.all(
+        projectTypes.map(async (pt) => {
+          const res = await fetch(`/api/admin/project-type-fields?projectTypeId=${pt.id}`);
+          const fields = await res.json();
+          return { typeName: pt.name, fields: Array.isArray(fields) ? fields : [] };
+        })
+      );
+      setProjectFields(fieldsByType);
+    } catch (error) {
+      console.error("Error fetching project type fields:", error);
+    }
+  };
+
+  const fetchAllProjectFields = async () => {
     try {
       const typesRes = await fetch("/api/project-types");
       const types = await typesRes.json();
-      const comunes = types.find((t: { id: number; name: string }) => t.name === "Campos Comunes");
-      if (comunes) {
-        const fieldsRes = await fetch(`/api/admin/project-type-fields?projectTypeId=${comunes.id}`);
-        const fields = await fieldsRes.json();
-        setCommonFields(fields);
+      if (Array.isArray(types)) {
+        const fieldsByType = await Promise.all(
+          types.map(async (t: { id: number; name: string }) => {
+            const res = await fetch(`/api/admin/project-type-fields?projectTypeId=${t.id}`);
+            const fields = await res.json();
+            return { typeName: t.name, fields: Array.isArray(fields) ? fields : [] };
+          })
+        );
+        setProjectFields(fieldsByType.filter(f => f.fields.length > 0));
       }
     } catch (error) {
-      console.error("Error fetching common fields:", error);
+      console.error("Error fetching all project fields:", error);
     }
   };
 
   useEffect(() => {
     if (isOpen) {
-      fetchCommonFields();
+      fetchProjectDetails();
     }
-  }, [isOpen]);
+  }, [isOpen, visitId]);
 
   const handleSave = async () => {
     if (!visitId) return;
@@ -143,94 +169,11 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Información General */}
-              <div className="space-y-3">
-                <h3 className="font-semibold text-lg">Información General</h3>
-                <Input
-                  label="Nombre del Cliente"
-                  value={projectDetails.clientName as string || ''}
-                  onChange={(e) => handleFieldChange('clientName', e.target.value)}
-                />
-                <Input
-                  label="Email del Cliente"
-                  type="email"
-                  value={projectDetails.clientEmail as string || ''}
-                  onChange={(e) => handleFieldChange('clientEmail', e.target.value)}
-                />
-                <Input
-                  label="Dirección"
-                  value={projectDetails.address as string || ''}
-                  onChange={(e) => handleFieldChange('address', e.target.value)}
-                />
-                <Input
-                  label="Fecha de Cierre"
-                  type="date"
-                  value={projectDetails.closingDate ? new Date(projectDetails.closingDate as string).toISOString().split('T')[0] : ''}
-                  onChange={(e) => handleFieldChange('closingDate', e.target.value)}
-                  min="1900-01-01"
-                  max="2100-12-31"
-                  onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity("Fecha fuera de rango")}
-                  onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")}
-                />
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
-                    Método de Pago
-                  </label>
-                  <select
-                    value={projectDetails.paymentMethod as string || ''}
-                    onChange={(e) => handleFieldChange('paymentMethod', e.target.value)}
-                    className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
-                  >
-                    <option value="">Seleccionar...</option>
-                    <option value="Cash">Cash</option>
-                    <option value="Transferencia">Transferencia</option>
-                    <option value="Cheques">Cheques</option>
-                    <option value="LightReach">LightReach</option>
-                    <option value="SkyLight">SkyLight</option>
-                    <option value="SunGage">SunGage</option>
-                    <option value="Sunrise Capital">Sunrise Capital</option>
-                    <option value="Foundations Finance">Foundations Finance</option>
-                    <option value="Otro">Otro</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Panel Solar */}
-              <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <h3 className="font-semibold text-lg">Panel Solar</h3>
-                <Input
-                  label="Financiadora"
-                  value={projectDetails.solarFinancier as string || ''}
-                  onChange={(e) => handleFieldChange('solarFinancier', e.target.value)}
-                />
-                <Input
-                  label="Tamaño del Sistema"
-                  value={projectDetails.systemSize as string || ''}
-                  onChange={(e) => handleFieldChange('systemSize', e.target.value)}
-                />
-              </div>
-
-              {/* Comisiones */}
-              <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <h3 className="font-semibold text-lg">Comisiones</h3>
-                <Input
-                  label="Representante Principal"
-                  value={projectDetails.primaryRep as string || ''}
-                  onChange={(e) => handleFieldChange('primaryRep', e.target.value)}
-                />
-                <Input
-                  label="Comisión (%)"
-                  type="number"
-                  value={projectDetails.primaryRepCommPct as number || ''}
-                  onChange={(e) => handleFieldChange('primaryRepCommPct', parseFloat(e.target.value) || null)}
-                />
-              </div>
-
-              {/* Campos Comunes */}
-              {commonFields.length > 0 && (
-                <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <h3 className="font-semibold text-lg">Campos Comunes</h3>
-                  {commonFields.map((field) => (
+              {/* Campos dinámicos por tipo de proyecto */}
+              {projectFields.filter(g => g.fields.length > 0).map((group) => (
+                <div key={group.typeName} className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <h3 className="font-semibold text-lg">{group.typeName}</h3>
+                  {group.fields.map((field) => (
                     <div key={field.id}>
                       {field.fieldType === "select" ? (
                         <div>
@@ -275,6 +218,12 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
                       )}
                     </div>
                   ))}
+                </div>
+              ))}
+              {projectFields.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No hay campos configurados para este proyecto.</p>
+                  <p className="text-sm">Selecciona un tipo de proyecto en Admin {">"} Campos de Proyectos.</p>
                 </div>
               )}
             </div>
