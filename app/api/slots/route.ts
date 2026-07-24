@@ -85,7 +85,7 @@ export async function POST(request: Request) {
   const endAt = new Date(startAt);
   endAt.setHours(startAt.getHours() + 1);
 
-  const slotDateStr = startAt.toISOString().split("T")[0];
+  const slotDateStr = `${startAt.getFullYear()}-${String(startAt.getMonth()+1).padStart(2,'0')}-${String(startAt.getDate()).padStart(2,'0')}`;
   const existingSlots = await prisma.closerSlot.findMany({
     where: {
       closerId: userId,

@@ -90,6 +90,31 @@ export async function PATCH(
       },
     });
 
+    if (directSale) {
+      try {
+        const existingChat = await prisma.chatRoom.findUnique({
+          where: { visitId: visit.id },
+        });
+
+        if (!existingChat) {
+          await prisma.chatRoom.create({
+            data: {
+              visitId: visit.id,
+            },
+          });
+
+          await prisma.visit.update({
+            where: { id: visit.id },
+            data: {
+              chatCreatedAt: new Date(),
+            },
+          });
+        }
+      } catch (chatError) {
+        console.error("Error creating direct sale chat:", chatError);
+      }
+    }
+
     // Guardar proyectos seleccionados
     if (projectTypeIds && Array.isArray(projectTypeIds) && projectTypeIds.length > 0) {
       // Eliminar proyectos existentes

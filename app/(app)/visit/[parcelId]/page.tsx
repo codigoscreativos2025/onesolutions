@@ -1775,6 +1775,7 @@ function CloserForm({
           <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
             Información del Cliente
           </label>
+          <label className="block text-sm font-medium text-on-surface mb-1">Nombre del Cliente *</label>
           <div className="relative">
             <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
             <input
@@ -1785,6 +1786,7 @@ function CloserForm({
               className="w-full h-12 pl-12 pr-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
             />
           </div>
+          <label className="block text-sm font-medium text-on-surface mb-1">Correo Electrónico</label>
           <div className="relative">
             <svg
               className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant"
@@ -1807,6 +1809,7 @@ function CloserForm({
               className="w-full h-12 pl-12 pr-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
             />
           </div>
+          <label className="block text-sm font-medium text-on-surface mb-1">Teléfono</label>
           <div className="relative">
             <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
             <input
