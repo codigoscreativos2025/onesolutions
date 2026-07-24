@@ -540,25 +540,42 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
                     {Object.keys(fieldLabels).length > 0 ? (
                       Object.entries(fieldLabels).map(([key, meta]) => {
                         if (key === 'id' || key === 'visitId' || key === 'createdAt' || key === 'updatedAt') return null;
-                        const value = visit.projectDetails?.[key as keyof typeof visit.projectDetails] as string | undefined;
+                        const rawValue = visit.projectDetails?.[key as keyof typeof visit.projectDetails] as string | undefined;
+                        const isFile = meta.type === "file" || meta.type === "photos";
                         return (
                           <div key={key}>
                             <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
                               {meta.label}
                             </label>
-                            <p className="mt-1">{value || "—"}</p>
+                            <p className="mt-1">
+                              {isFile && rawValue ? (
+                                <a href={rawValue.split(/[,\[\]]/).filter(Boolean)[0] || rawValue} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm flex items-center gap-1">
+                                  <FileText className="w-3 h-3" /> Ver documento
+                                </a>
+                              ) : rawValue || "—"}
+                            </p>
                           </div>
                         );
                       })
                     ) : (
                       Object.entries(visit.projectDetails).map(([key, value]) => {
                         if (key === 'id' || key === 'visitId' || key === 'createdAt' || key === 'updatedAt') return null;
+                        const strVal = value ? String(value) : "";
+                        const looksLikeUrl = strVal.startsWith("/uploads/") || strVal.startsWith("http");
                         return (
                           <div key={key}>
                             <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
                               {key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}
                             </label>
-                            <p className="mt-1">{value ? String(value) : "—"}</p>
+                            <p className="mt-1">
+                              {strVal ? (
+                                looksLikeUrl ? (
+                                  <a href={strVal} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm flex items-center gap-1">
+                                    <FileText className="w-3 h-3" /> Ver documento
+                                  </a>
+                                ) : strVal
+                              ) : "—"}
+                            </p>
                           </div>
                         );
                       })

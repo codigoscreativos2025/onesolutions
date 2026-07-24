@@ -237,8 +237,10 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
                                   urls = [val];
                                 }
                                 return urls.map((url, i) => (
-                                  <div key={i} className="relative group">
-                                    <img src={url} alt="" className="h-10 w-10 object-cover rounded border" />
+                                  <div key={i} className="relative group flex items-center gap-1">
+                                    <a href={url} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
+                                      <img src={url} alt="" className="h-10 w-10 object-cover rounded border hover:border-primary" title="Abrir en nueva pestaña" />
+                                    </a>
                                     <button
                                       onClick={() => {
                                         const newUrls = urls.filter((_, j) => j !== i);
