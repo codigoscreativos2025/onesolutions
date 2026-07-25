@@ -7,10 +7,20 @@ import { ContractModal } from '@/components/quote/ContractModal';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 
+interface VisitProject {
+  projectType: { id: number; name: string };
+}
+
 interface VisitData {
+  id: number;
   stage: string;
-  objections?: { id: number }[];
-  projects?: { projectType: { id: number; name: string } }[];
+  outcome: string | null;
+  objections: { objection: { name: string; color: string } }[];
+  closerObjections: { closerObjection: { name: string; color: string } }[];
+  projects: VisitProject[];
+  bill: { clientName: string; phone: string } | null;
+  setter: { id: number; name: string };
+  closer: { id: number; name: string } | null;
 }
 
 interface Parcel {
@@ -20,14 +30,15 @@ interface Parcel {
   status: string;
   claimedAt: string | null;
   lastActivityAt: string | null;
+  setter: { id: number; name: string } | null;
+  partner: { id: number; name: string } | null;
+  visits: VisitData[];
   daysSinceActivity: number;
-  daysRemaining: number;
-  percentage: number;
-  isExpiringSoon: boolean;
+  daysLeft: number | null;
   isExpired: boolean;
-  visits?: VisitData[];
-  hasSetterObjections?: boolean;
-  projectTypeIds?: number[];
+  isExpiring: boolean;
+  hasObjections: boolean;
+  stage: string;
 }
 
 export default function LeadsPage() {
@@ -70,25 +81,9 @@ export default function LeadsPage() {
 
   const fetchParcels = async () => {
     try {
-      const res = await fetch('/api/parcels/expiration');
+      const res = await fetch('/api/leads/list');
       const data = await res.json();
-
-      const enriched = await Promise.all(
-        data.map(async (p: Parcel) => {
-          try {
-            const visitRes = await fetch(`/api/visits/active?parcelId=${p.id}`);
-            if (visitRes.ok) {
-            const visit = await visitRes.json();
-            const hasObj = visit?.objections && visit.objections.length > 0;
-            const projectTypeIds = visit?.projects?.map((p: { projectType: { id: number } }) => p.projectType.id) || [];
-            return { ...p, hasSetterObjections: hasObj, projectTypeIds };
-            }
-          } catch {}
-          return { ...p, hasSetterObjections: false };
-        })
-      );
-
-      setParcels(enriched);
+      setParcels(data);
     } catch (error) {
       console.error('Error fetching parcels:', error);
     } finally {
@@ -96,13 +91,30 @@ export default function LeadsPage() {
     }
   };
 
-  const filteredParcels = parcels.filter((parcel) => {
-    if (filter === 'expiring') return parcel.isExpiringSoon && !parcel.isExpired;
-    if (filter === 'expired') return parcel.isExpired;
-    if (filter === 'objections') return parcel.hasSetterObjections;
+  const getProjectTypeIds = (parcel: Parcel): number[] => {
+    const visit = parcel.visits?.[0];
+    if (!visit?.projects) return [];
+    return visit.projects.map((p) => p.projectType.id);
+  };
 
+  const getPercentage = (daysLeft: number | null): number => {
+    if (daysLeft === null || daysLeft <= 0) return 0;
+    return Math.min(100, (daysLeft / 30) * 100);
+  };
+
+  const getDaysRemaining = (parcel: Parcel): number | null => {
+    if (parcel.stage !== 'IN_PROGRESS') return null;
+    return parcel.daysLeft;
+  };
+
+  const filteredParcels = parcels.filter((parcel) => {
+    if (filter === 'expiring') return parcel.isExpiring && !parcel.isExpired;
+    if (filter === 'expired') return parcel.isExpired;
+    if (filter === 'objections') return parcel.hasObjections;
+
+    const projectTypeIds = getProjectTypeIds(parcel);
     const matchesProjectType = projectTypeFilter === 'all' ||
-      (parcel.projectTypeIds && parcel.projectTypeIds.includes(Number(projectTypeFilter)));
+      projectTypeIds.includes(Number(projectTypeFilter));
 
     const parcelDate = parcel.claimedAt ? new Date(parcel.claimedAt) : null;
     const matchesDateFrom = !dateFrom || (parcelDate && parcelDate >= new Date(dateFrom));
@@ -118,9 +130,9 @@ export default function LeadsPage() {
   });
 
   const getFilterCount = (f: string) => {
-    if (f === 'expiring') return parcels.filter((p) => p.isExpiringSoon && !p.isExpired).length;
+    if (f === 'expiring') return parcels.filter((p) => p.isExpiring && !p.isExpired).length;
     if (f === 'expired') return parcels.filter((p) => p.isExpired).length;
-    if (f === 'objections') return parcels.filter((p) => p.hasSetterObjections).length;
+    if (f === 'objections') return parcels.filter((p) => p.hasObjections).length;
     return parcels.length;
   };
 
@@ -132,6 +144,14 @@ export default function LeadsPage() {
     if (percentage > 50) return 'bg-green-500';
     if (percentage > 25) return 'bg-yellow-500';
     return 'bg-red-500';
+  };
+
+  const handleOpenDocuments = (parcel: Parcel) => {
+    const visit = parcel.visits?.[0];
+    if (visit) {
+      setSelectedVisitId(visit.id);
+      setShowContractModal(true);
+    }
   };
 
   if (loading) {
@@ -264,151 +284,149 @@ export default function LeadsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredParcels.map((parcel) => (
-            <div
-              key={parcel.id}
-              className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border-l-4 ${
-                filter === 'objections'
-                  ? 'border-secondary'
-                  : parcel.isExpired
-                  ? 'border-red-500'
-                  : parcel.isExpiringSoon
-                  ? 'border-yellow-500'
-                  : 'border-green-500'
-              }`}
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <MapPin className="w-5 h-5 text-gray-500" />
-                    <h3 className="text-lg font-semibold">{parcel.address}</h3>
-                    {parcel.hasSetterObjections && (
-                      <span className="px-2 py-0.5 bg-secondary/10 text-secondary rounded-full text-xs font-medium">
-                        Objeción
-                      </span>
+          {filteredParcels.map((parcel) => {
+            const daysRemaining = getDaysRemaining(parcel);
+            const percentage = getPercentage(parcel.daysLeft);
+
+            return (
+              <div
+                key={parcel.id}
+                className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border-l-4 ${
+                  filter === 'objections'
+                    ? 'border-secondary'
+                    : parcel.isExpired
+                    ? 'border-red-500'
+                    : parcel.isExpiring
+                    ? 'border-yellow-500'
+                    : 'border-green-500'
+                }`}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <MapPin className="w-5 h-5 text-gray-500" />
+                      <h3 className="text-lg font-semibold">{parcel.address}</h3>
+                      {parcel.hasObjections && (
+                        <span className="px-2 py-0.5 bg-secondary/10 text-secondary rounded-full text-xs font-medium">
+                          Objeción
+                        </span>
+                      )}
+                    </div>
+                    {parcel.ownerName && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Propietario: {parcel.ownerName}
+                      </p>
                     )}
+                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        <span>
+                          Reclamada:{' '}
+                          {parcel.claimedAt
+                            ? new Date(parcel.claimedAt).toLocaleDateString()
+                            : 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        <span>
+                          Última actividad: {parcel.daysSinceActivity} días atrás
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  {parcel.ownerName && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Propietario: {parcel.ownerName}
-                    </p>
+
+                  {daysRemaining !== null && (
+                    <div className="text-right">
+                      <div
+                        className={`text-2xl font-bold ${
+                          parcel.isExpired
+                            ? 'text-red-500'
+                            : parcel.isExpiring
+                            ? 'text-yellow-500'
+                            : 'text-green-500'
+                        }`}
+                      >
+                        {daysRemaining}
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        días restantes
+                      </div>
+                    </div>
                   )}
-                  <div className="flex items-center gap-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      <span>
-                        Reclamada:{' '}
-                        {parcel.claimedAt
-                          ? new Date(parcel.claimedAt).toLocaleDateString()
-                          : 'N/A'}
-                      </span>
+                </div>
+
+                {parcel.stage === 'IN_PROGRESS' && (
+                  <div className="mb-4">
+                    <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      <span>Tiempo restante</span>
+                      <span>{Math.round(percentage)}%</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      <span>
-                        Última actividad: {parcel.daysSinceActivity} días atrás
-                      </span>
+                    <div className="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all duration-300 ${getProgressColor(percentage)}`}
+                        style={{ width: `${percentage}%` }}
+                      />
                     </div>
                   </div>
-                </div>
-
-                <div className="text-right">
-                  <div
-                    className={`text-2xl font-bold ${
-                      parcel.isExpired
-                        ? 'text-red-500'
-                        : parcel.isExpiringSoon
-                        ? 'text-yellow-500'
-                        : 'text-green-500'
-                    }`}
-                  >
-                    {parcel.daysRemaining}
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    días restantes
-                  </div>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
-                  <span>Tiempo restante</span>
-                  <span>{Math.round(parcel.percentage)}%</span>
-                </div>
-                <div className="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full transition-all duration-300 ${getProgressColor(parcel.percentage)}`}
-                    style={{ width: `${parcel.percentage}%` }}
-                  />
-                </div>
-              </div>
-
-              {parcel.isExpiringSoon && !parcel.isExpired && (
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-4">
-                  <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
-                    <AlertCircle className="w-5 h-5" />
-                    <span className="font-medium">
-                      ¡Atención! Este lead expirará en {parcel.daysRemaining} días. Realiza una visita para mantenerlo.
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {parcel.isExpired && (
-                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-4">
-                  <div className="flex items-center gap-2 text-red-800 dark:text-red-200">
-                    <AlertCircle className="w-5 h-5" />
-                    <span className="font-medium">
-                      Este lead ha expirado y será liberado automáticamente.
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex gap-3">
-                {isPartner ? (
-                  <div className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg text-center text-sm">
-                    Lead asignado — solo visualización
-                  </div>
-                ) : (
-                  <>
-                    <Link
-                      href={`/visit/${parcel.id}`}
-                      className="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary/90 transition-colors text-center"
-                    >
-                      Visitar
-                    </Link>
-                    <Link
-                      href={`/map?parcelId=${parcel.id}`}
-                      className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-center"
-                    >
-                      Ver en Mapa
-                    </Link>
-                  </>
                 )}
-                {parcel.visits && parcel.visits.length > 0 && (
-                  <button
-                    onClick={async () => {
-                      try {
-                        const res = await fetch(`/api/visits/active?parcelId=${parcel.id}`);
-                        if (res.ok) {
-                          const visit = await res.json();
-                          setSelectedVisitId(visit.id);
-                          setShowContractModal(true);
-                        }
-                      } catch (error) {
-                        console.error(error);
-                      }
-                    }}
-                    className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-center text-sm"
-                  >
-                    <FileText className="w-4 h-4" />
-                    Documentos
-                  </button>
+
+                {parcel.isExpiring && !parcel.isExpired && (
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-4">
+                    <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
+                      <AlertCircle className="w-5 h-5" />
+                      <span className="font-medium">
+                        ¡Atención! Este lead expirará en {parcel.daysLeft} días. Realiza una visita para mantenerlo.
+                      </span>
+                    </div>
+                  </div>
                 )}
+
+                {parcel.isExpired && (
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-4">
+                    <div className="flex items-center gap-2 text-red-800 dark:text-red-200">
+                      <AlertCircle className="w-5 h-5" />
+                      <span className="font-medium">
+                        Este lead ha expirado y será liberado automáticamente.
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  {isPartner ? (
+                    <div className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg text-center text-sm">
+                      Lead asignado — solo visualización
+                    </div>
+                  ) : (
+                    <>
+                      <Link
+                        href={`/visit/${parcel.id}`}
+                        className="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary/90 transition-colors text-center"
+                      >
+                        Visitar
+                      </Link>
+                      <Link
+                        href={`/map?parcelId=${parcel.id}`}
+                        className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-center"
+                      >
+                        Ver en Mapa
+                      </Link>
+                    </>
+                  )}
+                  {parcel.visits && parcel.visits.length > 0 && (
+                    <button
+                      onClick={() => handleOpenDocuments(parcel)}
+                      className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-center text-sm"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Documentos
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

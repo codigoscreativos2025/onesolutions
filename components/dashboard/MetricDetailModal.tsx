@@ -133,7 +133,7 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
   const getCompletionPercentage = (details: Record<string, unknown> | null | undefined): number => {
     if (!details) return 0;
     const fields = Object.entries(details).filter(
-      ([key]) => !['id', 'visitId', 'createdAt', 'updatedAt', 'panelsUp', 'panelsDown'].includes(key)
+      ([key]) => !['id', 'visitId', 'createdAt', 'updatedAt', 'panelsUpCount', 'panelsDownCount'].includes(key)
     );
     if (fields.length === 0) return 0;
     const filled = fields.filter(([, val]) => val !== null && val !== undefined && val !== '' && val !== false);

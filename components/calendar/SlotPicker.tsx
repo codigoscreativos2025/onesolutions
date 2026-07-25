@@ -167,7 +167,7 @@ export function SlotPicker({ closerId, selectedSlotId, onSlotSelect }: SlotPicke
                     <div className="flex items-center justify-center gap-1">
                       <Clock className="w-3 h-3" />
                       <span className="font-semibold">
-                        {format(new Date(slot.startAt), 'h:mm a')}
+                        {format(new Date(slot.startAt), 'HH:mm')}
                       </span>
                     </div>
                   </button>

@@ -2,6 +2,8 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
 export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
@@ -15,20 +17,25 @@ export async function PATCH(
   const body = await request.json();
   const { tagIds, notes } = body;
 
-  try {
-    if (tagIds && Array.isArray(tagIds) && tagIds.length > 0) {
-      await prisma.visitNotAvailableTag.deleteMany({
-        where: { visitId: parseInt(id) },
-      });
+  if (!tagIds || !Array.isArray(tagIds) || tagIds.length === 0) {
+    return NextResponse.json(
+      { error: "tagIds is required and must be a non-empty array" },
+      { status: 400 }
+    );
+  }
 
-      await prisma.visitNotAvailableTag.createMany({
-        data: tagIds.map((tagId: number) => ({
-          visitId: parseInt(id),
-          tagId,
-          notes: notes || null,
-        })),
-      });
-    }
+  try {
+    await prisma.visitNotAvailableTag.deleteMany({
+      where: { visitId: parseInt(id) },
+    });
+
+    await prisma.visitNotAvailableTag.createMany({
+      data: tagIds.map((tagId: number) => ({
+        visitId: parseInt(id),
+        tagId,
+        notes: notes || null,
+      })),
+    });
 
     const visit = await prisma.visit.update({
       where: { id: parseInt(id) },
@@ -36,6 +43,7 @@ export async function PATCH(
         stage: "NOT_AVAILABLE",
         outcome: "NOT_AVAILABLE",
         notes,
+        completedAt: new Date(),
       },
     });
 

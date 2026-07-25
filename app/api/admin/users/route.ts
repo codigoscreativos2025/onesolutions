@@ -1,6 +1,9 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { encrypt } from "@/lib/encryption";
+import { generateOnboardingToken, buildSetupLink } from "@/lib/onboarding-token";
+import { emailTemplates } from "@/lib/email-templates";
+import { sendEmail } from "@/lib/email";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
@@ -55,7 +58,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { name, email, password, role, closerId, phone, ssn, dateOfBirth, bankName, routingNumber, zelle, accountNumber, address, profilePhoto } = body;
+  const { name, email, password, role, closerId, phone, ssn, dateOfBirth, bankName, routingNumber, zelle, accountNumber, address, profilePhoto, sendOnboarding } = body;
 
   if (!name || !email || !password || !role) {
     return NextResponse.json(
@@ -94,6 +97,30 @@ export async function POST(request: Request) {
     },
     include: { profile: true },
   });
+
+  if (sendOnboarding) {
+    const token = generateOnboardingToken();
+    const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        onboardingToken: token,
+        onboardingTokenExpires: expires,
+      },
+    });
+
+    const link = buildSetupLink(token);
+    try {
+      await sendEmail({
+        to: email,
+        subject: "Configura tu cuenta - One Solutions",
+        html: emailTemplates.onboarding(name, link),
+      });
+    } catch {
+      // silently ignore email failures
+    }
+  }
 
   return NextResponse.json(user, { status: 201 });
 }

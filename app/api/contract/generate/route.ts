@@ -171,6 +171,7 @@ export async function GET(request: Request) {
         html: template.html(data),
         fields: template.fields,
         data,
+        allowSigning: visit.stage !== "PROPOSAL_ACCEPTED" && visit.stage !== "IN_PROGRESS",
       };
     });
 
@@ -347,6 +348,7 @@ export async function POST(request: Request) {
         html: template.html(data),
         fields: template.fields,
         data,
+        allowSigning: visit.stage !== "PROPOSAL_ACCEPTED" && visit.stage !== "IN_PROGRESS",
       };
     });
 

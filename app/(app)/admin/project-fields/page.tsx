@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
-import { Plus, Pencil, Trash2, Loader2, Save, Info } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Save, Info, Image } from "lucide-react";
 
 interface ProjectType {
   id: number;
@@ -43,6 +43,7 @@ export default function AdminProjectFieldsPage() {
     isRequired: false,
     order: 0,
   });
+  const [photoMax, setPhotoMax] = useState(10);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -97,14 +98,23 @@ export default function AdminProjectFieldsPage() {
         : "/api/admin/project-type-fields";
       const method = editingField ? "PATCH" : "POST";
 
+      const body: Record<string, unknown> = {
+        ...formData,
+        projectTypeId: selectedProjectType,
+      };
+
+      if (formData.fieldType === "photos") {
+        body.options = { multiple: true, max: photoMax };
+      } else if (formData.fieldType === "select" && formData.options) {
+        body.options = formData.options.split(",").map(o => o.trim());
+      } else {
+        body.options = null;
+      }
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          projectTypeId: selectedProjectType,
-          options: formData.options ? formData.options.split(",").map(o => o.trim()) : null,
-        }),
+        body: JSON.stringify(body),
       });
 
       if (res.ok) {
@@ -122,11 +132,31 @@ export default function AdminProjectFieldsPage() {
 
   const handleEdit = (field: ProjectTypeField) => {
     setEditingField(field);
+    let optionsVal = "";
+
+    if (field.fieldType === "photos" && field.options) {
+      try {
+        const parsed = JSON.parse(field.options);
+        setPhotoMax(parsed.max || 10);
+      } catch {
+        setPhotoMax(10);
+      }
+    } else if (field.options) {
+      try {
+        const parsed = JSON.parse(field.options);
+        if (Array.isArray(parsed)) {
+          optionsVal = parsed.join(", ");
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     setFormData({
       fieldName: field.fieldName,
       fieldLabel: field.fieldLabel,
       fieldType: field.fieldType,
-      options: field.options ? JSON.parse(field.options).join(", ") : "",
+      options: optionsVal,
       isRequired: field.isRequired,
       order: field.order,
     });
@@ -158,6 +188,7 @@ export default function AdminProjectFieldsPage() {
       isRequired: false,
       order: 0,
     });
+    setPhotoMax(10);
   };
 
   const openCreateModal = () => {
@@ -235,9 +266,16 @@ export default function AdminProjectFieldsPage() {
                 <span className="font-semibold text-on-surface">
                   {field.fieldLabel}
                 </span>
-                <span className="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant text-xs rounded-full">
-                  {field.fieldType}
-                </span>
+                {field.fieldType === "photos" ? (
+                  <span className="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant text-xs rounded-full flex items-center gap-1">
+                    <Image className="w-3 h-3" />
+                    Fotos
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant text-xs rounded-full">
+                    {field.fieldType}
+                  </span>
+                )}
                 {field.isRequired && (
                   <span className="px-2 py-0.5 bg-error/10 text-error text-xs rounded-full">
                     Requerido
@@ -249,7 +287,9 @@ export default function AdminProjectFieldsPage() {
               </p>
               {field.options && (
                 <p className="text-xs text-on-surface-variant mt-1">
-                  Opciones: {JSON.parse(field.options).join(", ")}
+                  {field.fieldType === "photos"
+                    ? `Máx. fotos: ${JSON.parse(field.options).max || 10}`
+                    : `Opciones: ${JSON.parse(field.options).join(", ")}`}
                 </p>
               )}
             </div>
@@ -313,6 +353,7 @@ export default function AdminProjectFieldsPage() {
               <option value="select">Selección</option>
               <option value="date">Fecha</option>
               <option value="file">Archivo</option>
+              <option value="photos">Fotos (multi-upload)</option>
             </select>
           </div>
           {formData.fieldType === "select" && (
@@ -321,6 +362,16 @@ export default function AdminProjectFieldsPage() {
               value={formData.options}
               onChange={(e) => setFormData({ ...formData, options: e.target.value })}
               placeholder="ej: Opción 1, Opción 2, Opción 3"
+            />
+          )}
+          {formData.fieldType === "photos" && (
+            <Input
+              label="Máximo de fotos"
+              type="number"
+              value={photoMax}
+              onChange={(e) => setPhotoMax(parseInt(e.target.value) || 10)}
+              min={1}
+              max={50}
             />
           )}
           <Input

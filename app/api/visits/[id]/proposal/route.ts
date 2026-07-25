@@ -1,5 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { sendEmail } from "@/lib/email";
+import { emailTemplates } from "@/lib/email-templates";
 import { NextResponse } from "next/server";
 
 export async function PATCH(
@@ -13,9 +15,16 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await request.json();
-  const { phone, clientName, clientEmail, billImageUrl, notes, slotId, closerId, projectTypeIds } = body;
+  const { phone, clientName, clientEmail, billImageUrl, notes, slotId, closerId, projectTypeIds, directSale } = body;
 
-  if (!phone || !slotId || !closerId) {
+  if (!phone) {
+    return NextResponse.json(
+      { error: "Missing required fields" },
+      { status: 400 }
+    );
+  }
+
+  if (!directSale && (!slotId || !closerId)) {
     return NextResponse.json(
       { error: "Missing required fields" },
       { status: 400 }
@@ -53,21 +62,58 @@ export async function PATCH(
       });
     }
 
-    await prisma.closerSlot.update({
-      where: { id: parseInt(slotId) },
-      data: { isBooked: true },
-    });
+    if (!directSale && slotId) {
+      await prisma.closerSlot.update({
+        where: { id: parseInt(slotId) },
+        data: { isBooked: true },
+      });
+    }
+
+    const effectiveCloserId = directSale ? parseInt(session.user.id) : parseInt(closerId);
+
+    const visitUpdateData: Record<string, unknown> = {
+      stage: "PROPOSAL_ACCEPTED",
+      outcome: "PROPOSAL_ACCEPTED",
+      closerId: effectiveCloserId,
+      notes,
+    };
+
+    if (!directSale && slotId) {
+      visitUpdateData.slot = { connect: { id: parseInt(slotId) } };
+    }
 
     const visit = await prisma.visit.update({
       where: { id: parseInt(id) },
-      data: {
-        stage: "PROPOSAL_ACCEPTED",
-        outcome: "PROPOSAL_ACCEPTED",
-        closerId: parseInt(closerId),
-        slot: { connect: { id: parseInt(slotId) } },
-        notes,
+      data: visitUpdateData,
+      include: {
+        parcel: { select: { address: true } },
       },
     });
+
+    if (directSale) {
+      try {
+        const existingChat = await prisma.chatRoom.findUnique({
+          where: { visitId: visit.id },
+        });
+
+        if (!existingChat) {
+          await prisma.chatRoom.create({
+            data: {
+              visitId: visit.id,
+            },
+          });
+
+          await prisma.visit.update({
+            where: { id: visit.id },
+            data: {
+              chatCreatedAt: new Date(),
+            },
+          });
+        }
+      } catch (chatError) {
+        console.error("Error creating direct sale chat:", chatError);
+      }
+    }
 
     // Guardar proyectos seleccionados
     if (projectTypeIds && Array.isArray(projectTypeIds) && projectTypeIds.length > 0) {
@@ -86,14 +132,32 @@ export async function PATCH(
     }
 
     // Crear notificación para el closer
-    await prisma.notification.create({
-      data: {
-        userId: parseInt(closerId),
-        title: "Nueva cita asignada",
-        body: `Te han asignado una nueva cita de un setter.`,
-        link: `/dashboard`,
-      },
-    });
+    if (!directSale) {
+      await prisma.notification.create({
+        data: {
+          userId: effectiveCloserId,
+          title: "Nueva cita asignada",
+          body: `Te han asignado una nueva cita de un Trainee.`,
+          link: `/calendar?highlight=${visit.id}`,
+        },
+      });
+    }
+
+    try {
+      const closer = await prisma.user.findUnique({
+        where: { id: effectiveCloserId },
+        select: { email: true, name: true },
+      });
+      if (closer?.email) {
+        await sendEmail({
+          to: closer.email,
+          subject: "Propuesta Aceptada - One Solutions",
+          html: emailTemplates.projectProgress(closer.name, visit.parcel.address, "Propuesta Aceptada"),
+        });
+      }
+    } catch (emailError) {
+      console.error("Error sending proposal notification:", emailError);
+    }
 
     return NextResponse.json(visit);
   } catch (error) {

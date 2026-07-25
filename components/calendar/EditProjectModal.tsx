@@ -30,7 +30,7 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
   const [projectDetails, setProjectDetails] = useState<ProjectDetails>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [commonFields, setCommonFields] = useState<ProjectTypeField[]>([]);
+  const [projectFields, setProjectFields] = useState<{ typeName: string; fields: ProjectTypeField[] }[]>([]);
 
   useEffect(() => {
     if (isOpen && visitId) {
@@ -48,7 +48,6 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
         const data = await res.json();
         const bill = data.bill || {};
         const details = data.projectDetails || {};
-        // Merge bill data into projectDetails for pre-filling general info
         setProjectDetails({
           ...details,
           clientName: details.clientName || bill.clientName || '',
@@ -56,6 +55,14 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
           address: details.address || data.parcel?.address || '',
           phone: bill.phone || '',
         });
+
+        // Fetch project type fields for all selected project types
+        if (data.projects?.length > 0) {
+          fetchProjectTypeFields(data.projects.map((p: { projectType: { id: number; name: string } }) => p.projectType));
+        } else {
+          // Fallback: fetch all fields for all project types
+          fetchAllProjectFields();
+        }
       }
     } catch (error) {
       console.error('Error fetching project details:', error);
@@ -64,26 +71,45 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
     }
   };
 
-  const fetchCommonFields = async () => {
+  const fetchProjectTypeFields = async (projectTypes: { id: number; name: string }[]) => {
+    try {
+      const fieldsByType = await Promise.all(
+        projectTypes.map(async (pt) => {
+          const res = await fetch(`/api/admin/project-type-fields?projectTypeId=${pt.id}`);
+          const fields = await res.json();
+          return { typeName: pt.name, fields: Array.isArray(fields) ? fields : [] };
+        })
+      );
+      setProjectFields(fieldsByType);
+    } catch (error) {
+      console.error("Error fetching project type fields:", error);
+    }
+  };
+
+  const fetchAllProjectFields = async () => {
     try {
       const typesRes = await fetch("/api/project-types");
       const types = await typesRes.json();
-      const comunes = types.find((t: { id: number; name: string }) => t.name === "Campos Comunes");
-      if (comunes) {
-        const fieldsRes = await fetch(`/api/admin/project-type-fields?projectTypeId=${comunes.id}`);
-        const fields = await fieldsRes.json();
-        setCommonFields(fields);
+      if (Array.isArray(types)) {
+        const fieldsByType = await Promise.all(
+          types.map(async (t: { id: number; name: string }) => {
+            const res = await fetch(`/api/admin/project-type-fields?projectTypeId=${t.id}`);
+            const fields = await res.json();
+            return { typeName: t.name, fields: Array.isArray(fields) ? fields : [] };
+          })
+        );
+        setProjectFields(fieldsByType.filter(f => f.fields.length > 0));
       }
     } catch (error) {
-      console.error("Error fetching common fields:", error);
+      console.error("Error fetching all project fields:", error);
     }
   };
 
   useEffect(() => {
     if (isOpen) {
-      fetchCommonFields();
+      fetchProjectDetails();
     }
-  }, [isOpen]);
+  }, [isOpen, visitId]);
 
   const handleSave = async () => {
     if (!visitId) return;
@@ -123,7 +149,7 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-y-auto pb-20">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-2xl font-bold">Editar Información del Proyecto</h2>
@@ -143,90 +169,11 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Información General */}
-              <div className="space-y-3">
-                <h3 className="font-semibold text-lg">Información General</h3>
-                <Input
-                  label="Nombre del Cliente"
-                  value={projectDetails.clientName as string || ''}
-                  onChange={(e) => handleFieldChange('clientName', e.target.value)}
-                />
-                <Input
-                  label="Email del Cliente"
-                  type="email"
-                  value={projectDetails.clientEmail as string || ''}
-                  onChange={(e) => handleFieldChange('clientEmail', e.target.value)}
-                />
-                <Input
-                  label="Dirección"
-                  value={projectDetails.address as string || ''}
-                  onChange={(e) => handleFieldChange('address', e.target.value)}
-                />
-                <Input
-                  label="Fecha de Cierre"
-                  type="date"
-                  value={projectDetails.closingDate ? new Date(projectDetails.closingDate as string).toISOString().split('T')[0] : ''}
-                  onChange={(e) => handleFieldChange('closingDate', e.target.value)}
-                  min="1900-01-01"
-                  max="2100-12-31"
-                  onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity("Fecha fuera de rango")}
-                  onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")}
-                />
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
-                    Método de Pago
-                  </label>
-                  <select
-                    value={projectDetails.paymentMethod as string || ''}
-                    onChange={(e) => handleFieldChange('paymentMethod', e.target.value)}
-                    className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
-                  >
-                    <option value="">Seleccionar...</option>
-                    <option value="efectivo">Efectivo</option>
-                    <option value="transferencia">Transferencia</option>
-                    <option value="cheque">Cheque</option>
-                    <option value="financiamiento">Financiamiento</option>
-                    <option value="tarjeta de credito">Tarjeta de Crédito</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Panel Solar */}
-              <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <h3 className="font-semibold text-lg">Panel Solar</h3>
-                <Input
-                  label="Financiadora"
-                  value={projectDetails.solarFinancier as string || ''}
-                  onChange={(e) => handleFieldChange('solarFinancier', e.target.value)}
-                />
-                <Input
-                  label="Tamaño del Sistema"
-                  value={projectDetails.systemSize as string || ''}
-                  onChange={(e) => handleFieldChange('systemSize', e.target.value)}
-                />
-              </div>
-
-              {/* Comisiones */}
-              <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <h3 className="font-semibold text-lg">Comisiones</h3>
-                <Input
-                  label="Representante Principal"
-                  value={projectDetails.primaryRep as string || ''}
-                  onChange={(e) => handleFieldChange('primaryRep', e.target.value)}
-                />
-                <Input
-                  label="Comisión (%)"
-                  type="number"
-                  value={projectDetails.primaryRepCommPct as number || ''}
-                  onChange={(e) => handleFieldChange('primaryRepCommPct', parseFloat(e.target.value) || null)}
-                />
-              </div>
-
-              {/* Campos Comunes */}
-              {commonFields.length > 0 && (
-                <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <h3 className="font-semibold text-lg">Campos Comunes</h3>
-                  {commonFields.map((field) => (
+              {/* Campos dinámicos por tipo de proyecto */}
+              {projectFields.filter(g => g.fields.length > 0).map((group) => (
+                <div key={group.typeName} className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <h3 className="font-semibold text-lg">{group.typeName}</h3>
+                  {group.fields.map((field) => (
                     <div key={field.id}>
                       {field.fieldType === "select" ? (
                         <div>
@@ -243,6 +190,69 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
                               <option key={opt} value={opt}>{opt}</option>
                             ))}
                           </select>
+                        </div>
+                      ) : field.fieldType === "file" || field.fieldType === "photos" ? (
+                        <div>
+                          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+                            {field.fieldLabel}
+                          </label>
+                          <input
+                            type="file"
+                            accept={field.fieldType === "photos" ? "image/*" : undefined}
+                            multiple={field.fieldType === "photos"}
+                            onChange={async (e) => {
+                              const files = e.target.files;
+                              if (!files || files.length === 0) return;
+                              const urls: string[] = [];
+                              for (let i = 0; i < files.length; i++) {
+                                const formData = new FormData();
+                                formData.append("file", files[i]);
+                                try {
+                                  const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+                                  const uploadData = await uploadRes.json();
+                                  urls.push(uploadData.url);
+                                } catch {}
+                              }
+                              if (field.fieldType === "photos") {
+                                const existing = projectDetails[field.fieldName];
+                                let existingArr: string[] = [];
+                                if (existing) {
+                                  try { existingArr = JSON.parse(existing as string); } catch { existingArr = [existing as string]; }
+                                }
+                                handleFieldChange(field.fieldName, JSON.stringify([...existingArr, ...urls]));
+                              } else {
+                                handleFieldChange(field.fieldName, urls[0]);
+                              }
+                            }}
+                            className="w-full text-sm text-on-surface file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-on-primary file:text-xs file:font-medium hover:file:opacity-90"
+                          />
+                          {projectDetails[field.fieldName] && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {(() => {
+                                const val = projectDetails[field.fieldName] as string;
+                                let urls: string[] = [];
+                                if (val.startsWith("[")) {
+                                  try { urls = JSON.parse(val); } catch { urls = [val]; }
+                                } else {
+                                  urls = [val];
+                                }
+                                return urls.map((url, i) => (
+                                  <div key={i} className="relative group flex items-center gap-1">
+                                    <a href={url} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
+                                      <img src={url} alt="" className="h-10 w-10 object-cover rounded border hover:border-primary" title="Abrir en nueva pestaña" />
+                                    </a>
+                                    <button
+                                      onClick={() => {
+                                        const newUrls = urls.filter((_, j) => j !== i);
+                                        handleFieldChange(field.fieldName, field.fieldType === "photos" ? JSON.stringify(newUrls) : "");
+                                      }}
+                                      className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 flex items-center justify-center"
+                                    >x</button>
+                                  </div>
+                                ));
+                              })()}
+                            </div>
+                          )}
                         </div>
                       ) : field.fieldType === "date" ? (
                         <Input
@@ -271,6 +281,12 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
                       )}
                     </div>
                   ))}
+                </div>
+              ))}
+              {projectFields.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No hay campos configurados para este proyecto.</p>
+                  <p className="text-sm">Selecciona un tipo de proyecto en Admin {">"} Campos de Proyectos.</p>
                 </div>
               )}
             </div>

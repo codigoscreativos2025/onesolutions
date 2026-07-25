@@ -18,6 +18,8 @@ model User {
   avatarUrl String?
   isActive  Boolean  @default(true)
   locationValidationEnabled Boolean @default(true)
+  onboardingToken       String?
+  onboardingTokenExpires DateTime?
   createdAt DateTime @default(now())
 
   // Relación closer -> setters
@@ -39,6 +41,7 @@ model User {
   profile        UserProfile?
   parcelHistory  ParcelVisitHistory[] @relation("ParcelVisitHistory")
   auditLogs      AuditLog[] @relation("AuditLog")
+  commissions    CloserCommission[]
 }
 
 model CloserSlot {
@@ -103,6 +106,7 @@ model Visit {
   chatRoom           ChatRoom?
   slot               CloserSlot?
   projects           VisitProject[]
+  commissions        CloserCommission[]
   projectDetails     ProjectDetails?
   location           VisitLocation?
 }
@@ -163,28 +167,34 @@ model ProjectDetails {
   systemSize        String?
   hoaInfo           String?
   ppwSold           String?
-  umbrella          String?
+  umbrella          String?   // "SI" o "NO"
+  clientIncentive   String?   // incentivo al cliente
   mpuPanels         String?
   siteSurveyDate    DateTime?
-  panelsUp          Boolean @default(false)
-  panelsDown        Boolean @default(false)
+  panelsUpCount     Int?      // cantidad de paneles a subir
+  panelsDownCount   Int?      // cantidad de paneles a bajar
   panelsPhotoUrl    String?
+  solarCostPrice    Float?    // precio costo panel solar
+  solarSalePrice    Float?    // precio venta panel solar  
+  solarCommission   Float?    // comision panel solar
 
   // Archivos generales
   electricBillUrl   String?
   closingFormUrl    String?
   homeInsuranceUrl  String?
   homeTitleUrl      String?
+  idDocumentUrl     String?   // ID del cliente
 
   // Techo
-  roofType          String? // reemplazo, reparacion, gutters
+  roofType          String? // reemplazo, reparacion, gutters, skylights
   roofCostPrice     Float?
   roofSalePrice     Float?
   roofCommission    Float?
   nocUrl            String?
   materialsOrderUrl String?
   roofReportUrl     String?
-  propertyPhotosUrl String?
+  exteriorScopeUrl  String?   // exterior scope work
+  propertyPhotosJson String?  // JSON array de URLs de fotos
 
   // Purificador
   waterSystemType   String? // sistema completo, softener, R.O, sistema de pozo
@@ -383,7 +393,15 @@ model UserProfile {
   routingNumber   String?  // Encriptado
   zelle           String?
   accountNumber   String?
-  
+
+  // Work schedule (JSON string)
+  workSchedule    String?
+
+  // Datos de Partner
+  representativeName String?
+  companyName        String?
+  itinNumber         String?  // ITIN number
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -432,6 +450,16 @@ model BusinessSettings {
   logoUpdatedAt   DateTime?
   watermarkedEnabled Boolean @default(true)
   updatedAt       DateTime @updatedAt
+}
+
+model CloserCommission {
+  id         Int    @id @default(autoincrement())
+  visitId    Int
+  visit      Visit  @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  userId     Int
+  user       User   @relation(fields: [userId], references: [id])
+  percentage Float
+  role       String @default("CLOSER")
 }
 
 // Etiquetas personalizables para "No Disponible"

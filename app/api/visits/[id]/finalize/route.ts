@@ -14,7 +14,6 @@ export async function PATCH(
 
   const { id } = await params;
   const visitId = parseInt(id);
-  const userId = parseInt(session.user.id);
   const role = session.user.role;
 
   const visit = await prisma.visit.findUnique({
@@ -42,9 +41,9 @@ export async function PATCH(
     );
   }
 
-  if (role !== "ADMIN" && visit.closerId !== userId) {
+  if (role !== "ADMIN") {
     return NextResponse.json(
-      { error: "Only admin or the visit's closer can finalize" },
+      { error: "Only admin can finalize projects" },
       { status: 403 }
     );
   }

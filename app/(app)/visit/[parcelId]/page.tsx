@@ -163,9 +163,9 @@ function CelebrationOverlay({ onComplete }: { onComplete: () => void }) {
   );
 }
 
-function calculateProjectCompletion(details: Record<string, string>): number {
-  const requiredFields = ["clientName", "clientEmail", "address", "closingDate", "paymentMethod"];
-  const filled = requiredFields.filter((f) => details[f] && details[f] !== "");
+function calculateProjectCompletion(details: Record<string, string>, extraFields: string[] = []): number {
+  const requiredFields = ["clientName", "clientEmail", "address", "closingDate", "paymentMethod", ...extraFields];
+  const filled = requiredFields.filter((f) => details[f] && details[f] !== "" && details[f] !== "[]");
   return filled.length === 0 ? 0 : Math.round((filled.length / requiredFields.length) * 100);
 }
 
@@ -217,9 +217,14 @@ export default function VisitPage() {
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [showContractModal, setShowContractModal] = useState(false);
   const [showProjectTypeSelector, setShowProjectTypeSelector] = useState(false);
+  const [directSale, setDirectSale] = useState(false);
+  const [commissions] = useState<{ userId: number; name: string; percentage: number }[]>([]);
+  const [fileCategory, setFileCategory] = useState("");
+  const DOCUMENT_CATEGORIES = ["ID", "Survey", "Warranty", "Photos", "Exterior Scope Work", "NOC", "Otro"];
 
   const isCloser = session?.user?.role === "CLOSER";
   const isClosingMode = isCloser;
+  const isTrainee = session?.user?.role === "SETTER";
 
   const isStartProject = visit
     ? visit.stage === "PROPOSAL_ACCEPTED" || visit.stage === "IN_PROGRESS"
@@ -290,14 +295,19 @@ export default function VisitPage() {
         );
       }
 
+      let effectiveClientName = "";
+      let effectiveClientEmail = "";
+      let effectivePhone = "";
+      let effectiveProposalNotes = "";
+
       if (visitData?.parcel?.metadata) {
         try {
           const metadata = JSON.parse(visitData.parcel.metadata);
           if (metadata.isManual) {
-            setPhone(metadata.phone || "");
-            setClientName(visitData.parcel.ownerName || metadata.ownerName || "");
-            setClientEmail(metadata.email || "");
-            setProposalNotes(metadata.notes || "");
+            effectivePhone = metadata.phone || "";
+            effectiveClientName = visitData.parcel.ownerName || metadata.ownerName || "";
+            effectiveClientEmail = metadata.email || "";
+            effectiveProposalNotes = metadata.notes || "";
           }
         } catch {
           // metadata parse failed, ignore
@@ -305,10 +315,21 @@ export default function VisitPage() {
       }
 
       if (visitData?.bill) {
-        if (visitData.bill.clientName) setClientName(visitData.bill.clientName);
-        if (visitData.bill.phone) setPhone(visitData.bill.phone);
-        if (visitData.bill.clientEmail) setClientEmail(visitData.bill.clientEmail);
+        if (visitData.bill.clientName) effectiveClientName = visitData.bill.clientName;
+        if (visitData.bill.phone) effectivePhone = visitData.bill.phone;
+        if (visitData.bill.clientEmail) effectiveClientEmail = visitData.bill.clientEmail;
+        if (visitData.bill.notes) setClosingNotes(visitData.bill.notes);
+        if (visitData.bill.additionalFileName) setBillFileName(visitData.bill.additionalFileName);
       }
+
+      if (!effectiveClientName && visitData?.parcel?.ownerName) {
+        effectiveClientName = visitData.parcel.ownerName;
+      }
+
+      setPhone(effectivePhone);
+      setClientName(effectiveClientName);
+      setClientEmail(effectiveClientEmail);
+      setProposalNotes(effectiveProposalNotes);
 
       if (visitData?.projectDetails) {
         const raw = visitData.projectDetails as Record<string, unknown>;
@@ -319,6 +340,12 @@ export default function VisitPage() {
           }
         }
         setProjectDetailsForm(form);
+      } else {
+        setProjectDetailsForm({
+          address: visitData?.parcel?.address || "",
+          clientName: effectiveClientName,
+          clientEmail: effectiveClientEmail,
+        });
       }
     } catch (error) {
       console.error(error);
@@ -351,33 +378,29 @@ export default function VisitPage() {
   const handleNotAvailable = async () => {
     if (selectedNotAvailableTags.length === 0 || !visit) return;
 
-    const doSubmit = async () => {
-      setSaving(true);
-      try {
-        const res = await fetch(`/api/visits/${visit.id}/not-available`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tagIds: selectedNotAvailableTags,
-            notes: notAvailableNotes || null,
-          }),
-        });
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/visits/${visit.id}/not-available`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tagIds: selectedNotAvailableTags,
+          notes: notAvailableNotes || null,
+        }),
+      });
 
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || "Error al registrar");
-        }
-
-        toast.success("No disponible registrado correctamente");
-        router.push("/map");
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Error al registrar");
-      } finally {
-        setSaving(false);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Error al registrar");
       }
-    };
 
-    executeWithLocationCheck("notAvailable", doSubmit);
+      toast.success("Visita registrada como no disponible");
+      router.push("/dashboard");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error al registrar");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleObjection = async () => {
@@ -470,6 +493,7 @@ export default function VisitPage() {
           clientEmail: clientEmail || undefined,
           clientPhone: phone || undefined,
           projectTypeIds: selectedProjectTypes.length > 0 ? selectedProjectTypes : undefined,
+          commissions: commissions.length > 0 ? commissions.map(c => ({ userId: c.userId, percentage: c.percentage })) : undefined,
         }),
       });
 
@@ -516,6 +540,7 @@ export default function VisitPage() {
           clientEmail: projectDetailsForm.clientEmail || clientEmail || undefined,
           clientPhone: phone || undefined,
           projectTypeIds: selectedProjectTypes.length > 0 ? selectedProjectTypes : undefined,
+          commissions: commissions.length > 0 ? commissions.map(c => ({ userId: c.userId, percentage: c.percentage })) : undefined,
         }),
       });
 
@@ -525,6 +550,29 @@ export default function VisitPage() {
       }
 
       setShowCelebration(true);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error al procesar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRequestClose = async () => {
+    if (!visit) return;
+
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/visits/${visit.id}/request-close`, {
+        method: "POST",
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Error al enviar solicitud");
+      }
+
+      toast.success("Solicitud enviada al administrador");
+      router.push("/my-projects");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Error al procesar");
     } finally {
@@ -623,7 +671,13 @@ export default function VisitPage() {
       setSaving(true);
 
       try {
-        if (!phone || !selectedSlotId || !selectedCloserId || selectedProjectTypes.length === 0) {
+        if (isTrainee && directSale) {
+          if (!phone || selectedProjectTypes.length === 0) {
+            setSaving(false);
+            toast.error("Completa todos los campos requeridos");
+            return;
+          }
+        } else if (!phone || !selectedSlotId || !selectedCloserId || selectedProjectTypes.length === 0) {
           setSaving(false);
           toast.error("Completa todos los campos requeridos");
           return;
@@ -646,10 +700,11 @@ export default function VisitPage() {
             clientName,
             clientEmail,
             billImageUrl,
-            slotId: selectedSlotId,
-            closerId: selectedCloserId,
+            slotId: directSale ? null : selectedSlotId,
+            closerId: directSale ? session?.user?.id : selectedCloserId,
             projectTypeIds: selectedProjectTypes,
             notes: proposalNotes,
+            directSale: directSale,
           }),
         });
 
@@ -1177,6 +1232,7 @@ export default function VisitPage() {
             savingProjectDetails={savingProjectDetails}
             handleStartProject={handleStartProject}
             handleCloseProject={handleCloseProject}
+            handleRequestClose={handleRequestClose}
             handleCancel={handleCancel}
             handleSaveProjectDetails={handleSaveProjectDetails}
             handleCreateChat={handleCreateChat}
@@ -1184,6 +1240,10 @@ export default function VisitPage() {
             onProjectDetailChange={handleProjectDetailChange}
             projectCompletion={projectCompletion}
             onUpdateProjectTypes={handleUpdateProjectTypes}
+            fileCategory={fileCategory}
+            setFileCategory={setFileCategory}
+            documentCategories={DOCUMENT_CATEGORIES}
+            userRole={session?.user?.role || ""}
           />
         )}
 
@@ -1352,58 +1412,87 @@ export default function VisitPage() {
                 </span>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-on-surface">
-                  Selecciona un Closer
-                </label>
-                <select
-                  value={selectedCloserId}
-                  onChange={(e) => {
-                    setSelectedCloserId(e.target.value);
-                    setSelectedSlotId("");
-                  }}
-                  className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
-                >
-                  <option value="">-- Selecciona un Closer --</option>
-                  {closers.map((closer) => (
-                    <option key={closer.id} value={closer.id}>
-                      {closer.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {selectedCloserId && (
-                <motion.div
-                  className="space-y-2"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <label className="text-sm font-medium text-on-surface">
-                    Selecciona Fecha y Hora
-                  </label>
-                  <SlotPicker
-                    closerId={parseInt(selectedCloserId)}
-                    selectedSlotId={
-                      selectedSlotId ? parseInt(selectedSlotId) : undefined
-                    }
-                    onSlotSelect={(slotId) =>
-                      setSelectedSlotId(String(slotId))
-                    }
+              {isTrainee && (
+                <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-xl border border-primary/10">
+                  <input
+                    type="checkbox"
+                    id="directSale"
+                    checked={directSale}
+                    onChange={(e) => {
+                      setDirectSale(e.target.checked);
+                      if (e.target.checked) {
+                        setSelectedCloserId("");
+                        setSelectedSlotId("");
+                      }
+                    }}
+                    className="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary"
                   />
-                </motion.div>
+                  <label htmlFor="directSale" className="text-sm font-medium text-on-surface cursor-pointer">
+                    Venta directa (sin closer)
+                  </label>
+                </div>
+              )}
+
+              {!directSale && (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-on-surface">
+                      Selecciona un Closer
+                    </label>
+                    <select
+                      value={selectedCloserId}
+                      onChange={(e) => {
+                        setSelectedCloserId(e.target.value);
+                        setSelectedSlotId("");
+                      }}
+                      className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
+                    >
+                      <option value="">-- Selecciona un Closer --</option>
+                      {closers.map((closer) => (
+                        <option key={closer.id} value={closer.id}>
+                          {closer.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {selectedCloserId && (
+                    <motion.div
+                      className="space-y-2"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <label className="text-sm font-medium text-on-surface">
+                        Selecciona Fecha y Hora
+                      </label>
+                      <SlotPicker
+                        closerId={parseInt(selectedCloserId)}
+                        selectedSlotId={
+                          selectedSlotId ? parseInt(selectedSlotId) : undefined
+                        }
+                        onSlotSelect={(slotId) =>
+                          setSelectedSlotId(String(slotId))
+                        }
+                      />
+                    </motion.div>
+                  )}
+                </>
               )}
             </div>
 
             <Button
               onClick={handleProposal}
               disabled={
-                !phone ||
-                !selectedSlotId ||
-                !selectedCloserId ||
-                selectedProjectTypes.length === 0 ||
-                saving
+                directSale
+                  ? !phone ||
+                    selectedProjectTypes.length === 0 ||
+                    saving
+                  : !phone ||
+                    !selectedSlotId ||
+                    !selectedCloserId ||
+                    selectedProjectTypes.length === 0 ||
+                    saving
               }
               className="w-full h-14 uppercase tracking-widest"
             >
@@ -1494,6 +1583,7 @@ function CloserForm({
   savingProjectDetails,
   handleStartProject,
   handleCloseProject,
+  handleRequestClose,
   handleCancel,
   handleSaveProjectDetails,
   handleCreateChat,
@@ -1501,6 +1591,10 @@ function CloserForm({
   onProjectDetailChange,
   projectCompletion,
   onUpdateProjectTypes,
+  fileCategory,
+  setFileCategory,
+  documentCategories,
+  userRole,
 }: {
   visit: Visit;
   clientName: string;
@@ -1525,6 +1619,7 @@ function CloserForm({
   savingProjectDetails: boolean;
   handleStartProject: () => void;
   handleCloseProject: () => void;
+  handleRequestClose: () => void;
   handleCancel: () => void;
   handleSaveProjectDetails: () => void;
   handleCreateChat: () => void;
@@ -1532,19 +1627,17 @@ function CloserForm({
   onProjectDetailChange: (key: string, value: string) => void;
   projectCompletion: number;
   onUpdateProjectTypes: () => void;
+  fileCategory: string;
+  setFileCategory: (v: string) => void;
+  documentCategories: string[];
+  userRole: string;
 }) {
   const isStartProject =
     visit.stage === "PROPOSAL_ACCEPTED" || visit.stage === "IN_PROGRESS";
   const isProject = visit.stage === "PROJECT";
   const isFullyComplete = projectCompletion === 100;
 
-  const PROJECT_DETAIL_FIELDS = [
-    { key: "clientName", label: "Nombre del Cliente", type: "text", placeholder: "Nombre completo" },
-    { key: "clientEmail", label: "Email del Cliente", type: "email", placeholder: "correo@ejemplo.com" },
-    { key: "address", label: "Dirección", type: "text", placeholder: "Dirección del proyecto" },
-    { key: "closingDate", label: "Fecha de Cierre", type: "date", placeholder: "" },
-    { key: "paymentMethod", label: "Método de Pago", type: "text", placeholder: "Efectivo, Transferencia..." },
-  ];
+  const PAYMENT_OPTIONS = ["Cash", "Transferencia", "Cheques", "LightReach", "SkyLight", "SunGage", "Sunrise Capital", "Foundations Finance", "Otro"];
 
   return (
     <motion.div
@@ -1591,17 +1684,77 @@ function CloserForm({
           <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
             Detalles del Proyecto
           </label>
-          {PROJECT_DETAIL_FIELDS.map((field) => (
-            <div key={field.key} className="relative">
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-on-surface-variant">Nombre del Cliente</label>
+            <input
+              type="text"
+              value={projectDetailsForm["clientName"] || ""}
+              onChange={(e) => onProjectDetailChange("clientName", e.target.value)}
+              placeholder="Nombre completo"
+              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-on-surface-variant">Email del Cliente</label>
+            <input
+              type="email"
+              value={projectDetailsForm["clientEmail"] || ""}
+              onChange={(e) => onProjectDetailChange("clientEmail", e.target.value)}
+              placeholder="correo@ejemplo.com"
+              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-on-surface-variant">Dirección</label>
+            <input
+              type="text"
+              value={projectDetailsForm["address"] || ""}
+              onChange={(e) => onProjectDetailChange("address", e.target.value)}
+              placeholder="Dirección del proyecto"
+              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-on-surface-variant">Fecha de Cierre</label>
+            <div className="flex gap-2">
               <input
-                type={field.type}
-                value={projectDetailsForm[field.key] || ""}
-                onChange={(e) => onProjectDetailChange(field.key, e.target.value)}
-                placeholder={field.placeholder}
-                className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
+                type="date"
+                value={(projectDetailsForm["closingDate"] || "").split("T")[0] || ""}
+                onChange={(e) => {
+                  const d = e.target.value;
+                  const timePart = (projectDetailsForm["closingDate"] || "").split("T")[1]?.substring(0, 5) || "";
+                  const combined = d ? `${d}T${timePart || "00:00"}:00` : "";
+                  onProjectDetailChange("closingDate", combined);
+                }}
+                className="flex-1 h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
+              />
+              <input
+                type="time"
+                step="1"
+                value={(projectDetailsForm["closingDate"] || "").split("T")[1]?.substring(0, 5) || ""}
+                onChange={(e) => {
+                  const t = e.target.value;
+                  const datePart = (projectDetailsForm["closingDate"] || "").split("T")[0] || "";
+                  const combined = datePart ? `${datePart}T${t || "00:00"}:00` : "";
+                  onProjectDetailChange("closingDate", combined);
+                }}
+                className="flex-1 h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
               />
             </div>
-          ))}
+          </div>
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-on-surface-variant">Método de Pago</label>
+            <select
+              value={projectDetailsForm["paymentMethod"] || ""}
+              onChange={(e) => onProjectDetailChange("paymentMethod", e.target.value)}
+              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
+            >
+              <option value="">Seleccionar...</option>
+              {PAYMENT_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
           <Button
             onClick={handleSaveProjectDetails}
             disabled={savingProjectDetails}
@@ -1622,6 +1775,7 @@ function CloserForm({
           <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
             Información del Cliente
           </label>
+          <label className="block text-sm font-medium text-on-surface mb-1">Nombre del Cliente *</label>
           <div className="relative">
             <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
             <input
@@ -1632,6 +1786,7 @@ function CloserForm({
               className="w-full h-12 pl-12 pr-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
             />
           </div>
+          <label className="block text-sm font-medium text-on-surface mb-1">Correo Electrónico</label>
           <div className="relative">
             <svg
               className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant"
@@ -1654,6 +1809,7 @@ function CloserForm({
               className="w-full h-12 pl-12 pr-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
             />
           </div>
+          <label className="block text-sm font-medium text-on-surface mb-1">Teléfono</label>
           <div className="relative">
             <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
             <input
@@ -1705,6 +1861,19 @@ function CloserForm({
         <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
           Adjuntar documento (opcional)
         </label>
+        <div className="space-y-2">
+          <label className="block text-xs font-medium text-on-surface-variant">Categoría del documento</label>
+          <select
+            value={fileCategory}
+            onChange={(e) => setFileCategory(e.target.value)}
+            className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
+          >
+            <option value="">Sin categoría</option>
+            {documentCategories.map((cat) => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        </div>
         <label className="w-full h-32 border-2 border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center bg-surface-container-lowest hover:bg-primary/5 transition-colors cursor-pointer group">
           <Upload className="w-8 h-8 text-on-surface-variant group-hover:text-primary transition-colors" />
           <span className="text-sm text-on-surface-variant mt-2">
@@ -1780,7 +1949,13 @@ function CloserForm({
         )}
 
         <Button
-          onClick={isProject ? handleCloseProject : handleStartProject}
+          onClick={
+            isProject
+              ? userRole === "ADMIN"
+                ? handleCloseProject
+                : handleRequestClose
+              : handleStartProject
+          }
           disabled={
             isProject
               ? !isFullyComplete || saving
@@ -1794,8 +1969,10 @@ function CloserForm({
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : isStartProject ? (
             "Iniciar Proyecto"
+          ) : isProject ? (
+            userRole === "ADMIN" ? "Cerrar Proyecto" : "Solicitar Cierre"
           ) : (
-            "Cerrar Proyecto"
+            ""
           )}
         </Button>
 

@@ -3,11 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await auth();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const { searchParams } = new URL(request.url);
+  const showTrainees = searchParams.get("trainees") === "true";
 
   const userId = parseInt(session.user.id);
   const user = await prisma.user.findUnique({
@@ -19,10 +22,17 @@ export async function GET() {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
+  if (showTrainees && user.role === "CLOSER") {
+    const trainees = await prisma.user.findMany({
+      where: { closerId: userId },
+      select: { id: true, name: true, email: true },
+    });
+    return NextResponse.json(trainees);
+  }
+
   let closers;
 
   if (user.role === "CLOSER") {
-    // Un closer se puede asignar a sí mismo sus propios slots
     closers = await prisma.user.findMany({
       where: { id: userId, role: "CLOSER" },
       select: {
@@ -36,7 +46,6 @@ export async function GET() {
       },
     });
   } else {
-    // Setter solo ve su closer asignado
     closers = await prisma.user.findMany({
       where: {
         id: user.closerId || 0,

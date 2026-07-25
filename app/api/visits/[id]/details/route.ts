@@ -89,6 +89,13 @@ export async function GET(
             },
           },
         },
+        commissions: {
+          include: {
+            user: {
+              select: { id: true, name: true },
+            },
+          },
+        },
       },
     });
 

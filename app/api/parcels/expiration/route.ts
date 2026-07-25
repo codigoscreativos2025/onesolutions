@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
+import { sendEmail } from '@/lib/email';
+import { emailTemplates } from '@/lib/email-templates';
 export const dynamic = 'force-dynamic';
 
 // Cron job que se ejecuta diariamente para verificar parcelas sin actividad por 30 días
@@ -31,7 +33,7 @@ export async function POST() {
       },
       include: {
         setter: {
-          select: { id: true, name: true },
+          select: { id: true, name: true, email: true },
         },
         visits: {
           orderBy: { createdAt: 'desc' },
@@ -73,6 +75,18 @@ export async function POST() {
             link: '/leads',
           },
         });
+
+        try {
+          if (parcel.setter?.email) {
+            await sendEmail({
+              to: parcel.setter.email,
+              subject: "Lead Expirado - One Solutions",
+              html: emailTemplates.leadExpiring(parcel.setter.name, parcel.address, 0),
+            });
+          }
+        } catch (emailError) {
+          console.error("Error sending expiration email:", emailError);
+        }
       }
 
       expiredParcels.push({

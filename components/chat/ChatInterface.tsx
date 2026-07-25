@@ -59,6 +59,7 @@ interface Room {
     projects?: { projectType: ProjectType }[];
     objections?: ObjectionEntry[];
     closerObjections?: ObjectionEntry[];
+    commissions?: { id: number; percentage: number; role: string; user: { id: number; name: string } }[];
     notes?: string;
     cancelledAt?: string;
     cancellationReason?: string;
@@ -667,11 +668,15 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
                 className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface mt-1"
               >
                 <option value="">Seleccionar...</option>
-                <option value="efectivo">Efectivo</option>
-                <option value="transferencia">Transferencia</option>
-                <option value="cheque">Cheque</option>
-                <option value="financiamiento">Financiamiento</option>
-                <option value="tarjeta de credito">Tarjeta de Crédito</option>
+                <option value="Cash">Cash</option>
+                <option value="Transferencia">Transferencia</option>
+                <option value="Cheques">Cheques</option>
+                <option value="LightReach">LightReach</option>
+                <option value="SkyLight">SkyLight</option>
+                <option value="SunGage">SunGage</option>
+                <option value="Sunrise Capital">Sunrise Capital</option>
+                <option value="Foundations Finance">Foundations Finance</option>
+                <option value="Otro">Otro</option>
               </select>
             </div>
           </div>
@@ -950,6 +955,21 @@ function ProjectInfoPanel({
             </div>
           </div>
         )}
+
+        {visit.commissions && visit.commissions.length > 0 ? (
+          <div className="col-span-2 md:col-span-3">
+            <p className="text-xs text-on-surface-variant mb-1">Comisiones</p>
+            <div className="grid grid-cols-3 gap-1 text-sm">
+              {visit.commissions.map((c) => (
+                <div key={c.id} className="flex gap-1 items-center">
+                  <span className="font-medium">{c.user.name}</span>
+                  <span className="text-xs text-on-surface-variant">({c.role === "CLOSER" ? "Closer" : "Trainee"})</span>
+                  <span className="font-bold text-primary ml-auto">{c.percentage}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {visit.notes && (
           <div className="col-span-2 md:col-span-3">

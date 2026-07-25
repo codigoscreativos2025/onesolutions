@@ -42,9 +42,17 @@ export async function GET(request: Request) {
       },
       bill: true,
       slot: true,
+      projectDetails: true,
       projects: {
         include: {
           projectType: true,
+        },
+      },
+      commissions: {
+        include: {
+          user: {
+            select: { id: true, name: true },
+          },
         },
       },
     },

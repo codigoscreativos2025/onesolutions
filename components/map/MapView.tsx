@@ -5,6 +5,7 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { ParcelSheet } from "./ParcelSheet";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 interface Parcel {
   id: string;
@@ -28,6 +29,7 @@ export default function MapView({ center }: { center?: [number, number] | null }
   const { data: session } = useSession();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
+  const mapTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
   const [mapReady, setMapReady] = useState(false);
 
@@ -61,7 +63,15 @@ export default function MapView({ center }: { center?: [number, number] | null }
       zoom,
     });
 
+    mapTimeout.current = setTimeout(() => {
+      if (!mapReady) {
+        setMapReady(true);
+        toast.error("El mapa esta tardando. Si no ves las parcelas, intenta recargar.");
+      }
+    }, 15000);
+
     m.on("load", () => {
+      if (mapTimeout.current) clearTimeout(mapTimeout.current);
       // Add the Regrid parcel vector tile source using our proxy
       m.addSource("regrid-parcels", {
         type: "vector",
@@ -155,6 +165,7 @@ export default function MapView({ center }: { center?: [number, number] | null }
   useEffect(() => {
     initMap();
     return () => {
+      if (mapTimeout.current) clearTimeout(mapTimeout.current);
       map.current?.remove();
       map.current = null;
     };
@@ -185,9 +196,12 @@ export default function MapView({ center }: { center?: [number, number] | null }
       <div ref={mapContainer} className="w-full h-full" />
       {!mapReady && (
         <div className="absolute inset-0 flex items-center justify-center bg-surface-container">
-          <div className="flex items-center gap-2 text-on-surface-variant">
+          <div className="flex flex-col items-center gap-3 text-on-surface-variant">
             <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            Cargando mapa...
+            <div className="text-center">
+              <p>Cargando mapa...</p>
+              <p className="text-xs text-on-surface-variant mt-1">Si tarda demasiado, verifica tu conexion</p>
+            </div>
           </div>
         </div>
       )}

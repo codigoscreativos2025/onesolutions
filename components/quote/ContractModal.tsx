@@ -439,7 +439,7 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
               <div className="flex-1 flex flex-col items-center justify-center text-on-surface-variant p-6">
                 <FileText className="w-16 h-16 mb-4 opacity-30" />
                 <p className="text-lg font-medium">No hay documentos disponibles</p>
-                <p className="text-sm mt-1">Los contratos estarán disponibles cuando el proyecto esté activo.</p>
+                <p className="text-sm mt-1">Asegúrate de que el proyecto tenga tipos de proyecto asignados para generar documentos.</p>
               </div>
             ) : (
               <>

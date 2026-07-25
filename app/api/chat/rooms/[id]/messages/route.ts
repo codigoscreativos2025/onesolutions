@@ -56,6 +56,12 @@ export async function POST(
           cancellationReason: true,
           completedAt: true,
           scheduledAt: true,
+          finalizedAt: true,
+          commissions: {
+            include: {
+              user: { select: { id: true, name: true } },
+            },
+          },
         },
       },
     },
