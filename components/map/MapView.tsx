@@ -75,7 +75,7 @@ export default function MapView({ center }: { center?: [number, number] | null }
       // Add the Regrid parcel vector tile source using our proxy
       m.addSource("regrid-parcels", {
         type: "vector",
-        tiles: ["/api/regrid/tiles/{z}/{x}/{y}"],
+        tiles: [`${window.location.origin}/api/regrid/tiles/{z}/{x}/{y}`],
         minzoom: 10,
         maxzoom: 22,
       });
