@@ -122,7 +122,7 @@ export default function MyProjectsPage() {
     try {
       const res = await fetch(`/api/visits/my-projects?filter=${filter}`);
       const data = await res.json();
-      setVisits(data);
+      setVisits(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching projects:', error);
     } finally {
