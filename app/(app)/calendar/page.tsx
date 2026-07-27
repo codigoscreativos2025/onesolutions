@@ -49,8 +49,9 @@ function formatTimeAMPM(dateStr: string): string {
   return `${hours}:${minutes} ${ampm}`;
 }
 
-function formatDateSpanish(date: Date): string {
-  return format(date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es });
+function formatDateSpanish(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date + "T12:00:00") : date;
+  return format(d, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es });
 }
 
 export default function CalendarPage() {
@@ -73,7 +74,7 @@ export default function CalendarPage() {
   const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
 
   const [isDayModalOpen, setIsDayModalOpen] = useState(false);
-  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedDayVisits, setSelectedDayVisits] = useState<CalendarVisit[]>([]);
 
   const [dayAvailability, setDayAvailability] = useState<Record<string, boolean>>({});
@@ -103,10 +104,10 @@ export default function CalendarPage() {
     }
   };
 
-  const saveAvailability = async (date: Date, available: boolean) => {
+  const saveAvailability = async (date: string | Date, available: boolean) => {
     setAvailabilitySaving(true);
     try {
-      const key = format(date, "yyyy-MM-dd");
+      const key = typeof date === "string" ? date : format(date, "yyyy-MM-dd");
       const res = await fetch("/api/profile/availability", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -271,14 +272,14 @@ export default function CalendarPage() {
     fetchData();
   };
 
-  const handleDayClick = (date: Date, dayVisits: CalendarVisit[]) => {
+  const handleDayClick = (date: string, dayVisits: CalendarVisit[]) => {
     setSelectedDay(date);
     setSelectedDayVisits(dayVisits);
     setIsDayModalOpen(true);
   };
 
-  const getAvailableForDay = (date: Date): boolean => {
-    const key = format(date, "yyyy-MM-dd");
+  const getAvailableForDay = (date: Date | string): boolean => {
+    const key = typeof date === "string" ? date : format(date, "yyyy-MM-dd");
     return dayAvailability[key] ?? true;
   };
 
@@ -490,7 +491,6 @@ export default function CalendarPage() {
       {viewMode === "calendar" && (
         <VisualCalendar
           visits={visits}
-          onVisitSelect={handleVisitClick}
           onDayClick={handleDayClick}
           dayAvailability={canSetSchedule ? dayAvailability : undefined}
         />

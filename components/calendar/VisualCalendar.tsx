@@ -62,7 +62,7 @@ export function VisualCalendar({ visits, onDayClick, dayAvailability }: VisualCa
       setSelectedDate(day);
       const dayVisits = getVisitsForDate(day);
       if (onDayClick) {
-        onDayClick(day, dayVisits);
+        onDayClick(format(day, "yyyy-MM-dd"), dayVisits);
       }
     }
   };
