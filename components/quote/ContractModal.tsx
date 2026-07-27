@@ -18,6 +18,7 @@ interface ContractType {
 interface ContractData {
   contracts: ContractType[];
   stage: string;
+  visit?: any;
 }
 
 interface ContractModalProps {
@@ -41,6 +42,7 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
   const [expandedSignature, setExpandedSignature] = useState<string | null>(null);
   const [signatureFields, setSignatureFields] = useState<SignatureField[]>([]);
   const [savingSignatures, setSavingSignatures] = useState(false);
+  const [savingFields, setSavingFields] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
@@ -50,6 +52,9 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
   const [sendingEmail, setSendingEmail] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const contractContentRef = useRef<HTMLDivElement>(null);
+
+  const activeContract = data?.contracts?.find((c) => c.type === activeTab);
+  const nonSignatureFields = activeContract?.fields?.filter((f) => f.type !== "signature") || [];
 
   useEffect(() => {
     if (isOpen && visitId) {
@@ -84,7 +89,6 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
   };
 
   const parseSignatureFields = useCallback(() => {
-    const activeContract = data?.contracts?.find((c) => c.type === activeTab);
     if (!activeContract?.fields) return;
 
     const sigFields = activeContract.fields
@@ -141,6 +145,38 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
     return () => clearTimeout(timer);
   }, [fieldValues, editMode, regenerateContract]);
 
+  useEffect(() => {
+    if (!contractContentRef.current || !activeContract) return;
+
+    const sigFieldDefs = activeContract.fields?.filter(f => f.type === "signature") || [];
+    const blocks = contractContentRef.current.querySelectorAll(".signature-block");
+    const labelCounts: Record<string, number> = {};
+
+    blocks.forEach((block) => {
+      const labelEl = block.querySelector(".signature-label");
+      const labelText = labelEl?.textContent?.trim().toLowerCase() || "";
+      
+      labelCounts[labelText] = (labelCounts[labelText] || 0) + 1;
+      const count = labelCounts[labelText];
+
+      const matchingFields = sigFieldDefs.filter(f =>
+        labelText.includes(f.label.toLowerCase()) || f.label.toLowerCase().includes(labelText)
+      );
+      
+      const matchingField = matchingFields[count - 1] || matchingFields[0];
+
+      if (matchingField && signatures[matchingField.key]) {
+        const lineTarget = block.querySelector(".signature-line");
+        const imgTarget = block.querySelector("img");
+        if (lineTarget) {
+          lineTarget.outerHTML = `<img src="${signatures[matchingField.key]}" alt="Signature" style="max-width:100%;height:35px;object-fit:contain;margin-bottom:4px;" class="injected-sig" />`;
+        } else if (imgTarget) {
+          imgTarget.src = signatures[matchingField.key];
+        }
+      }
+    });
+  }, [signatures, activeContract]);
+
   const handleFieldChange = (key: string, value: string) => {
     setFieldValues((prev) => ({ ...prev, [key]: value }));
   };
@@ -170,6 +206,27 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
     }
   };
 
+  const handleSaveFields = async () => {
+    setSavingFields(true);
+    try {
+      const res = await fetch(`/api/visits/${visitId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contractFields: fieldValues,
+          contractType: activeTab,
+        }),
+      });
+      if (!res.ok) throw new Error("Error saving fields");
+      toast.success("Campos guardados exitosamente");
+    } catch (error) {
+      console.error(error);
+      toast.error("Error al guardar campos");
+    } finally {
+      setSavingFields(false);
+    }
+  };
+
   const handleDownloadPdf = async () => {
     if (!contentRef.current || !contractContentRef.current || !activeContract) return;
     setGeneratingPdf(true);
@@ -177,15 +234,23 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
     const sigFieldDefs = activeContract.fields?.filter(f => f.type === "signature") || [];
     const lineDivs = contractContentRef.current.querySelectorAll(".signature-line");
     const replacements: Array<{ element: Element; originalHTML: string }> = [];
+    const labelCounts: Record<string, number> = {};
 
     lineDivs.forEach((lineDiv) => {
       const block = lineDiv.closest(".signature-block");
       if (!block) return;
       const labelEl = block.querySelector(".signature-label");
       const labelText = labelEl?.textContent?.trim().toLowerCase() || "";
-      const matchingField = sigFieldDefs.find(f =>
+      
+      labelCounts[labelText] = (labelCounts[labelText] || 0) + 1;
+      const count = labelCounts[labelText];
+
+      const matchingFields = sigFieldDefs.filter(f =>
         labelText.includes(f.label.toLowerCase()) || f.label.toLowerCase().includes(labelText)
       );
+      
+      const matchingField = matchingFields[count - 1] || matchingFields[0];
+
       if (matchingField && signatures[matchingField.key]) {
         replacements.push({ element: lineDiv, originalHTML: lineDiv.innerHTML });
         lineDiv.innerHTML = `<img src="${signatures[matchingField.key]}" alt="Signature" style="max-width:100%;height:35px;object-fit:contain;" />`;
@@ -193,8 +258,7 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
     });
 
     try {
-      const html2canvas = (await import("html2canvas")).default;
-      const { jsPDF } = await import("jspdf");
+      const html2pdf = (await import("html2pdf.js")).default;
 
       const contractEl = contractContentRef.current;
       const originalHeight = contractEl.style.height;
@@ -210,37 +274,20 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
       // Small delay for rendering
       await new Promise(r => setTimeout(r, 200));
 
-      const canvas = await html2canvas(contractEl, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-      });
+      const opt = {
+        margin: [15, 10, 15, 10] as [number, number, number, number], // top, left, bottom, right margins in mm for spacing
+        filename: `contrato_${visitId}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+
+      await html2pdf().set(opt).from(contractEl).save();
 
       contractEl.style.height = originalHeight;
       contractEl.style.overflow = originalOverflow;
       contractEl.style.maxHeight = originalMaxHeight;
-
-      const imgData = canvas.toDataURL("image/png");
-      const imgWidth = 210;
-      const pageHeight = 297;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      const pdf = new jsPDF("p", "mm", "a4");
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
-      pdf.save(`contrato_${visitId}.pdf`);
     } catch (error) {
       console.error("Error generating PDF:", error);
     } finally {
@@ -260,15 +307,23 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
     const sigFieldDefs = activeContract.fields?.filter(f => f.type === "signature") || [];
     const lineDivs = contractContentRef.current.querySelectorAll(".signature-line");
     const replacements: Array<{ element: Element; originalHTML: string }> = [];
+    const labelCounts: Record<string, number> = {};
 
     lineDivs.forEach((lineDiv) => {
       const block = lineDiv.closest(".signature-block");
       if (!block) return;
       const labelEl = block.querySelector(".signature-label");
       const labelText = labelEl?.textContent?.trim().toLowerCase() || "";
-      const matchingField = sigFieldDefs.find(f =>
+      
+      labelCounts[labelText] = (labelCounts[labelText] || 0) + 1;
+      const count = labelCounts[labelText];
+
+      const matchingFields = sigFieldDefs.filter(f =>
         labelText.includes(f.label.toLowerCase()) || f.label.toLowerCase().includes(labelText)
       );
+      
+      const matchingField = matchingFields[count - 1] || matchingFields[0];
+
       if (matchingField && signatures[matchingField.key]) {
         replacements.push({ element: lineDiv, originalHTML: lineDiv.innerHTML });
         lineDiv.innerHTML = `<img src="${signatures[matchingField.key]}" alt="Signature" style="max-width:100%;height:35px;object-fit:contain;" />`;
@@ -276,8 +331,8 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
     });
 
     try {
-      const html2canvas = (await import("html2canvas")).default;
-      const { jsPDF } = await import("jspdf");
+      // @ts-ignore
+      const html2pdf = (await import("html2pdf.js")).default;
 
       const contractEl = contractContentRef.current;
       const originalHeight = contractEl.style.height;
@@ -291,42 +346,21 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
       await document.fonts.ready;
       await new Promise(r => setTimeout(r, 200));
 
-      const canvas = await html2canvas(contractEl, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-      });
+      const opt = {
+        margin: [15, 10, 15, 10] as [number, number, number, number], // margins to provide space around pages
+        filename: `contrato_${visitId}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+
+      const pdfAsString = await html2pdf().set(opt).from(contractEl).outputPdf('datauristring');
+      const pdfBase64 = pdfAsString.split(',')[1];
 
       contractEl.style.height = originalHeight;
       contractEl.style.overflow = originalOverflow;
       contractEl.style.maxHeight = originalMaxHeight;
-
-      const imgData = canvas.toDataURL("image/png");
-      const imgWidth = 210;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      const pdf = new jsPDF("p", "mm", "a4");
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      heightLeft -= 297;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-        heightLeft -= 297;
-      }
-
-      const arrayBuffer = pdf.output("arraybuffer");
-      const bytes = new Uint8Array(arrayBuffer);
-      let binary = "";
-      for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const pdfBase64 = btoa(binary);
 
       const res = await fetch("/api/email/send", {
         method: "POST",
@@ -355,9 +389,7 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
     }
   };
 
-  const activeContract = data?.contracts?.find((c) => c.type === activeTab);
-
-  const nonSignatureFields = activeContract?.fields?.filter((f) => f.type !== "signature") || [];
+  const emailToUse = sendToEmail || data?.visit?.projectDetails?.clientEmail || data?.visit?.bill?.clientEmail || "";
 
   const renderFieldInput = (field: { key: string; label: string; type: string }) => {
     const value = fieldValues[field.key] ?? "";
@@ -659,7 +691,22 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
                         ) : (
                           <Check className="w-4 h-4" />
                         )}
-                        Guardar
+                        Guardar Firmas
+                      </Button>
+                    )}
+                    {editMode && nonSignatureFields.length > 0 && (
+                      <Button
+                        onClick={handleSaveFields}
+                        disabled={savingFields || Object.keys(fieldValues).length === 0}
+                        className="gap-2 text-sm"
+                        size="sm"
+                      >
+                        {savingFields ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Check className="w-4 h-4" />
+                        )}
+                        Guardar Campos
                       </Button>
                     )}
                   </div>

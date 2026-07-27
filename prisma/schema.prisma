@@ -98,6 +98,7 @@ model Visit {
   chatCreatedAt DateTime?
   chatCreatedBy Int?
   contractSignatures String?
+  contractFields String?
 
   objections         VisitObjection[]
   closerObjections   VisitCloserObjection[]

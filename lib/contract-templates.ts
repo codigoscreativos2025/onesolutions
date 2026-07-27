@@ -3835,23 +3835,6 @@ export function w9Html(data: Record<string, string>): string {
         </div>
     </div>
 
-     <!-- Sign Here -->
-        <div class="border-t-[1px] border-b-[2px] border-black mt-3 flex min-h-[45px] relative">
-            <div class="font-bold text-[16px] w-[50px] pt-1 pl-1 leading-tight">
-                Sign<br>Here
-            </div>
-            <div class="flex-grow flex items-end pb-1 pl-2">
-                <div class="font-bold text-[11px] mr-2">Signature of<br>U.S. person</div>
-                <i class="fa-solid fa-play text-[10px] mr-2 mb-1"></i>
-                <div class="border-b-[1px] border-black w-[400px]"></div>
-            </div>
-            <div class="w-[200px] flex items-end pb-1">
-                <div class="font-bold text-[11px] mr-2">Date</div>
-                <i class="fa-solid fa-play text-[10px] mr-2 mb-1"></i>
-                <div class="border-b-[1px] border-black w-full mr-2"></div>
-            </div>
-        </div>
-
         <!-- Instructions footer -->
         <div class="flex mt-3 gap-6">
             <div class="w-1/2">
@@ -4764,18 +4747,17 @@ export function fenceHtml(data: Record<string, string>): string {
         &bull; Warranty Do Not Cover Mother Nature Damages
     </div>
 
-    <div class="signature-box">
+    <div class="signature-box signatures-container">
         <h3 class="signature-title">Client Signature</h3>
         <div class="signature-row">
-            <div class="sig-left">
+            <div class="sig-left signature-block">
                 <div class="sig-x">X</div>
-                <div class="sig-line" style="display:flex;align-items:flex-end;">
-                    ${d("clientSignature") ? `<img src="${d("clientSignature")}" style="max-height: 40px; margin-bottom: 4px;" />` : ""}
-                </div>
+                ${d("clientSignature") ? `<div class="sig-line" style="display:flex;align-items:flex-end;"><img src="${d("clientSignature")}" style="max-height: 40px; margin-bottom: 4px;" /></div>` : '<div class="sig-line signature-line" style="display:flex;align-items:flex-end;flex:1;min-width:150px;min-height:35px;"></div>'}
+                <div class="signature-label" style="display:none;">Client Signature</div>
             </div>
-            <div class="sig-right">
-                <div class="sig-date-label">Date:</div>
-                <div class="sig-line">${d("signatureDate")}</div>
+            <div class="sig-right signature-block" style="display:flex;align-items:flex-end;">
+                <div class="sig-date-label signature-label" style="margin-right:10px;">Date:</div>
+                ${d("signatureDate") ? `<div class="sig-line">${d("signatureDate")}</div>` : '<div class="sig-line signature-line" style="flex:1;min-height:35px;"></div>'}
             </div>
         </div>
     </div>

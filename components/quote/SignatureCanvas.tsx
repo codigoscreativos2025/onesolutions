@@ -123,7 +123,7 @@ export function SignatureCanvas({
         ref={canvasRef}
         width={width}
         height={height}
-        className="border-2 border-dashed border-outline-variant rounded-xl bg-surface-container-lowest cursor-crosshair w-full"
+        className="border-2 border-dashed border-outline-variant rounded-xl bg-white cursor-crosshair w-full"
         style={{ maxWidth: width }}
         onMouseDown={startDrawing}
         onMouseMove={draw}

@@ -89,10 +89,10 @@ export async function GET(request: Request) {
       if (!d) return "";
       try {
         const date = new Date(d);
-        return date.toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
+        return date.toLocaleDateString("en-GB", {
           day: "numeric",
+          month: "long",
+          year: "numeric",
         });
       } catch {
         return "";
@@ -108,6 +108,13 @@ export async function GET(request: Request) {
     if (visit.contractSignatures) {
       try {
         savedSigs = JSON.parse(visit.contractSignatures);
+      } catch {}
+    }
+
+    let savedFields: Record<string, Record<string, string>> = {};
+    if ((visit as any).contractFields) {
+      try {
+        savedFields = JSON.parse((visit as any).contractFields);
       } catch {}
     }
 
@@ -164,6 +171,17 @@ export async function GET(request: Request) {
       if (typeSigs) {
         Object.assign(data, typeSigs);
       }
+
+      const typeFields = savedFields[template.projectType];
+      if (typeFields) {
+        Object.assign(data, typeFields);
+      }
+
+      template.fields.forEach(f => {
+        if (f.type === "date" && data[f.key] && /^\d{4}-\d{2}-\d{2}$/.test(data[f.key])) {
+          data[f.key] = fmtDate(data[f.key]);
+        }
+      });
 
       return {
         type: template.projectType,
@@ -262,10 +280,10 @@ export async function POST(request: Request) {
       if (!d) return "";
       try {
         const date = new Date(d);
-        return date.toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
+        return date.toLocaleDateString("en-GB", {
           day: "numeric",
+          month: "long",
+          year: "numeric",
         });
       } catch {
         return "";
@@ -281,6 +299,13 @@ export async function POST(request: Request) {
     if (visit.contractSignatures) {
       try {
         savedSigs = JSON.parse(visit.contractSignatures);
+      } catch {}
+    }
+
+    let savedFields: Record<string, Record<string, string>> = {};
+    if ((visit as any).contractFields) {
+      try {
+        savedFields = JSON.parse((visit as any).contractFields);
       } catch {}
     }
 
@@ -338,9 +363,20 @@ export async function POST(request: Request) {
         Object.assign(data, typeSigs);
       }
 
+      const typeFields = savedFields[template.projectType];
+      if (typeFields) {
+        Object.assign(data, typeFields);
+      }
+
       if (fieldValues) {
         Object.assign(data, fieldValues);
       }
+
+      template.fields.forEach(f => {
+        if (f.type === "date" && data[f.key] && /^\d{4}-\d{2}-\d{2}$/.test(data[f.key])) {
+          data[f.key] = fmtDate(data[f.key]);
+        }
+      });
 
       return {
         type: template.projectType,

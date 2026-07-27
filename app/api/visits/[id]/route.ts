@@ -75,5 +75,23 @@ export async function PATCH(
     return NextResponse.json({ success: true });
   }
 
+  const { contractFields } = body;
+  if (contractFields && contractType) {
+    let existingFields: Record<string, Record<string, string>> = {};
+    if (visit.contractFields) {
+      try {
+        existingFields = JSON.parse(visit.contractFields);
+      } catch {}
+    }
+    existingFields[contractType] = contractFields;
+
+    await prisma.visit.update({
+      where: { id: visitId },
+      data: { contractFields: JSON.stringify(existingFields) },
+    });
+
+    return NextResponse.json({ success: true });
+  }
+
   return NextResponse.json({ error: "No data provided" }, { status: 400 });
 }
