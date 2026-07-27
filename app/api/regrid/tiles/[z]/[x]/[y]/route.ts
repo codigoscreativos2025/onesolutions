@@ -23,7 +23,7 @@ export async function GET(
   const y = params.y;
 
   try {
-    const url = `https://tiles.regrid.com/api/v1/parcels/${z}/${x}/${y}.mvt?token=${token}`;
+    const url = `https://tiles.regrid.com/api/v1/parcels/${z}/${x}/${y}.mvt?token=${token}&fields=owner,parcelnumb,address,acreage,land_value,building_value,pcl_class`;
     const res = await fetch(url);
     if (!res.ok) {
       return new NextResponse(null, { status: res.status });
