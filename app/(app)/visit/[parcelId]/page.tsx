@@ -219,9 +219,6 @@ export default function VisitPage() {
   const [showProjectTypeSelector, setShowProjectTypeSelector] = useState(false);
   const [directSale, setDirectSale] = useState(false);
   const [commissions] = useState<{ userId: number; name: string; percentage: number }[]>([]);
-  const [fileCategory, setFileCategory] = useState("");
-  const DOCUMENT_CATEGORIES = ["ID", "Survey", "Warranty", "Photos", "Exterior Scope Work", "NOC", "Otro"];
-
   const isCloser = session?.user?.role === "CLOSER";
   const isClosingMode = isCloser;
   const isTrainee = session?.user?.role === "SETTER";
@@ -504,8 +501,8 @@ export default function VisitPage() {
 
       await saveProjectDetailsInternal();
 
-      toast.success("Proyecto iniciado correctamente");
-      fetchData();
+      toast.success("Proyecto iniciado");
+      router.push(`/my-projects?highlight=${visit.id}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Error al procesar");
     } finally {
@@ -1240,9 +1237,6 @@ export default function VisitPage() {
             onProjectDetailChange={handleProjectDetailChange}
             projectCompletion={projectCompletion}
             onUpdateProjectTypes={handleUpdateProjectTypes}
-            fileCategory={fileCategory}
-            setFileCategory={setFileCategory}
-            documentCategories={DOCUMENT_CATEGORIES}
             userRole={session?.user?.role || ""}
           />
         )}
@@ -1591,9 +1585,6 @@ function CloserForm({
   onProjectDetailChange,
   projectCompletion,
   onUpdateProjectTypes,
-  fileCategory,
-  setFileCategory,
-  documentCategories,
   userRole,
 }: {
   visit: Visit;
@@ -1627,9 +1618,6 @@ function CloserForm({
   onProjectDetailChange: (key: string, value: string) => void;
   projectCompletion: number;
   onUpdateProjectTypes: () => void;
-  fileCategory: string;
-  setFileCategory: (v: string) => void;
-  documentCategories: string[];
   userRole: string;
 }) {
   const isStartProject =
@@ -1861,19 +1849,6 @@ function CloserForm({
         <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
           Adjuntar documento (opcional)
         </label>
-        <div className="space-y-2">
-          <label className="block text-xs font-medium text-on-surface-variant">Categoría del documento</label>
-          <select
-            value={fileCategory}
-            onChange={(e) => setFileCategory(e.target.value)}
-            className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
-          >
-            <option value="">Sin categoría</option>
-            {documentCategories.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
-        </div>
         <label className="w-full h-32 border-2 border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center bg-surface-container-lowest hover:bg-primary/5 transition-colors cursor-pointer group">
           <Upload className="w-8 h-8 text-on-surface-variant group-hover:text-primary transition-colors" />
           <span className="text-sm text-on-surface-variant mt-2">

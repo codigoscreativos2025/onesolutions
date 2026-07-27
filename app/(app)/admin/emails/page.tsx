@@ -8,6 +8,12 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Mail, Send, Eye, Users, Loader2, RefreshCw } from "lucide-react";
 
+interface GeneratedInvoice {
+  id: number;
+  invoiceNum: string;
+  billToName: string;
+}
+
 type TemplateKey = keyof typeof emailTemplates | "custom";
 
 function wrapCustomHtml(body: string): string {
@@ -110,6 +116,12 @@ interface UserRecipient {
   role: string;
 }
 
+interface VisitRecord {
+  id: number;
+  clientName: string;
+  contractName: string;
+}
+
 export default function AdminEmailsPage() {
   const { data: session } = useSession();
   const [users, setUsers] = useState<UserRecipient[]>([]);
@@ -122,6 +134,11 @@ export default function AdminEmailsPage() {
   const [customSubject, setCustomSubject] = useState("");
   const [customBody, setCustomBody] = useState("");
   const editorRef = useRef<HTMLDivElement>(null);
+
+  const [invoices, setInvoices] = useState<GeneratedInvoice[]>([]);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState("");
+  const [visits, setVisits] = useState<VisitRecord[]>([]);
+  const [selectedVisitId, setSelectedVisitId] = useState("");
 
   const activeMeta = templateMeta.find((m) => m.key === selectedTemplate)!;
   const roles = ["ALL", "ADMIN", "SETTER", "SETTER_JR", "CLOSER", "PARTNER"];
@@ -137,6 +154,54 @@ export default function AdminEmailsPage() {
       .catch(() => toast.error("Error al cargar usuarios"))
       .finally(() => setLoadingUsers(false));
   }, []);
+
+  useEffect(() => {
+    if (selectedTemplate === "invoice") {
+      fetch("/api/invoices")
+        .then((r) => r.json())
+        .then((data) => setInvoices(Array.isArray(data) ? data : []))
+        .catch(() => {});
+    }
+    if (selectedTemplate === "contractToClient") {
+      fetch("/api/admin/crm/visits?limit=50")
+        .then((r) => r.json())
+        .then((data) => {
+          const arr = Array.isArray(data) ? data : data.visits || [];
+          setVisits(arr.map((v: { id: number; projectDetails?: { clientName?: string } | null; parcel?: { address?: string } | null }) => ({
+            id: v.id,
+            clientName: v.projectDetails?.clientName || "Sin nombre",
+            contractName: v.parcel?.address || "Sin direccion",
+          })));
+        })
+        .catch(() => {});
+    }
+  }, [selectedTemplate]);
+
+  const handleInvoiceSelect = (id: string) => {
+    setSelectedInvoiceId(id);
+    if (!id) return;
+    const inv = invoices.find((i) => i.id === parseInt(id));
+    if (inv) {
+      setFieldValues((prev) => ({
+        ...prev,
+        clientName: inv.billToName,
+        invoiceNum: inv.invoiceNum,
+      }));
+    }
+  };
+
+  const handleVisitSelect = (id: string) => {
+    setSelectedVisitId(id);
+    if (!id) return;
+    const v = visits.find((v) => v.id === parseInt(id));
+    if (v) {
+      setFieldValues((prev) => ({
+        ...prev,
+        clientName: v.clientName,
+        contractName: v.contractName,
+      }));
+    }
+  };
 
   const filteredUsers = useMemo(() => {
     return roleFilter === "ALL"
@@ -247,7 +312,7 @@ export default function AdminEmailsPage() {
             </label>
             <select
               value={selectedTemplate}
-              onChange={(e) => { setSelectedTemplate(e.target.value as TemplateKey); setFieldValues({}); }}
+                onChange={(e) => { setSelectedTemplate(e.target.value as TemplateKey); setFieldValues({}); setSelectedInvoiceId(""); setSelectedVisitId(""); }}
               className="w-full h-10 rounded-lg bg-surface-container-low border border-outline-variant px-3 text-sm text-on-surface"
             >
               {templateMeta.map((t) => (
@@ -342,17 +407,53 @@ export default function AdminEmailsPage() {
                 </div>
               </>
             ) : (
-              activeMeta.fields.map((f) => (
-                <div key={f.name}>
-                  <label className="text-xs text-on-surface-variant mb-1 block">{f.label}</label>
-                  <Input
-                    value={fieldValues[f.name] || ""}
-                    onChange={(e) => updateField(f.name, e.target.value)}
-                    placeholder={f.placeholder}
-                    className="h-10 text-sm"
-                  />
-                </div>
-              ))
+              <>
+                {selectedTemplate === "invoice" && invoices.length > 0 && (
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">Seleccionar Factura</label>
+                    <select
+                      value={selectedInvoiceId}
+                      onChange={(e) => handleInvoiceSelect(e.target.value)}
+                      className="w-full h-10 rounded-lg bg-surface-container-low border border-outline-variant px-3 text-sm text-on-surface"
+                    >
+                      <option value="">-- Seleccionar --</option>
+                      {invoices.map((inv) => (
+                        <option key={inv.id} value={inv.id}>
+                          {inv.invoiceNum} - {inv.billToName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {selectedTemplate === "contractToClient" && visits.length > 0 && (
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">Seleccionar Contrato</label>
+                    <select
+                      value={selectedVisitId}
+                      onChange={(e) => handleVisitSelect(e.target.value)}
+                      className="w-full h-10 rounded-lg bg-surface-container-low border border-outline-variant px-3 text-sm text-on-surface"
+                    >
+                      <option value="">-- Seleccionar --</option>
+                      {visits.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.clientName} - {v.contractName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {activeMeta.fields.map((f) => (
+                  <div key={f.name}>
+                    <label className="text-xs text-on-surface-variant mb-1 block">{f.label}</label>
+                    <Input
+                      value={fieldValues[f.name] || ""}
+                      onChange={(e) => updateField(f.name, e.target.value)}
+                      placeholder={f.placeholder}
+                      className="h-10 text-sm"
+                    />
+                  </div>
+                ))}
+              </>
             )}
           </div>
 

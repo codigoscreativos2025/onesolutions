@@ -465,6 +465,31 @@ model CloserCommission {
   role       String @default("CLOSER")
 }
 
+// Contactos frecuentes para facturación
+model FrequentContact {
+  id        Int      @id @default(autoincrement())
+  name      String
+  company   String?
+  phone     String?
+  email     String?
+  address   String?
+  createdAt DateTime @default(now())
+}
+
+// Facturas generadas
+model GeneratedInvoice {
+  id          Int      @id @default(autoincrement())
+  invoiceNum  String
+  date        DateTime
+  billToName  String
+  billToEmail String?
+  total       Float
+  paid        Float
+  balance     Float
+  html        String
+  createdAt   DateTime @default(now())
+}
+
 // Etiquetas personalizables para "No Disponible"
 model NotAvailableTag {
   id       Int    @id @default(autoincrement())
