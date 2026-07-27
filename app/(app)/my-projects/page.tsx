@@ -82,10 +82,6 @@ export default function MyProjectsPage() {
   };
 
   useEffect(() => {
-    if (session?.user?.role === 'SETTER' || session?.user?.role === 'SETTER_JR') {
-      router.push('/dashboard');
-      return;
-    }
     fetchProjects();
     fetchProjectTypes();
   }, [session, router, filter]);

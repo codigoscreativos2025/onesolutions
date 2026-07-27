@@ -6,6 +6,15 @@ export const dynamic = 'force-dynamic';
 
 const ALLOWED_ROLES = ['SETTER', 'SETTER_JR', 'CLOSER', 'ADMIN'];
 
+interface DayData {
+  available: boolean;
+  ranges: { start: string; end: string }[];
+}
+
+function parseAvailability(raw: string): Record<string, DayData | boolean> {
+  try { return JSON.parse(raw); } catch { return {}; }
+}
+
 export async function GET(request: Request) {
   const session = await auth();
   if (!session?.user) {
@@ -24,24 +33,23 @@ export async function GET(request: Request) {
       : now;
 
     const profile = await prisma.userProfile.findUnique({ where: { userId } });
-
-    let availability: Record<string, boolean> = {};
-    if (profile?.dayAvailability) {
-      try {
-        availability = JSON.parse(profile.dayAvailability);
-      } catch {
-        availability = {};
-      }
-    }
+    const stored = profile?.dayAvailability ? parseAvailability(profile.dayAvailability) : {};
 
     const monthStart = startOfMonth(targetDate);
     const monthEnd = endOfMonth(targetDate);
 
-    const monthAvailability: Record<string, boolean> = {};
+    const monthAvailability: Record<string, DayData> = {};
     let day = monthStart;
     while (day <= monthEnd) {
       const key = format(day, 'yyyy-MM-dd');
-      monthAvailability[key] = availability[key] ?? true;
+      const val = stored[key];
+      if (typeof val === 'boolean') {
+        monthAvailability[key] = { available: val, ranges: val ? [{ start: "09:00", end: "17:00" }] : [] };
+      } else if (val && typeof val === 'object') {
+        monthAvailability[key] = { available: val.available ?? true, ranges: val.ranges || [] };
+      } else {
+        monthAvailability[key] = { available: true, ranges: [{ start: "09:00", end: "17:00" }] };
+      }
       day = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1);
     }
 
@@ -71,36 +79,33 @@ export async function PATCH(request: Request) {
 
   try {
     const body = await request.json();
-    const { date, available } = body;
+    const { date, available, ranges } = body;
 
-    if (!date || typeof available !== 'boolean') {
-      return NextResponse.json({ error: 'date and available (boolean) are required' }, { status: 400 });
+    if (!date) {
+      return NextResponse.json({ error: 'date is required' }, { status: 400 });
     }
 
     const profile = await prisma.userProfile.findUnique({ where: { userId } });
-    let availability: Record<string, boolean> = {};
+    const stored = profile?.dayAvailability ? parseAvailability(profile.dayAvailability) : {};
 
-    if (profile?.dayAvailability) {
-      try {
-        availability = JSON.parse(profile.dayAvailability);
-      } catch {
-        availability = {};
-      }
-    }
+    const dayData: DayData = {
+      available: typeof available === 'boolean' ? available : true,
+      ranges: Array.isArray(ranges) ? ranges : ((stored[date] as DayData)?.ranges || [{ start: "09:00", end: "17:00" }]),
+    };
 
-    availability[date] = available;
+    stored[date] = dayData;
 
     await prisma.userProfile.upsert({
       where: { userId },
-      update: { dayAvailability: JSON.stringify(availability) },
+      update: { dayAvailability: JSON.stringify(stored) },
       create: {
         userId,
         joinDate: new Date(),
-        dayAvailability: JSON.stringify(availability),
+        dayAvailability: JSON.stringify(stored),
       },
     });
 
-    return NextResponse.json({ date, available, availability });
+    return NextResponse.json({ date, ...dayData });
   } catch (error) {
     console.error('Error updating availability:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -149,7 +149,7 @@ export default function AdminInvoicesPage() {
     const { default: html2canvas } = await import("html2canvas");
 
     if (!previewRef.current) return;
-    const canvas = await html2canvas(previewRef.current, { scale: 2, backgroundColor: "#ffffff" });
+    const canvas = await html2canvas(previewRef.current, { scale: 1.5, backgroundColor: "#ffffff" });
     const img = canvas.toDataURL("image/png");
     const pdf = new jsPDF("p", "mm", "a4");
     const w = pdf.internal.pageSize.getWidth();
@@ -164,7 +164,7 @@ export default function AdminInvoicesPage() {
     const { default: jsPDF } = await import("jspdf");
     const { default: html2canvas } = await import("html2canvas");
     if (!previewRef.current) throw new Error("No preview");
-    const canvas = await html2canvas(previewRef.current, { scale: 2, backgroundColor: "#ffffff" });
+    const canvas = await html2canvas(previewRef.current, { scale: 1.5, backgroundColor: "#ffffff" });
     const img = canvas.toDataURL("image/png");
     const pdf = new jsPDF("p", "mm", "a4");
     const w = pdf.internal.pageSize.getWidth();

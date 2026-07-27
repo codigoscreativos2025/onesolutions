@@ -15,6 +15,8 @@ import {
   LayoutGrid,
   List,
   ArrowRight,
+  X,
+  Plus,
 } from "lucide-react";
 import { VisualCalendar } from "@/components/calendar/VisualCalendar";
 import { ViewProjectModal } from "@/components/calendar/ViewProjectModal";
@@ -77,7 +79,7 @@ export default function CalendarPage() {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedDayVisits, setSelectedDayVisits] = useState<CalendarVisit[]>([]);
 
-  const [dayAvailability, setDayAvailability] = useState<Record<string, boolean>>({});
+  const [dayData, setDayData] = useState<Record<string, { available: boolean; ranges: { start: string; end: string }[] }>>({});
   const [availabilitySaving, setAvailabilitySaving] = useState(false);
 
   const [reassignReason, setReassignReason] = useState("");
@@ -97,25 +99,26 @@ export default function CalendarPage() {
       const res = await fetch(`/api/profile/availability?month=${month}&year=${year}`);
       const data = await res.json();
       if (data.availability) {
-        setDayAvailability(data.availability);
+        setDayData(data.availability);
       }
     } catch {
       // ignore
     }
   };
 
-  const saveAvailability = async (date: string | Date, available: boolean) => {
+  const saveAvailability = async (date: string | Date, available: boolean, ranges?: { start: string; end: string }[]) => {
     setAvailabilitySaving(true);
     try {
       const key = typeof date === "string" ? date : format(date, "yyyy-MM-dd");
       const res = await fetch("/api/profile/availability", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: key, available }),
+        body: JSON.stringify({ date: key, available, ranges }),
       });
       if (res.ok) {
+        const data = await res.json();
         toast.success(available ? "Marcado como disponible" : "Marcado como no disponible");
-        setDayAvailability((prev) => ({ ...prev, [key]: available }));
+        setDayData((prev) => ({ ...prev, [key]: data }));
       } else {
         toast.error("Error al actualizar disponibilidad");
       }
@@ -280,7 +283,13 @@ export default function CalendarPage() {
 
   const getAvailableForDay = (date: Date | string): boolean => {
     const key = typeof date === "string" ? date : format(date, "yyyy-MM-dd");
-    return dayAvailability[key] ?? true;
+    const d = dayData[key];
+    return d?.available ?? true;
+  };
+
+  const getDayRanges = (date: Date | string) => {
+    const key = typeof date === "string" ? date : format(date, "yyyy-MM-dd");
+    return dayData[key]?.ranges || [];
   };
 
   const getOwnerDisplay = (visit: CalendarVisit): string => {
@@ -492,7 +501,7 @@ export default function CalendarPage() {
         <VisualCalendar
           visits={visits}
           onDayClick={handleDayClick}
-          dayAvailability={canSetSchedule ? dayAvailability : undefined}
+          dayAvailability={canSetSchedule ? dayData : undefined}
         />
       )}
 
@@ -738,13 +747,13 @@ export default function CalendarPage() {
         onClose={() => setIsDayModalOpen(false)}
         title={selectedDay ? formatDateSpanish(selectedDay) : "Día"}
       >
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto">
           {canSetSchedule && selectedDay && (
-            <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant">
+            <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-on-surface">Disponibilidad</span>
                 <button
-                  onClick={() => saveAvailability(selectedDay, !getAvailableForDay(selectedDay))}
+                  onClick={() => saveAvailability(selectedDay, !getAvailableForDay(selectedDay), getDayRanges(selectedDay))}
                   disabled={availabilitySaving}
                   className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
                     getAvailableForDay(selectedDay)
@@ -761,6 +770,55 @@ export default function CalendarPage() {
                   )}
                 </button>
               </div>
+
+              {getAvailableForDay(selectedDay) && (
+                <div className="space-y-2">
+                  <span className="text-xs font-medium text-on-surface-variant">Rangos horarios:</span>
+                  {getDayRanges(selectedDay).map((r, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <input
+                        type="time"
+                        value={r.start}
+                        onChange={(e) => {
+                          const newRanges = [...getDayRanges(selectedDay)];
+                          newRanges[i] = { start: e.target.value, end: newRanges[i].end };
+                          saveAvailability(selectedDay, true, newRanges);
+                        }}
+                        className="h-8 text-xs rounded bg-surface-container-low border border-outline-variant px-2"
+                      />
+                      <span className="text-xs text-on-surface-variant">a</span>
+                      <input
+                        type="time"
+                        value={r.end}
+                        onChange={(e) => {
+                          const newRanges = [...getDayRanges(selectedDay)];
+                          newRanges[i] = { start: newRanges[i].start, end: e.target.value };
+                          saveAvailability(selectedDay, true, newRanges);
+                        }}
+                        className="h-8 text-xs rounded bg-surface-container-low border border-outline-variant px-2"
+                      />
+                      <button
+                        onClick={() => {
+                          const newRanges = getDayRanges(selectedDay).filter((_, j) => j !== i);
+                          saveAvailability(selectedDay, newRanges.length > 0, newRanges);
+                        }}
+                        className="p-1 text-red-500 hover:bg-red-50 rounded"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => {
+                      const newRanges = [...getDayRanges(selectedDay), { start: "09:00", end: "17:00" }];
+                      saveAvailability(selectedDay, true, newRanges);
+                    }}
+                    className="text-xs text-primary hover:underline flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" /> Agregar rango
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

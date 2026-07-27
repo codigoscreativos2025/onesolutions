@@ -30,7 +30,7 @@ interface CalendarVisit {
 interface VisualCalendarProps {
   visits: CalendarVisit[];
   onDayClick?: (date: string, dayVisits: CalendarVisit[]) => void;
-  dayAvailability?: Record<string, boolean>;
+  dayAvailability?: Record<string, { available: boolean; ranges: { start: string; end: string }[] }>;
 }
 
 function formatTimeAMPM(dateStr: string): string {
@@ -70,7 +70,10 @@ export function VisualCalendar({ visits, onDayClick, dayAvailability }: VisualCa
   const getAvailabilityForDate = (date: Date): boolean | null => {
     if (!dayAvailability || !isSameMonth(date, currentMonth)) return null;
     const key = format(date, 'yyyy-MM-dd');
-    return dayAvailability[key] ?? null;
+    const val = dayAvailability[key];
+    if (typeof val === 'boolean') return val;
+    if (val && typeof val === 'object') return val.available;
+    return null;
   };
 
   const stageColors: Record<string, string> = {

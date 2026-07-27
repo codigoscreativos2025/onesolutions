@@ -211,7 +211,7 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
       await new Promise(r => setTimeout(r, 200));
 
       const canvas = await html2canvas(contractEl, {
-        scale: 2,
+        scale: 1.5,
         useCORS: true,
         backgroundColor: "#ffffff",
         logging: false,
@@ -292,7 +292,7 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
       await new Promise(r => setTimeout(r, 200));
 
       const canvas = await html2canvas(contractEl, {
-        scale: 2,
+        scale: 1.5,
         useCORS: true,
         backgroundColor: "#ffffff",
         logging: false,
