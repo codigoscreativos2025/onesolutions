@@ -397,6 +397,9 @@ model UserProfile {
   // Work schedule (JSON string)
   workSchedule    String?
 
+  // Per-day availability (JSON string: { "2026-07-28": true, ... })
+  dayAvailability String?
+
   // Datos de Partner
   representativeName String?
   companyName        String?

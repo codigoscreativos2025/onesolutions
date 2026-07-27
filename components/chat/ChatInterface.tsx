@@ -82,11 +82,11 @@ interface Message {
   createdAt: string;
 }
 
-export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
+export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdmin?: boolean; initialRoomId?: number | null }) {
   const { data: session } = useSession();
 
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
+  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(initialRoomId);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -106,6 +106,17 @@ export function ChatInterface({ isAdmin = false }: { isAdmin?: boolean }) {
   useEffect(() => {
     fetchRooms();
   }, []);
+
+  useEffect(() => {
+    if (initialRoomId && rooms.length > 0) {
+      const room = rooms.find(r => r.id === initialRoomId);
+      if (room) {
+        setSelectedRoomId(room.id);
+        setSelectedRoom(room);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialRoomId, rooms]);
 
   useEffect(() => {
     if (selectedRoomId) {

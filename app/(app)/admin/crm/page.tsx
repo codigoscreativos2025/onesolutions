@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Search, Filter, Download, Eye, MapPin, Clock, Calendar, AlertCircle, MessageSquare, Plus, UserPlus, FileText } from 'lucide-react';
+import { Search, Filter, Download, Eye, MapPin, Clock, Calendar, AlertCircle, MessageSquare, Plus, UserPlus, FileText, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ViewProjectModal } from '@/components/calendar/ViewProjectModal';
 import { CreateLeadModal } from '@/components/leads/CreateLeadModal';
 import { ContractModal } from '@/components/quote/ContractModal';
+import { toast } from 'sonner';
 
 interface ProjectDetails {
   [key: string]: string | number | boolean | null | undefined;
@@ -171,6 +172,43 @@ export default function AdminCRMPage() {
     } catch (error) {
       console.error('Error assigning partner:', error);
     }
+  };
+
+  const handleStageChange = async (visitId: number, newStage: string) => {
+    try {
+      const res = await fetch(`/api/visits/${visitId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage: newStage }),
+      });
+      if (res.ok) {
+        toast.success(`Estado actualizado a ${newStage}`);
+        fetchVisits();
+      } else {
+        toast.error('Error al actualizar estado');
+      }
+    } catch (error) {
+      console.error('Error changing stage:', error);
+      toast.error('Error al actualizar estado');
+    }
+  };
+
+  const handleChatClick = (e: React.MouseEvent, visit: Visit) => {
+    e.stopPropagation();
+    if (visit.chatRoom?.id) {
+      router.push(`/chat?room=${visit.chatRoom.id}`);
+    } else {
+      toast.error('No hay chat creado para este proyecto');
+    }
+  };
+
+  const STAGE_OPTIONS = ['IN_PROGRESS', 'PROPOSAL_ACCEPTED', 'PROJECT', 'CLOSED', 'CANCELLED'];
+  const STAGE_LABELS: Record<string, string> = {
+    IN_PROGRESS: 'Leads',
+    PROPOSAL_ACCEPTED: 'Leads Potenciales',
+    PROJECT: 'Proyecto',
+    CLOSED: 'Cerrado',
+    CANCELLED: 'Cancelado',
   };
 
   // Colecciones para filtros
@@ -544,14 +582,31 @@ export default function AdminCRMPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end gap-2">
-                      {visit.chatRoom && (
-                        <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); router.push('/chat'); }}>
+                      {visit.chatRoom ? (
+                        <Button variant="outline" size="sm" onClick={(e) => handleChatClick(e, visit)}>
                           <MessageSquare className="w-4 h-4" />
+                        </Button>
+                      ) : (
+                        <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); toast.error('No hay chat creado para este proyecto'); }}>
+                          <MessageSquare className="w-4 h-4 text-gray-400" />
                         </Button>
                       )}
                       <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleViewDetails(visit.id); }}>
                         <Eye className="w-4 h-4 mr-1" /> Ver
                       </Button>
+                      <div className="relative" onClick={(e) => e.stopPropagation()}>
+                        <select
+                          className="h-9 pl-2 pr-1 rounded-lg border border-outline-variant bg-surface-container-low text-xs text-on-surface appearance-none cursor-pointer"
+                          value={visit.stage}
+                          onChange={(e) => handleStageChange(visit.id, e.target.value)}
+                          style={{ backgroundImage: 'none', paddingRight: '2rem' }}
+                        >
+                          {STAGE_OPTIONS.map((s) => (
+                            <option key={s} value={s}>{STAGE_LABELS[s] || s}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant" />
+                      </div>
                       <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedVisitId(visit.id); setShowContractModal(true); }}>
                         <FileText className="w-4 h-4" />
                       </Button>

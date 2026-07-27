@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { MapPin, Calendar, AlertCircle, Clock, XCircle, Filter, FileText } from 'lucide-react';
 import { ContractModal } from '@/components/quote/ContractModal';
@@ -49,6 +49,8 @@ export default function LeadsPage() {
   const [parcels, setParcels] = useState<Parcel[]>([]);
   const [loading, setLoading] = useState(true);
   const filterParam = searchParams.get('filter') || 'all';
+  const highlightId = searchParams.get('highlight');
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const validFilters = ['all', 'expiring', 'expired', 'objections'];
   const filter = validFilters.includes(filterParam) ? filterParam : 'all';
@@ -66,6 +68,26 @@ export default function LeadsPage() {
     fetchParcels();
     fetchProjectTypes();
   }, []);
+
+  useEffect(() => {
+    if (!loading && highlightId) {
+      setTimeout(() => {
+        const el = document.getElementById(`parcel-${highlightId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.classList.add("visit-highlight");
+          highlightTimerRef.current = setTimeout(() => {
+            el.classList.remove("visit-highlight");
+          }, 2500);
+        }
+      }, 300);
+    }
+    return () => {
+      if (highlightTimerRef.current) {
+        clearTimeout(highlightTimerRef.current);
+      }
+    };
+  }, [loading, highlightId]);
 
   const fetchProjectTypes = async () => {
     try {
@@ -164,6 +186,17 @@ export default function LeadsPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
+      <style>{`
+        @keyframes visitHighlightPulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(244, 130, 33, 0.6); border-color: rgba(244, 130, 33, 0.4); }
+          50% { box-shadow: 0 0 0 8px rgba(244, 130, 33, 0.1); border-color: rgba(244, 130, 33, 0.9); }
+        }
+        .visit-highlight {
+          animation: visitHighlightPulse 0.8s ease-in-out 3;
+          border-color: #f48221 !important;
+          background-color: rgba(244, 130, 33, 0.08) !important;
+        }
+      `}</style>
       <div>
         <h1 className="text-3xl font-bold mb-2">Leads</h1>
         <p className="text-gray-600 dark:text-gray-400">
@@ -291,6 +324,7 @@ export default function LeadsPage() {
             return (
               <div
                 key={parcel.id}
+                id={`parcel-${parcel.id}`}
                 className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border-l-4 ${
                   filter === 'objections'
                     ? 'border-secondary'

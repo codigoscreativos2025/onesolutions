@@ -81,19 +81,17 @@ export default function DashboardPage() {
   const fetchData = useCallback(async () => {
     setError(null);
     try {
-      if (session?.user?.role === "PARTNER") {
-        const parcelsRes = await fetch("/api/parcels/expiration").catch(() => null);
-        const parcelsData = parcelsRes ? await parcelsRes.json() : [];
-        setMetrics({ ...defaultMetrics, parcels: Array.isArray(parcelsData) ? parcelsData.length : 0 });
-      } else {
-        const modeParam = session?.user?.role === 'CLOSER' ? '?mode=own' : '';
-        const [metricsRes, appointmentsRes] = await Promise.all([
-          fetch(`/api/metrics${modeParam}`).catch(() => null),
-          fetch("/api/appointments").catch(() => null),
-        ]);
-        const metricsData = metricsRes ? await metricsRes.json() : defaultMetrics;
-        const appointmentsData = appointmentsRes ? await appointmentsRes.json() : [];
-        setMetrics(metricsData);
+      const modeParam = session?.user?.role === 'CLOSER' ? '?mode=own' : '';
+      const [metricsRes, appointmentsRes] = await Promise.all([
+        fetch(`/api/metrics${modeParam}`).catch(() => null),
+        (session?.user?.role === "PARTNER"
+          ? Promise.resolve(null)
+          : fetch("/api/appointments").catch(() => null)),
+      ]);
+      const metricsData = metricsRes ? await metricsRes.json() : defaultMetrics;
+      const appointmentsData = appointmentsRes ? await appointmentsRes.json() : [];
+      setMetrics(metricsData);
+      if (session?.user?.role !== "PARTNER") {
         setAppointments(appointmentsData.slice(0, 5));
       }
     } catch (fetchError) {
