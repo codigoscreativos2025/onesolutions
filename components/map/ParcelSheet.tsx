@@ -45,7 +45,7 @@ export function ParcelSheet({
   if (!parcel) return null;
 
   const metadata = parcel.metadata ? JSON.parse(parcel.metadata) : {};
-  const isSetter = userRole === "SETTER" || userRole === "CLOSER";
+  const canVisit = userRole === "SETTER" || userRole === "CLOSER" || userRole === "ADMIN";
   const isTakenByMe = parcel.setter?.id === parseInt(userId);
   const isAvailable = parcel.status === "AVAILABLE";
   const isClaimedByMySetter = userRole === "CLOSER" && parcel.status === "LEAD" && parcel.setter;
@@ -107,15 +107,14 @@ export function ParcelSheet({
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          {metadata.roofAge && (
-            <InfoCard label="Edad del techo" value={metadata.roofAge} />
-          )}
-          {metadata.utility && (
-            <InfoCard label="Est. Luz" value={metadata.utility} />
-          )}
-          {metadata.solarPotential && (
-            <InfoCard label="Potencial solar" value={metadata.solarPotential} />
-          )}
+          {metadata.owner && <InfoCard label="Propietario" value={metadata.owner} />}
+          {metadata.property_class && <InfoCard label="Clase" value={metadata.property_class} />}
+          {metadata.acreage && <InfoCard label="Acres" value={metadata.acreage} />}
+          {metadata.land_value && <InfoCard label="Valor terreno" value={`$${Number(metadata.land_value).toLocaleString()}`} />}
+          {metadata.building_value && <InfoCard label="Valor constr." value={`$${Number(metadata.building_value).toLocaleString()}`} />}
+          {metadata.roofAge && <InfoCard label="Edad del techo" value={metadata.roofAge} />}
+          {metadata.utility && <InfoCard label="Est. Luz" value={metadata.utility} />}
+          {metadata.solarPotential && <InfoCard label="Potencial solar" value={metadata.solarPotential} />}
           <InfoCard
             label="Estado"
             value={
@@ -126,6 +125,12 @@ export function ParcelSheet({
                 : "Cliente"
             }
           />
+        </div>
+
+        <div className="sticky bottom-0 pt-3 border-t border-glass-border">
+          <Button variant="outline" onClick={onClose} className="w-full">
+            Cerrar
+          </Button>
         </div>
 
         {!isAvailable && !isTakenByMe && parcel.setter && (
@@ -148,7 +153,7 @@ export function ParcelSheet({
         )}
       </div>
 
-      {isSetter && (isAvailable || isTakenByMe || isClaimedByMySetter) && parcel.status !== "CUSTOMER" && (
+      {canVisit && (isAvailable || isTakenByMe || isClaimedByMySetter) && parcel.status !== "CUSTOMER" && (
         <div className="p-4 border-t border-glass-border space-y-2">
           {claimError && (
             <p className="text-sm text-error bg-error/10 px-3 py-2 rounded-lg">

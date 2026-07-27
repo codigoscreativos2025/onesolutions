@@ -124,13 +124,20 @@ export default function MapView({ center }: { center?: [number, number] | null }
         const parcel: Parcel = {
           id: props.ll_uuid || `regrid-${props.fid}`,
           address: props.address || props.headline || "Sin direccion",
-          ownerName: props.owner,
+          ownerName: props.owner || props.fields?.owner,
           status: "AVAILABLE",
           geometry: JSON.stringify(e.features[0].geometry),
           metadata: JSON.stringify({
             regrid_id: props.ll_uuid,
             path: props.path,
+            headline: props.headline,
+            owner: props.owner || props.fields?.owner,
+            property_class: props.fields?.pcl_class,
+            acreage: props.fields?.acreage,
+            land_value: props.fields?.land_value,
+            building_value: props.fields?.building_value,
             parcelnumb: props.parcelnumb,
+            ...props.fields,
           }),
         };
         setSelectedParcel(parcel);
