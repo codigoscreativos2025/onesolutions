@@ -117,30 +117,51 @@ export default function MapView({ center }: { center?: [number, number] | null }
             filter: ["==", "ll_uuid", ""],
           });
 
-      // Click on parcel
-      m.on("click", "parcel-fills", (e) => {
+      // Click on parcel — fetch full data from Regrid JSON API
+      m.on("click", "parcel-fills", async (e) => {
         if (!e.features?.[0]) return;
         const props = e.features[0].properties;
-        const parcel: Parcel = {
+        const { lng, lat } = e.lngLat;
+
+        // First show basic info from tile data
+        const basicParcel: Parcel = {
           id: props.ll_uuid || `regrid-${props.fid}`,
           address: props.address || props.headline || "Sin direccion",
-          ownerName: props.owner || props.fields?.owner,
+          ownerName: props.owner,
           status: "AVAILABLE",
           geometry: JSON.stringify(e.features[0].geometry),
           metadata: JSON.stringify({
             regrid_id: props.ll_uuid,
             path: props.path,
-            headline: props.headline,
-            owner: props.owner || props.fields?.owner,
-            property_class: props.fields?.pcl_class,
-            acreage: props.fields?.acreage,
-            land_value: props.fields?.land_value,
-            building_value: props.fields?.building_value,
+            owner: props.owner,
             parcelnumb: props.parcelnumb,
-            ...props.fields,
           }),
         };
-        setSelectedParcel(parcel);
+        setSelectedParcel(basicParcel);
+
+        // Fetch full details from Regrid JSON API via our proxy
+        try {
+          const res = await fetch(`/api/regrid/parcels?lat=${lat}&lng=${lng}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+              const fullParcel = data[0];
+              const fullMeta = fullParcel.metadata ? JSON.parse(fullParcel.metadata) : {};
+              setSelectedParcel({
+                ...fullParcel,
+                id: props.ll_uuid || fullParcel.id,
+                address: fullParcel.address || basicParcel.address,
+                ownerName: fullParcel.ownerName || basicParcel.ownerName,
+                geometry: basicParcel.geometry,
+                metadata: JSON.stringify({
+                  ...fullMeta,
+                  regrid_id: props.ll_uuid,
+                  path: props.path,
+                }),
+              });
+            }
+          }
+        } catch { /* keep basic data if fetch fails */ }
       });
 
       // Hover effect
