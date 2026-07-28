@@ -12,8 +12,14 @@ interface Parcel {
   address: string;
   ownerName?: string;
   status: "AVAILABLE" | "LEAD" | "CUSTOMER";
-  geometry: string;
+  geometry?: string;
   metadata?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  ownerOccupied?: boolean;
+  parcelTags?: string;
+  parcelNotes?: string;
   setter?: { id: number; name: string };
   visits?: {
     id: number;
@@ -104,6 +110,32 @@ export default function MapView({ center }: { center?: [number, number] | null }
             },
           });
 
+          // Selected parcel highlight (added BEFORE hover so hover overrides)
+          m.addLayer({
+            id: "parcel-selected",
+            type: "fill",
+            source: "regrid-parcels",
+            "source-layer": "parcels",
+            paint: {
+              "fill-color": "#f48221",
+              "fill-opacity": 0.5,
+            },
+            filter: ["==", "ll_uuid", ""],
+          });
+
+          // Selected border
+          m.addLayer({
+            id: "parcel-selected-border",
+            type: "line",
+            source: "regrid-parcels",
+            "source-layer": "parcels",
+            paint: {
+              "line-color": "#f48221",
+              "line-width": 3,
+            },
+            filter: ["==", "ll_uuid", ""],
+          });
+
           // Hover highlight
           m.addLayer({
             id: "parcel-hover",
@@ -121,6 +153,7 @@ export default function MapView({ center }: { center?: [number, number] | null }
       m.on("click", "parcel-fills", async (e) => {
         if (!e.features?.[0]) return;
         const props = e.features[0].properties;
+        const llUuid = props.ll_uuid || "";
         const { lng, lat } = e.lngLat;
 
         // First show basic info from tile data
@@ -138,6 +171,8 @@ export default function MapView({ center }: { center?: [number, number] | null }
           }),
         };
         setSelectedParcel(basicParcel);
+        map.current?.setFilter("parcel-selected", ["==", "ll_uuid", llUuid]);
+        map.current?.setFilter("parcel-selected-border", ["==", "ll_uuid", llUuid]);
 
         // Fetch full details from Regrid JSON API via our proxy
         try {
@@ -147,18 +182,25 @@ export default function MapView({ center }: { center?: [number, number] | null }
             if (Array.isArray(data) && data.length > 0) {
               const fullParcel = data[0];
               const fullMeta = fullParcel.metadata ? JSON.parse(fullParcel.metadata) : {};
-              setSelectedParcel({
+              const updatedParcel: Parcel = {
                 ...fullParcel,
                 id: props.ll_uuid || fullParcel.id,
                 address: fullParcel.address || basicParcel.address,
                 ownerName: fullParcel.ownerName || basicParcel.ownerName,
+                city: fullParcel.city || fullMeta.city,
+                state: fullParcel.state || fullMeta.state,
+                zipCode: fullParcel.zipCode || fullMeta.zipCode,
+                ownerOccupied: fullParcel.ownerOccupied ?? fullMeta.ownerOccupied,
+                parcelTags: fullParcel.parcelTags || null,
+                parcelNotes: fullParcel.parcelNotes || null,
                 geometry: basicParcel.geometry,
                 metadata: JSON.stringify({
                   ...fullMeta,
                   regrid_id: props.ll_uuid,
                   path: props.path,
                 }),
-              });
+              };
+              setSelectedParcel(updatedParcel);
             }
           }
         } catch { /* keep basic data if fetch fails */ }
@@ -182,6 +224,8 @@ export default function MapView({ center }: { center?: [number, number] | null }
         const features = m.queryRenderedFeatures(e.point, { layers: ["parcel-fills"] });
         if (features.length === 0) {
           setSelectedParcel(null);
+          map.current?.setFilter("parcel-selected", ["==", "ll_uuid", ""]);
+          map.current?.setFilter("parcel-selected-border", ["==", "ll_uuid", ""]);
         }
       });
 
@@ -235,11 +279,16 @@ export default function MapView({ center }: { center?: [number, number] | null }
       )}
       <ParcelSheet
         parcel={selectedParcel}
-        onClose={() => setSelectedParcel(null)}
+        onClose={() => {
+          setSelectedParcel(null);
+          map.current?.setFilter("parcel-selected", ["==", "ll_uuid", ""]);
+          map.current?.setFilter("parcel-selected-border", ["==", "ll_uuid", ""]);
+        }}
         onClaim={handleClaim}
         onVisitStarted={() => {
           setSelectedParcel(null);
         }}
+        onParcelUpdated={(updated) => setSelectedParcel(updated)}
         userRole={session?.user?.role || ""}
         userId={session?.user?.id || ""}
       />

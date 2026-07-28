@@ -11,6 +11,8 @@ interface CreateLeadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  initialAddress?: string;
+  initialOwnerName?: string;
 }
 
 interface ProjectType {
@@ -18,7 +20,7 @@ interface ProjectType {
   name: string;
 }
 
-export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalProps) {
+export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, initialOwnerName }: CreateLeadModalProps) {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [loadingClosers, setLoadingClosers] = useState(false);
@@ -39,8 +41,14 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess }: CreateLeadModalP
     if (isOpen) {
       fetchProjectTypes();
       fetchClosers();
+      setFormData({
+        address: initialAddress || "",
+        ownerName: initialOwnerName || "",
+        phone: "",
+        notes: "",
+      });
     }
-  }, [isOpen]);
+  }, [isOpen, initialAddress, initialOwnerName]);
 
   const fetchProjectTypes = async () => {
     try {

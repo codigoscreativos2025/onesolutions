@@ -208,6 +208,8 @@ export default function VisitPage() {
   const [projectDetailsForm, setProjectDetailsForm] = useState<Record<string, string>>({});
   const [savingProjectDetails, setSavingProjectDetails] = useState(false);
 
+  const [loadedFieldNames, setLoadedFieldNames] = useState<string[]>([]);
+
   const [saving, setSaving] = useState(false);
   const [showLocationValidator, setShowLocationValidator] = useState(false);
   const [locationValidated, setLocationValidated] = useState(false);
@@ -227,11 +229,15 @@ export default function VisitPage() {
     ? visit.stage === "PROPOSAL_ACCEPTED" || visit.stage === "IN_PROGRESS"
     : false;
 
-  const projectCompletion = calculateProjectCompletion(projectDetailsForm);
+  const projectCompletion = calculateProjectCompletion(projectDetailsForm, loadedFieldNames);
 
   useEffect(() => {
     fetchData();
   }, [parcelId]);
+
+  useEffect(() => {
+    fetchProjectTypeFields(selectedProjectTypes);
+  }, [selectedProjectTypes]);
 
   const fetchData = async () => {
     try {
@@ -287,9 +293,9 @@ export default function VisitPage() {
       }
 
       if (visitData?.projects) {
-        setSelectedProjectTypes(
-          visitData.projects.map((p: { projectType: { id: number } }) => p.projectType.id)
-        );
+        const projectTypeIds = visitData.projects.map((p: { projectType: { id: number } }) => p.projectType.id);
+        setSelectedProjectTypes(projectTypeIds);
+        fetchProjectTypeFields(projectTypeIds);
       }
 
       let effectiveClientName = "";
@@ -348,6 +354,30 @@ export default function VisitPage() {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProjectTypeFields = async (projectTypeIds: number[]) => {
+    if (projectTypeIds.length === 0) {
+      setLoadedFieldNames([]);
+      return;
+    }
+    try {
+      const allFields: string[] = [];
+      for (const ptId of projectTypeIds) {
+        const res = await fetch(`/api/admin/project-type-fields?projectTypeId=${ptId}`);
+        const fields = await res.json();
+        if (Array.isArray(fields)) {
+          fields.forEach((f: { fieldName: string }) => {
+            if (!allFields.includes(f.fieldName)) {
+              allFields.push(f.fieldName);
+            }
+          });
+        }
+      }
+      setLoadedFieldNames(allFields);
+    } catch {
+      setLoadedFieldNames([]);
     }
   };
 

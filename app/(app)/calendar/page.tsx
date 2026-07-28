@@ -85,6 +85,14 @@ export default function CalendarPage() {
   const [reassignReason, setReassignReason] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
+  const [appointmentDate, setAppointmentDate] = useState("");
+  const [appointmentTime, setAppointmentTime] = useState("");
+  const [appointmentUserId, setAppointmentUserId] = useState("");
+  const [appointmentAddress, setAppointmentAddress] = useState("");
+  const [allUsers, setAllUsers] = useState<AdminUser[]>([]);
+  const [appointmentSaving, setAppointmentSaving] = useState(false);
+
   const isAdmin = session?.user?.role === "ADMIN";
   const isSetter = session?.user?.role === "SETTER";
   const isSetterJr = session?.user?.role === "SETTER_JR";
@@ -281,6 +289,56 @@ export default function CalendarPage() {
     setIsDayModalOpen(true);
   };
 
+  const fetchAllUsers = async () => {
+    try {
+      const res = await fetch("/api/admin/users");
+      const data = await res.json();
+      setAllUsers(data.filter((u: AdminUser) => u.role !== "ADMIN"));
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleCreateAppointment = async () => {
+    if (!appointmentDate || !appointmentTime || !appointmentUserId) {
+      toast.error("Completa todos los campos requeridos");
+      return;
+    }
+    setAppointmentSaving(true);
+    try {
+      const res = await fetch("/api/slots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: appointmentDate,
+          hour: appointmentTime,
+          targetUserId: appointmentUserId,
+          address: appointmentAddress || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Error al crear cita");
+      }
+      toast.success("Cita creada correctamente");
+      setIsAppointmentModalOpen(false);
+      setAppointmentDate("");
+      setAppointmentTime("");
+      setAppointmentUserId("");
+      setAppointmentAddress("");
+      fetchData();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error al crear cita");
+    } finally {
+      setAppointmentSaving(false);
+    }
+  };
+
+  const openAppointmentModal = async () => {
+    await fetchAllUsers();
+    setIsAppointmentModalOpen(true);
+  };
+
   const getAvailableForDay = (date: Date | string): boolean => {
     const key = typeof date === "string" ? date : format(date, "yyyy-MM-dd");
     const d = dayData[key];
@@ -399,6 +457,12 @@ export default function CalendarPage() {
               <LayoutGrid className="w-5 h-5" />
             </button>
           </div>
+          {isAdmin && (
+            <Button onClick={openAppointmentModal} size="sm" className="gap-1">
+              <Plus className="w-4 h-4" />
+              Agendar Cita
+            </Button>
+          )}
         </div>
       </div>
 
@@ -875,6 +939,82 @@ export default function CalendarPage() {
               })}
             </div>
           )}
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isAppointmentModalOpen}
+        onClose={() => setIsAppointmentModalOpen(false)}
+        title="Agendar Cita"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+              Usuario
+            </label>
+            <select
+              value={appointmentUserId}
+              onChange={(e) => setAppointmentUserId(e.target.value)}
+              className="w-full h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-sm text-on-surface mt-1"
+            >
+              <option value="">Seleccionar usuario...</option>
+              {allUsers.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name} ({u.role === "CLOSER" ? "Closer" : "Trainee"})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+              Fecha
+            </label>
+            <input
+              type="date"
+              value={appointmentDate}
+              onChange={(e) => setAppointmentDate(e.target.value)}
+              className="w-full h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-sm text-on-surface mt-1"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+              Hora
+            </label>
+            <input
+              type="time"
+              value={appointmentTime}
+              onChange={(e) => setAppointmentTime(e.target.value)}
+              className="w-full h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-sm text-on-surface mt-1"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+              Dirección / Notas
+            </label>
+            <input
+              type="text"
+              value={appointmentAddress}
+              onChange={(e) => setAppointmentAddress(e.target.value)}
+              placeholder="Dirección o notas de la cita..."
+              className="w-full h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-sm text-on-surface mt-1"
+            />
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setIsAppointmentModalOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleCreateAppointment}
+              disabled={appointmentSaving || !appointmentDate || !appointmentTime || !appointmentUserId}
+              className="flex-1"
+            >
+              {appointmentSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar"}
+            </Button>
+          </div>
         </div>
       </Modal>
 

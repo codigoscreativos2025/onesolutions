@@ -30,6 +30,21 @@ export async function GET(
           closer: {
             select: { id: true, name: true },
           },
+          objections: {
+            include: {
+              objection: true,
+            },
+          },
+          closerObjections: {
+            include: {
+              closerObjection: true,
+            },
+          },
+          notAvailableTags: {
+            include: {
+              tag: true,
+            },
+          },
         },
       },
     },
@@ -47,24 +62,42 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   const session = await auth();
-  if (!session || session.user.role !== "ADMIN") {
+  if (!session || !session.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
   const body = await request.json();
-  const { partnerId } = body;
+  const { partnerId, parcelTags, parcelNotes, visitedStatus } = body;
+
+  const parcel = await prisma.parcel.findUnique({ where: { id } });
+  if (!parcel) {
+    return NextResponse.json({ error: "Parcel not found" }, { status: 404 });
+  }
+
+  const isAdmin = session.user.role === "ADMIN";
+  const isOwner = parcel.setterId === parseInt(session.user.id);
+  const isSetterOrCloser = session.user.role === "SETTER" || session.user.role === "CLOSER";
 
   const updateData: Record<string, unknown> = {};
-  if (partnerId !== undefined) {
+
+  if (isAdmin && partnerId !== undefined) {
     updateData.partnerId = partnerId;
+  }
+
+  const isTagOrNotesUpdate = parcelTags !== undefined || parcelNotes !== undefined;
+  if (isTagOrNotesUpdate && (isAdmin || isOwner || isSetterOrCloser)) {
+    if (parcelTags !== undefined) updateData.parcelTags = parcelTags;
+    if (parcelNotes !== undefined) updateData.parcelNotes = parcelNotes;
+  } else if (isTagOrNotesUpdate) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   if (Object.keys(updateData).length === 0) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });
   }
 
-  const parcel = await prisma.parcel.update({
+  const updated = await prisma.parcel.update({
     where: { id },
     data: updateData,
     include: {
@@ -73,5 +106,17 @@ export async function PATCH(
     },
   });
 
-  return NextResponse.json(parcel);
+  if (visitedStatus && (isAdmin || isOwner || isSetterOrCloser)) {
+    await prisma.parcelVisitHistory.create({
+      data: {
+        parcelId: id,
+        setterId: parseInt(session.user.id),
+        visitedAt: new Date(),
+        status: visitedStatus,
+        notes: parcelNotes || null,
+      },
+    });
+  }
+
+  return NextResponse.json(updated);
 }

@@ -143,6 +143,19 @@ export async function PATCH(
       });
     }
 
+    // Crear notificaciones para todos los admins
+    const admins = await prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true } });
+    for (const admin of admins) {
+      await prisma.notification.create({
+        data: {
+          userId: admin.id,
+          title: "Propuesta aceptada",
+          body: `Propuesta aceptada para proyecto en ${visit.parcel.address}.`,
+          link: `/my-projects?highlight=${visit.id}`,
+        },
+      });
+    }
+
     try {
       const closer = await prisma.user.findUnique({
         where: { id: effectiveCloserId },

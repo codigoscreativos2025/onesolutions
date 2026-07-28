@@ -66,6 +66,8 @@ model Parcel {
   territory   String       @default("Florida")
   status      String       @default("AVAILABLE")
   metadata    String? // JSON con datos extra (roofAge, utility, solarPotential)
+  parcelTags  String? // JSON array of tag objects: [{ name: "No abrió", color: "#ff0000", date: "..." }]
+  parcelNotes String? // Free text notes
   lastActivityAt DateTime?
   claimedAt   DateTime?
 

@@ -42,8 +42,8 @@ export async function POST(
       data: admins.map((admin) => ({
         userId: admin.id,
         title: "Solicitud de Cierre",
-        body: `${userName} solicita cerrar el proyecto de ${clientName}`,
-        link: `/admin/crm`,
+        body: `${userName} solicita cerrar el proyecto de ${clientName} (Visita #${visit.id})`,
+        link: `/my-projects?highlight=${visit.id}`,
       })),
     });
 

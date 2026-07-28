@@ -139,11 +139,23 @@ async function processFeatures(features: Record<string, unknown>[]) {
 
       const address = (props.headline as string) || (fields.situs_address as string) || "Sin direccion";
       const ownerName = (fields.owner as string) || (fields.ownername as string) || undefined;
+      const city = (fields.situs_city as string) || "";
+      const state = (fields.situs_state as string) || "";
+      const zipCode = (fields.situs_zip as string) || "";
+      const ownerOccupied = fields.owner_occupied !== undefined
+        ? fields.owner_occupied === "true" || fields.owner_occupied === true
+        : undefined;
 
       return {
         id: existing?.id || llUuid || "",
         address,
         ownerName,
+        city,
+        state,
+        zipCode,
+        ownerOccupied,
+        parcelTags: existing?.parcelTags || null,
+        parcelNotes: existing?.parcelNotes || null,
         geometry: JSON.stringify(feature.geometry),
         status: existing?.status || "AVAILABLE",
         metadata: JSON.stringify({
@@ -151,6 +163,10 @@ async function processFeatures(features: Record<string, unknown>[]) {
           headline: props.headline,
           path: props.path,
           owner: ownerName,
+          city,
+          state,
+          zipCode,
+          ownerOccupied,
           property_class: fields.pcl_class,
           acreage: fields.acreage,
           land_value: fields.land_value,
