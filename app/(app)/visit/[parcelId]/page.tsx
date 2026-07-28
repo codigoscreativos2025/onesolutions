@@ -1675,33 +1675,26 @@ function CloserForm({
       </div>
 
       <div className="space-y-3">
-          <div className="flex justify-between text-xs text-on-surface-variant font-medium">
-            <span>Progreso de Información</span>
-            <span>{projectCompletion}%</span>
-          </div>
-          <div className="w-full h-3 bg-surface-container-low rounded-full overflow-hidden">
-            <motion.div
-              className={`h-full rounded-full ${
-                isFullyComplete ? "bg-green-500" : projectCompletion >= 50 ? "bg-yellow-500" : "bg-red-500"
-              }`}
-              initial={{ width: 0 }}
-              animate={{ width: `${projectCompletion}%` }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-            />
-          </div>
-          {projectCompletion >= 50 && (
-            <p className="text-xs text-yellow-600 dark:text-yellow-400 font-medium">
-              Continúa llenando los datos
-            </p>
-          )}
-          {isFullyComplete && (
-            <p className="text-xs text-green-600 dark:text-green-400 font-medium">
-              Información completa — puedes cerrar el proyecto
-            </p>
-          )}
+        <div className="flex justify-between text-xs text-on-surface-variant font-medium">
+          <span>Progreso de Información</span>
+          <span>{projectCompletion}%</span>
         </div>
+        <div className="w-full h-3 bg-surface-container-low rounded-full overflow-hidden">
+          <motion.div
+            className={`h-full rounded-full ${
+              isFullyComplete ? "bg-green-500" : projectCompletion >= 50 ? "bg-yellow-500" : "bg-red-500"
+            }`}
+            initial={{ width: 0 }}
+            animate={{ width: `${projectCompletion}%` }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          />
         </div>
-      )}
+        {isFullyComplete && (
+          <p className="text-xs text-green-600 font-medium">
+            Información completa
+          </p>
+        )}
+      </div>
 
       {isProject && (
         <div className="space-y-4">
