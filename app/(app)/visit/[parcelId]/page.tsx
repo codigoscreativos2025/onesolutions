@@ -222,7 +222,7 @@ export default function VisitPage() {
   const [showProjectTypeSelector, setShowProjectTypeSelector] = useState(false);
   const [directSale, setDirectSale] = useState(false);
   const [commissions] = useState<{ userId: number; name: string; percentage: number }[]>([]);
-  const isCloser = session?.user?.role === "CLOSER";
+  const isCloser = session?.user?.role === "CLOSER" || session?.user?.role === "SETTER";
   const isClosingMode = isCloser;
   const isTrainee = session?.user?.role === "SETTER";
 
@@ -531,9 +531,8 @@ export default function VisitPage() {
       }
 
       await saveProjectDetailsInternal();
-
+      await fetchData();
       toast.success("Proyecto iniciado");
-      router.push(`/my-projects?highlight=${visit.id}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Error al procesar");
     } finally {
