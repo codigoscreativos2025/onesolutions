@@ -233,23 +233,6 @@ export default function VisitPage() {
   const projectCompletion = calculateProjectCompletion(projectDetailsForm, loadedFieldNames);
 
   useEffect(() => {
-    if (loadedFieldNames.length > 0) {
-      setProjectDetailsForm((prev) => {
-        const updated = { ...prev };
-        loadedFieldNames.forEach((key) => {
-          if (!(key in updated)) updated[key] = "";
-        });
-        updated["clientName"] = updated["clientName"] || "";
-        updated["clientEmail"] = updated["clientEmail"] || "";
-        updated["address"] = updated["address"] || "";
-        updated["closingDate"] = updated["closingDate"] || "";
-        updated["paymentMethod"] = updated["paymentMethod"] || "";
-        return updated;
-      });
-    }
-  }, [loadedFieldNames]);
-
-  useEffect(() => {
     fetchData();
   }, [parcelId]);
 
@@ -1691,8 +1674,7 @@ function CloserForm({
         </h4>
       </div>
 
-      {isProject && (
-        <div className="space-y-3">
+      <div className="space-y-3">
           <div className="flex justify-between text-xs text-on-surface-variant font-medium">
             <span>Progreso de Información</span>
             <span>{projectCompletion}%</span>
@@ -1704,14 +1686,20 @@ function CloserForm({
               }`}
               initial={{ width: 0 }}
               animate={{ width: `${projectCompletion}%` }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
             />
           </div>
+          {projectCompletion >= 50 && (
+            <p className="text-xs text-yellow-600 dark:text-yellow-400 font-medium">
+              Continúa llenando los datos
+            </p>
+          )}
           {isFullyComplete && (
             <p className="text-xs text-green-600 dark:text-green-400 font-medium">
               Información completa — puedes cerrar el proyecto
             </p>
           )}
+        </div>
         </div>
       )}
 
