@@ -29,21 +29,17 @@ export async function GET(request: Request) {
 
     if (userId) {
       const uid = parseInt(userId);
-      if (filter === 'scheduled') {
-        whereClause.OR = [{ setterId: uid }, { closerId: uid }];
-      } else if (role === 'CLOSER' && userId === session.user.id) {
+      if (role === 'CLOSER' && userId === session.user.id) {
         whereClause.OR = [{ closerId: uid }, { setterId: uid }];
       } else {
-        whereClause.setterId = uid;
+        whereClause.OR = [{ setterId: uid }, { closerId: uid }];
       }
-    } else if (role === 'SETTER') {
-      if (!filter) {
-        whereClause.setterId = currentUserId;
-      }
+    } else if (role === 'SETTER' || role === 'SETTER_JR') {
+      whereClause.setterId = currentUserId;
     } else if (role === 'CLOSER') {
-      if (!filter) {
-        whereClause.OR = [{ closerId: currentUserId }, { setterId: currentUserId }];
-      }
+      whereClause.closerId = currentUserId;
+    } else if (role === 'PARTNER') {
+      whereClause.parcel = { partnerId: currentUserId };
     }
 
     if (startDate || endDate) {
@@ -93,6 +89,7 @@ export async function GET(request: Request) {
           select: {
             id: true,
             address: true,
+            ownerName: true,
           },
         },
         setter: {

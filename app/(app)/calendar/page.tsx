@@ -14,17 +14,21 @@ import {
   RefreshCw,
   LayoutGrid,
   List,
-  Clock as ClockIcon,
+  ArrowRight,
+  X,
+  Plus,
 } from "lucide-react";
 import { VisualCalendar } from "@/components/calendar/VisualCalendar";
 import { ViewProjectModal } from "@/components/calendar/ViewProjectModal";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 interface CalendarVisit {
   id: number;
   scheduledAt: string;
   stage: string;
-  parcel: { id: string; address: string };
+  parcel: { id: string; address: string; ownerName: string | null };
   setter: { id: number; name: string };
   closer?: { id: number; name: string } | null;
   projects?: { projectType: { id: number; name: string } }[];
@@ -36,6 +40,20 @@ interface AdminUser {
   name: string;
   email: string;
   role: string;
+}
+
+function formatTimeAMPM(dateStr: string): string {
+  const d = new Date(dateStr);
+  let hours = d.getHours();
+  const minutes = d.getMinutes().toString().padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12 || 12;
+  return `${hours}:${minutes} ${ampm}`;
+}
+
+function formatDateSpanish(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date + "T12:00:00") : date;
+  return format(d, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es });
 }
 
 export default function CalendarPage() {
@@ -57,6 +75,13 @@ export default function CalendarPage() {
   const [selectedVisit, setSelectedVisit] = useState<CalendarVisit | null>(null);
   const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
 
+  const [isDayModalOpen, setIsDayModalOpen] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [selectedDayVisits, setSelectedDayVisits] = useState<CalendarVisit[]>([]);
+
+  const [dayData, setDayData] = useState<Record<string, { available: boolean; ranges: { start: string; end: string }[] }>>({});
+  const [availabilitySaving, setAvailabilitySaving] = useState(false);
+
   const [reassignReason, setReassignReason] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -66,63 +91,51 @@ export default function CalendarPage() {
   const isCloser = session?.user?.role === "CLOSER";
   const canSetSchedule = isSetter || isSetterJr || isCloser;
 
-  const [scheduleExpanded, setScheduleExpanded] = useState(false);
-  const [workDays, setWorkDays] = useState<string[]>([]);
-  const [scheduleStart, setScheduleStart] = useState<number>(9);
-  const [scheduleEnd, setScheduleEnd] = useState<number>(17);
-  const [scheduleSaving, setScheduleSaving] = useState(false);
-
-  const fetchSchedule = async () => {
+  const fetchAvailability = async (targetMonth?: Date) => {
     try {
-      const res = await fetch("/api/profile");
+      const now = targetMonth || new Date();
+      const month = (now.getMonth() + 1).toString();
+      const year = now.getFullYear().toString();
+      const res = await fetch(`/api/profile/availability?month=${month}&year=${year}`);
       const data = await res.json();
-      if (data.workSchedule) {
-        const schedule = JSON.parse(data.workSchedule);
-        const days = Object.keys(schedule).filter((d) => schedule[d]);
-        setWorkDays(days);
-        if (days.length > 0 && schedule[days[0]]) {
-          setScheduleStart(schedule[days[0]].start);
-          setScheduleEnd(schedule[days[0]].end);
-        }
+      if (data.availability) {
+        setDayData(data.availability);
       }
     } catch {
       // ignore
     }
   };
 
-  const saveSchedule = async () => {
-    setScheduleSaving(true);
-    const schedule: Record<string, { start: number; end: number }> = {};
-    workDays.forEach((day) => {
-      schedule[day] = { start: scheduleStart, end: scheduleEnd };
-    });
+  const saveAvailability = async (date: string | Date, available: boolean, ranges?: { start: string; end: string }[]) => {
+    setAvailabilitySaving(true);
     try {
-      const res = await fetch("/api/profile/schedule", {
+      const key = typeof date === "string" ? date : format(date, "yyyy-MM-dd");
+      const res = await fetch("/api/profile/availability", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ workSchedule: schedule }),
+        body: JSON.stringify({ date: key, available, ranges }),
       });
-      if (res.ok) toast.success("Horario guardado");
-      else toast.error("Error al guardar");
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(available ? "Marcado como disponible" : "Marcado como no disponible");
+        setDayData((prev) => ({ ...prev, [key]: data }));
+      } else {
+        toast.error("Error al actualizar disponibilidad");
+      }
     } catch {
-      toast.error("Error al guardar");
+      toast.error("Error al actualizar disponibilidad");
     } finally {
-      setScheduleSaving(false);
+      setAvailabilitySaving(false);
     }
   };
-
-  const allDays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-  const dayShortLabels: Record<string, string> = { monday: "Lun", tuesday: "Mar", wednesday: "Mie", thursday: "Jue", friday: "Vie", saturday: "Sab" };
 
   useEffect(() => {
     fetchData();
   }, [selectedUserId, session, router]);
 
   useEffect(() => {
-    if (canSetSchedule) {
-      fetchSchedule();
-    }
-  }, [session, canSetSchedule]);
+    fetchAvailability();
+  }, [session]);
 
   useEffect(() => {
     if (!loading && highlightId) {
@@ -185,7 +198,7 @@ export default function CalendarPage() {
               .map(
                 (apt: {
                   id: number;
-                  parcel: { id: string; address: string };
+                  parcel: { id: string; address: string; ownerName?: string | null };
                   setter: { id: number; name: string };
                   slot?: { startAt: string; endAt: string };
                   projects?: { projectType: { id: number; name: string } }[];
@@ -197,7 +210,7 @@ export default function CalendarPage() {
                   id: apt.id,
                   scheduledAt: apt.scheduledAt || apt.slot?.startAt || new Date().toISOString(),
                   stage: apt.stage || "IN_PROGRESS",
-                  parcel: apt.parcel,
+                  parcel: { id: apt.parcel.id, address: apt.parcel.address, ownerName: apt.parcel.ownerName || null },
                   setter: apt.setter,
                   closer: apt.closer || null,
                   projects: apt.projects,
@@ -262,6 +275,42 @@ export default function CalendarPage() {
     fetchData();
   };
 
+  const handleDayClick = (date: string, dayVisits: CalendarVisit[]) => {
+    setSelectedDay(date);
+    setSelectedDayVisits(dayVisits);
+    setIsDayModalOpen(true);
+  };
+
+  const getAvailableForDay = (date: Date | string): boolean => {
+    const key = typeof date === "string" ? date : format(date, "yyyy-MM-dd");
+    const d = dayData[key];
+    return d?.available ?? true;
+  };
+
+  const getDayRanges = (date: Date | string) => {
+    const key = typeof date === "string" ? date : format(date, "yyyy-MM-dd");
+    return dayData[key]?.ranges || [];
+  };
+
+  const getOwnerDisplay = (visit: CalendarVisit): string => {
+    return visit.bill?.clientName || visit.parcel.ownerName || visit.parcel.address || "Sin dirección";
+  };
+
+  const handleAppointmentNavigate = (visit: CalendarVisit) => {
+    setIsDayModalOpen(false);
+    if (visit.stage === "IN_PROGRESS" || visit.stage === "OBJECTION") {
+      router.push(`/leads?highlight=${visit.parcel.id}`);
+    } else if (
+      visit.stage === "PROPOSAL_ACCEPTED" ||
+      visit.stage === "PROJECT" ||
+      visit.stage === "CLOSED"
+    ) {
+      router.push(`/my-projects?highlight=${visit.id}`);
+    } else {
+      router.push(`/leads?highlight=${visit.parcel.id}`);
+    }
+  };
+
   const groupVisitsByDate = () => {
     const grouped: Record<string, CalendarVisit[]> = {};
     visits.forEach((visit) => {
@@ -312,50 +361,6 @@ export default function CalendarPage() {
           <p className="text-on-surface-variant">
             Gestiona tus citas agendadas
           </p>
-          {canSetSchedule && (
-            <div className="mt-3">
-              <button
-                onClick={() => setScheduleExpanded(!scheduleExpanded)}
-                className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
-              >
-                <ClockIcon /> Mis Horarios de Trabajo {scheduleExpanded ? "▲" : "▼"}
-              </button>
-              {scheduleExpanded && (
-                <div className="mt-2 p-3 glass-panel rounded-lg space-y-2 max-w-md">
-                  <div className="flex flex-wrap gap-1">
-                    {allDays.map((day) => (
-                      <button
-                        key={day}
-                        onClick={() => setWorkDays((prev) => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day])}
-                        className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                          workDays.includes(day) ? "bg-primary text-white" : "bg-surface-container-low text-on-surface-variant"
-                        }`}
-                      >
-                        {dayShortLabels[day]}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-on-surface-variant">Desde:</span>
-                    <select value={scheduleStart} onChange={(e) => setScheduleStart(Number(e.target.value))} className="h-8 rounded bg-surface-container-low border border-outline-variant text-sm px-2">
-                      {Array.from({ length: 21 }, (_, i) => i + 6).map(h => (
-                        <option key={h} value={h}>{h}:00</option>
-                      ))}
-                    </select>
-                    <span className="text-xs text-on-surface-variant">Hasta:</span>
-                    <select value={scheduleEnd} onChange={(e) => setScheduleEnd(Number(e.target.value))} className="h-8 rounded bg-surface-container-low border border-outline-variant text-sm px-2">
-                      {Array.from({ length: 15 }, (_, i) => i + 9).map(h => (
-                        <option key={h} value={h}>{h}:00</option>
-                      ))}
-                    </select>
-                  </div>
-                  <Button onClick={saveSchedule} disabled={scheduleSaving || workDays.length === 0} size="sm">
-                    {scheduleSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Guardar"}
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
         </div>
         <div className="flex gap-2">
           {isAdmin && (
@@ -423,7 +428,7 @@ export default function CalendarPage() {
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="font-semibold text-on-surface">
-                        {apt.parcel.address || "Sin dirección"}
+                        {getOwnerDisplay(apt)}
                       </p>
                       <p className="text-sm text-on-surface-variant">
                         {new Date(apt.scheduledAt).toLocaleDateString("es-MX", {
@@ -434,11 +439,7 @@ export default function CalendarPage() {
                         })}
                       </p>
                       <p className="text-sm font-medium text-primary">
-                        {new Date(apt.scheduledAt).toLocaleTimeString("es-MX", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: false,
-                        })}
+                        {formatTimeAMPM(apt.scheduledAt)}
                       </p>
                       {apt.bill?.clientName && (
                         <p className="text-xs text-on-surface-variant mt-1">
@@ -499,7 +500,8 @@ export default function CalendarPage() {
       {viewMode === "calendar" && (
         <VisualCalendar
           visits={visits}
-          onVisitSelect={handleVisitClick}
+          onDayClick={handleDayClick}
+          dayAvailability={canSetSchedule ? dayData : undefined}
         />
       )}
 
@@ -528,14 +530,10 @@ export default function CalendarPage() {
                         <div>
                           <p className="font-semibold text-on-surface flex items-center gap-1">
                             <MapPin className="w-3.5 h-3.5 text-primary" />
-                            {visit.parcel.address}
+                            {getOwnerDisplay(visit)}
                           </p>
                           <p className="text-sm text-on-surface-variant">
-                            {new Date(visit.scheduledAt).toLocaleTimeString("es-MX", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              hour12: false,
-                            })}
+                            {formatTimeAMPM(visit.scheduledAt)}
                             {" — "}
                             <Link
                               href={`/profile/${visit.setter.id}`}
@@ -624,7 +622,7 @@ export default function CalendarPage() {
           <div className="space-y-4">
             <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
               <p className="font-semibold text-on-surface">
-                {selectedVisit.parcel.address}
+                {getOwnerDisplay(selectedVisit)}
               </p>
               <p className="text-sm text-on-surface-variant">
                 Trainee:{" "}
@@ -652,15 +650,13 @@ export default function CalendarPage() {
                 </p>
               )}
               <p className="text-sm text-on-surface-variant">
-                {new Date(selectedVisit.scheduledAt).toLocaleString("es-MX", {
+                {new Date(selectedVisit.scheduledAt).toLocaleDateString("es-MX", {
                   weekday: "long",
                   year: "numeric",
                   month: "long",
                   day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: false,
-                })}
+                })}{" "}
+                {formatTimeAMPM(selectedVisit.scheduledAt)}
               </p>
               <p className="text-sm mt-1">
                 <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
@@ -743,6 +739,142 @@ export default function CalendarPage() {
               Confirmar
             </Button>
           </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isDayModalOpen}
+        onClose={() => setIsDayModalOpen(false)}
+        title={selectedDay ? formatDateSpanish(selectedDay) : "Día"}
+      >
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+          {canSetSchedule && selectedDay && (
+            <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-on-surface">Disponibilidad</span>
+                <button
+                  onClick={() => saveAvailability(selectedDay, !getAvailableForDay(selectedDay), getDayRanges(selectedDay))}
+                  disabled={availabilitySaving}
+                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    getAvailableForDay(selectedDay)
+                      ? "bg-green-100 text-green-800 hover:bg-green-200"
+                      : "bg-red-100 text-red-800 hover:bg-red-200"
+                  }`}
+                >
+                  {availabilitySaving ? (
+                    <Loader2 className="w-3 h-3 animate-spin inline" />
+                  ) : getAvailableForDay(selectedDay) ? (
+                    "Disponible"
+                  ) : (
+                    "No Disponible"
+                  )}
+                </button>
+              </div>
+
+              {getAvailableForDay(selectedDay) && (
+                <div className="space-y-2">
+                  <span className="text-xs font-medium text-on-surface-variant">Rangos horarios:</span>
+                  {getDayRanges(selectedDay).map((r, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <input
+                        type="time"
+                        value={r.start}
+                        onChange={(e) => {
+                          const newRanges = [...getDayRanges(selectedDay)];
+                          newRanges[i] = { start: e.target.value, end: newRanges[i].end };
+                          saveAvailability(selectedDay, true, newRanges);
+                        }}
+                        className="h-8 text-xs rounded bg-surface-container-low border border-outline-variant px-2"
+                      />
+                      <span className="text-xs text-on-surface-variant">a</span>
+                      <input
+                        type="time"
+                        value={r.end}
+                        onChange={(e) => {
+                          const newRanges = [...getDayRanges(selectedDay)];
+                          newRanges[i] = { start: newRanges[i].start, end: e.target.value };
+                          saveAvailability(selectedDay, true, newRanges);
+                        }}
+                        className="h-8 text-xs rounded bg-surface-container-low border border-outline-variant px-2"
+                      />
+                      <button
+                        onClick={() => {
+                          const newRanges = getDayRanges(selectedDay).filter((_, j) => j !== i);
+                          saveAvailability(selectedDay, newRanges.length > 0, newRanges);
+                        }}
+                        className="p-1 text-red-500 hover:bg-red-50 rounded"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => {
+                      const newRanges = [...getDayRanges(selectedDay), { start: "09:00", end: "17:00" }];
+                      saveAvailability(selectedDay, true, newRanges);
+                    }}
+                    className="text-xs text-primary hover:underline flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" /> Agregar rango
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {selectedDayVisits.length === 0 ? (
+            <div className="text-center py-8 text-on-surface-variant">
+              <CalendarIcon className="w-10 h-10 mx-auto mb-3 opacity-40" />
+              <p>No hay visitas para este día</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {selectedDayVisits.map((visit) => {
+                return (
+                  <button
+                    key={visit.id}
+                    onClick={() => handleAppointmentNavigate(visit)}
+                    className="w-full p-3 rounded-xl bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors text-left"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-2 h-8 rounded-full"
+                          style={{
+                            backgroundColor:
+                              visit.stage === "IN_PROGRESS"
+                                ? "#3b82f6"
+                                : visit.stage === "PROPOSAL_ACCEPTED"
+                                ? "#22c55e"
+                                : visit.stage === "PROJECT"
+                                ? "#eab308"
+                                : visit.stage === "CLOSED"
+                                ? "#8b5cf6"
+                                : "#6b7280",
+                          }}
+                        />
+                        <div>
+                          <p className="font-medium text-sm">
+                            {getOwnerDisplay(visit)}
+                          </p>
+                          <p className="text-xs text-on-surface-variant">
+                            {formatTimeAMPM(visit.scheduledAt)} — {visit.setter.name}
+                            {visit.closer ? ` / ${visit.closer.name}` : ""}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
+                          {stageLabels[visit.stage] || visit.stage}
+                        </span>
+                        <ArrowRight className="w-4 h-4 text-on-surface-variant" />
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </Modal>
 

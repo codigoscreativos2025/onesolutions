@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Plus, Trash2, FileDown, Eye, Send } from "lucide-react";
+import { Plus, Trash2, FileDown, Eye, Send, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 
 interface Item {
@@ -14,6 +14,28 @@ interface Item {
   quantity: number;
   unitPrice: number;
   isDiscount: boolean;
+}
+
+interface FrequentContact {
+  id: number;
+  name: string;
+  company: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+}
+
+interface GeneratedInvoice {
+  id: number;
+  invoiceNum: string;
+  date: string;
+  billToName: string;
+  billToEmail: string | null;
+  total: number;
+  paid: number;
+  balance: number;
+  html: string;
+  createdAt: string;
 }
 
 export default function AdminInvoicesPage() {
@@ -38,6 +60,46 @@ export default function AdminInvoicesPage() {
     { id: 1, description: "Servicio de instalacion", detail: "Incluye materiales y mano de obra", quantity: 1, unitPrice: 0, isDiscount: false },
   ]);
 
+  const [contacts, setContacts] = useState<FrequentContact[]>([]);
+  const [selectedContactId, setSelectedContactId] = useState("");
+
+  const [invoices, setInvoices] = useState<GeneratedInvoice[]>([]);
+  const [loadingInvoices, setLoadingInvoices] = useState(false);
+  const [viewInvoiceHtml, setViewInvoiceHtml] = useState<string | null>(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+
+  const [showStats, setShowStats] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/frequent-contacts")
+      .then((r) => r.json())
+      .then((data) => setContacts(Array.isArray(data) ? data : []))
+      .catch(() => {});
+    fetchInvoices();
+  }, []);
+
+  const fetchInvoices = async () => {
+    setLoadingInvoices(true);
+    try {
+      const res = await fetch("/api/invoices");
+      setInvoices(await res.json());
+    } catch {
+    } finally {
+      setLoadingInvoices(false);
+    }
+  };
+
+  const handleContactSelect = (contactId: string) => {
+    setSelectedContactId(contactId);
+    if (!contactId) return;
+    const c = contacts.find((c) => c.id === parseInt(contactId));
+    if (c) {
+      setBillToName(c.name);
+      if (c.phone) setBillToPhone(c.phone);
+      if (c.email) setBillToEmail(c.email);
+    }
+  };
+
   const addItem = () => {
     setItems([...items, { id: Date.now(), description: "", detail: "", quantity: 1, unitPrice: 0, isDiscount: false }]);
   };
@@ -56,6 +118,32 @@ export default function AdminInvoicesPage() {
   const total = subtotal - discounts;
   const balance = total - paid;
 
+  const getPreviewHtml = useCallback(() => {
+    if (!previewRef.current) return "";
+    return previewRef.current.outerHTML;
+  }, []);
+
+  const saveInvoiceToHistory = async () => {
+    if (!billToName) return;
+    try {
+      await fetch("/api/invoices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          invoiceNum,
+          date,
+          billToName,
+          billToEmail: billToEmail || null,
+          total,
+          paid,
+          balance,
+          html: getPreviewHtml(),
+        }),
+      });
+    } catch {
+    }
+  };
+
   const downloadPDF = async () => {
     if (!previewRef.current) return;
     // @ts-ignore
@@ -64,11 +152,13 @@ export default function AdminInvoicesPage() {
       margin: [10, 10, 10, 10] as [number, number, number, number],
       filename: `Invoice_${invoiceNum}.pdf`,
       image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2, backgroundColor: "#ffffff" },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      html2canvas: { scale: 1.5, backgroundColor: "#ffffff" },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
     await html2pdf().set(opt).from(previewRef.current).save();
+    await saveInvoiceToHistory();
+    fetchInvoices();
   };
 
   const generatePdfBase64 = async (): Promise<string> => {
@@ -79,8 +169,8 @@ export default function AdminInvoicesPage() {
       margin: [10, 10, 10, 10] as [number, number, number, number],
       filename: `Invoice_${invoiceNum}.pdf`,
       image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2, backgroundColor: "#ffffff" },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      html2canvas: { scale: 1.5, backgroundColor: "#ffffff" },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
     const pdfAsString = await html2pdf().set(opt).from(previewRef.current).outputPdf('datauristring');
@@ -110,6 +200,8 @@ export default function AdminInvoicesPage() {
       if (res.ok) {
         toast.success("Factura enviada por email");
         setShowEmailInput(false);
+        await saveInvoiceToHistory();
+        fetchInvoices();
       } else {
         toast.error("Error al enviar el email");
       }
@@ -119,6 +211,71 @@ export default function AdminInvoicesPage() {
       setSendingEmail(false);
     }
   };
+
+  const handleViewInvoice = async (id: number) => {
+    try {
+      const res = await fetch(`/api/invoices/${id}`);
+      const data = await res.json();
+      if (data.html) {
+        setViewInvoiceHtml(data.html);
+        setShowViewModal(true);
+      }
+    } catch {
+      toast.error("Error al cargar la factura");
+    }
+  };
+
+  const handleDeleteInvoice = async (id: number) => {
+    if (!confirm("¿Eliminar esta factura del historial?")) return;
+    const res = await fetch(`/api/invoices/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      toast.success("Factura eliminada");
+      fetchInvoices();
+    } else {
+      toast.error("Error al eliminar");
+    }
+  };
+
+  const stats = useMemo(() => {
+    const totalInvoices = invoices.length;
+    const totalBilled = invoices.reduce((s, i) => s + i.total, 0);
+    const totalPaid = invoices.reduce((s, i) => s + i.paid, 0);
+
+    const clientMap = new Map<string, { count: number; totalAmount: number }>();
+    invoices.forEach((i) => {
+      const existing = clientMap.get(i.billToName) || { count: 0, totalAmount: 0 };
+      existing.count++;
+      existing.totalAmount += i.total;
+      clientMap.set(i.billToName, existing);
+    });
+    const topClients = Array.from(clientMap.entries())
+      .sort((a, b) => b[1].totalAmount - a[1].totalAmount)
+      .slice(0, 5);
+
+    const now = new Date();
+    const fourWeeksAgo = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+
+    const weeklyData = invoices.filter((i) => new Date(i.date) >= fourWeeksAgo);
+    const monthlyData = invoices.filter((i) => new Date(i.date) >= sixMonthsAgo);
+
+    const weeklyGroups = new Map<string, number>();
+    weeklyData.forEach((i) => {
+      const d = new Date(i.date);
+      const weekStart = new Date(d.getFullYear(), d.getMonth(), d.getDate() - d.getDay());
+      const key = weekStart.toISOString().split("T")[0];
+      weeklyGroups.set(key, (weeklyGroups.get(key) || 0) + i.total);
+    });
+
+    const monthlyGroups = new Map<string, number>();
+    monthlyData.forEach((i) => {
+      const d = new Date(i.date);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      monthlyGroups.set(key, (monthlyGroups.get(key) || 0) + i.total);
+    });
+
+    return { totalInvoices, totalBilled, totalPaid, topClients, weeklyGroups, monthlyGroups };
+  }, [invoices]);
 
   if (session?.user?.role !== "ADMIN") {
     return <div className="p-8 text-center">Acceso restringido a administradores.</div>;
@@ -175,10 +332,28 @@ export default function AdminInvoicesPage() {
 
       <div className="flex flex-col lg:flex-row gap-4">
         {/* FORM */}
-          <div className="space-y-4 glass-panel rounded-xl p-6 lg:w-[45%] lg:shrink-0">
+        <div className="space-y-4 glass-panel rounded-xl p-6 lg:w-[45%] lg:shrink-0">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Eye className="w-5 h-5" /> Datos de la Factura
           </h2>
+
+          {contacts.length > 0 && (
+            <div>
+              <label className="text-xs font-medium text-on-surface-variant">Seleccionar Contacto</label>
+              <select
+                value={selectedContactId}
+                onChange={(e) => handleContactSelect(e.target.value)}
+                className="w-full h-10 rounded-lg bg-surface-container-low border border-outline-variant px-3 text-sm text-on-surface"
+              >
+                <option value="">-- Seleccionar --</option>
+                {contacts.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}{c.company ? ` (${c.company})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -268,10 +443,9 @@ export default function AdminInvoicesPage() {
           </div>
         </div>
 
-        {/* PREVIEW - matches MuestraInvoice.html design */}
-          <div className="flex-1 lg:min-w-0 max-h-[90vh] sticky top-4">
+        {/* PREVIEW */}
+        <div className="flex-1 lg:min-w-0 max-h-[90vh] sticky top-4">
           <div ref={previewRef} className="bg-white shadow-lg" style={{ fontFamily: "Arial, sans-serif", minWidth: "400px" }}>
-            {/* Header */}
             <div style={{ display: "flex", minHeight: 160 }}>
               <div style={{ backgroundColor: "#f19e38", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column" }}>
                 <div style={{ textAlign: "center", color: "black" }}>
@@ -288,7 +462,6 @@ export default function AdminInvoicesPage() {
               </div>
             </div>
 
-            {/* Addresses */}
             <div style={{ display: "flex", padding: 25, gap: 30 }}>
               <div style={{ flex: 1, fontSize: 13, color: "#777", lineHeight: 1.6 }}>
                 <div style={{ color: "#f19e38", fontSize: 11, fontWeight: "bold", textTransform: "uppercase", marginBottom: 12 }}>BILL TO:</div>
@@ -306,7 +479,6 @@ export default function AdminInvoicesPage() {
               </div>
             </div>
 
-            {/* Items Table */}
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
@@ -338,7 +510,6 @@ export default function AdminInvoicesPage() {
               </tbody>
             </table>
 
-            {/* Totals */}
             <div style={{ display: "flex", justifyContent: "flex-end", padding: "30px 50px 0" }}>
               <table style={{ width: 280, fontSize: 13 }}>
                 <tbody>
@@ -372,6 +543,169 @@ export default function AdminInvoicesPage() {
           </div>
         </div>
       </div>
+
+      {/* Invoice History */}
+      <div className="glass-panel rounded-2xl p-6 border-outline-variant">
+        <h2 className="font-headline text-lg font-bold text-on-surface mb-4">
+          Historial de Facturas
+        </h2>
+        {loadingInvoices ? (
+          <p className="text-center py-8 text-on-surface-variant">Cargando...</p>
+        ) : invoices.length === 0 ? (
+          <p className="text-center py-8 text-on-surface-variant">
+            No hay facturas generadas. Descarga una factura para verla aqui.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-outline-variant">
+                  <th className="text-left py-2 px-3 font-semibold">Nro Factura</th>
+                  <th className="text-left py-2 px-3 font-semibold">Fecha</th>
+                  <th className="text-left py-2 px-3 font-semibold">Facturar A</th>
+                  <th className="text-right py-2 px-3 font-semibold">Total</th>
+                  <th className="text-right py-2 px-3 font-semibold">Pagado</th>
+                  <th className="text-right py-2 px-3 font-semibold">Balance</th>
+                  <th className="text-center py-2 px-3 font-semibold">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoices.map((inv) => (
+                  <tr key={inv.id} className="border-b border-outline-variant/50 hover:bg-surface-container-low">
+                    <td className="py-2 px-3 font-medium">{inv.invoiceNum}</td>
+                    <td className="py-2 px-3 text-on-surface-variant">{new Date(inv.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</td>
+                    <td className="py-2 px-3">{inv.billToName}</td>
+                    <td className="py-2 px-3 text-right">${inv.total.toFixed(2)}</td>
+                    <td className="py-2 px-3 text-right">${inv.paid.toFixed(2)}</td>
+                    <td className="py-2 px-3 text-right font-medium">${inv.balance.toFixed(2)}</td>
+                    <td className="py-2 px-3 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => handleViewInvoice(inv.id)}
+                          className="p-1.5 rounded-lg hover:bg-surface-container-high transition-colors"
+                          title="Ver"
+                        >
+                          <Eye className="w-4 h-4 text-on-surface-variant" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteInvoice(inv.id)}
+                          className="p-1.5 rounded-lg hover:bg-error-container transition-colors"
+                          title="Eliminar"
+                        >
+                          <Trash2 className="w-4 h-4 text-error" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Statistics */}
+      <div className="glass-panel rounded-2xl border-outline-variant overflow-hidden">
+        <button
+          onClick={() => setShowStats(!showStats)}
+          className="w-full p-6 flex items-center justify-between"
+        >
+          <h2 className="font-headline text-lg font-bold text-on-surface">
+            Estadísticas
+          </h2>
+          {showStats ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+        </button>
+        {showStats && (
+          <div className="px-6 pb-6 space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-surface-container-low rounded-xl p-4 text-center">
+                <p className="text-3xl font-bold text-primary">{stats.totalInvoices}</p>
+                <p className="text-sm text-on-surface-variant">Facturas generadas</p>
+              </div>
+              <div className="bg-surface-container-low rounded-xl p-4 text-center">
+                <p className="text-3xl font-bold text-primary">${stats.totalBilled.toFixed(2)}</p>
+                <p className="text-sm text-on-surface-variant">Total facturado</p>
+              </div>
+              <div className="bg-surface-container-low rounded-xl p-4 text-center">
+                <p className="text-3xl font-bold text-primary">${stats.totalPaid.toFixed(2)}</p>
+                <p className="text-sm text-on-surface-variant">Total pagado</p>
+              </div>
+            </div>
+
+            {stats.topClients.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-on-surface mb-2">Top Clientes</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-outline-variant">
+                        <th className="text-left py-2 font-semibold">Cliente</th>
+                        <th className="text-right py-2 font-semibold">Facturas</th>
+                        <th className="text-right py-2 font-semibold">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stats.topClients.map(([name, data]) => (
+                        <tr key={name} className="border-b border-outline-variant/50">
+                          <td className="py-2">{name}</td>
+                          <td className="py-2 text-right">{data.count}</td>
+                          <td className="py-2 text-right font-medium">${data.totalAmount.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {stats.weeklyGroups.size > 0 && (
+                <div>
+                  <h3 className="font-semibold text-on-surface mb-2">Totales semanales</h3>
+                  <div className="space-y-1">
+                    {Array.from(stats.weeklyGroups.entries()).sort().map(([week, amount]) => (
+                      <div key={week} className="flex justify-between text-sm py-1 px-2 rounded bg-surface-container-low">
+                        <span>Semana {week}</span>
+                        <span className="font-medium">${amount.toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {stats.monthlyGroups.size > 0 && (
+                <div>
+                  <h3 className="font-semibold text-on-surface mb-2">Totales mensuales</h3>
+                  <div className="space-y-1">
+                    {Array.from(stats.monthlyGroups.entries()).sort().map(([month, amount]) => (
+                      <div key={month} className="flex justify-between text-sm py-1 px-2 rounded bg-surface-container-low">
+                        <span>{month}</span>
+                        <span className="font-medium">${amount.toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* View Invoice Modal */}
+      {showViewModal && viewInvoiceHtml && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowViewModal(false)}>
+          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="font-bold">Vista de Factura</h3>
+              <button onClick={() => setShowViewModal(false)} className="p-1 rounded-lg hover:bg-gray-100">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4" dangerouslySetInnerHTML={{ __html: viewInvoiceHtml }} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

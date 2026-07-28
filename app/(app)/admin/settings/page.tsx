@@ -13,6 +13,15 @@ interface BusinessSettings {
   watermarkedEnabled: boolean;
 }
 
+interface FrequentContact {
+  id: number;
+  name: string;
+  company: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+}
+
 interface NotAvailableTag {
   id: number;
   name: string;
@@ -28,6 +37,7 @@ export default function AdminSettingsPage() {
   const router = useRouter();
   const [settings, setSettings] = useState<BusinessSettings | null>(null);
   const [tags, setTags] = useState<NotAvailableTag[]>([]);
+  const [contacts, setContacts] = useState<FrequentContact[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
@@ -40,6 +50,20 @@ export default function AdminSettingsPage() {
   const [editTagColor, setEditTagColor] = useState("");
   const [editTagActive, setEditTagActive] = useState(true);
 
+  const [newContactName, setNewContactName] = useState("");
+  const [newContactCompany, setNewContactCompany] = useState("");
+  const [newContactPhone, setNewContactPhone] = useState("");
+  const [newContactEmail, setNewContactEmail] = useState("");
+  const [newContactAddress, setNewContactAddress] = useState("");
+  const [creatingContact, setCreatingContact] = useState(false);
+
+  const [editingContactId, setEditingContactId] = useState<number | null>(null);
+  const [editContactName, setEditContactName] = useState("");
+  const [editContactCompany, setEditContactCompany] = useState("");
+  const [editContactPhone, setEditContactPhone] = useState("");
+  const [editContactEmail, setEditContactEmail] = useState("");
+  const [editContactAddress, setEditContactAddress] = useState("");
+
   useEffect(() => {
     if (session?.user?.role !== "ADMIN") {
       router.push("/dashboard");
@@ -50,12 +74,14 @@ export default function AdminSettingsPage() {
 
   const fetchAll = async () => {
     try {
-      const [settingsRes, tagsRes] = await Promise.all([
+      const [settingsRes, tagsRes, contactsRes] = await Promise.all([
         fetch("/api/admin/business-settings"),
         fetch("/api/admin/not-available-tags"),
+        fetch("/api/admin/frequent-contacts"),
       ]);
       setSettings(await settingsRes.json());
       setTags(await tagsRes.json());
+      setContacts(await contactsRes.json());
     } catch (error) {
       console.error(error);
     } finally {
@@ -187,6 +213,70 @@ export default function AdminSettingsPage() {
     ]);
 
     fetchAll();
+  };
+
+  const handleCreateContact = async () => {
+    if (!newContactName.trim()) return;
+    setCreatingContact(true);
+    const res = await fetch("/api/admin/frequent-contacts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: newContactName.trim(),
+        company: newContactCompany.trim() || null,
+        phone: newContactPhone.trim() || null,
+        email: newContactEmail.trim() || null,
+        address: newContactAddress.trim() || null,
+      }),
+    });
+    if (res.ok) {
+      setNewContactName("");
+      setNewContactCompany("");
+      setNewContactPhone("");
+      setNewContactEmail("");
+      setNewContactAddress("");
+      fetchAll();
+    }
+    setCreatingContact(false);
+  };
+
+  const handleStartEditContact = (c: FrequentContact) => {
+    setEditingContactId(c.id);
+    setEditContactName(c.name);
+    setEditContactCompany(c.company || "");
+    setEditContactPhone(c.phone || "");
+    setEditContactEmail(c.email || "");
+    setEditContactAddress(c.address || "");
+  };
+
+  const handleCancelEditContact = () => {
+    setEditingContactId(null);
+  };
+
+  const handleSaveEditContact = async (id: number) => {
+    const res = await fetch(`/api/admin/frequent-contacts/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: editContactName,
+        company: editContactCompany || null,
+        phone: editContactPhone || null,
+        email: editContactEmail || null,
+        address: editContactAddress || null,
+      }),
+    });
+    if (res.ok) {
+      setEditingContactId(null);
+      fetchAll();
+    }
+  };
+
+  const handleDeleteContact = async (id: number) => {
+    if (!confirm("¿Eliminar este contacto?")) return;
+    const res = await fetch(`/api/admin/frequent-contacts/${id}`, {
+      method: "DELETE",
+    });
+    if (res.ok) fetchAll();
   };
 
   if (loading) {
@@ -409,6 +499,145 @@ export default function AdminSettingsPage() {
                   </button>
                   <button
                     onClick={() => handleDelete(tag.id)}
+                    className="p-2 rounded-lg hover:bg-error-container transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4 text-error" />
+                  </button>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Section 3: Contactos Frecuentes */}
+      <div className="glass-panel p-6 rounded-2xl border-outline-variant space-y-4">
+        <h2 className="font-headline text-lg font-bold text-on-surface">
+          Contactos Frecuentes
+        </h2>
+        <p className="text-sm text-on-surface-variant">
+          Guarda contactos frecuentes para usarlos al generar facturas
+        </p>
+
+        <div className="flex flex-wrap items-end gap-3">
+          <Input
+            label="Nombre"
+            value={newContactName}
+            onChange={(e) => setNewContactName(e.target.value)}
+            placeholder="Nombre o empresa"
+            className="flex-1 min-w-[160px]"
+          />
+          <Input
+            label="Empresa"
+            value={newContactCompany}
+            onChange={(e) => setNewContactCompany(e.target.value)}
+            placeholder="Opcional"
+            className="flex-1 min-w-[160px]"
+          />
+          <Input
+            label="Teléfono"
+            value={newContactPhone}
+            onChange={(e) => setNewContactPhone(e.target.value)}
+            placeholder="Opcional"
+            className="flex-1 min-w-[130px]"
+          />
+          <Input
+            label="Email"
+            value={newContactEmail}
+            onChange={(e) => setNewContactEmail(e.target.value)}
+            placeholder="Opcional"
+            type="email"
+            className="flex-1 min-w-[160px]"
+          />
+          <Input
+            label="Dirección"
+            value={newContactAddress}
+            onChange={(e) => setNewContactAddress(e.target.value)}
+            placeholder="Opcional"
+            className="flex-1 min-w-[160px]"
+          />
+          <Button onClick={handleCreateContact} disabled={creatingContact || !newContactName.trim()}>
+            {creatingContact ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4" />
+            )}
+            Crear
+          </Button>
+        </div>
+
+        <div className="space-y-3">
+          {contacts.length === 0 && (
+            <p className="text-center py-8 text-on-surface-variant">
+              No hay contactos guardados
+            </p>
+          )}
+
+          {contacts.map((c) => (
+            <div
+              key={c.id}
+              className="flex items-center gap-3 p-4 rounded-xl bg-surface-container-low border border-outline-variant"
+            >
+              {editingContactId === c.id ? (
+                <div className="flex-1 flex flex-wrap items-center gap-2">
+                  <input
+                    type="text"
+                    value={editContactName}
+                    onChange={(e) => setEditContactName(e.target.value)}
+                    placeholder="Nombre"
+                    className="h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface min-w-[140px]"
+                  />
+                  <input
+                    type="text"
+                    value={editContactCompany}
+                    onChange={(e) => setEditContactCompany(e.target.value)}
+                    placeholder="Empresa"
+                    className="h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface min-w-[140px]"
+                  />
+                  <input
+                    type="text"
+                    value={editContactPhone}
+                    onChange={(e) => setEditContactPhone(e.target.value)}
+                    placeholder="Teléfono"
+                    className="h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface min-w-[120px]"
+                  />
+                  <input
+                    type="email"
+                    value={editContactEmail}
+                    onChange={(e) => setEditContactEmail(e.target.value)}
+                    placeholder="Email"
+                    className="h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface min-w-[140px]"
+                  />
+                  <input
+                    type="text"
+                    value={editContactAddress}
+                    onChange={(e) => setEditContactAddress(e.target.value)}
+                    placeholder="Dirección"
+                    className="h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface min-w-[140px]"
+                  />
+                  <Button size="sm" onClick={() => handleSaveEditContact(c.id)}>
+                    Guardar
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={handleCancelEditContact}>
+                    Cancelar
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <div className="flex-1">
+                    <p className="font-semibold text-on-surface">{c.name}</p>
+                    <p className="text-xs text-on-surface-variant">
+                      {[c.company, c.phone, c.email, c.address].filter(Boolean).join(" · ") || "Sin datos adicionales"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleStartEditContact(c)}
+                    className="p-2 rounded-lg hover:bg-surface-container-high transition-colors"
+                  >
+                    <Pencil className="w-4 h-4 text-on-surface-variant" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteContact(c.id)}
                     className="p-2 rounded-lg hover:bg-error-container transition-colors"
                   >
                     <Trash2 className="w-4 h-4 text-error" />

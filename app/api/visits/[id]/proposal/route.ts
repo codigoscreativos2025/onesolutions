@@ -138,7 +138,7 @@ export async function PATCH(
           userId: effectiveCloserId,
           title: "Nueva cita asignada",
           body: `Te han asignado una nueva cita de un Trainee.`,
-          link: `/calendar?highlight=${visit.id}`,
+          link: `/my-projects?highlight=${visit.id}`,
         },
       });
     }

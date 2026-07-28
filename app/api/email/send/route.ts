@@ -46,6 +46,11 @@ export async function POST(request: Request) {
 
     if (pdfBase64) {
       const pdfBuffer = Buffer.from(pdfBase64, "base64");
+      const maxSizeMb = 10;
+      if (pdfBuffer.length > maxSizeMb * 1024 * 1024) {
+        console.warn(`PDF too large (${(pdfBuffer.length / 1024 / 1024).toFixed(1)}MB), sending link instead of attachment`);
+        return NextResponse.json({ error: `PDF demasiado grande (${(pdfBuffer.length / 1024 / 1024).toFixed(1)}MB). El límite es ${maxSizeMb}MB.` }, { status: 413 });
+      }
       emailAttachments.push({
         filename: pdfFilename || "document.pdf",
         content: pdfBuffer,
@@ -62,7 +67,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error sending email:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("Email error:", error);
+    const message = error instanceof Error ? error.message : "Internal server error";
+    return NextResponse.json({ error: `Failed to send email: ${message}` }, { status: 500 });
   }
 }

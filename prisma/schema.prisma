@@ -398,6 +398,9 @@ model UserProfile {
   // Work schedule (JSON string)
   workSchedule    String?
 
+  // Per-day availability (JSON string: { "2026-07-28": true, ... })
+  dayAvailability String?
+
   // Datos de Partner
   representativeName String?
   companyName        String?
@@ -461,6 +464,31 @@ model CloserCommission {
   user       User   @relation(fields: [userId], references: [id])
   percentage Float
   role       String @default("CLOSER")
+}
+
+// Contactos frecuentes para facturación
+model FrequentContact {
+  id        Int      @id @default(autoincrement())
+  name      String
+  company   String?
+  phone     String?
+  email     String?
+  address   String?
+  createdAt DateTime @default(now())
+}
+
+// Facturas generadas
+model GeneratedInvoice {
+  id          Int      @id @default(autoincrement())
+  invoiceNum  String
+  date        DateTime
+  billToName  String
+  billToEmail String?
+  total       Float
+  paid        Float
+  balance     Float
+  html        String
+  createdAt   DateTime @default(now())
 }
 
 // Etiquetas personalizables para "No Disponible"

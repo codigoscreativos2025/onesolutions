@@ -17,6 +17,8 @@ export async function GET() {
     whereClause = { setterId: userId };
   } else if (role === "CLOSER") {
     whereClause = { closerId: userId };
+  } else if (role === "PARTNER") {
+    whereClause = { parcel: { partnerId: userId } };
   }
 
   const [

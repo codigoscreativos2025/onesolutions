@@ -17,6 +17,12 @@ export function SignatureCanvas({
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasSignature, setHasSignature] = useState(false);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.getContext("2d", { willReadFrequently: true });
+  }, []);
+
   const getCoordinates = useCallback(
     (
       e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent

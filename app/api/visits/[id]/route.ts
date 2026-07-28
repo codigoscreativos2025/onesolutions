@@ -24,7 +24,7 @@ export async function PATCH(
   }
 
   const body = await request.json();
-  const { contractSignatures, contractType, commissions } = body;
+  const { contractSignatures, contractType, commissions, stage } = body;
 
   if (commissions && session.user.role !== "ADMIN") {
     return NextResponse.json(
@@ -88,6 +88,20 @@ export async function PATCH(
     await prisma.visit.update({
       where: { id: visitId },
       data: { contractFields: JSON.stringify(existingFields) },
+    });
+
+    return NextResponse.json({ success: true });
+  }
+
+  if (stage && session.user.role === "ADMIN") {
+    const validStages = ["IN_PROGRESS", "PROPOSAL_ACCEPTED", "PROJECT", "CLOSED", "CANCELLED"];
+    if (!validStages.includes(stage)) {
+      return NextResponse.json({ error: "Invalid stage" }, { status: 400 });
+    }
+
+    await prisma.visit.update({
+      where: { id: visitId },
+      data: { stage },
     });
 
     return NextResponse.json({ success: true });

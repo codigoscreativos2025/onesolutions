@@ -278,8 +278,8 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
         margin: [15, 10, 15, 10] as [number, number, number, number], // top, left, bottom, right margins in mm for spacing
         filename: `contrato_${visitId}.pdf`,
         image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        html2canvas: { scale: 1.5, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
@@ -350,8 +350,8 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
         margin: [15, 10, 15, 10] as [number, number, number, number], // margins to provide space around pages
         filename: `contrato_${visitId}.pdf`,
         image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        html2canvas: { scale: 1.5, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
 

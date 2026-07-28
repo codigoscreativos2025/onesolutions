@@ -14,25 +14,35 @@ import {
   endOfWeek,
 } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface CalendarVisit {
   id: number;
   scheduledAt: string;
-  parcel: { id: string; address: string };
+  parcel: { id: string; address: string; ownerName: string | null };
   setter: { id: number; name: string };
   closer?: { id: number; name: string } | null;
   stage: string;
   projects?: { projectType: { id: number; name: string } }[];
+  bill?: { clientName: string | null } | null;
 }
 
 interface VisualCalendarProps {
   visits: CalendarVisit[];
-  onVisitSelect?: (visit: CalendarVisit) => void;
-  onDayClick?: (date: Date, visits: CalendarVisit[]) => void;
+  onDayClick?: (date: string, dayVisits: CalendarVisit[]) => void;
+  dayAvailability?: Record<string, { available: boolean; ranges: { start: string; end: string }[] }>;
 }
 
-export function VisualCalendar({ visits, onVisitSelect, onDayClick }: VisualCalendarProps) {
+function formatTimeAMPM(dateStr: string): string {
+  const d = new Date(dateStr);
+  let hours = d.getHours();
+  const minutes = d.getMinutes().toString().padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12 || 12;
+  return `${hours}:${minutes} ${ampm}`;
+}
+
+export function VisualCalendar({ visits, onDayClick, dayAvailability }: VisualCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
@@ -52,9 +62,18 @@ export function VisualCalendar({ visits, onVisitSelect, onDayClick }: VisualCale
       setSelectedDate(day);
       const dayVisits = getVisitsForDate(day);
       if (onDayClick) {
-        onDayClick(day, dayVisits);
+        onDayClick(format(day, "yyyy-MM-dd"), dayVisits);
       }
     }
+  };
+
+  const getAvailabilityForDate = (date: Date): boolean | null => {
+    if (!dayAvailability || !isSameMonth(date, currentMonth)) return null;
+    const key = format(date, 'yyyy-MM-dd');
+    const val = dayAvailability[key];
+    if (typeof val === 'boolean') return val;
+    if (val && typeof val === 'object') return val.available;
+    return null;
   };
 
   const stageColors: Record<string, string> = {
@@ -103,13 +122,15 @@ export function VisualCalendar({ visits, onVisitSelect, onDayClick }: VisualCale
           const isSelected = selectedDate && isSameDay(day, selectedDate);
           const isToday = isSameDay(day, new Date());
           const hasVisits = dayVisits.length > 0;
+          const avail = getAvailabilityForDate(day);
+          const isAvailable = avail !== false;
 
           return (
             <div
               key={index}
               onClick={() => handleDayClick(day)}
               className={`
-                min-h-[80px] p-2 rounded-lg border-2 cursor-pointer transition-all
+                min-h-[90px] p-2 rounded-lg border-2 cursor-pointer transition-all relative
                 ${
                   !isCurrentMonth
                     ? 'border-transparent opacity-30 cursor-default'
@@ -123,25 +144,40 @@ export function VisualCalendar({ visits, onVisitSelect, onDayClick }: VisualCale
                 }
               `}
             >
-              <div className={`text-sm font-medium mb-1 ${isToday ? 'bg-primary text-white rounded-full w-7 h-7 flex items-center justify-center' : ''}`}>
-                {format(day, 'd')}
+              <div className="flex items-center justify-between mb-1">
+                <div className={`text-sm font-medium ${isToday ? 'bg-primary text-white rounded-full w-7 h-7 flex items-center justify-center' : ''}`}>
+                  {format(day, 'd')}
+                </div>
+                {isCurrentMonth && avail !== null && (
+                  <div className={`w-2 h-2 rounded-full ${isAvailable ? 'bg-green-500' : 'bg-red-500'}`} title={isAvailable ? 'Disponible' : 'No Disponible'} />
+                )}
+              </div>
+              <div className="flex items-center gap-1">
+                {isCurrentMonth && avail !== null && (
+                  <span className={`text-[10px] leading-tight ${isAvailable ? 'text-green-600' : 'text-red-600'}`}>
+                    {isAvailable ? 'Disp.' : 'No Disp.'}
+                  </span>
+                )}
               </div>
               {hasVisits && (
                 <div className="space-y-0.5">
-                  {dayVisits.slice(0, 3).map((v) => (
-                    <div
-                      key={v.id}
-                      className="text-xs truncate px-1 py-0.5 rounded"
-                      style={{
-                        backgroundColor: (stageColors[v.stage] || '#6b7280') + '20',
-                        color: stageColors[v.stage] || '#6b7280',
-                        borderLeft: `2px solid ${stageColors[v.stage] || '#6b7280'}`,
-                      }}
-                      title={`${v.parcel.address} - ${v.setter.name}`}
-                    >
-                      {v.parcel.address.split(',').slice(0, 2).join(',')}
-                    </div>
-                  ))}
+                  {dayVisits.slice(0, 3).map((v) => {
+                    const ownerName = v.bill?.clientName || v.parcel.ownerName || v.parcel.address;
+                    return (
+                      <div
+                        key={v.id}
+                        className="text-xs truncate px-1 py-0.5 rounded"
+                        style={{
+                          backgroundColor: (stageColors[v.stage] || '#6b7280') + '20',
+                          color: stageColors[v.stage] || '#6b7280',
+                          borderLeft: `2px solid ${stageColors[v.stage] || '#6b7280'}`,
+                        }}
+                        title={`${ownerName} - ${v.setter.name} - ${formatTimeAMPM(v.scheduledAt)}`}
+                      >
+                        {formatTimeAMPM(v.scheduledAt)} {ownerName.split(',')[0].split(' ').slice(0, 2).join(' ')}
+                      </div>
+                    );
+                  })}
                   {dayVisits.length > 3 && (
                     <div className="text-xs text-gray-500 dark:text-gray-400 pl-1">
                       +{dayVisits.length - 3} más
@@ -153,59 +189,6 @@ export function VisualCalendar({ visits, onVisitSelect, onDayClick }: VisualCale
           );
         })}
       </div>
-
-      {selectedDate && (
-        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-bold mb-4">
-            Visitas del {format(selectedDate, 'd de MMMM', { locale: es })}
-          </h3>
-          <div className="space-y-2">
-            {getVisitsForDate(selectedDate).length === 0 ? (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-4">
-                No hay visitas para este día
-              </p>
-            ) : (
-              getVisitsForDate(selectedDate).map((visit) => (
-                <button
-                  key={visit.id}
-                  onClick={() => onVisitSelect?.(visit)}
-                  className="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-2 h-8 rounded-full"
-                      style={{ backgroundColor: stageColors[visit.stage] || '#6b7280' }}
-                    />
-                    <div>
-                      <p className="font-medium text-sm flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        {visit.parcel.address}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {format(new Date(visit.scheduledAt), 'HH:mm')} — {visit.setter.name}
-                        {visit.closer ? ` / ${visit.closer.name}` : ''}
-                      </p>
-                    </div>
-                  </div>
-                  <span
-                    className="px-2 py-0.5 rounded-full text-xs font-medium"
-                    style={{
-                      backgroundColor: (stageColors[visit.stage] || '#6b7280') + '20',
-                      color: stageColors[visit.stage] || '#6b7280',
-                    }}
-                  >
-                    {visit.stage === 'IN_PROGRESS' ? 'Puerta' :
-                     visit.stage === 'PROPOSAL_ACCEPTED' ? 'Lead' :
-                     visit.stage === 'PROJECT' ? 'Proyecto' :
-                     visit.stage === 'CLOSED' ? 'Cerrado' :
-                     visit.stage === 'CANCELLED' ? 'Cancelado' : visit.stage}
-                  </span>
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

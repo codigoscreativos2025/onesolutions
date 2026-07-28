@@ -15,12 +15,16 @@ export async function GET(request: Request) {
   const userId = parseInt(session.user.id);
   const role = session.user.role;
 
-  if (role !== 'CLOSER' && role !== 'ADMIN') {
+  if (role !== 'CLOSER' && role !== 'ADMIN' && role !== 'SETTER' && role !== 'SETTER_JR') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   try {
-    const whereClause: Record<string, unknown> = role === 'ADMIN' ? {} : { closerId: userId };
+    const whereClause: Record<string, unknown> = role === 'ADMIN'
+      ? {}
+      : role === 'CLOSER'
+        ? { closerId: userId }
+        : { setterId: userId };
 
     if (filter && filter !== 'all') {
       if (filter === 'leads') {
