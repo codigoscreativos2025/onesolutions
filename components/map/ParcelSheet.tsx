@@ -95,39 +95,45 @@ export function ParcelSheet({
   const [visitNotAvailTags, setVisitNotAvailTags] = useState<NotAvailTag[]>([]);
 
   useEffect(() => {
-    if (parcel) {
-      fetch(`/api/parcels/${parcel.id}`)
-        .then((r) => r.json())
-        .then((data) => {
-          const latestVisit = data?.visits?.[0];
-          if (latestVisit?.objections) {
-            setVisitObjections(
-              latestVisit.objections.map((vo: { objection: ObjectionItem; notes?: string }) => ({
-                ...vo.objection,
-              }))
-            );
-          } else {
-            setVisitObjections([]);
-          }
-          if (latestVisit?.notAvailableTags) {
-            setVisitNotAvailTags(
-              latestVisit.notAvailableTags.map((vt: { tag: NotAvailTag; notes?: string }) => ({
-                ...vt.tag,
-              }))
-            );
-          } else {
-            setVisitNotAvailTags([]);
-          }
-          if (data?.parcelNotes) {
-            setLocalNotes(data.parcelNotes);
-            setActivityNotes(data.parcelNotes);
-          }
-        })
-        .catch(() => {});
-    } else {
+    if (!parcel) {
       setVisitObjections([]);
       setVisitNotAvailTags([]);
+      return;
     }
+    const pId = parcel.id;
+    if (!pId) return;
+    fetch(`/api/parcels/${pId}`)
+      .then((r) => {
+        if (!r.ok) return null;
+        return r.json();
+      })
+      .then((data) => {
+        if (!data) return;
+        const latestVisit = data?.visits?.[0];
+        if (latestVisit?.objections) {
+          setVisitObjections(
+            latestVisit.objections.map((vo: { objection: ObjectionItem; notes?: string }) => ({
+              ...vo.objection,
+            }))
+          );
+        } else {
+          setVisitObjections([]);
+        }
+        if (latestVisit?.notAvailableTags) {
+          setVisitNotAvailTags(
+            latestVisit.notAvailableTags.map((vt: { tag: NotAvailTag; notes?: string }) => ({
+              ...vt.tag,
+            }))
+          );
+        } else {
+          setVisitNotAvailTags([]);
+        }
+        if (data?.parcelNotes) {
+          setLocalNotes(data.parcelNotes);
+          setActivityNotes(data.parcelNotes);
+        }
+      })
+      .catch(() => {});
   }, [parcel?.id]);
 
   useEffect(() => {
