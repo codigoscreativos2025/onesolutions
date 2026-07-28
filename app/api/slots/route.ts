@@ -62,23 +62,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Validar que el usuario existe
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-  });
-
-  if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-  }
+  const isAdmin = session.user.role === "ADMIN";
 
   const body = await request.json();
-  const { date, hour, isWorkday } = body;
+  const { date, hour, isWorkday, targetUserId } = body;
 
   if (!date || hour === undefined) {
     return NextResponse.json(
       { error: "Missing required fields" },
       { status: 400 }
     );
+  }
+
+  const slotCloserId = isAdmin && targetUserId ? parseInt(String(targetUserId)) : userId;
+
+  const user = await prisma.user.findUnique({
+    where: { id: slotCloserId },
+  });
+
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
   const startAt = new Date(`${date}T${hour}:00:00`);
@@ -88,7 +91,7 @@ export async function POST(request: Request) {
   const slotDateStr = `${startAt.getFullYear()}-${String(startAt.getMonth()+1).padStart(2,'0')}-${String(startAt.getDate()).padStart(2,'0')}`;
   const existingSlots = await prisma.closerSlot.findMany({
     where: {
-      closerId: userId,
+      closerId: slotCloserId,
       startAt: {
         gte: new Date(`${slotDateStr}T00:00:00`),
         lt: new Date(`${slotDateStr}T23:59:59`),
@@ -108,7 +111,7 @@ export async function POST(request: Request) {
 
   const slot = await prisma.closerSlot.create({
     data: {
-      closerId: userId,
+      closerId: slotCloserId,
       startAt,
       endAt,
       isWorkday: isWorkday !== false,

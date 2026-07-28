@@ -45,6 +45,19 @@ export async function GET(request: Request) {
         },
       },
     });
+  } else if (user.role === "SETTER" || user.role === "SETTER_JR") {
+    closers = await prisma.user.findMany({
+      where: { role: "CLOSER" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        slots: {
+          where: { isBooked: false },
+          orderBy: { startAt: "asc" },
+        },
+      },
+    });
   } else {
     closers = await prisma.user.findMany({
       where: {

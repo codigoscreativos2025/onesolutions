@@ -47,6 +47,16 @@ export async function PATCH(
       },
     });
 
+    await prisma.parcelVisitHistory.create({
+      data: {
+        parcelId: visit.parcelId,
+        setterId: parseInt(session.user.id),
+        visitedAt: new Date(),
+        status: "NOT_AVAILABLE",
+        notes: notes || null,
+      },
+    });
+
     return NextResponse.json(visit);
   } catch {
     return NextResponse.json({ error: "Visit not found" }, { status: 404 });
