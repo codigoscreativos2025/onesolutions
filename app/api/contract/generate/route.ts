@@ -112,9 +112,9 @@ export async function GET(request: Request) {
     }
 
     let savedFields: Record<string, Record<string, string>> = {};
-    if ((visit as any).contractFields) {
+    if ((visit as Record<string, unknown>).contractFields) {
       try {
-        savedFields = JSON.parse((visit as any).contractFields);
+        savedFields = JSON.parse((visit as Record<string, unknown>).contractFields as string);
       } catch {}
     }
 
@@ -303,9 +303,9 @@ export async function POST(request: Request) {
     }
 
     let savedFields: Record<string, Record<string, string>> = {};
-    if ((visit as any).contractFields) {
+    if ((visit as Record<string, unknown>).contractFields) {
       try {
-        savedFields = JSON.parse((visit as any).contractFields);
+        savedFields = JSON.parse((visit as Record<string, unknown>).contractFields as string);
       } catch {}
     }
 

@@ -18,7 +18,7 @@ interface ContractType {
 interface ContractData {
   contracts: ContractType[];
   stage: string;
-  visit?: any;
+  visit?: Record<string, unknown>;
 }
 
 interface ContractModalProps {
@@ -259,7 +259,8 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
     });
 
     try {
-      const html2pdf = (await import("html2pdf.js")).default;
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
 
       const contractEl = contractContentRef.current;
       const originalHeight = contractEl.style.height;
@@ -270,21 +271,16 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
       contractEl.style.overflow = "visible";
       contractEl.style.maxHeight = "none";
 
-      // Wait for all fonts to load
       await document.fonts.ready;
-      // Small delay for rendering
       await new Promise(r => setTimeout(r, 200));
 
-      const opt = {
-        margin: [15, 10, 15, 10] as [number, number, number, number], // top, left, bottom, right margins in mm for spacing
-        filename: `contrato_${visitId}.pdf`,
-        image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 1.5, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-      };
-
-      await html2pdf().set(opt).from(contractEl).save();
+      const canvas = await html2canvas(contractEl, { scale: 1.5, useCORS: true, backgroundColor: "#ffffff", logging: false });
+      const img = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const w = pdf.internal.pageSize.getWidth();
+      const h = (canvas.height * w) / canvas.width;
+      pdf.addImage(img, "PNG", 0, 0, w, h);
+      pdf.save(`contrato_${visitId}.pdf`);
 
       contractEl.style.height = originalHeight;
       contractEl.style.overflow = originalOverflow;
@@ -332,8 +328,8 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
     });
 
     try {
-      // @ts-ignore
-      const html2pdf = (await import("html2pdf.js")).default;
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
 
       const contractEl = contractContentRef.current;
       const originalHeight = contractEl.style.height;
@@ -347,17 +343,13 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
       await document.fonts.ready;
       await new Promise(r => setTimeout(r, 200));
 
-      const opt = {
-        margin: [15, 10, 15, 10] as [number, number, number, number], // margins to provide space around pages
-        filename: `contrato_${visitId}.pdf`,
-        image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 1.5, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-      };
-
-      const pdfAsString = await html2pdf().set(opt).from(contractEl).outputPdf('datauristring');
-      const pdfBase64 = pdfAsString.split(',')[1];
+      const canvas = await html2canvas(contractEl, { scale: 1.5, useCORS: true, backgroundColor: "#ffffff", logging: false });
+      const img = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const w = pdf.internal.pageSize.getWidth();
+      const h = (canvas.height * w) / canvas.width;
+      pdf.addImage(img, "PNG", 0, 0, w, h);
+      const pdfBase64 = pdf.output("datauristring").split(",")[1];
 
       contractEl.style.height = originalHeight;
       contractEl.style.overflow = originalOverflow;
@@ -389,8 +381,6 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
       setSendingEmail(false);
     }
   };
-
-  const emailToUse = sendToEmail || data?.visit?.projectDetails?.clientEmail || data?.visit?.bill?.clientEmail || "";
 
   const renderFieldInput = (field: { key: string; label: string; type: string }) => {
     const value = fieldValues[field.key] ?? "";

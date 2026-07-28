@@ -24,7 +24,13 @@ export async function PATCH(
   }
 
   const body = await request.json();
-  const { contractSignatures, contractType, commissions, stage } = body;
+  const { contractSignatures, contractType, commissions, stage, ...updateData } = body;
+  if (contractSignatures) {
+    await prisma.visit.update({
+      where: { id: visitId },
+      data: { contractSignatures: JSON.stringify(contractSignatures) },
+    });
+  }
 
   if (commissions && session.user.role !== "ADMIN") {
     return NextResponse.json(
@@ -75,19 +81,10 @@ export async function PATCH(
     return NextResponse.json({ success: true });
   }
 
-  const { contractFields } = body;
-  if (contractFields && contractType) {
-    let existingFields: Record<string, Record<string, string>> = {};
-    if (visit.contractFields) {
-      try {
-        existingFields = JSON.parse(visit.contractFields);
-      } catch {}
-    }
-    existingFields[contractType] = contractFields;
-
+  if (Object.keys(updateData).length > 0) {
     await prisma.visit.update({
       where: { id: visitId },
-      data: { contractFields: JSON.stringify(existingFields) },
+      data: updateData,
     });
 
     return NextResponse.json({ success: true });

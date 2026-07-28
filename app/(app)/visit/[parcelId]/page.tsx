@@ -165,7 +165,7 @@ function CelebrationOverlay({ onComplete }: { onComplete: () => void }) {
 
 function calculateProjectCompletion(details: Record<string, string>, extraFields: string[] = []): number {
   const requiredFields = ["clientName", "clientEmail", "address", "closingDate", "paymentMethod", ...extraFields];
-  const allKeys = [...new Set(requiredFields)];
+  const allKeys = Array.from(new Set(requiredFields));
   const filled = allKeys.filter((f) => details[f] && details[f] !== "" && details[f] !== "[]");
   return filled.length === 0 ? 0 : Math.round((filled.length / allKeys.length) * 100);
 }

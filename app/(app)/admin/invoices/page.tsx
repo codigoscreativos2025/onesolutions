@@ -146,35 +146,30 @@ export default function AdminInvoicesPage() {
 
   const downloadPDF = async () => {
     if (!previewRef.current) return;
-    // @ts-ignore
-    const html2pdf = (await import("html2pdf.js")).default;
-    const opt = {
-      margin: [10, 10, 10, 10] as [number, number, number, number],
-      filename: `Invoice_${invoiceNum}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 1.5, backgroundColor: "#ffffff" },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    };
-    await html2pdf().set(opt).from(previewRef.current).save();
+    const { default: jsPDF } = await import("jspdf");
+    const { default: html2canvas } = await import("html2canvas");
+    const canvas = await html2canvas(previewRef.current, { scale: 1.5, backgroundColor: "#ffffff" });
+    const img = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("p", "mm", "a4");
+    const w = pdf.internal.pageSize.getWidth();
+    const h = (canvas.height * w) / canvas.width;
+    pdf.addImage(img, "PNG", 0, 0, w, h);
+    pdf.save(`Invoice_${invoiceNum}.pdf`);
     await saveInvoiceToHistory();
     fetchInvoices();
   };
 
   const generatePdfBase64 = async (): Promise<string> => {
     if (!previewRef.current) throw new Error("No preview");
-    // @ts-ignore
-    const html2pdf = (await import("html2pdf.js")).default;
-    const opt = {
-      margin: [10, 10, 10, 10] as [number, number, number, number],
-      filename: `Invoice_${invoiceNum}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 1.5, backgroundColor: "#ffffff" },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    };
-    const pdfAsString = await html2pdf().set(opt).from(previewRef.current).outputPdf('datauristring');
-    return pdfAsString.split(',')[1];
+    const { default: jsPDF } = await import("jspdf");
+    const { default: html2canvas } = await import("html2canvas");
+    const canvas = await html2canvas(previewRef.current, { scale: 1.5, backgroundColor: "#ffffff" });
+    const img = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("p", "mm", "a4");
+    const w = pdf.internal.pageSize.getWidth();
+    const h = (canvas.height * w) / canvas.width;
+    pdf.addImage(img, "PNG", 0, 0, w, h);
+    return pdf.output("datauristring").split(",")[1];
   };
 
   const handleSendEmail = async () => {
