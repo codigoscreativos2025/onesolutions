@@ -233,6 +233,23 @@ export default function VisitPage() {
   const projectCompletion = calculateProjectCompletion(projectDetailsForm, loadedFieldNames);
 
   useEffect(() => {
+    if (loadedFieldNames.length > 0) {
+      setProjectDetailsForm((prev) => {
+        const updated = { ...prev };
+        loadedFieldNames.forEach((key) => {
+          if (!(key in updated)) updated[key] = "";
+        });
+        updated["clientName"] = updated["clientName"] || "";
+        updated["clientEmail"] = updated["clientEmail"] || "";
+        updated["address"] = updated["address"] || "";
+        updated["closingDate"] = updated["closingDate"] || "";
+        updated["paymentMethod"] = updated["paymentMethod"] || "";
+        return updated;
+      });
+    }
+  }, [loadedFieldNames]);
+
+  useEffect(() => {
     fetchData();
   }, [parcelId]);
 
