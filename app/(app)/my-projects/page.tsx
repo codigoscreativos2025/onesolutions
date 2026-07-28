@@ -73,12 +73,13 @@ export default function MyProjectsPage() {
 
   const calculateCompletion = (projectDetails: ProjectDetails | null): number => {
     if (!projectDetails) return 0;
-    const requiredFields = ['clientName', 'clientEmail', 'address', 'closingDate', 'paymentMethod'];
+    const staticFields = ['clientName', 'clientEmail', 'address', 'closingDate', 'paymentMethod'];
+    const allKeys = [...staticFields, ...Object.keys(projectDetails)].filter((v, i, a) => a.indexOf(v) === i);
     let completed = 0;
-    requiredFields.forEach(field => {
+    allKeys.forEach(field => {
       if (projectDetails[field] && projectDetails[field] !== '') completed++;
     });
-    return Math.round((completed / requiredFields.length) * 100);
+    return allKeys.length === 0 ? 0 : Math.round((completed / allKeys.length) * 100);
   };
 
   useEffect(() => {

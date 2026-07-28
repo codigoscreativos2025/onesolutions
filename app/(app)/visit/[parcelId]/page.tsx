@@ -1267,6 +1267,7 @@ export default function VisitPage() {
             projectDetailsForm={projectDetailsForm}
             onProjectDetailChange={handleProjectDetailChange}
             projectCompletion={projectCompletion}
+            loadedFieldNames={loadedFieldNames}
             onUpdateProjectTypes={handleUpdateProjectTypes}
             userRole={session?.user?.role || ""}
           />
@@ -1615,6 +1616,7 @@ function CloserForm({
   projectDetailsForm,
   onProjectDetailChange,
   projectCompletion,
+  loadedFieldNames,
   onUpdateProjectTypes,
   userRole,
 }: {
@@ -1648,6 +1650,7 @@ function CloserForm({
   projectDetailsForm: Record<string, string>;
   onProjectDetailChange: (key: string, value: string) => void;
   projectCompletion: number;
+  loadedFieldNames: string[];
   onUpdateProjectTypes: () => void;
   userRole: string;
 }) {
@@ -1696,8 +1699,7 @@ function CloserForm({
         )}
       </div>
 
-      {isProject && (
-        <div className="space-y-4">
+      <div className="space-y-4">
           <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
             Detalles del Proyecto
           </label>
@@ -1784,6 +1786,22 @@ function CloserForm({
               "Guardar Detalles"
             )}
           </Button>
+        </div>
+
+      {loadedFieldNames.filter(f => !["clientName","clientEmail","address","closingDate","paymentMethod"].includes(f)).length > 0 && (
+        <div className="space-y-2 pt-3 border-t border-outline-variant/30">
+          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Campos Adicionales</label>
+          {loadedFieldNames.filter(f => !["clientName","clientEmail","address","closingDate","paymentMethod"].includes(f)).map((fieldName) => (
+            <div key={fieldName}>
+              <label className="block text-xs font-medium text-on-surface-variant mb-1">{fieldName}</label>
+              <input
+                type="text"
+                value={projectDetailsForm[fieldName] || ""}
+                onChange={(e) => onProjectDetailChange(fieldName, e.target.value)}
+                className="w-full h-10 px-3 rounded-lg bg-surface-container-low border border-outline-variant text-sm text-on-surface"
+              />
+            </div>
+          ))}
         </div>
       )}
 
