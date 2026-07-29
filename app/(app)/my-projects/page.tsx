@@ -71,13 +71,18 @@ export default function MyProjectsPage() {
 
   const calculateCompletion = (projectDetails: ProjectDetails | null): number => {
     if (!projectDetails) return 0;
-    const staticFields = ['clientName', 'clientEmail', 'address', 'closingDate', 'paymentMethod'];
+    const staticFields = ['clientName', 'clientEmail', 'address', 'closingDate', 'paymentMethod', 'primaryRep', 'primaryRepCommPct'];
+    const optionalFields = ['secondaryRep', 'secondaryRepCommPct', 'tertiaryRep', 'tertiaryRepCommPct'];
     const allKeys = [...staticFields, ...Object.keys(projectDetails)].filter((v, i, a) => a.indexOf(v) === i);
     let completed = 0;
     allKeys.forEach(field => {
       if (projectDetails[field] && projectDetails[field] !== '') completed++;
     });
-    return allKeys.length === 0 ? 0 : Math.round((completed / allKeys.length) * 100);
+    // Optional fields only increase total if they have values
+    const optionalFilled = optionalFields.filter(f => projectDetails[f] && projectDetails[f] !== '');
+    const total = allKeys.length + optionalFilled.length;
+    const filled = completed + optionalFilled.length;
+    return total === 0 ? 0 : Math.min(100, Math.round((filled / total) * 100));
   };
 
   useEffect(() => {

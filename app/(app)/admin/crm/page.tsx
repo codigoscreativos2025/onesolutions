@@ -110,6 +110,19 @@ export default function AdminCRMPage() {
     fetchPartners();
   }, [session, router, searchParams]);
 
+  // Highlight visit from notification link
+  useEffect(() => {
+    const highlightId = searchParams.get('highlight');
+    if (highlightId && visits.length > 0) {
+      const el = document.getElementById(`visit-row-${highlightId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('ring-2', 'ring-primary', 'bg-primary/5');
+        setTimeout(() => el.classList.remove('ring-2', 'ring-primary', 'bg-primary/5'), 4000);
+      }
+    }
+  }, [visits, searchParams]);
+
   const fetchPartners = async () => {
     try {
       const res = await fetch(`/api/admin/users?role=PARTNER`);
@@ -469,7 +482,7 @@ export default function AdminCRMPage() {
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredVisits.map((visit) => (
-                <tr key={visit.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" onClick={() => handleViewDetails(visit.id)}>
+                 <tr key={visit.id} id={`visit-row-${visit.id}`} className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors" onClick={() => handleViewDetails(visit.id)}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <MapPin className="w-4 h-4 text-gray-400 mr-2" />
