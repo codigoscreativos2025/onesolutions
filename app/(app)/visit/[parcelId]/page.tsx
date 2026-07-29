@@ -226,6 +226,12 @@ export default function VisitPage() {
   const isClosingMode = isCloser;
   const isTrainee = session?.user?.role === "SETTER";
 
+  useEffect(() => {
+    if (isClosingMode && visit) {
+      setActiveTab("propuesta");
+    }
+  }, [isClosingMode, visit?.id]);
+
   const isStartProject = visit
     ? visit.stage === "PROPOSAL_ACCEPTED" || visit.stage === "IN_PROGRESS"
     : false;
