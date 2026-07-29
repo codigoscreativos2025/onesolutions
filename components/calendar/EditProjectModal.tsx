@@ -190,10 +190,10 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
               </div>
 
               {/* Campos dinámicos por tipo de proyecto */}
-              {projectFields.filter(g => g.fields.length > 0).map((group) => (
+              {projectFields.filter(g => g.fields.length > 0 && g.typeName !== "Campos Comunes").map((group) => (
                 <div key={group.typeName} className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <h3 className="font-semibold text-lg">{group.typeName}</h3>
-                  {group.fields.filter(f => !["clientName","clientEmail","address","closingDate","paymentMethod"].includes(f.fieldName)).map((field) => (
+                  {group.fields.map((field) => (
                     <div key={field.id}>
                       {field.fieldType === "select" ? (
                         <div>
