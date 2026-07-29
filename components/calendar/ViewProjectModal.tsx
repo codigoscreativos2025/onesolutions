@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { X, MapPin, User, FileText, Package, Clock, Pencil, Save } from 'lucide-react';
+import { X, MapPin, User, FileText, Package, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ContractModal } from '@/components/quote/ContractModal';
 import { toast } from 'sonner';
@@ -114,7 +114,6 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'history'>('details');
   const [showContractModal, setShowContractModal] = useState(false);
-  const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [fieldLabels, setFieldLabels] = useState<Record<string, { label: string; type: string; group: string }>>({});
 
@@ -136,7 +135,6 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
       });
       if (!res.ok) throw new Error("Error saving");
       toast.success("Datos guardados");
-      setEditMode(false);
     } catch {
       toast.error("Error al guardar");
     } finally {
@@ -587,39 +585,51 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
               {/* Detalles del Proyecto (si existen) */}
               {visit.projectDetails && (
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-lg">Detalles del Proyecto</h3>
-                    <Button size="sm" variant={editMode ? undefined : "outline"} onClick={() => editMode ? handleSaveInline() : setEditMode(true)} disabled={saving}>
-                      {editMode ? <><Save className="w-4 h-4 mr-1" /> Guardar</> : <><Pencil className="w-4 h-4 mr-1" /> Editar</>}
-                    </Button>
-                  </div>
+                  <h3 className="font-semibold text-lg mb-3">Detalles del Proyecto</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {Object.keys(fieldLabels).length > 0 ? (
                       Object.entries(fieldLabels).map(([key, meta]) => {
                         if (key === 'id' || key === 'visitId' || key === 'createdAt' || key === 'updatedAt') return null;
                         const rawValue = visit.projectDetails?.[key as keyof typeof visit.projectDetails] as string | undefined;
                         const isFile = meta.type === "file" || meta.type === "photos";
+                        if (isFile) {
+                          return (
+                            <div key={key}>
+                              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">{meta.label}</label>
+                              <div className="mt-1 flex items-center gap-2 flex-wrap">
+                                {rawValue && (
+                                  <a href={extractFirstUrl(rawValue)} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm flex items-center gap-1">
+                                    <FileText className="w-3 h-3" /> Ver
+                                  </a>
+                                )}
+                                <input type="file" accept="image/*,.pdf" multiple={meta.type === "photos"}
+                                  onChange={async (e) => {
+                                    const files = e.target.files;
+                                    if (!files || files.length === 0) return;
+                                    const urls: string[] = [];
+                                    for (let i = 0; i < files.length; i++) {
+                                      const fd = new FormData(); fd.append("file", files[i]);
+                                      const ur = await fetch("/api/upload", { method: "POST", body: fd });
+                                      if (ur.ok) { const ud = await ur.json(); urls.push(ud.url); }
+                                    }
+                                    const newVal = meta.type === "photos" ? JSON.stringify(urls) : urls[0];
+                                    const updated = { ...visit.projectDetails, [key]: newVal };
+                                    setVisit({ ...visit, projectDetails: updated });
+                                  }}
+                                  className="text-xs text-on-surface file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-primary file:text-on-primary file:text-xs" />
+                              </div>
+                            </div>
+                          );
+                        }
                         return (
                           <div key={key}>
                             <label className="text-sm font-medium text-gray-600 dark:text-gray-400">{meta.label}</label>
-                            {isFile ? (
-                              <p className="mt-1">
-                                {rawValue ? (
-                                  <a href={extractFirstUrl(rawValue)} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm flex items-center gap-1">
-                                    <FileText className="w-3 h-3" /> Ver documento
-                                  </a>
-                                ) : "—"}
-                              </p>
-                            ) : editMode ? (
-                              <input type="text" defaultValue={rawValue || ""}
-                                onBlur={(e) => {
-                                  const updated = { ...visit.projectDetails, [key]: e.target.value };
-                                  setVisit({ ...visit, projectDetails: updated });
-                                }}
-                                className="mt-1 w-full h-9 px-2 rounded bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-sm" />
-                            ) : (
-                              <p className="mt-1">{rawValue || "—"}</p>
-                            )}
+                            <input type="text" defaultValue={rawValue || ""}
+                              onBlur={(e) => {
+                                const updated = { ...visit.projectDetails, [key]: e.target.value };
+                                setVisit({ ...visit, projectDetails: updated });
+                              }}
+                              className="mt-1 w-full h-9 px-2 rounded bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-sm" />
                           </div>
                         );
                       })
@@ -628,31 +638,48 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
                         if (key === 'id' || key === 'visitId' || key === 'createdAt' || key === 'updatedAt') return null;
                         const strVal = value ? String(value) : "";
                         const looksLikeUrl = strVal.startsWith("/uploads/") || strVal.startsWith("http");
+                        if (looksLikeUrl) {
+                          return (
+                            <div key={key}>
+                              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">{key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}</label>
+                              <div className="mt-1 flex items-center gap-2 flex-wrap">
+                                <a href={strVal.split(/[,\[\]]/).filter(Boolean)[0]?.replace(/[\"]/g, "") || strVal} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm flex items-center gap-1">
+                                  <FileText className="w-3 h-3" /> Ver
+                                </a>
+                                <input type="file" accept="image/*,.pdf"
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    const fd = new FormData(); fd.append("file", file);
+                                    const ur = await fetch("/api/upload", { method: "POST", body: fd });
+                                    if (ur.ok) { const ud = await ur.json();
+                                      const updated = { ...visit.projectDetails, [key]: ud.url };
+                                      setVisit({ ...visit, projectDetails: updated });
+                                    }
+                                  }}
+                                  className="text-xs text-on-surface file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-primary file:text-on-primary file:text-xs" />
+                              </div>
+                            </div>
+                          );
+                        }
                         return (
                           <div key={key}>
-                            <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                              {key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}
-                            </label>
-                            {looksLikeUrl ? (
-                              <p className="mt-1">
-                                <a href={strVal.split(/[,\[\]]/).filter(Boolean)[0]?.replace(/[\"]/g, "") || strVal} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm flex items-center gap-1">
-                                  <FileText className="w-3 h-3" /> Ver documento
-                                </a>
-                              </p>
-                            ) : editMode ? (
-                              <input type="text" defaultValue={strVal}
-                                onBlur={(e) => {
-                                  const updated = { ...visit.projectDetails, [key]: e.target.value };
-                                  setVisit({ ...visit, projectDetails: updated });
-                                }}
-                                className="mt-1 w-full h-9 px-2 rounded bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-sm" />
-                            ) : (
-                              <p className="mt-1">{strVal || "—"}</p>
-                            )}
+                            <label className="text-sm font-medium text-gray-600 dark:text-gray-400">{key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}</label>
+                            <input type="text" defaultValue={strVal}
+                              onBlur={(e) => {
+                                const updated = { ...visit.projectDetails, [key]: e.target.value };
+                                setVisit({ ...visit, projectDetails: updated });
+                              }}
+                              className="mt-1 w-full h-9 px-2 rounded bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-sm" />
                           </div>
                         );
                       })
                     )}
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600">
+                    <Button onClick={handleSaveInline} disabled={saving} className="w-full">
+                      {saving ? "Guardando..." : "Guardar Cambios"}
+                    </Button>
                   </div>
                 </div>
               )}
