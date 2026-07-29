@@ -1179,7 +1179,7 @@ export default function VisitPage() {
                   No hay objeciones de closer configuradas. Contacta a un administrador.
                 </p>
               </div>
-            ) : !isClosing && objections.length === 0 ? (
+            ) : !isClosingMode && objections.length === 0 ? (
               <div className="text-center py-6">
                 <Tag className="w-10 h-10 text-on-surface-variant mx-auto mb-3 opacity-40" />
                 <p className="text-on-surface-variant text-sm">
@@ -1220,7 +1220,7 @@ export default function VisitPage() {
                       ))}
                 </div>
                 {(isClosingMode && selectedCloserObjections.length === 0) ||
-                  (!isClosing && selectedObjections.length === 0) ? (
+                  (!isClosingMode && selectedObjections.length === 0) ? (
                   <p className="text-xs text-secondary italic">
                     Selecciona al menos una objeción
                   </p>
@@ -1291,7 +1291,7 @@ export default function VisitPage() {
           />
         )}
 
-        {activeTab === "propuesta" && !isClosing && (
+        {activeTab === "propuesta" && !isClosingMode && (
           <motion.div
             key="propuesta"
             initial={{ opacity: 0, y: 24, scale: 0.97 }}
