@@ -50,7 +50,26 @@ export async function POST(request: Request) {
       processedDetails.siteSurveyDate = new Date(processedDetails.siteSurveyDate);
     }
 
-    // Verificar si ya existe
+    // Filtrar solo campos válidos del modelo ProjectDetails
+    const validFields = [
+      "clientName", "clientEmail", "address", "closingDate", "paymentMethod",
+      "phone", "primaryRep", "primaryRepCommPct", "secondaryRep", "secondaryRepCommPct",
+      "tertiaryRep", "tertiaryRepCommPct",
+      "solarFinancier", "systemSize", "hoaInfo", "ppwSold", "umbrella", "mpuPanels",
+      "siteSurveyDate", "panelsUpCount", "panelsDownCount", "panelsPhotoUrl",
+      "solarCostPrice", "solarSalePrice", "solarCommission",
+      "electricBillUrl", "closingFormUrl", "homeInsuranceUrl", "homeTitleUrl", "idDocumentUrl",
+      "roofType", "roofCostPrice", "roofSalePrice", "roofCommission",
+      "nocUrl", "materialsOrderUrl", "roofReportUrl", "exteriorScopeUrl", "propertyPhotosJson",
+      "waterSystemType", "waterCostPrice", "waterSalePrice", "waterCommission",
+      "otherCostPrice", "otherSalePrice", "otherCommission", "clientIncentive",
+    ];
+    const filteredDetails: Record<string, unknown> = {};
+    for (const key of validFields) {
+      if (processedDetails[key] !== undefined) {
+        filteredDetails[key] = processedDetails[key];
+      }
+    }
     const existing = await prisma.projectDetails.findUnique({
       where: { visitId: parseInt(visitId) },
     });
@@ -59,13 +78,13 @@ export async function POST(request: Request) {
     if (existing) {
       result = await prisma.projectDetails.update({
         where: { visitId: parseInt(visitId) },
-        data: processedDetails,
+        data: filteredDetails,
       });
     } else {
       result = await prisma.projectDetails.create({
         data: {
           visitId: parseInt(visitId),
-          ...processedDetails,
+          ...filteredDetails,
         },
       });
     }
