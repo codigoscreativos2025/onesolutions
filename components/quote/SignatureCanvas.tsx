@@ -14,13 +14,21 @@ export function SignatureCanvas({
   height = 160,
 }: SignatureCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasSignature, setHasSignature] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    canvas.getContext("2d", { willReadFrequently: true });
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (ctx) {
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctxRef.current = ctx;
+    }
   }, []);
 
   const getCoordinates = useCallback(
@@ -57,17 +65,13 @@ export function SignatureCanvas({
       const coords = getCoordinates(e);
       if (!coords) return;
 
-      const ctx = canvasRef.current?.getContext("2d");
-      if (!ctx) return;
+    const ctx = ctxRef.current;
+    if (!ctx) return;
 
-      ctx.beginPath();
-      ctx.moveTo(coords.x, coords.y);
-      ctx.strokeStyle = "#000000";
-      ctx.lineWidth = 2;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      setIsDrawing(true);
-      setHasSignature(true);
+    ctx.beginPath();
+    ctx.moveTo(coords.x, coords.y);
+    setIsDrawing(true);
+    setHasSignature(true);
     },
     [getCoordinates]
   );
@@ -80,8 +84,8 @@ export function SignatureCanvas({
       const coords = getCoordinates(e);
       if (!coords) return;
 
-      const ctx = canvasRef.current?.getContext("2d");
-      if (!ctx) return;
+    const ctx = ctxRef.current;
+    if (!ctx) return;
 
       ctx.lineTo(coords.x, coords.y);
       ctx.stroke();
@@ -102,7 +106,7 @@ export function SignatureCanvas({
   const clearCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = ctxRef.current;
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     setHasSignature(false);

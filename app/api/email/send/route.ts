@@ -46,7 +46,7 @@ export async function POST(request: Request) {
 
     if (pdfBase64) {
       const pdfBuffer = Buffer.from(pdfBase64, "base64");
-      const maxSizeMb = 10;
+      const maxSizeMb = 25;
       if (pdfBuffer.length > maxSizeMb * 1024 * 1024) {
         console.warn(`PDF too large (${(pdfBuffer.length / 1024 / 1024).toFixed(1)}MB), sending link instead of attachment`);
         return NextResponse.json({ error: `PDF demasiado grande (${(pdfBuffer.length / 1024 / 1024).toFixed(1)}MB). El límite es ${maxSizeMb}MB.` }, { status: 413 });
