@@ -190,7 +190,14 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
               </div>
 
               {/* Campos dinámicos por tipo de proyecto */}
-              {projectFields.filter(g => g.fields.length > 0 && g.typeName !== "Campos Comunes").map((group) => (
+              {projectFields.filter(g => g.fields.length > 0).map((group) => {
+                const isCommonGroup = group.typeName === "Campos Comunes";
+                const hardcodedKeys = ["clientName","clientEmail","address","closingDate","paymentMethod"];
+                const visibleFields = isCommonGroup
+                  ? group.fields.filter(f => !hardcodedKeys.includes(f.fieldName))
+                  : group.fields;
+                if (visibleFields.length === 0) return null;
+                return (
                 <div key={group.typeName} className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <h3 className="font-semibold text-lg">{group.typeName}</h3>
                   {group.fields.map((field) => (
@@ -302,7 +309,7 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
                     </div>
                   ))}
                 </div>
-              ))}
+              );  })}
               {projectFields.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
                   <p>No hay campos configurados para este proyecto.</p>
