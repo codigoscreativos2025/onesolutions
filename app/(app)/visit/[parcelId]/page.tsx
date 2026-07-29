@@ -164,7 +164,12 @@ function CelebrationOverlay({ onComplete }: { onComplete: () => void }) {
 }
 
 function calculateProjectCompletion(details: Record<string, string>, extraFields: string[] = []): number {
-  const requiredFields = ["clientName", "clientEmail", "address", "closingDate", "paymentMethod", ...extraFields];
+  const requiredFields = [
+    "clientName", "clientEmail", "address", "closingDate", "paymentMethod",
+    "phone", "primaryRep", "primaryRepCommPct", "secondaryRep", "secondaryRepCommPct",
+    "tertiaryRep", "tertiaryRepCommPct",
+    ...extraFields,
+  ];
   const allKeys = Array.from(new Set(requiredFields));
   const filled = allKeys.filter((f) => details[f] && details[f] !== "" && details[f] !== "[]");
   return filled.length === 0 ? 0 : Math.round((filled.length / allKeys.length) * 100);
@@ -1812,7 +1817,47 @@ function CloserForm({
               ))}
             </select>
           </div>
-          {loadedFieldNames.filter(f => !["clientName","clientEmail","address","closingDate","paymentMethod"].includes(f)).map((fieldName) => (
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-on-surface-variant">Teléfono</label>
+            <input type="text" value={projectDetailsForm["phone"] || ""} onChange={(e) => onProjectDetailChange("phone", e.target.value)}
+              placeholder="Número de teléfono"
+              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface" />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-on-surface-variant">Representante Principal</label>
+            <input type="text" value={projectDetailsForm["primaryRep"] || ""} onChange={(e) => onProjectDetailChange("primaryRep", e.target.value)}
+              placeholder="Nombre del representante"
+              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface" />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-on-surface-variant">% Comisión Principal</label>
+            <input type="number" value={projectDetailsForm["primaryRepCommPct"] || ""} onChange={(e) => onProjectDetailChange("primaryRepCommPct", e.target.value)}
+              placeholder="0"
+              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface" />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-on-surface-variant">Representante Secundario</label>
+            <input type="text" value={projectDetailsForm["secondaryRep"] || ""} onChange={(e) => onProjectDetailChange("secondaryRep", e.target.value)}
+              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface" />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-on-surface-variant">% Comisión Secundario</label>
+            <input type="number" value={projectDetailsForm["secondaryRepCommPct"] || ""} onChange={(e) => onProjectDetailChange("secondaryRepCommPct", e.target.value)}
+              placeholder="0"
+              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface" />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-on-surface-variant">Representante Terciario</label>
+            <input type="text" value={projectDetailsForm["tertiaryRep"] || ""} onChange={(e) => onProjectDetailChange("tertiaryRep", e.target.value)}
+              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface" />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-on-surface-variant">% Comisión Terciario</label>
+            <input type="number" value={projectDetailsForm["tertiaryRepCommPct"] || ""} onChange={(e) => onProjectDetailChange("tertiaryRepCommPct", e.target.value)}
+              placeholder="0"
+              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface" />
+          </div>
+          {loadedFieldNames.filter(f => !["clientName","clientEmail","address","closingDate","paymentMethod","phone","primaryRep","primaryRepCommPct","secondaryRep","secondaryRepCommPct","tertiaryRep","tertiaryRepCommPct"].includes(f)).map((fieldName) => (
             <div key={fieldName} className="space-y-2">
               <label className="block text-xs font-medium text-on-surface-variant">{fieldName}</label>
               <input type="text" value={projectDetailsForm[fieldName] || ""} onChange={(e) => onProjectDetailChange(fieldName, e.target.value)}
