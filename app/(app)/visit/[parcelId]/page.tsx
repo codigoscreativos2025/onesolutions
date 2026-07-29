@@ -164,15 +164,21 @@ function CelebrationOverlay({ onComplete }: { onComplete: () => void }) {
 }
 
 function calculateProjectCompletion(details: Record<string, string>, extraFields: string[] = []): number {
-  const requiredFields = [
+  const coreFields = [
     "clientName", "clientEmail", "address", "closingDate", "paymentMethod",
-    "primaryRep", "primaryRepCommPct", "secondaryRep", "secondaryRepCommPct",
-    "tertiaryRep", "tertiaryRepCommPct",
-    ...extraFields,
+    "primaryRep", "primaryRepCommPct",
   ];
-  const allKeys = Array.from(new Set(requiredFields));
-  const filled = allKeys.filter((f) => details[f] && details[f] !== "" && details[f] !== "[]");
-  return filled.length === 0 ? 0 : Math.round((filled.length / allKeys.length) * 100);
+  const optionalFields = [
+    "secondaryRep", "secondaryRepCommPct",
+    "tertiaryRep", "tertiaryRepCommPct",
+  ];
+  const baseKeys = [...coreFields, ...extraFields];
+  const allKeys = Array.from(new Set(baseKeys));
+  // Optional fields only increase total if they have a value
+  const optionalFilled = optionalFields.filter((f) => details[f] && details[f] !== "" && details[f] !== "[]");
+  const total = allKeys.filter((f) => details[f] !== undefined || optionalFields.includes(f)).length + optionalFilled.length;
+  const filled = allKeys.filter((f) => details[f] && details[f] !== "" && details[f] !== "[]").length + optionalFilled.length;
+  return total === 0 ? 0 : Math.min(100, Math.round((filled / total) * 100));
 }
 
 const PROJECT_DETAIL_FIELDS = [

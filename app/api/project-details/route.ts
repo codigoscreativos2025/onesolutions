@@ -50,6 +50,21 @@ export async function POST(request: Request) {
       processedDetails.siteSurveyDate = new Date(processedDetails.siteSurveyDate);
     }
 
+    // Convertir campos numéricos
+    const numericFields = [
+      "primaryRepCommPct", "secondaryRepCommPct", "tertiaryRepCommPct",
+      "panelsUpCount", "panelsDownCount",
+      "solarCostPrice", "solarSalePrice", "solarCommission",
+      "roofCostPrice", "roofSalePrice", "roofCommission",
+      "waterCostPrice", "waterSalePrice", "waterCommission",
+      "otherCostPrice", "otherSalePrice", "otherCommission",
+    ];
+    for (const key of numericFields) {
+      if (processedDetails[key] !== undefined && processedDetails[key] !== "" && processedDetails[key] !== null) {
+        processedDetails[key] = parseFloat(String(processedDetails[key]));
+      }
+    }
+
     // Filtrar solo campos válidos del modelo ProjectDetails
     const validFields = [
       "clientName", "clientEmail", "address", "closingDate", "paymentMethod",
@@ -115,6 +130,21 @@ export async function PATCH(request: Request) {
     }
     if (processedDetails.siteSurveyDate && typeof processedDetails.siteSurveyDate === 'string') {
       processedDetails.siteSurveyDate = new Date(processedDetails.siteSurveyDate);
+    }
+
+    // Convertir campos numéricos
+    const numericFields = [
+      "primaryRepCommPct", "secondaryRepCommPct", "tertiaryRepCommPct",
+      "panelsUpCount", "panelsDownCount",
+      "solarCostPrice", "solarSalePrice", "solarCommission",
+      "roofCostPrice", "roofSalePrice", "roofCommission",
+      "waterCostPrice", "waterSalePrice", "waterCommission",
+      "otherCostPrice", "otherSalePrice", "otherCommission",
+    ];
+    for (const key of numericFields) {
+      if (processedDetails[key] !== undefined && processedDetails[key] !== "" && processedDetails[key] !== null) {
+        processedDetails[key] = parseFloat(String(processedDetails[key]));
+      }
     }
 
     const result = await prisma.projectDetails.update({
