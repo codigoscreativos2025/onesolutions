@@ -1676,6 +1676,7 @@ function CloserForm({
     visit.stage === "PROPOSAL_ACCEPTED" || visit.stage === "IN_PROGRESS";
   const isProject = visit.stage === "PROJECT";
   const isFullyComplete = projectCompletion === 100;
+  const isClosing = userRole === "CLOSER" || userRole === "SETTER";
 
   const PAYMENT_OPTIONS = ["Cash", "Transferencia", "Cheques", "LightReach", "SkyLight", "SunGage", "Sunrise Capital", "Foundations Finance", "Otro"];
 
@@ -1823,7 +1824,7 @@ function CloserForm({
         </div>
       )}
 
-      {!isProject && !isClosingMode && (
+      {!isProject && !isClosing && (
         <div className="space-y-3">
           <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
             Información del Cliente
