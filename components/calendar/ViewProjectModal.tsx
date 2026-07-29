@@ -122,10 +122,17 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
     if (!visit || !visitId) return;
     setSaving(true);
     try {
-      const res = await fetch(`/api/project-details`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ visitId, ...visit.projectDetails }),
+      // Filter out internal fields
+      const clean: Record<string, unknown> = {};
+      const skipKeys = ["id", "visitId", "createdAt", "updatedAt"];
+      const details = visit.projectDetails || {};
+      for (const [k, v] of Object.entries(details)) {
+        if (!skipKeys.includes(k) && v !== undefined) {
+          clean[k] = v;
+        }
+      }
+      const res = await fetch("/api/project-details", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ visitId, ...clean }),
       });
       if (!res.ok) throw new Error("Error saving");
       toast.success("Datos guardados");

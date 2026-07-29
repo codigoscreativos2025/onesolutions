@@ -91,8 +91,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Error saving details" }, { status: 500 });
+    console.error("Error saving details:", JSON.stringify(error, null, 2));
+    return NextResponse.json({ error: "Error saving details", details: String(error) }, { status: 500 });
   }
 }
 
