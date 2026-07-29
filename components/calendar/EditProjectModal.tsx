@@ -169,11 +169,31 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Campos Comunes — siempre visibles */}
+              <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <h3 className="font-semibold text-lg">Campos Comunes</h3>
+                <Input label="Nombre del Cliente" value={projectDetails.clientName as string || ''} onChange={(e) => handleFieldChange('clientName', e.target.value)} />
+                <Input label="Email del Cliente" type="email" value={projectDetails.clientEmail as string || ''} onChange={(e) => handleFieldChange('clientEmail', e.target.value)} />
+                <Input label="Dirección" value={projectDetails.address as string || ''} onChange={(e) => handleFieldChange('address', e.target.value)} />
+                <Input label="Fecha de Cierre" type="date" 
+                  value={projectDetails.closingDate ? new Date(projectDetails.closingDate as string).toISOString().split('T')[0] : ''}
+                  onChange={(e) => handleFieldChange('closingDate', e.target.value)}
+                  min="1900-01-01" max="2100-12-31" />
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Método de Pago</label>
+                  <select value={projectDetails.paymentMethod as string || ''} onChange={(e) => handleFieldChange('paymentMethod', e.target.value)}
+                    className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface">
+                    <option value="">Seleccionar...</option>
+                    {["Cash","Transferencia","Cheques","LightReach","SkyLight","SunGage","Sunrise Capital","Foundations Finance","Otro"].map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+              </div>
+
               {/* Campos dinámicos por tipo de proyecto */}
               {projectFields.filter(g => g.fields.length > 0).map((group) => (
                 <div key={group.typeName} className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <h3 className="font-semibold text-lg">{group.typeName}</h3>
-                  {group.fields.map((field) => (
+                  {group.fields.filter(f => !["clientName","clientEmail","address","closingDate","paymentMethod"].includes(f.fieldName)).map((field) => (
                     <div key={field.id}>
                       {field.fieldType === "select" ? (
                         <div>
