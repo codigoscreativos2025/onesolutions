@@ -1179,7 +1179,7 @@ export default function VisitPage() {
                   No hay objeciones de closer configuradas. Contacta a un administrador.
                 </p>
               </div>
-            ) : !isClosingMode && objections.length === 0 ? (
+            ) : !isClosing && objections.length === 0 ? (
               <div className="text-center py-6">
                 <Tag className="w-10 h-10 text-on-surface-variant mx-auto mb-3 opacity-40" />
                 <p className="text-on-surface-variant text-sm">
@@ -1220,7 +1220,7 @@ export default function VisitPage() {
                       ))}
                 </div>
                 {(isClosingMode && selectedCloserObjections.length === 0) ||
-                  (!isClosingMode && selectedObjections.length === 0) ? (
+                  (!isClosing && selectedObjections.length === 0) ? (
                   <p className="text-xs text-secondary italic">
                     Selecciona al menos una objeción
                   </p>
@@ -1291,7 +1291,7 @@ export default function VisitPage() {
           />
         )}
 
-        {activeTab === "propuesta" && !isClosingMode && (
+        {activeTab === "propuesta" && !isClosing && (
           <motion.div
             key="propuesta"
             initial={{ opacity: 0, y: 24, scale: 0.97 }}
@@ -1793,6 +1793,13 @@ function CloserForm({
               ))}
             </select>
           </div>
+          {loadedFieldNames.filter(f => !["clientName","clientEmail","address","closingDate","paymentMethod"].includes(f)).map((fieldName) => (
+            <div key={fieldName} className="space-y-2">
+              <label className="block text-xs font-medium text-on-surface-variant">{fieldName}</label>
+              <input type="text" value={projectDetailsForm[fieldName] || ""} onChange={(e) => onProjectDetailChange(fieldName, e.target.value)}
+                className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface" />
+            </div>
+          ))}
           <Button
             onClick={handleSaveProjectDetails}
             disabled={savingProjectDetails}
@@ -1806,23 +1813,6 @@ function CloserForm({
             )}
           </Button>
         </div>
-
-      {loadedFieldNames.filter(f => !["clientName","clientEmail","address","closingDate","paymentMethod"].includes(f)).length > 0 && (
-        <div className="space-y-2 pt-3 border-t border-outline-variant/30">
-          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Campos Adicionales</label>
-          {loadedFieldNames.filter(f => !["clientName","clientEmail","address","closingDate","paymentMethod"].includes(f)).map((fieldName) => (
-            <div key={fieldName}>
-              <label className="block text-xs font-medium text-on-surface-variant mb-1">{fieldName}</label>
-              <input
-                type="text"
-                value={projectDetailsForm[fieldName] || ""}
-                onChange={(e) => onProjectDetailChange(fieldName, e.target.value)}
-                className="w-full h-10 px-3 rounded-lg bg-surface-container-low border border-outline-variant text-sm text-on-surface"
-              />
-            </div>
-          ))}
-        </div>
-      )}
 
       {!isProject && !isClosing && (
         <div className="space-y-3">
