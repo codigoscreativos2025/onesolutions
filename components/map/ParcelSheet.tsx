@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
-import { CreateLeadModal } from "@/components/leads/CreateLeadModal";
 import { DoorOpen, X, User, Tag, Plus, ChevronDown, ChevronUp, Save } from "lucide-react";
 import { toast } from "sonner";
 
@@ -90,7 +89,6 @@ export function ParcelSheet({
   const [selectedNotAvailTagIds, setSelectedNotAvailTagIds] = useState<number[]>([]);
   const [activityNotes, setActivityNotes] = useState("");
 
-  const [showLeadModal, setShowLeadModal] = useState(false);
   const [visitObjections, setVisitObjections] = useState<ObjectionItem[]>([]);
   const [visitNotAvailTags, setVisitNotAvailTags] = useState<NotAvailTag[]>([]);
 
@@ -620,11 +618,12 @@ export function ParcelSheet({
 
                 {isAvailable ? (
                   <Button
-                    onClick={() => setShowLeadModal(true)}
+                    onClick={handleKnockDoor}
+                    disabled={claiming}
                     className="flex-1 h-12 text-sm uppercase tracking-widest"
                   >
                     <DoorOpen className="w-4 h-4" />
-                    Crear Lead
+                    {claiming ? "..." : "Tocar Puerta"}
                   </Button>
                 ) : (isTakenByMe || isClaimedByMySetter) ? (
                   <Button
@@ -646,17 +645,7 @@ export function ParcelSheet({
         </div>
       </div>
 
-      <CreateLeadModal
-        isOpen={showLeadModal}
-        onClose={() => setShowLeadModal(false)}
-        onSuccess={() => {
-          setShowLeadModal(false);
-          onClose();
-        }}
-        initialAddress={parcel.address}
-        initialOwnerName={parcel.ownerName}
-      />
-    </>
+    </div>
   );
 }
 
