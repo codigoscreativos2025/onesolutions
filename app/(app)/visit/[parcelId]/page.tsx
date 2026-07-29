@@ -166,7 +166,7 @@ function CelebrationOverlay({ onComplete }: { onComplete: () => void }) {
 function calculateProjectCompletion(details: Record<string, string>, extraFields: string[] = []): number {
   const requiredFields = [
     "clientName", "clientEmail", "address", "closingDate", "paymentMethod",
-    "phone", "primaryRep", "primaryRepCommPct", "secondaryRep", "secondaryRepCommPct",
+    "primaryRep", "primaryRepCommPct", "secondaryRep", "secondaryRepCommPct",
     "tertiaryRep", "tertiaryRepCommPct",
     ...extraFields,
   ];
@@ -177,7 +177,7 @@ function calculateProjectCompletion(details: Record<string, string>, extraFields
 
 const PROJECT_DETAIL_FIELDS = [
   "clientName", "clientEmail", "address", "closingDate", "paymentMethod",
-  "phone", "primaryRep", "primaryRepCommPct", "secondaryRep", "secondaryRepCommPct",
+  "primaryRep", "primaryRepCommPct", "secondaryRep", "secondaryRepCommPct",
   "tertiaryRep", "tertiaryRepCommPct",
   "solarFinancier", "systemSize", "hoaInfo", "ppwSold", "umbrella", "mpuPanels",
   "siteSurveyDate", "panelsUpCount", "panelsDownCount", "panelsPhotoUrl",
@@ -1818,12 +1818,6 @@ function CloserForm({
             </select>
           </div>
           <div className="space-y-2">
-            <label className="block text-xs font-medium text-on-surface-variant">Teléfono</label>
-            <input type="text" value={projectDetailsForm["phone"] || ""} onChange={(e) => onProjectDetailChange("phone", e.target.value)}
-              placeholder="Número de teléfono"
-              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface" />
-          </div>
-          <div className="space-y-2">
             <label className="block text-xs font-medium text-on-surface-variant">Representante Principal</label>
             <input type="text" value={projectDetailsForm["primaryRep"] || ""} onChange={(e) => onProjectDetailChange("primaryRep", e.target.value)}
               placeholder="Nombre del representante"
@@ -1857,7 +1851,7 @@ function CloserForm({
               placeholder="0"
               className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface" />
           </div>
-          {loadedFieldNames.filter(f => !["clientName","clientEmail","address","closingDate","paymentMethod","phone","primaryRep","primaryRepCommPct","secondaryRep","secondaryRepCommPct","tertiaryRep","tertiaryRepCommPct"].includes(f)).map((fieldName) => (
+          {loadedFieldNames.filter(f => !["clientName","clientEmail","address","closingDate","paymentMethod","primaryRep","primaryRepCommPct","secondaryRep","secondaryRepCommPct","tertiaryRep","tertiaryRepCommPct"].includes(f)).map((fieldName) => (
             <div key={fieldName} className="space-y-2">
               <label className="block text-xs font-medium text-on-surface-variant">{fieldName}</label>
               <input type="text" value={projectDetailsForm[fieldName] || ""} onChange={(e) => onProjectDetailChange(fieldName, e.target.value)}

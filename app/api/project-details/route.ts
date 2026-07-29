@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     // Filtrar solo campos válidos del modelo ProjectDetails
     const validFields = [
       "clientName", "clientEmail", "address", "closingDate", "paymentMethod",
-      "phone", "primaryRep", "primaryRepCommPct", "secondaryRep", "secondaryRepCommPct",
+      "primaryRep", "primaryRepCommPct", "secondaryRep", "secondaryRepCommPct",
       "tertiaryRep", "tertiaryRepCommPct",
       "solarFinancier", "systemSize", "hoaInfo", "ppwSold", "umbrella", "mpuPanels",
       "siteSurveyDate", "panelsUpCount", "panelsDownCount", "panelsPhotoUrl",
