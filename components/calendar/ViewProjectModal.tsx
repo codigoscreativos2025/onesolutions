@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { X, MapPin, User, FileText, Package, Clock } from 'lucide-react';
+import { X, MapPin, User, FileText, Package, Clock, Pencil, Save } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ContractModal } from '@/components/quote/ContractModal';
+import { toast } from 'sonner';
 
 function extractFirstUrl(raw: string | undefined): string {
   if (!raw) return "";
@@ -113,7 +114,28 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'history'>('details');
   const [showContractModal, setShowContractModal] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [fieldLabels, setFieldLabels] = useState<Record<string, { label: string; type: string; group: string }>>({});
+
+  const handleSaveInline = async () => {
+    if (!visit || !visitId) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/project-details`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visitId, ...visit.projectDetails }),
+      });
+      if (!res.ok) throw new Error("Error saving");
+      toast.success("Datos guardados");
+      setEditMode(false);
+    } catch {
+      toast.error("Error al guardar");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   useEffect(() => {
     if (isOpen && visitId) {
@@ -545,9 +567,13 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
               {/* Detalles del Proyecto (si existen) */}
               {visit.projectDetails && (
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                  <h3 className="font-semibold text-lg mb-3">Detalles del Proyecto</h3>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-lg">Detalles del Proyecto</h3>
+                    <Button size="sm" variant={editMode ? undefined : "outline"} onClick={() => editMode ? handleSaveInline() : setEditMode(true)} disabled={saving}>
+                      {editMode ? <><Save className="w-4 h-4 mr-1" /> Guardar</> : <><Pencil className="w-4 h-4 mr-1" /> Editar</>}
+                    </Button>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Show ALL configured fields, even empty ones */}
                     {Object.keys(fieldLabels).length > 0 ? (
                       Object.entries(fieldLabels).map(([key, meta]) => {
                         if (key === 'id' || key === 'visitId' || key === 'createdAt' || key === 'updatedAt') return null;
@@ -555,16 +581,25 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
                         const isFile = meta.type === "file" || meta.type === "photos";
                         return (
                           <div key={key}>
-                            <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                              {meta.label}
-                            </label>
-                            <p className="mt-1">
-                              {isFile && rawValue ? (
-                                <a href={extractFirstUrl(rawValue)} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm flex items-center gap-1">
-                                  <FileText className="w-3 h-3" /> Ver documento
-                                </a>
-                              ) : rawValue || "—"}
-                            </p>
+                            <label className="text-sm font-medium text-gray-600 dark:text-gray-400">{meta.label}</label>
+                            {isFile ? (
+                              <p className="mt-1">
+                                {rawValue ? (
+                                  <a href={extractFirstUrl(rawValue)} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm flex items-center gap-1">
+                                    <FileText className="w-3 h-3" /> Ver documento
+                                  </a>
+                                ) : "—"}
+                              </p>
+                            ) : editMode ? (
+                              <input type="text" defaultValue={rawValue || ""}
+                                onBlur={(e) => {
+                                  const updated = { ...visit.projectDetails, [key]: e.target.value };
+                                  setVisit({ ...visit, projectDetails: updated });
+                                }}
+                                className="mt-1 w-full h-9 px-2 rounded bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-sm" />
+                            ) : (
+                              <p className="mt-1">{rawValue || "—"}</p>
+                            )}
                           </div>
                         );
                       })
@@ -578,23 +613,27 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
                             <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
                               {key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}
                             </label>
-                            <p className="mt-1">
-                              {strVal ? (
-                                looksLikeUrl ? (
-                                  <a href={strVal.split(/[,\[\]]/).filter(Boolean)[0]?.replace(/[\"]/g, "") || strVal} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm flex items-center gap-1">
-                                    <FileText className="w-3 h-3" /> Ver documento
-                                  </a>
-                                ) : strVal
-                              ) : "—"}
-                            </p>
+                            {looksLikeUrl ? (
+                              <p className="mt-1">
+                                <a href={strVal.split(/[,\[\]]/).filter(Boolean)[0]?.replace(/[\"]/g, "") || strVal} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm flex items-center gap-1">
+                                  <FileText className="w-3 h-3" /> Ver documento
+                                </a>
+                              </p>
+                            ) : editMode ? (
+                              <input type="text" defaultValue={strVal}
+                                onBlur={(e) => {
+                                  const updated = { ...visit.projectDetails, [key]: e.target.value };
+                                  setVisit({ ...visit, projectDetails: updated });
+                                }}
+                                className="mt-1 w-full h-9 px-2 rounded bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-sm" />
+                            ) : (
+                              <p className="mt-1">{strVal || "—"}</p>
+                            )}
                           </div>
                         );
                       })
                     )}
                   </div>
-                  {Object.keys(fieldLabels).length === 0 && (
-                    <p className="text-xs text-gray-400 mt-2">Configura los campos en Admin &gt; Campos de Proyectos para ver etiquetas personalizadas.</p>
-                  )}
                 </div>
               )}
             </div>
