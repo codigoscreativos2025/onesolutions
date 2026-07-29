@@ -1823,7 +1823,7 @@ function CloserForm({
         </div>
       )}
 
-      {!isProject && (
+      {!isProject && !isClosingMode && (
         <div className="space-y-3">
           <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
             Información del Cliente
