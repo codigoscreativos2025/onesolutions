@@ -170,6 +170,20 @@ function calculateProjectCompletion(details: Record<string, string>, extraFields
   return filled.length === 0 ? 0 : Math.round((filled.length / allKeys.length) * 100);
 }
 
+const PROJECT_DETAIL_FIELDS = [
+  "clientName", "clientEmail", "address", "closingDate", "paymentMethod",
+  "phone", "primaryRep", "primaryRepCommPct", "secondaryRep", "secondaryRepCommPct",
+  "tertiaryRep", "tertiaryRepCommPct",
+  "solarFinancier", "systemSize", "hoaInfo", "ppwSold", "umbrella", "mpuPanels",
+  "siteSurveyDate", "panelsUpCount", "panelsDownCount", "panelsPhotoUrl",
+  "solarCostPrice", "solarSalePrice", "solarCommission",
+  "electricBillUrl", "homeInsuranceUrl", "homeTitleUrl", "idDocumentUrl",
+  "roofType", "roofCostPrice", "roofSalePrice", "roofCommission",
+  "nocUrl", "roofReportUrl", "exteriorScopeUrl", "propertyPhotosJson",
+  "waterSystemType", "waterCostPrice", "waterSalePrice", "waterCommission",
+  "clientIncentive", "otherCostPrice", "otherSalePrice", "otherCommission",
+];
+
 export default function VisitPage() {
   const params = useParams();
   const router = useRouter();
@@ -393,19 +407,6 @@ export default function VisitPage() {
         const res = await fetch(`/api/admin/project-type-fields?projectTypeId=${ptId}`);
         const fields = await res.json();
         if (Array.isArray(fields)) {
-          const PROJECT_DETAIL_FIELDS = [
-            "clientName", "clientEmail", "address", "closingDate", "paymentMethod",
-            "phone", "primaryRep", "primaryRepCommPct", "secondaryRep", "secondaryRepCommPct",
-            "tertiaryRep", "tertiaryRepCommPct",
-            "solarFinancier", "systemSize", "hoaInfo", "ppwSold", "umbrella", "mpuPanels",
-            "siteSurveyDate", "panelsUpCount", "panelsDownCount", "panelsPhotoUrl",
-            "solarCostPrice", "solarSalePrice", "solarCommission",
-            "electricBillUrl", "homeInsuranceUrl", "homeTitleUrl", "idDocumentUrl",
-            "roofType", "roofCostPrice", "roofSalePrice", "roofCommission",
-            "nocUrl", "roofReportUrl", "exteriorScopeUrl", "propertyPhotosJson",
-            "waterSystemType", "waterCostPrice", "waterSalePrice", "waterCommission",
-            "clientIncentive", "otherCostPrice", "otherSalePrice", "otherCommission",
-          ];
           fields.forEach((f: { fieldName: string }) => {
             if (!allFields.includes(f.fieldName) && PROJECT_DETAIL_FIELDS.includes(f.fieldName)) {
               allFields.push(f.fieldName);
