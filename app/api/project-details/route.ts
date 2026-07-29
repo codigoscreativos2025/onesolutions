@@ -75,24 +75,21 @@ export async function POST(request: Request) {
     });
 
     let result;
-    if (existing) {
-      result = await prisma.projectDetails.update({
-        where: { visitId: parseInt(visitId) },
-        data: filteredDetails,
-      });
-    } else {
-      result = await prisma.projectDetails.create({
-        data: {
-          visitId: parseInt(visitId),
-          ...filteredDetails,
-        },
-      });
+    try {
+      if (existing) {
+        result = await prisma.projectDetails.update({ where: { visitId: parseInt(visitId) }, data: filteredDetails });
+      } else {
+        result = await prisma.projectDetails.create({ data: { visitId: parseInt(visitId), ...filteredDetails } });
+      }
+    } catch (prismaError: unknown) {
+      console.error("Prisma error saving project details:", JSON.stringify(prismaError, null, 2));
+      return NextResponse.json({ error: "Database error", details: String(prismaError) }, { status: 500 });
     }
 
     return NextResponse.json(result);
   } catch (error) {
     console.error("Error saving details:", JSON.stringify(error, null, 2));
-    return NextResponse.json({ error: "Error saving details", details: String(error) }, { status: 500 });
+    return NextResponse.json({ error: "Error saving details", details: error?.message || String(error) }, { status: 500 });
   }
 }
 

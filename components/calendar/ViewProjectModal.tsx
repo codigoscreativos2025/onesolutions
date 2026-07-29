@@ -133,7 +133,10 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
       const res = await fetch("/api/project-details", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ visitId, ...clean }),
       });
-      if (!res.ok) throw new Error("Error saving");
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(errBody.details || errBody.error || "Error saving");
+      }
       toast.success("Datos guardados");
     } catch {
       toast.error("Error al guardar");
