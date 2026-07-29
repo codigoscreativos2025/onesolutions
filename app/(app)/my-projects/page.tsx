@@ -4,10 +4,9 @@ import Link from 'next/link';
 import { useEffect, useState, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { MessageSquare, CheckCircle, Edit, MapPin, XCircle, User, DoorOpen, Filter, CheckCheck, FileText } from 'lucide-react';
+import { MessageSquare, CheckCircle, MapPin, XCircle, User, DoorOpen, Filter, CheckCheck, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ViewProjectModal } from '@/components/calendar/ViewProjectModal';
-import { EditProjectModal } from '@/components/calendar/EditProjectModal';
 import { ContractModal } from '@/components/quote/ContractModal';
 
 interface ProjectDetails {
@@ -61,7 +60,6 @@ export default function MyProjectsPage() {
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
   const [isViewProjectModalOpen, setIsViewProjectModalOpen] = useState(false);
-  const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
   const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
   const [showContractModal, setShowContractModal] = useState(false);
   const [projectTypeFilter, setProjectTypeFilter] = useState<string>('all');
@@ -134,11 +132,6 @@ export default function MyProjectsPage() {
   const handleViewProject = (visitId: number) => {
     setSelectedVisitId(visitId);
     setIsViewProjectModalOpen(true);
-  };
-
-  const handleEditProject = (visitId: number) => {
-    setSelectedVisitId(visitId);
-    setIsEditProjectModalOpen(true);
   };
 
   const setFilter = (f: string) => {
@@ -333,11 +326,6 @@ export default function MyProjectsPage() {
                     <Button variant="outline" size="sm" onClick={() => { setSelectedVisitId(visit.id); setShowContractModal(true); }} title="Documentos">
                       <FileText className="w-4 h-4" />
                     </Button>
-                    {visit.stage !== 'CANCELLED' && (
-                      <Button variant="outline" size="sm" onClick={() => handleEditProject(visit.id)} title="Editar Proyecto">
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                    )}
                     {hasChat && (
                       <Button variant="outline" size="sm" onClick={() => router.push('/chat')} title="Chat">
                         <MessageSquare className="w-4 h-4" />
@@ -409,7 +397,6 @@ export default function MyProjectsPage() {
       )}
 
       <ViewProjectModal isOpen={isViewProjectModalOpen} onClose={() => setIsViewProjectModalOpen(false)} visitId={selectedVisitId} />
-      <EditProjectModal isOpen={isEditProjectModalOpen} onClose={() => setIsEditProjectModalOpen(false)} visitId={selectedVisitId} onSuccess={fetchProjects} />
       <ContractModal isOpen={showContractModal} onClose={() => setShowContractModal(false)} visitId={selectedVisitId!} />
     </div>
   );
