@@ -365,11 +365,29 @@ export default function VisitPage() {
   };
 
   const fetchProjectTypeFields = async (projectTypeIds: number[]) => {
-    if (projectTypeIds.length === 0) {
-      setLoadedFieldNames([]);
-      return;
-    }
     try {
+      if (projectTypeIds.length === 0) {
+        // Fetch ALL project type fields as fallback
+        const typesRes = await fetch("/api/project-types");
+        const types = await typesRes.json();
+        if (Array.isArray(types) && types.length > 0) {
+          const allIds = types.map((t: { id: number }) => t.id);
+          const allFields: string[] = [];
+          for (const ptId of allIds) {
+            const res = await fetch(`/api/admin/project-type-fields?projectTypeId=${ptId}`);
+            const fields = await res.json();
+            if (Array.isArray(fields)) {
+              fields.forEach((f: { fieldName: string }) => {
+                if (!allFields.includes(f.fieldName) && PROJECT_DETAIL_FIELDS.includes(f.fieldName)) {
+                  allFields.push(f.fieldName);
+                }
+              });
+            }
+          }
+          setLoadedFieldNames(allFields);
+        }
+        return;
+      }
       const allFields: string[] = [];
       for (const ptId of projectTypeIds) {
         const res = await fetch(`/api/admin/project-type-fields?projectTypeId=${ptId}`);
