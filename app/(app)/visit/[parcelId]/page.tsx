@@ -189,6 +189,22 @@ const PROJECT_DETAIL_FIELDS = [
   "clientIncentive", "otherCostPrice", "otherSalePrice", "otherCommission",
 ];
 
+const FIELD_LABEL_MAP: Record<string, string> = {
+  solarFinancier: "Financiadora", systemSize: "Tamaño de sistema (kW)", hoaInfo: "HOA Información",
+  ppwSold: "PPW o EPC sold", umbrella: "Umbrella", clientIncentive: "Incentivo al cliente",
+  mpuPanels: "MPU Panels", siteSurveyDate: "Site survey", panelsUpCount: "Subir paneles",
+  panelsDownCount: "Bajar paneles", panelsPhotoUrl: "Fotos de paneles y techo",
+  solarCostPrice: "Precio costo solar", solarSalePrice: "Precio venta solar", solarCommission: "Comisión solar",
+  electricBillUrl: "Factura eléctrica", closingFormUrl: "Formulario de cierre",
+  homeInsuranceUrl: "Seguro de casa", homeTitleUrl: "Título de casa", idDocumentUrl: "ID del cliente",
+  roofType: "Trabajo a realizar", roofCostPrice: "Precio costo techo", roofSalePrice: "Precio venta techo",
+  roofCommission: "Comisión techo", nocUrl: "NOC firmado", materialsOrderUrl: "Orden de materiales",
+  roofReportUrl: "Reporte de techo", exteriorScopeUrl: "Exterior scope work",
+  propertyPhotosJson: "Fotos de la propiedad", waterSystemType: "Tipo de tratamiento",
+  waterCostPrice: "Precio costo agua", waterSalePrice: "Precio venta agua", waterCommission: "Comisión agua",
+  otherCostPrice: "Otro costo", otherSalePrice: "Otro precio venta", otherCommission: "Otra comisión",
+};
+
 export default function VisitPage() {
   const params = useParams();
   const router = useRouter();
@@ -384,29 +400,11 @@ export default function VisitPage() {
   };
 
   const fetchProjectTypeFields = async (projectTypeIds: number[]) => {
+    if (projectTypeIds.length === 0) {
+      setLoadedFieldNames([]);
+      return;
+    }
     try {
-      if (projectTypeIds.length === 0) {
-        // Fetch ALL project type fields as fallback
-        const typesRes = await fetch("/api/project-types");
-        const types = await typesRes.json();
-        if (Array.isArray(types) && types.length > 0) {
-          const allIds = types.map((t: { id: number }) => t.id);
-          const allFields: string[] = [];
-          for (const ptId of allIds) {
-            const res = await fetch(`/api/admin/project-type-fields?projectTypeId=${ptId}`);
-            const fields = await res.json();
-            if (Array.isArray(fields)) {
-              fields.forEach((f: { fieldName: string }) => {
-                if (!allFields.includes(f.fieldName) && PROJECT_DETAIL_FIELDS.includes(f.fieldName)) {
-                  allFields.push(f.fieldName);
-                }
-              });
-            }
-          }
-          setLoadedFieldNames(allFields);
-        }
-        return;
-      }
       const allFields: string[] = [];
       for (const ptId of projectTypeIds) {
         const res = await fetch(`/api/admin/project-type-fields?projectTypeId=${ptId}`);
@@ -1853,7 +1851,7 @@ function CloserForm({
           </div>
           {loadedFieldNames.filter(f => !["clientName","clientEmail","address","closingDate","paymentMethod","primaryRep","primaryRepCommPct","secondaryRep","secondaryRepCommPct","tertiaryRep","tertiaryRepCommPct"].includes(f)).map((fieldName) => (
             <div key={fieldName} className="space-y-2">
-              <label className="block text-xs font-medium text-on-surface-variant">{fieldName}</label>
+              <label className="block text-xs font-medium text-on-surface-variant">{FIELD_LABEL_MAP[fieldName] || fieldName}</label>
               <input type="text" value={projectDetailsForm[fieldName] || ""} onChange={(e) => onProjectDetailChange(fieldName, e.target.value)}
                 className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface" />
             </div>
