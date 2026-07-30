@@ -996,6 +996,7 @@ export default function LeadDetailPage() {
                 tagSaving={tagSaving}
                 isAdmin={isAdmin}
               />
+            </>
             )}
 
             {visit.stage === "CANCELLED" && (
