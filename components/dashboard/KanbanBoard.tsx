@@ -31,6 +31,7 @@ const STAGE_SET = new Set<string>(COLS.map((c) => c.stage));
 interface KanbanVisit {
   id: number;
   stage: string;
+  createdAt: string;
   parcel: { id: string; address: string; ownerName: string | null };
   setter: { id: number; name: string };
   closer: { id: number; name: string } | null;
@@ -501,14 +502,10 @@ function KanbanCard({
             {visit.setter?.name || "—"}
           </span>
         </div>
-        {visit.closer && (
-          <>
-            <span className="text-outline-variant">|</span>
-            <span className="truncate max-w-[80px] text-primary font-medium">
-              {visit.closer.name}
-            </span>
-          </>
-        )}
+        <span className="text-outline-variant">|</span>
+        <span className="truncate max-w-[100px]">
+          {visit.createdAt ? new Date(visit.createdAt).toLocaleDateString() : "—"}
+        </span>
       </div>
 
       {visit.projects.length > 0 && (

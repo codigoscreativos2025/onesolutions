@@ -97,9 +97,6 @@ const STAGE_COLORS: Record<string, string> = {
 };
 
 const COMMON_FIELDS = [
-  "clientName",
-  "clientEmail",
-  "address",
   "closingDate",
   "paymentMethod",
   "primaryRep",
@@ -110,7 +107,59 @@ const COMMON_FIELDS = [
   "tertiaryRepCommPct",
 ];
 
-const POST_CLOSURE_TAGS = ["En Instalación", "Instalado", "Finalizado"];
+const FIELD_TYPES: Record<string, string> = {
+  closingDate: "date",
+  paymentMethod: "select",
+  primaryRepCommPct: "number",
+  secondaryRepCommPct: "number",
+  tertiaryRepCommPct: "number",
+  umbrella: "select",
+  solarCommission: "number",
+  roofCommission: "number",
+  waterCommission: "number",
+  panelsUpCount: "number",
+  panelsDownCount: "number",
+  solarCostPrice: "number",
+  solarSalePrice: "number",
+  roofCostPrice: "number",
+  roofSalePrice: "number",
+  waterCostPrice: "number",
+  waterSalePrice: "number",
+  siteSurveyDate: "date",
+};
+
+const FIELD_GROUPS: Record<string, { label: string; prefix: string }> = {
+  solar: { label: "Panel Solar", prefix: "solar" },
+  roof: { label: "Techo", prefix: "roof" },
+  water: { label: "Purificador de Agua", prefix: "water" },
+  panels: { label: "Paneles", prefix: "panels" },
+  electric: { label: "Documentos", prefix: "electric" },
+  id: { label: "Documentos", prefix: "id" },
+  home: { label: "Documentos", prefix: "home" },
+  noc: { label: "Documentos", prefix: "noc" },
+  exterior: { label: "Documentos", prefix: "exterior" },
+  property: { label: "Documentos", prefix: "property" },
+  materials: { label: "Documentos", prefix: "materials" },
+  closing: { label: "Documentos", prefix: "closing" },
+};
+
+function groupFieldsByType(fields: { fieldName: string; fieldLabel?: string; fieldType?: string }[]) {
+  const groups: Record<string, { fieldName: string; fieldLabel?: string; fieldType?: string }[]> = {};
+  const other: typeof fields = [];
+  for (const f of fields) {
+    let grouped = false;
+    for (const [key, g] of Object.entries(FIELD_GROUPS)) {
+      if (f.fieldName.startsWith(g.prefix)) {
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(f);
+        grouped = true;
+        break;
+      }
+    }
+    if (!grouped) other.push(f);
+  }
+  return { groups, other };
+}
 
 const FILE_FIELD_KEYS = new Set([
   "electricBillUrl",
@@ -1179,7 +1228,8 @@ function DatosProjectFieldsPanel({
   };
 
   const getType = (key: string): string => {
-    const meta = fieldMetas.find((m) => m.fieldName === key);
+    if (FIELD_TYPES[key]) return FIELD_TYPES[key];
+    const meta = fieldMetas.find((m: { fieldName: string }) => m.fieldName === key);
     return meta?.fieldType || "text";
   };
 
@@ -1214,27 +1264,41 @@ function DatosProjectFieldsPanel({
 
         {nonCommonFields.length > 0 && (
           <div className="mt-4 pt-4 border-t border-outline-variant/20">
-            <h4 className="text-sm font-semibold text-on-surface mb-3">
-              Campos específicos ({selectedProjectNames.join(", ")})
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {nonCommonFields.map((meta) => (
-                <FieldRow
-                  key={meta.fieldName}
-                  label={meta.fieldLabel}
-                  value={getValue(meta.fieldName)}
-                  field={meta.fieldName}
-                  type={meta.fieldType}
-                  onChange={(_, v) => onFieldChange(meta.fieldName, v)}
-                  onBlur={onSave}
-                  isFile={meta.fieldType === "file" || meta.fieldType === "photos"}
-                  onFileUpload={onFileFieldUpload}
-                  fileUrl={pd[meta.fieldName] ? String(pd[meta.fieldName]) : undefined}
-                />
+        {(() => {
+          const { groups, other } = groupFieldsByType(nonCommonFields as { fieldName: string; fieldLabel?: string; fieldType?: string }[]);
+          return (
+            <div className="mt-4 pt-4 border-t border-outline-variant/20 space-y-4">
+              {Object.entries(groups).map(([key, fields]) => (
+                <div key={key}>
+                  <h4 className="text-sm font-semibold text-on-surface mb-2">{FIELD_GROUPS[key]?.label || key}</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {fields.map((meta) => (
+                      <FieldRow key={meta.fieldName} label={meta.fieldLabel || meta.fieldName}
+                        value={getValue(meta.fieldName)} field={meta.fieldName}
+                        type={meta.fieldType || "text"} onChange={(_, v) => onFieldChange(meta.fieldName, v)}
+                        onBlur={onSave} isFile={meta.fieldType === "file" || meta.fieldType === "photos"}
+                        onFileUpload={onFileFieldUpload} fileUrl={pd[meta.fieldName] ? String(pd[meta.fieldName]) : undefined} />
+                    ))}
+                  </div>
+                </div>
               ))}
+              {other.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-on-surface mb-2">Otros</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {other.map((meta) => (
+                      <FieldRow key={meta.fieldName} label={meta.fieldLabel || meta.fieldName}
+                        value={getValue(meta.fieldName)} field={meta.fieldName}
+                        type={meta.fieldType || "text"} onChange={(_, v) => onFieldChange(meta.fieldName, v)}
+                        onBlur={onSave} isFile={meta.fieldType === "file" || meta.fieldType === "photos"}
+                        onFileUpload={onFileFieldUpload} fileUrl={pd[meta.fieldName] ? String(pd[meta.fieldName]) : undefined} />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
       </Panel>
 
       <Button onClick={onSave} disabled={saving} className="w-full">
@@ -1286,7 +1350,8 @@ function DatosProjectPanel({
   };
 
   const getType = (key: string): string => {
-    const meta = fieldMetas.find((m) => m.fieldName === key);
+    if (FIELD_TYPES[key]) return FIELD_TYPES[key];
+    const meta = fieldMetas.find((m: { fieldName: string }) => m.fieldName === key);
     return meta?.fieldType || "text";
   };
 
