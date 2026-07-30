@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   const role = session.user.role;
 
   // Solo setters y closers pueden crear leads
-  if (role !== 'SETTER' && role !== 'CLOSER' && role !== 'ADMIN') {
+  if (role !== 'SETTER' && role !== 'SETTER_JR' && role !== 'CLOSER' && role !== 'ADMIN') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
