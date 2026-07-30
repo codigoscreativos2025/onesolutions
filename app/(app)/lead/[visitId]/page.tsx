@@ -644,7 +644,7 @@ export default function LeadDetailPage() {
       const res = await fetch(`/api/visits/${visit.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stage: "PROJECT" }),
+        body: JSON.stringify({ stage: "PROJECT", scheduledAt: null }),
       });
       if (res.ok) {
         toast.success("Proyecto iniciado");
@@ -1269,6 +1269,46 @@ function DatosProjectFieldsPanel({
   const pd = visit.projectDetails || {};
   const nonCommonFields = fieldMetas.filter((m) => !COMMON_FIELDS.includes(m.fieldName));
 
+  const [allProjectTypes, setAllProjectTypes] = useState<{ id: number; name: string }[]>([]);
+  const [selectedProjectTypeIds, setSelectedProjectTypeIds] = useState<number[]>([]);
+  const [projectTypesSaving, setProjectTypesSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchAllProjectTypes = async () => {
+      try {
+        const res = await fetch("/api/project-types");
+        const data = await res.json();
+        if (Array.isArray(data)) setAllProjectTypes(data);
+      } catch { /* */ }
+    };
+    fetchAllProjectTypes();
+    setSelectedProjectTypeIds(visit.projects.map((p) => p.projectType.id));
+  }, [visit.id, visit.projects]);
+
+  const toggleProjectType = async (ptId: number) => {
+    let next: number[];
+    if (selectedProjectTypeIds.includes(ptId)) {
+      next = selectedProjectTypeIds.filter((id) => id !== ptId);
+    } else {
+      next = [...selectedProjectTypeIds, ptId];
+    }
+    setSelectedProjectTypeIds(next);
+    setProjectTypesSaving(true);
+    try {
+      await fetch(`/api/visits/${visit.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectTypeIds: next }),
+      });
+      onRefresh();
+    } catch {
+      toast.error("Error al actualizar tipos de proyecto");
+      setSelectedProjectTypeIds(visit.projects.map((p) => p.projectType.id));
+    } finally {
+      setProjectTypesSaving(false);
+    }
+  };
+
   const getValue = (key: string): string => {
     if (editFields[key] !== undefined) return editFields[key];
     const val = pd[key];
@@ -1292,6 +1332,37 @@ function DatosProjectFieldsPanel({
     <div className="space-y-6">
       {showBillSection && (
         <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={onFieldChange} onUpload={onUpload} onRefresh={onRefresh} />
+      )}
+
+      {allProjectTypes.length > 0 && (
+        <Panel title="Tipos de Proyecto" icon={Package}>
+          {projectTypesSaving && (
+            <div className="flex items-center gap-2 text-xs text-on-surface-variant mb-3">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Actualizando...
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2">
+            {allProjectTypes.map((pt) => (
+              <label
+                key={pt.id}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 cursor-pointer text-sm font-medium transition-all ${
+                  selectedProjectTypeIds.includes(pt.id)
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-outline-variant hover:border-primary/30 text-on-surface-variant"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedProjectTypeIds.includes(pt.id)}
+                  onChange={() => toggleProjectType(pt.id)}
+                  className="rounded accent-primary"
+                />
+                {pt.name}
+              </label>
+            ))}
+          </div>
+        </Panel>
       )}
 
       <Panel title="Campos del Proyecto" icon={Pencil}>
@@ -1389,6 +1460,28 @@ function DatosProjectPanel({
   const pd = visit.projectDetails || {};
   const nonCommonFields = fieldMetas.filter((m) => !COMMON_FIELDS.includes(m.fieldName));
 
+  const [idDocPreview, setIdDocPreview] = useState(pd.idDocumentUrl ? String(pd.idDocumentUrl) : "");
+  const [billUploadPreview, setBillUploadPreview] = useState(pd.electricBillUrl ? String(pd.electricBillUrl) : "");
+
+  const handleIdDocUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) {
+      setIdDocPreview(URL.createObjectURL(f));
+      await onFileFieldUpload("idDocumentUrl", f);
+    }
+  };
+
+  const handleBillUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) {
+      setBillUploadPreview(URL.createObjectURL(f));
+      await onFileFieldUpload("electricBillUrl", f);
+    }
+  };
+
+  const handleClearIdDoc = () => setIdDocPreview("");
+  const handleClearBill = () => setBillUploadPreview("");
+
   const getValue = (key: string): string => {
     if (editFields[key] !== undefined) return editFields[key];
     const val = pd[key];
@@ -1413,6 +1506,21 @@ function DatosProjectPanel({
 
   return (
     <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <UploadField
+          label="ID del Cliente"
+          preview={idDocPreview}
+          onChange={handleIdDocUpload}
+          onClear={handleClearIdDoc}
+        />
+        <UploadField
+          label="Recibo de Luz"
+          preview={billUploadPreview}
+          onChange={handleBillUpload}
+          onClear={handleClearBill}
+        />
+      </div>
+
       <Panel title="Progreso del Proyecto" icon={BadgeCheck}>
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
@@ -1668,6 +1776,20 @@ function ArchivosPanel({ visit }: { visit: VisitDetails }) {
   const pd = visit.projectDetails || {};
   const bill = visit.bill;
 
+  const [docName, setDocName] = useState("");
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [customDocs, setCustomDocs] = useState<{ name: string; url: string }[]>([]);
+
+  useEffect(() => {
+    try {
+      const raw = pd.customDocs as string;
+      if (raw) setCustomDocs(JSON.parse(raw));
+    } catch {
+      setCustomDocs([]);
+    }
+  }, [pd.customDocs]);
+
   interface FileEntry {
     name: string;
     url: string;
@@ -1706,17 +1828,100 @@ function ArchivosPanel({ visit }: { visit: VisitDetails }) {
     }
   }
 
-  if (allFilesFlat.length === 0) {
+  customDocs.forEach((doc) => {
+    allFilesFlat.push({ name: doc.name, url: doc.url });
+  });
+
+  const handleDocUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) setDocFile(f);
+  };
+
+  const uploadDocument = async () => {
+    if (!docName.trim() || !docFile) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", docFile);
+      const uploadRes = await fetch("/api/upload", { method: "POST", body: fd });
+      if (!uploadRes.ok) throw new Error("Upload failed");
+      const data = await uploadRes.json();
+      const url = data.url;
+
+      const updatedDocs = [...customDocs, { name: docName.trim(), url }];
+      setCustomDocs(updatedDocs);
+
+      await fetch("/api/project-details", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visitId: visit.id, customDocs: JSON.stringify(updatedDocs) }),
+      });
+
+      setDocName("");
+      setDocFile(null);
+      toast.success("Documento subido");
+    } catch {
+      toast.error("Error al subir documento");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const noFiles = allFilesFlat.length === 0;
+
+  if (noFiles && !bill && !pd.idDocumentUrl && !pd.electricBillUrl && customDocs.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-on-surface-variant">
-        <FileText className="w-16 h-16 mb-4 opacity-30" />
-        <p className="text-lg font-medium">No hay archivos disponibles</p>
+      <div className="space-y-6">
+        <div className="mb-6 p-4 glass-panel rounded-xl">
+          <h4 className="text-sm font-semibold mb-3">Agregar Documento</h4>
+          <div className="flex gap-2 flex-wrap">
+            <input
+              type="text"
+              placeholder="Nombre del documento"
+              value={docName}
+              onChange={(e) => setDocName(e.target.value)}
+              className="flex-1 h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm"
+            />
+            <input
+              type="file"
+              onChange={handleDocUpload}
+              className="text-sm text-on-surface file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-on-primary file:text-xs"
+            />
+            <Button onClick={uploadDocument} disabled={uploading || !docName.trim() || !docFile}>
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Subir"}
+            </Button>
+          </div>
+        </div>
+        <div className="flex flex-col items-center justify-center py-12 text-on-surface-variant">
+          <FileText className="w-16 h-16 mb-4 opacity-30" />
+          <p className="text-lg font-medium">No hay archivos disponibles</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-8">
+      <div className="mb-6 p-4 glass-panel rounded-xl">
+        <h4 className="text-sm font-semibold mb-3">Agregar Documento</h4>
+        <div className="flex gap-2 flex-wrap">
+          <input
+            type="text"
+            placeholder="Nombre del documento"
+            value={docName}
+            onChange={(e) => setDocName(e.target.value)}
+            className="flex-1 h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm"
+          />
+          <input
+            type="file"
+            onChange={handleDocUpload}
+            className="text-sm text-on-surface file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-on-primary file:text-xs"
+          />
+          <Button onClick={uploadDocument} disabled={uploading || !docName.trim() || !docFile}>
+            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Subir"}
+          </Button>
+        </div>
+      </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
         {allFilesFlat.map((file, i) => {
           const isImage = /\.(jpg|jpeg|png|gif|webp|svg|heic|heif)$/i.test(file.url);

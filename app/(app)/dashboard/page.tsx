@@ -44,7 +44,7 @@ export default function DashboardPage() {
               {roleLabels[role] || role}
             </span>
             <h1 className="font-headline text-2xl font-bold text-on-surface">
-              Dashboard
+              Pipeline
             </h1>
           </div>
           {canCreateLead && (

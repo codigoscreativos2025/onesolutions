@@ -16,7 +16,7 @@ import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { MapPin, User, GripVertical, ArrowLeftRight } from "lucide-react";
+import { MapPin, User, GripVertical, ArrowLeftRight, X } from "lucide-react";
 
 const COLS = [
   { stage: "IN_PROGRESS", title: "Leads", color: "bg-blue-500", colorBar: "bg-blue-500" },
@@ -78,6 +78,10 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
   );
 
   const [partnerFilter, setPartnerFilter] = useState({ address: "", client: "" });
+  const [columnFilter, setColumnFilter] = useState<Record<string, boolean>>({});
+  const [projectTypeFilter, setProjectTypeFilter] = useState("");
+  const [addressFilter, setAddressFilter] = useState("");
+  const [clientFilter, setClientFilter] = useState("");
 
   useEffect(() => {
     if (isAdmin) {
@@ -221,6 +225,24 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
 
   const showOverlay = isSetterJr;
 
+  const filterVisits = (visits: KanbanVisit[]) => {
+    return visits.filter((v) => {
+      const pt = v.projects?.map((p) => p.projectType.name.toLowerCase()).join(" ") || "";
+      const addr = v.parcel.address?.toLowerCase() || "";
+      const client = (v.parcel.ownerName || "").toLowerCase();
+      return (!projectTypeFilter || pt.includes(projectTypeFilter.toLowerCase()))
+        && (!addressFilter || addr.includes(addressFilter.toLowerCase()))
+        && (!clientFilter || client.includes(clientFilter.toLowerCase()));
+    });
+  };
+
+  const clearFilters = () => {
+    setColumnFilter({});
+    setProjectTypeFilter("");
+    setAddressFilter("");
+    setClientFilter("");
+  };
+
   if (isPartner) {
     const allVisits = Object.values(data).flat();
     const filtered = allVisits.filter((v) => {
@@ -276,43 +298,104 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
     );
   }
 
-  return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="flex gap-4 overflow-x-auto pb-4 min-h-[60vh]">
-        {COLS.map((col, idx) => {
-          const visits = data[col.stage] || [];
-          const isLeads = col.stage === "IN_PROGRESS";
-          const restricted = showOverlay && !isLeads;
+  const hasActiveFilters = projectTypeFilter || addressFilter || clientFilter || Object.values(columnFilter).some((v) => v === false);
 
-          return (
-            <KanbanColumn
-              key={col.stage}
-              col={col}
-              visits={visits}
-              isAdmin={isAdmin}
-              idx={idx}
-              restricted={restricted}
-              onCardClick={(visitId) => router.push(`/lead/${visitId}`)}
-              transferOpen={transferOpen}
-              setTransferOpen={setTransferOpen}
-              transferUsers={transferUsers}
-              onTransfer={handleTransfer}
-            />
-          );
-        })}
+  return (
+    <div className="space-y-4">
+      <div className="glass-panel rounded-2xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Filtros</span>
+          {hasActiveFilters && (
+            <button onClick={clearFilters} className="text-xs text-primary font-medium hover:underline flex items-center gap-1">
+              <X className="w-3 h-3" /> Limpiar
+            </button>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {COLS.map((col) => {
+            const hidden = columnFilter[col.stage] === false;
+            return (
+              <button
+                key={col.stage}
+                onClick={() => setColumnFilter((prev) => ({ ...prev, [col.stage]: !hidden }))}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                  hidden
+                    ? "bg-transparent text-on-surface-variant border-outline-variant opacity-50"
+                    : "bg-primary/10 text-primary border-primary/30"
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${col.colorBar}`} />
+                  {col.title}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex flex-wrap gap-3 mt-3">
+          <input
+            type="text"
+            placeholder="Tipo de proyecto..."
+            value={projectTypeFilter}
+            onChange={(e) => setProjectTypeFilter(e.target.value)}
+            className="h-9 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface flex-1 min-w-[160px]"
+          />
+          <input
+            type="text"
+            placeholder="Dirección..."
+            value={addressFilter}
+            onChange={(e) => setAddressFilter(e.target.value)}
+            className="h-9 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface flex-1 min-w-[160px]"
+          />
+          <input
+            type="text"
+            placeholder="Cliente..."
+            value={clientFilter}
+            onChange={(e) => setClientFilter(e.target.value)}
+            className="h-9 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface flex-1 min-w-[160px]"
+          />
+        </div>
       </div>
-      <DragOverlay>
-        {activeVisit ? (
-          <KanbanCardOverlay visit={activeVisit} />
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex gap-4 overflow-x-auto pb-4 min-h-[60vh]">
+          {COLS.map((col, idx) => {
+            if (columnFilter[col.stage] === false) return null;
+            const rawVisits = data[col.stage] || [];
+            const visits = filterVisits(rawVisits);
+            const isLeads = col.stage === "IN_PROGRESS";
+            const restricted = showOverlay && !isLeads;
+
+            return (
+              <KanbanColumn
+                key={col.stage}
+                col={col}
+                visits={visits}
+                isAdmin={isAdmin}
+                idx={idx}
+                restricted={restricted}
+                onCardClick={(visitId) => router.push(`/lead/${visitId}`)}
+                transferOpen={transferOpen}
+                setTransferOpen={setTransferOpen}
+                transferUsers={transferUsers}
+                onTransfer={handleTransfer}
+              />
+            );
+          })}
+        </div>
+        <DragOverlay>
+          {activeVisit ? (
+            <KanbanCardOverlay visit={activeVisit} />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+    </div>
   );
 }
 

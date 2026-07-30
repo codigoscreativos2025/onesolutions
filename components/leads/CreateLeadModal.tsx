@@ -278,7 +278,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
           {effectiveCloserId && (
             <div>
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                Fecha de Visita (opcional)
+                Fecha de Visita *
               </label>
               <SlotPicker
                 userId={Number(effectiveCloserId)}
@@ -304,10 +304,10 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
             </Button>
             <Button
               type="submit"
-              disabled={loading || !formData.address}
+              disabled={loading || !formData.address || !selectedScheduleDate || !selectedScheduleTime}
               className="flex-1"
             >
-              {loading ? 'Creando...' : 'Crear Lead'}
+              {loading ? 'Creando...' : 'Crear Lead y Agendar'}
             </Button>
           </div>
         </form>
