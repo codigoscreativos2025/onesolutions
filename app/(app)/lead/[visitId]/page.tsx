@@ -143,6 +143,8 @@ const FIELD_GROUPS: Record<string, { label: string; prefix: string }> = {
   closing: { label: "Documentos", prefix: "closing" },
 };
 
+const POST_CLOSURE_TAGS = ["En Instalación", "Instalado", "Finalizado"];
+
 function groupFieldsByType(fields: { fieldName: string; fieldLabel?: string; fieldType?: string }[]) {
   const groups: Record<string, { fieldName: string; fieldLabel?: string; fieldType?: string }[]> = {};
   const other: typeof fields = [];
