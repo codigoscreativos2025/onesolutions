@@ -60,11 +60,7 @@ export default function DashboardPage() {
       </section>
 
       {isPartner ? (
-        <div className="glass-panel p-8 rounded-2xl text-center">
-          <p className="text-on-surface-variant">
-            Aqui podras ver los leads de tus parcelas asignadas.
-          </p>
-        </div>
+        <KanbanBoard isAdmin={false} isSetterJr={false} isSetter={false} isPartner={true} key={refreshKey} />
       ) : (
         <KanbanBoard
           key={refreshKey}

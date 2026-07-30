@@ -43,9 +43,10 @@ interface KanbanBoardProps {
   isAdmin: boolean;
   isSetterJr: boolean;
   isSetter: boolean;
+  isPartner?: boolean;
 }
 
-export function KanbanBoard({ isAdmin, isSetterJr, isSetter }: KanbanBoardProps) {
+export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: KanbanBoardProps) {
   const router = useRouter();
   const [data, setData] = useState<GroupedVisits>({});
   const [loading, setLoading] = useState(true);
@@ -66,6 +67,8 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter }: KanbanBoardProps)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
+
+  const [partnerFilter, setPartnerFilter] = useState({ address: "", client: "" });
 
   const fetchData = useCallback(async () => {
     setError(null);
@@ -182,6 +185,61 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter }: KanbanBoardProps)
   }
 
   const showOverlay = isSetter || isSetterJr;
+
+  if (isPartner) {
+    const allVisits = Object.values(data).flat();
+    const filtered = allVisits.filter((v) => {
+      const addr = v.parcel.address?.toLowerCase() || "";
+      const client = (v.parcel.ownerName || "").toLowerCase();
+      const fa = partnerFilter.address.toLowerCase();
+      const fc = partnerFilter.client.toLowerCase();
+      return (!fa || addr.includes(fa)) && (!fc || client.includes(fc));
+    });
+    return (
+      <div className="space-y-4">
+        <div className="flex gap-3 flex-wrap">
+          <input type="text" placeholder="Filtrar por direccion..." value={partnerFilter.address}
+            onChange={(e) => setPartnerFilter((p) => ({ ...p, address: e.target.value }))}
+            className="h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface flex-1 min-w-[200px]" />
+          <input type="text" placeholder="Filtrar por cliente..." value={partnerFilter.client}
+            onChange={(e) => setPartnerFilter((p) => ({ ...p, client: e.target.value }))}
+            className="h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface flex-1 min-w-[200px]" />
+        </div>
+        <div className="glass-panel rounded-2xl border-t-4 border-t-primary">
+          <div className="p-4 border-b border-outline-variant">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-on-surface">Proyectos</h3>
+              <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">{filtered.length}</span>
+            </div>
+          </div>
+          <div className="p-3 space-y-2 max-h-[70vh] overflow-y-auto">
+            {filtered.map((visit) => (
+              <button key={visit.id} onClick={() => router.push(`/lead/${visit.id}`)}
+                className="w-full text-left glass-panel p-4 rounded-xl hover:border-primary/40 transition-all cursor-pointer">
+                <p className="font-semibold text-sm text-on-surface">{visit.parcel.ownerName || "Sin nombre"}</p>
+                <div className="flex items-center gap-2 mt-1 text-xs text-on-surface-variant">
+                  <MapPin className="w-3 h-3 flex-shrink-0" />
+                  <span className="truncate">{visit.parcel.address}</span>
+                </div>
+                {visit.projects?.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {visit.projects.map((p) => (
+                      <span key={p.projectType.id} className="px-2 py-0.5 rounded-full bg-primary/5 text-primary text-[10px] font-medium">
+                        {p.projectType.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <p className="text-center py-8 text-sm text-on-surface-variant">No tienes proyectos asignados.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <DndContext

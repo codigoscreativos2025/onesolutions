@@ -29,6 +29,8 @@ export async function GET() {
       ];
     } else if (role === 'PARTNER') {
       whereClause.parcel = { partnerId: currentUserId };
+    } else if (role === 'PARTNER') {
+      whereClause.parcel = { partnerId: currentUserId };
     }
 
     const visits = await prisma.visit.findMany({

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import Link from "next/link";
-import { Users, MessageSquareWarning, BarChart3, MessageCircle, Award, Settings, Briefcase, FileText, ReceiptText, Mail } from "lucide-react";
+import { Users, BarChart3, ReceiptText, Mail } from "lucide-react";
 
 export default async function AdminPage() {
   const session = await auth();
@@ -11,83 +11,10 @@ export default async function AdminPage() {
   }
 
   const menuItems = [
-    {
-      title: "Usuarios",
-      description: "Gestiona trainers, closers y administradores",
-      href: "/admin/users",
-      icon: Users,
-      color: "bg-primary/10 text-primary",
-    },
-    {
-      title: "Objeciones",
-      description: "Configura las objeciones del equipo",
-      href: "/admin/objections",
-      icon: MessageSquareWarning,
-      color: "bg-secondary/10 text-secondary",
-    },
-    {
-      title: "Métricas",
-      description: "Visualiza el rendimiento general",
-      href: "/admin/metrics",
-      icon: BarChart3,
-      color: "bg-tertiary/10 text-tertiary",
-    },
-    {
-      title: "Medallas",
-      description: "Configura medallas y metas del equipo",
-      href: "/admin/badges",
-      icon: Award,
-      color: "bg-primary/10 text-primary",
-    },
-    {
-      title: "Campos de Proyectos",
-      description: "Configura campos personalizados por tipo de proyecto",
-      href: "/admin/project-fields",
-      icon: Settings,
-      color: "bg-secondary/10 text-secondary",
-    },
-    {
-      title: "CRM",
-      description: "Gestión completa de proyectos, leads y visitas",
-      href: "/admin/crm",
-      icon: Briefcase,
-      color: "bg-primary/10 text-primary",
-    },
-    {
-      title: "Historial de Auditoría",
-      description: "Registro de todos los cambios en la plataforma",
-      href: "/admin/audit-logs",
-      icon: FileText,
-      color: "bg-secondary/10 text-secondary",
-    },
-    {
-      title: "Chats",
-      description: "Monitorea las conversaciones internas",
-      href: "/admin/chats",
-      icon: MessageCircle,
-      color: "bg-primary/10 text-primary",
-    },
-    {
-      title: "Configuración",
-      description: "Logo del negocio y etiquetas personalizadas",
-      href: "/admin/settings",
-      icon: Settings,
-      color: "bg-tertiary/10 text-tertiary",
-    },
-    {
-      title: "Facturas",
-      description: "Genera facturas personalizadas y descarga PDFs",
-      href: "/admin/invoices",
-      icon: ReceiptText,
-      color: "bg-primary/10 text-primary",
-    },
-    {
-      title: "Correos",
-      description: "Envía correos con plantillas predeterminadas a usuarios y clientes",
-      href: "/admin/emails",
-      icon: Mail,
-      color: "bg-secondary/10 text-secondary",
-    },
+    { title: "Usuarios", description: "Gestiona trainers, closers, setters y partners", href: "/admin/users", icon: Users, color: "bg-primary/10 text-primary" },
+    { title: "Métricas", description: "Visualiza el rendimiento general", href: "/admin/metrics", icon: BarChart3, color: "bg-tertiary/10 text-tertiary" },
+    { title: "Facturas", description: "Genera facturas personalizadas y descarga PDFs", href: "/admin/invoices", icon: ReceiptText, color: "bg-primary/10 text-primary" },
+    { title: "Correos", description: "Envia correos con plantillas predeterminadas a usuarios y clientes", href: "/admin/emails", icon: Mail, color: "bg-secondary/10 text-secondary" },
   ];
 
   return (
