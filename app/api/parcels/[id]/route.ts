@@ -98,17 +98,16 @@ export async function PATCH(
   }
 
   // Use upsert for Regrid parcels (may not exist in DB yet)
-  const upsertData = { ...updateData };
-  if (!exists) {
-    upsertData.id = id;
-    upsertData.address = updateData.address || "Sin direccion";
-    upsertData.geometry = JSON.stringify({ type: "Polygon", coordinates: [] });
-  }
-
-  const result = await prisma.parcel.upsert({
+  const created = await prisma.parcel.upsert({
     where: { id },
     update: updateData,
-    create: upsertData as unknown as Parameters<typeof prisma.parcel.create>[0]["data"],
+    create: {
+      id,
+      ...updateData,
+      address: (updateData.address as string) || "Sin direccion",
+      geometry: JSON.stringify({ type: "Polygon", coordinates: [] }),
+      ...(isAdmin ? { partnerId: partnerId as number } : {}),
+    },
     include: {
       setter: { select: { id: true, name: true } },
       partner: { select: { id: true, name: true } },
@@ -127,5 +126,5 @@ export async function PATCH(
     });
   }
 
-  return NextResponse.json(result);
+  return NextResponse.json(created);
 }
