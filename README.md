@@ -45,12 +45,12 @@ npm run dev
 # En local:
 rm -f prisma/dev.db
 npx prisma db push
-npx tsx prisma/seed.ts
+npm run db:seed
 
 # En EasyPanel (SSH):
 rm -f /app/data/dev.db
 npm run db:push
-npm run seed
+npm run db:seed
 ```
 
 ## Usuarios de prueba (seed)
