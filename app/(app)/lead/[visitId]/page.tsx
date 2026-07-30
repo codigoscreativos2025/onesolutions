@@ -1262,9 +1262,7 @@ function DatosProjectFieldsPanel({
           ))}
         </div>
 
-        {nonCommonFields.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-outline-variant/20">
-        {(() => {
+        {nonCommonFields.length > 0 && (() => {
           const { groups, other } = groupFieldsByType(nonCommonFields as { fieldName: string; fieldLabel?: string; fieldType?: string }[]);
           return (
             <div className="mt-4 pt-4 border-t border-outline-variant/20 space-y-4">
@@ -1295,6 +1293,7 @@ function DatosProjectFieldsPanel({
                     ))}
                   </div>
                 </div>
+              )}
             </div>
           );
         })()}
