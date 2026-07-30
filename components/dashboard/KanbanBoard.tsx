@@ -184,7 +184,7 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
     );
   }
 
-  const showOverlay = isSetter || isSetterJr;
+  const showOverlay = isSetterJr;
 
   if (isPartner) {
     const allVisits = Object.values(data).flat();
