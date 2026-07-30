@@ -1295,7 +1295,6 @@ function DatosProjectFieldsPanel({
                     ))}
                   </div>
                 </div>
-              )}
             </div>
           );
         })()}
