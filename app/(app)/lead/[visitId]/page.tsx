@@ -28,6 +28,7 @@ import {
   RotateCcw,
   Trash2,
   CheckCircle,
+  Calendar,
 } from "lucide-react";
 
 const FIELD_LABEL_MAP: Record<string, string> = {
@@ -170,6 +171,7 @@ interface VisitDetails {
   stage: string;
   outcome: string | null;
   notes: string | null;
+  scheduledAt?: string | null;
   createdAt: string;
   completedAt?: string | null;
   cancelledAt?: string | null;
@@ -247,6 +249,14 @@ export default function LeadDetailPage() {
 
   const [postCloseTags, setPostCloseTags] = useState<string[]>([]);
   const [tagSaving, setTagSaving] = useState(false);
+
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
+  const [scheduleCloserId, setScheduleCloserId] = useState("");
+  const [scheduleSlotId, setScheduleSlotId] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [scheduleClosers, setScheduleClosers] = useState<any[]>([]);
+  const [scheduleSaving, setScheduleSaving] = useState(false);
 
   const fetchVisitDetails = async () => {
     setLoading(true);
@@ -360,6 +370,65 @@ export default function LeadDetailPage() {
   const handleFieldChange = (key: string, value: string) => {
     setEditFields((prev) => ({ ...prev, [key]: value }));
   };
+
+  const fetchScheduleClosers = async () => {
+    try {
+      const res = await fetch("/api/closers");
+      const data = await res.json();
+      setScheduleClosers(data || []);
+      if (data?.length === 1) {
+        setScheduleCloserId(String(data[0].id));
+      }
+    } catch { /* */ }
+  };
+
+  const hasPanelSolarForSchedule = visit?.projects?.some((p) => p.projectType.name.toLowerCase().includes("panel solar")) ?? false;
+  const showScheduleCloserDropdown = role === "SETTER_JR" || (role === "SETTER" && hasPanelSolarForSchedule);
+  const scheduleIsSelfAssigned = role === "CLOSER" || (role === "SETTER" && !hasPanelSolarForSchedule);
+  const scheduleCloser = scheduleClosers.find((c: any) => c.id === Number(scheduleCloserId)) ?? null;
+  const scheduleSlotsByDate: Record<string, any[]> = scheduleCloser
+    ? (scheduleCloser.slots || []).reduce((m: Record<string, any[]>, s: any) => {
+        const d = s.startAt.split("T")[0];
+        (m[d] ??= []).push(s);
+        return m;
+      }, {})
+    : {};
+
+  const handleScheduleVisit = async () => {
+    if (!visit || !scheduleDate || !scheduleTime) {
+      toast.error("Selecciona fecha y hora");
+      return;
+    }
+    if (showScheduleCloserDropdown && !scheduleCloserId) {
+      toast.error("Selecciona un Closer");
+      return;
+    }
+    setScheduleSaving(true);
+    try {
+      const scheduledAt = new Date(`${scheduleDate}T${scheduleTime}:00`).toISOString();
+      await fetch(`/api/visits/${visit.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          stage: "PROPOSAL_ACCEPTED",
+          scheduledAt,
+          ...(scheduleIsSelfAssigned ? { closerId: Number(session?.user?.id) } : { closerId: Number(scheduleCloserId) }),
+        }),
+      });
+      toast.success("Cita agendada");
+      fetchVisitDetails();
+    } catch {
+      toast.error("Error al agendar");
+    } finally {
+      setScheduleSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    if (visit && visit.stage === "IN_PROGRESS" && !visit.scheduledAt) {
+      fetchScheduleClosers();
+    }
+  }, [visit]);
 
   const saveProjectDetailsAction = async () => {
     if (!visit || !visitId) return;
@@ -649,6 +718,80 @@ export default function LeadDetailPage() {
           <TabContent key="datos">
             {visit.stage === "IN_PROGRESS" && (
               <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={handleFieldChange} onUpload={handleUpload} onRefresh={fetchVisitDetails} />
+            )}
+
+            {visit.stage === "IN_PROGRESS" && !visit.scheduledAt && (
+              <div className="mt-6 glass-panel rounded-xl p-6 space-y-4">
+                <h3 className="font-semibold text-lg flex items-center gap-2 text-on-surface">
+                  <Calendar className="w-5 h-5 text-primary" />
+                  Agendar Cita
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <input
+                    type="date"
+                    value={scheduleDate}
+                    onChange={(e) => setScheduleDate(e.target.value)}
+                    className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
+                  />
+                  <input
+                    type="time"
+                    value={scheduleTime}
+                    onChange={(e) => setScheduleTime(e.target.value)}
+                    className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
+                  />
+                </div>
+
+                {showScheduleCloserDropdown && (
+                  <select
+                    value={scheduleCloserId}
+                    onChange={(e) => { setScheduleCloserId(e.target.value); setScheduleSlotId(""); }}
+                    className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
+                  >
+                    <option value="">-- Selecciona un Closer --</option>
+                    {scheduleClosers.map((c: any) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                )}
+
+                {showScheduleCloserDropdown && scheduleCloserId && Object.keys(scheduleSlotsByDate).length > 0 && (
+                  <div className="space-y-3">
+                    <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                      Disponibilidad de {scheduleCloser?.name}
+                    </label>
+                    {Object.entries(scheduleSlotsByDate).map(([date, daySlots]: [string, any[]]) => (
+                      <div key={date} className="space-y-1.5">
+                        <p className="text-xs font-medium text-on-surface-variant">{date}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {daySlots.map((s: any) => (
+                            <button
+                              key={s.id}
+                              type="button"
+                              onClick={() => {
+                                setScheduleSlotId(String(s.id));
+                                setScheduleDate(s.startAt.split("T")[0]);
+                                setScheduleTime(s.startAt.split("T")[1]?.substring(0, 5) ?? "");
+                              }}
+                              className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                                scheduleSlotId === String(s.id)
+                                  ? "bg-primary/10 border-primary text-primary"
+                                  : "bg-surface-container-lowest border-outline-variant text-on-surface hover:border-primary/30"
+                              }`}
+                            >
+                              {new Date(s.startAt).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <Button onClick={handleScheduleVisit} disabled={scheduleSaving || !scheduleDate || !scheduleTime} className="w-full">
+                  {scheduleSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Calendar className="w-5 h-5" />}
+                  Programar Cita
+                </Button>
+              </div>
             )}
 
             {visit.stage === "PROPOSAL_ACCEPTED" && (

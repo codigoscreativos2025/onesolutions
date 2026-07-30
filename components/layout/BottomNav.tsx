@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLocale } from "@/lib/locale-context";
-import { Map, LayoutDashboard, Trophy, MessageSquare, Calendar } from "lucide-react";
+import { Map, LayoutDashboard, Trophy, MessageSquare, Calendar, Shield } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 
@@ -20,6 +20,7 @@ export function BottomNav() {
     { href: "/dashboard", label: t.nav.dashboard, icon: LayoutDashboard, roles: ["SETTER", "SETTER_JR", "CLOSER", "ADMIN"] },
     { href: "/calendar", label: t.nav.calendar, icon: Calendar, roles: ["SETTER_JR", "CLOSER", "ADMIN"] },
     { href: "/chat", label: t.nav.chat, icon: MessageSquare, roles: ["SETTER", "SETTER_JR", "CLOSER", "ADMIN", "PARTNER"] },
+    { href: "/admin", label: "Admin", icon: Shield, roles: ["ADMIN"] },
   ];
 
   const visibleItems = navItems.filter((item) =>

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { ArrowLeft, Upload, Phone, User, Loader2, FileText, X, CheckCircle } from "lucide-react";
 import { QuoteModal } from "@/components/quote/QuoteModal";
 import { ContractModal } from "@/components/quote/ContractModal";
+import { SlotPicker } from "@/components/calendar/SlotPicker";
 
 interface Slot { id: number; startAt: string; endAt: string }
 interface Closer { id: number; name: string; email: string; slots: Slot[] }
@@ -55,12 +56,6 @@ function CelebrationOverlay({ onComplete }: { onComplete: () => void }) {
   );
 }
 
-function groupByDate(slots: Slot[]): Record<string, Slot[]> {
-  const m: Record<string, Slot[]> = {};
-  for (const s of slots) { const d = s.startAt.split("T")[0]; (m[d] ??= []).push(s); }
-  return m;
-}
-
 const inputClass =
   "w-full h-12 pl-12 pr-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface";
 const inputNoIcon =
@@ -95,7 +90,6 @@ export default function VisitPage() {
   const [scheduleTime, setScheduleTime] = useState("");
   const [selectedCloserId, setSelectedCloserId] = useState("");
   const [selectedSlotId, setSelectedSlotId] = useState("");
-  const [selfAssign, setSelfAssign] = useState(false);
   const [closers, setClosers] = useState<Closer[]>([]);
 
   const [showCelebration, setShowCelebration] = useState(false);
@@ -106,13 +100,10 @@ export default function VisitPage() {
   const isSetterJr = role === "SETTER_JR";
   const isCloser = role === "CLOSER";
   const hasPanelSolar = projectTypes.some((pt) => selectedProjectTypes.includes(pt.id) && pt.name.toLowerCase().includes("panel solar"));
-  const showCloserDropdown = isSetter || (isSetterJr && hasPanelSolar);
-  const showSelfAssign = isCloser || (isSetterJr && !hasPanelSolar);
-  const closer = closers.find((c) => c.id === Number(selectedCloserId)) ?? null;
-  const slotsByDate = closer ? groupByDate(closer.slots) : {};
+  const showCloserDropdown = isSetterJr || (isSetter && hasPanelSolar);
+  const isSelfAssigned = isCloser || (isSetter && !hasPanelSolar);
 
   useEffect(() => { fetchData(); }, [parcelId]); // eslint-disable-line
-  useEffect(() => { if (isCloser) setSelfAssign(true); }, [isCloser]);
 
   async function fetchData() {
     try {
@@ -179,34 +170,11 @@ export default function VisitPage() {
     setSelectedProjectTypes((prev) => prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]);
   }
 
-  async function handleSaveWithoutSchedule() {
-    if (!visit) return;
-    if (!phone.trim()) { toast.error("El teléfono es requerido"); return; }
-    setSaving(true);
-    try {
-      let billUrl = billPreview, idUrl = idPreview;
-      if (billFile) billUrl = await uploadFile(billFile);
-      if (idFile) idUrl = await uploadFile(idFile);
-      const billData = makeBillData(billUrl, idUrl);
-
-      await fetch(`/api/visits/${visit.id}/projects`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ visitId: visit.id, projectTypeIds: selectedProjectTypes }),
-      });
-      await fetch(`/api/visits/${visit.id}`, {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes: notes.trim() || null, bill: { upsert: { create: billData, update: billData } } }),
-      });
-      toast.success("Visita guardada");
-      router.push("/dashboard");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Error al guardar");
-    } finally { setSaving(false); }
-  }
-
   async function handleSaveAndSchedule() {
     if (!visit) return;
     if (!phone.trim()) { toast.error("El teléfono es requerido"); return; }
+    if (!scheduleDate || !scheduleTime) { toast.error("Debes seleccionar fecha y hora para agendar"); return; }
+    if (showCloserDropdown && !selectedCloserId) { toast.error("Debes seleccionar un Closer"); return; }
     setSaving(true);
     try {
       let billUrl = billPreview, idUrl = idPreview;
@@ -224,7 +192,7 @@ export default function VisitPage() {
         });
         if (!res.ok) throw new Error((await res.json()).error ?? "Error al agendar");
       } else {
-        const scheduledAt = scheduleDate && scheduleTime ? new Date(`${scheduleDate}T${scheduleTime}:00`).toISOString() : null;
+        const scheduledAt = new Date(`${scheduleDate}T${scheduleTime}:00`).toISOString();
         const billData = makeBillData(billUrl, idUrl);
         await fetch(`/api/visits/${visit.id}/projects`, {
           method: "POST", headers: { "Content-Type": "application/json" },
@@ -233,8 +201,8 @@ export default function VisitPage() {
         await fetch(`/api/visits/${visit.id}`, {
           method: "PATCH", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            notes: notes.trim() || null, scheduledAt,
-            ...(selfAssign ? { closerId: Number(session?.user?.id) } : {}),
+            notes: notes.trim() || null, scheduledAt, stage: "PROPOSAL_ACCEPTED",
+            ...(isSelfAssigned ? { closerId: Number(session?.user?.id) } : {}),
             bill: { upsert: { create: billData, update: billData } },
           }),
         });
@@ -338,59 +306,49 @@ export default function VisitPage() {
 
         <section className="space-y-4 border-t border-outline-variant pt-6">
           <label className={labelClass}>Agendar Visita</label>
-          <div className="grid grid-cols-2 gap-3">
-            <input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} className={inputNoIcon} />
-            <input type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className={inputNoIcon} />
-          </div>
 
           {showCloserDropdown && (
             <select value={selectedCloserId} onChange={(e) => { setSelectedCloserId(e.target.value); setSelectedSlotId(""); }}
-              className={`${inputNoIcon} px-4`}>
+              className={`${inputNoIcon} px-4`} required>
               <option value="">-- Selecciona un Closer --</option>
               {closers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           )}
 
-          {showSelfAssign && (
-            <label className="flex items-center gap-3 p-3 bg-primary/5 rounded-xl border border-primary/10 cursor-pointer">
-              <input type="checkbox" checked={selfAssign} onChange={(e) => setSelfAssign(e.target.checked)}
-                className="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary" />
-              <span className="text-sm font-medium text-on-surface">Asignarme a mí mismo</span>
-            </label>
+          {showCloserDropdown && selectedCloserId && (
+            <SlotPicker
+              closerId={Number(selectedCloserId)}
+              selectedSlotId={selectedSlotId ? Number(selectedSlotId) : undefined}
+              onSlotSelect={(slotId) => setSelectedSlotId(String(slotId))}
+              onSlotSelectWithDate={(slot) => {
+                setSelectedSlotId(String(slot.id));
+                setScheduleDate(slot.startAt.split("T")[0]);
+                setScheduleTime(slot.startAt.split("T")[1]?.substring(0, 5) ?? "");
+              }}
+            />
           )}
 
-          {showCloserDropdown && selectedCloserId && (
-            <motion.div className="space-y-3" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} transition={{ duration: 0.25 }}>
-              <label className={labelClass}>Disponibilidad de {closer?.name}</label>
-              {Object.keys(slotsByDate).length === 0 ? (
-                <p className="text-sm text-on-surface-variant italic">Sin slots disponibles</p>
-              ) : Object.entries(slotsByDate).map(([date, daySlots]) => (
-                <div key={date} className="space-y-1.5">
-                  <p className="text-xs font-medium text-on-surface-variant">{date}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {daySlots.map((s) => (
-                      <button key={s.id} type="button"
-                        onClick={() => { setSelectedSlotId(String(s.id)); setScheduleDate(s.startAt.split("T")[0]); setScheduleTime(s.startAt.split("T")[1]?.substring(0, 5) ?? ""); }}
-                        className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${selectedSlotId === String(s.id) ? "bg-primary/10 border-primary text-primary" : "bg-surface-container-lowest border-outline-variant text-on-surface hover:border-primary/30"}`}>
-                        {new Date(s.startAt).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </motion.div>
+          {!showCloserDropdown && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} className={inputNoIcon} />
+                <input type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className={inputNoIcon} />
+              </div>
+              {session?.user?.id && (
+                <SlotPicker
+                  closerId={Number(session.user.id)}
+                  selectedSlotId={selectedSlotId ? Number(selectedSlotId) : undefined}
+                  onSlotSelect={(slotId) => setSelectedSlotId(String(slotId))}
+                />
+              )}
+            </div>
           )}
         </section>
       </motion.div>
 
-      <div className="flex gap-3">
-        <Button variant="outline" onClick={handleSaveWithoutSchedule} disabled={saving} className="flex-1 h-14">
-          {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Guardar sin Agendar"}
-        </Button>
-        <Button onClick={handleSaveAndSchedule} disabled={saving || !phone.trim()} className="flex-1 h-14">
-          {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Guardar y Agendar"}
-        </Button>
-      </div>
+      <Button onClick={handleSaveAndSchedule} disabled={saving || !phone.trim()} className="w-full h-14">
+        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Guardar y Agendar"}
+      </Button>
     </div>
   );
 }

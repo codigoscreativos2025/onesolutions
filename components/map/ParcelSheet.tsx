@@ -1,31 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { CreateLeadModal } from "@/components/leads/CreateLeadModal";
-import { DoorOpen, X, User, Tag, Plus, ChevronDown, ChevronUp, Save } from "lucide-react";
+import { DoorOpen, X, User, Tag, Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-
-const PRESET_TAGS = [
-  { name: "No abrió", color: "#ef4444" },
-  { name: "Pasar después", color: "#f59e0b" },
-  { name: "Ya tiene paneles", color: "#10b981" },
-  { name: "Interesado", color: "#3b82f6" },
-  { name: "No molestar", color: "#6b7280" },
-];
 
 interface TagObject {
   name: string;
   color: string;
   date: string;
-}
-
-interface ObjectionItem {
-  id: number;
-  name: string;
-  color: string;
 }
 
 interface NotAvailTag {
@@ -81,22 +67,23 @@ export function ParcelSheet({
   const [customTagName, setCustomTagName] = useState("");
   const [customTagColor, setCustomTagColor] = useState("#6366f1");
   const [localNotes, setLocalNotes] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [editingTagIdx, setEditingTagIdx] = useState<number | null>(null);
+  const [editTagName, setEditTagName] = useState("");
+  const [editTagColor, setEditTagColor] = useState("#6366f1");
 
-  const [showActivity, setShowActivity] = useState(false);
-  const [objections, setObjections] = useState<ObjectionItem[]>([]);
   const [notAvailTags, setNotAvailTags] = useState<NotAvailTag[]>([]);
-  const [selectedObjectionIds, setSelectedObjectionIds] = useState<number[]>([]);
   const [selectedNotAvailTagIds, setSelectedNotAvailTagIds] = useState<number[]>([]);
-  const [activityNotes, setActivityNotes] = useState("");
 
   const [showLeadModal, setShowLeadModal] = useState(false);
-  const [visitObjections, setVisitObjections] = useState<ObjectionItem[]>([]);
   const [visitNotAvailTags, setVisitNotAvailTags] = useState<NotAvailTag[]>([]);
+
+  const noteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isSavingRef = useRef(false);
+
+  const isAdmin = userRole === "ADMIN";
 
   useEffect(() => {
     if (!parcel) {
-      setVisitObjections([]);
       setVisitNotAvailTags([]);
       return;
     }
@@ -110,15 +97,6 @@ export function ParcelSheet({
       .then((data) => {
         if (!data) return;
         const latestVisit = data?.visits?.[0];
-        if (latestVisit?.objections) {
-          setVisitObjections(
-            latestVisit.objections.map((vo: { objection: ObjectionItem; notes?: string }) => ({
-              ...vo.objection,
-            }))
-          );
-        } else {
-          setVisitObjections([]);
-        }
         if (latestVisit?.notAvailableTags) {
           setVisitNotAvailTags(
             latestVisit.notAvailableTags.map((vt: { tag: NotAvailTag; notes?: string }) => ({
@@ -130,7 +108,6 @@ export function ParcelSheet({
         }
         if (data?.parcelNotes) {
           setLocalNotes(data.parcelNotes);
-          setActivityNotes(data.parcelNotes);
         }
       })
       .catch(() => {});
@@ -141,20 +118,15 @@ export function ParcelSheet({
   }, [parcel?.id, parcel?.parcelNotes]);
 
   useEffect(() => {
-    if (parcel && showActivity) {
-      fetch("/api/objections")
-        .then((r) => r.json())
-        .then((d) => { if (Array.isArray(d)) setObjections(d); })
-        .catch(() => {});
-      fetch("/api/not-available-tags")
-        .then((r) => r.json())
-        .then((d) => { if (Array.isArray(d)) setNotAvailTags(d); })
-        .catch(() => {});
-    }
-  }, [showActivity, parcel?.id]);
+    fetch("/api/not-available-tags")
+      .then((r) => r.json())
+      .then((d) => { if (Array.isArray(d)) setNotAvailTags(d); })
+      .catch(() => {});
+  }, []);
 
-  const saveTags = useCallback(async (newTags: TagObject[]) => {
-    if (!parcel) return;
+  const saveTagsAuto = useCallback(async (newTags: TagObject[]) => {
+    if (!parcel || isSavingRef.current) return;
+    isSavingRef.current = true;
     try {
       const res = await fetch(`/api/parcels/${parcel.id}`, {
         method: "PATCH",
@@ -164,14 +136,12 @@ export function ParcelSheet({
       if (res.ok) {
         const updated = await res.json();
         if (onParcelUpdated) onParcelUpdated({ ...parcel, parcelTags: updated.parcelTags });
-        toast.success("Etiqueta guardada");
       }
-    } catch {
-      toast.error("Error al guardar etiqueta");
-    }
+    } catch { /* ignore */ }
+    finally { isSavingRef.current = false; }
   }, [parcel, onParcelUpdated]);
 
-  const saveNotes = useCallback(async (notes: string) => {
+  const saveNotesAuto = useCallback(async (notes: string) => {
     if (!parcel) return;
     try {
       await fetch(`/api/parcels/${parcel.id}`, {
@@ -181,6 +151,19 @@ export function ParcelSheet({
       });
     } catch { /* ignore */ }
   }, [parcel]);
+
+  const debouncedSaveNotes = useCallback((notes: string) => {
+    if (noteTimerRef.current) clearTimeout(noteTimerRef.current);
+    noteTimerRef.current = setTimeout(() => {
+      saveNotesAuto(notes);
+    }, 800);
+  }, [saveNotesAuto]);
+
+  useEffect(() => {
+    return () => {
+      if (noteTimerRef.current) clearTimeout(noteTimerRef.current);
+    };
+  }, []);
 
   if (!parcel) return null;
 
@@ -202,44 +185,114 @@ export function ParcelSheet({
     .filter(Boolean)
     .join(", ");
 
-  const addTag = (tag: TagObject) => {
-    const exists = tags.some((t) => t.name === tag.name);
+  const toggleNotAvailTag = (tagId: number) => {
+    const tag = notAvailTags.find((t) => t.id === tagId);
+    if (!tag) return;
+
+    const already = tags.some((t) => t.name === tag.name);
+    let newTags: TagObject[];
+    if (already) {
+      newTags = tags.filter((t) => t.name !== tag.name);
+    } else {
+      newTags = [...tags, { name: tag.name, color: tag.color, date: new Date().toISOString() }];
+    }
+    saveTagsAuto(newTags);
+  };
+
+  const removeTag = (tagName: string) => {
+    saveTagsAuto(tags.filter((t) => t.name !== tagName));
+  };
+
+  const startEditTag = (idx: number) => {
+    setEditingTagIdx(idx);
+    setEditTagName(tags[idx].name);
+    setEditTagColor(tags[idx].color);
+  };
+
+  const saveEditTag = () => {
+    if (editingTagIdx === null || !editTagName.trim()) return;
+    const newTags = [...tags];
+    newTags[editingTagIdx] = { ...newTags[editingTagIdx], name: editTagName.trim(), color: editTagColor };
+    saveTagsAuto(newTags);
+    setEditingTagIdx(null);
+  };
+
+  const cancelEditTag = () => {
+    setEditingTagIdx(null);
+  };
+
+  const addCustomTagToParcel = () => {
+    if (!customTagName.trim()) return;
+    const exists = tags.some((t) => t.name === customTagName.trim());
     if (exists) {
       toast.error("Esa etiqueta ya existe");
       return;
     }
-    const newTag = { ...tag, date: new Date().toISOString() };
-    saveTags([...tags, newTag]);
+    const newTag: TagObject = { name: customTagName.trim(), color: customTagColor, date: new Date().toISOString() };
+    saveTagsAuto([...tags, newTag]);
+    setCustomTagName("");
+    setCustomTagColor("#6366f1");
     setShowTagsMenu(false);
   };
 
-  const removeTag = (tagName: string) => {
-    saveTags(tags.filter((t) => t.name !== tagName));
-  };
-
-  const addCustomTag = () => {
+  const handleAdminAddPresetTag = async () => {
     if (!customTagName.trim()) return;
-    addTag({ name: customTagName.trim(), color: customTagColor, date: "" });
-    setCustomTagName("");
-    setCustomTagColor("#6366f1");
-  };
-
-  const handleNotesBlur = () => {
-    if (localNotes !== (parcel.parcelNotes || "")) {
-      saveNotes(localNotes);
+    try {
+      const res = await fetch("/api/admin/not-available-tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: customTagName.trim(), color: customTagColor }),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setNotAvailTags((prev) => [...prev, created]);
+        toast.success("Tag creado");
+        setCustomTagName("");
+        setCustomTagColor("#6366f1");
+      } else {
+        toast.error("Error al crear tag");
+      }
+    } catch {
+      toast.error("Error al crear tag");
     }
   };
 
-  const toggleObjection = (id: number) => {
-    setSelectedObjectionIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+  const handleAdminDeletePresetTag = async (tagId: number) => {
+    try {
+      const res = await fetch(`/api/admin/not-available-tags/${tagId}`, { method: "DELETE" });
+      if (res.ok) {
+        setNotAvailTags((prev) => prev.filter((t) => t.id !== tagId));
+        toast.success("Tag eliminado");
+      } else {
+        toast.error("Error al eliminar tag");
+      }
+    } catch {
+      toast.error("Error al eliminar tag");
+    }
   };
 
-  const toggleNotAvailTag = (id: number) => {
-    setSelectedNotAvailTagIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+  const handleAdminUpdatePresetTag = async (tagId: number, name: string, color: string) => {
+    try {
+      const res = await fetch(`/api/admin/not-available-tags/${tagId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, color }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setNotAvailTags((prev) => prev.map((t) => (t.id === tagId ? updated : t)));
+        toast.success("Tag actualizado");
+      } else {
+        toast.error("Error al actualizar");
+      }
+    } catch {
+      toast.error("Error al actualizar");
+    }
+  };
+
+  const handleNotesChange = (val: string) => {
+    setLocalNotes(val);
+    debouncedSaveNotes(val);
   };
 
   const handleKnockDoor = async () => {
@@ -263,54 +316,6 @@ export function ParcelSheet({
     }
   };
 
-  const handleSaveActivity = async () => {
-    setSaving(true);
-    try {
-      const selectedTags: TagObject[] = [
-        ...selectedObjectionIds.map((id) => {
-          const obj = objections.find((o) => o.id === id);
-          return { name: obj?.name || `Objecion #${id}`, color: obj?.color || "#fb7800", date: new Date().toISOString() };
-        }),
-        ...selectedNotAvailTagIds.map((id) => {
-          const tag = notAvailTags.find((t) => t.id === id);
-          return { name: tag?.name || `Tag #${id}`, color: tag?.color || "#fb7800", date: new Date().toISOString() };
-        }),
-      ];
-
-      const combinedTags = selectedTags.length > 0
-        ? [...tags, ...selectedTags]
-        : tags;
-
-      const res = await fetch(`/api/parcels/${parcel.id}/save-activity`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          parcelTags: JSON.stringify(combinedTags),
-          parcelNotes: activityNotes || localNotes || null,
-          address: parcel.address,
-          ownerName: parcel.ownerName,
-          geometry: JSON.stringify({ type: "Point", coordinates: [0, 0] }),
-          metadata: parcel.metadata || null,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Error al guardar");
-      }
-
-      toast.success("Actividad guardada");
-      setShowActivity(false);
-      setSelectedObjectionIds([]);
-      setSelectedNotAvailTagIds([]);
-      setActivityNotes("");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Error al guardar");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   return (
     <>
       <div className="fixed inset-y-0 right-0 z-[1000] w-full sm:w-96 glass-panel border-l border-glass-border shadow-[-10px_0_40px_rgba(0,0,0,0.1)] flex flex-col max-h-screen sm:max-h-none animate-slide-in-right pb-16">
@@ -319,7 +324,7 @@ export function ParcelSheet({
             <StatusBadge status={parcel.status} />
             {parcel.setter && (
               <span className="text-on-surface-variant text-xs">
-                •{" "}
+                {" "}
                 <Link href={`/profile/${parcel.setter.id}`} className="hover:underline">
                   {parcel.setter.name}
                 </Link>
@@ -348,6 +353,141 @@ export function ParcelSheet({
                 {parcel.ownerName}
               </p>
             )}
+
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {tags.map((t, i) => (
+                  editingTagIdx === i ? (
+                    <div key={`edit-${i}`} className="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-glass-border bg-white dark:bg-black/40">
+                      <input
+                        value={editTagName}
+                        onChange={(e) => setEditTagName(e.target.value)}
+                        className="w-20 h-5 px-1 text-[10px] rounded border border-glass-border bg-white dark:bg-black/40 text-on-surface outline-none"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") saveEditTag();
+                          if (e.key === "Escape") cancelEditTag();
+                        }}
+                      />
+                      <input
+                        type="color"
+                        value={editTagColor}
+                        onChange={(e) => setEditTagColor(e.target.value)}
+                        className="w-5 h-5 rounded cursor-pointer border-0 p-0"
+                      />
+                      <button onClick={saveEditTag} className="text-[10px] text-primary font-semibold">OK</button>
+                      <button onClick={cancelEditTag} className="text-[10px] text-on-surface-variant">X</button>
+                    </div>
+                  ) : (
+                    <span
+                      key={`${t.name}-${i}`}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold text-white cursor-pointer"
+                      style={{ backgroundColor: t.color }}
+                      onClick={() => isAdmin ? startEditTag(i) : removeTag(t.name)}
+                    >
+                      {t.name}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeTag(t.name);
+                        }}
+                        className="w-3.5 h-3.5 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/40"
+                      >
+                        x
+                      </button>
+                    </span>
+                  )
+                ))}
+                <button
+                  onClick={() => setShowTagsMenu(!showTagsMenu)}
+                  className="w-5 h-5 rounded-full bg-surface-container-highest flex items-center justify-center hover:bg-surface-container-high"
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Tag selection grid - always visible */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Tag className="w-4 h-4 text-on-surface-variant" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+                Etiquetas disponibles
+              </span>
+            </div>
+            <div className="p-3 rounded-xl border border-glass-border bg-white/40 dark:bg-black/20 space-y-2">
+              <div className="flex flex-wrap gap-1.5">
+                {notAvailTags.map((t) => {
+                  const isSelected = tags.some((pt) => pt.name === t.name);
+                  return (
+                    <div key={t.id} className="relative group inline-flex items-center gap-0.5">
+                      <button
+                        onClick={() => toggleNotAvailTag(t.id)}
+                        className={`px-2 py-0.5 rounded-l-full text-[10px] font-semibold transition-all ${
+                          isSelected
+                            ? "text-white ring-2 ring-offset-1 ring-offset-transparent ring-white/40"
+                            : "text-white/70 hover:text-white"
+                        }`}
+                        style={{ backgroundColor: t.color }}
+                      >
+                        {t.name}
+                      </button>
+                      {isAdmin && (
+                        <div className="flex">
+                          <input
+                            type="color"
+                            title="Cambiar color"
+                            value={t.color}
+                            onChange={(e) => handleAdminUpdatePresetTag(t.id, t.name, e.target.value)}
+                            className="w-4 h-5 rounded-none cursor-pointer border-0 p-0 opacity-0 group-hover:opacity-100 transition-opacity absolute -top-3 left-1/2 -translate-x-1/2"
+                            style={{ width: "16px", height: "8px" }}
+                          />
+                          <button
+                            onClick={() => handleAdminDeletePresetTag(t.id)}
+                            className="w-4 h-5 rounded-r-full bg-red-400/40 hover:bg-red-500/60 flex items-center justify-center text-[8px] text-white transition-opacity opacity-0 group-hover:opacity-100"
+                            title="Eliminar tag"
+                          >
+                            <Trash2 className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {showTagsMenu && (
+                <div className="pt-2 border-t border-glass-border flex items-center gap-2">
+                  <input
+                    value={customTagName}
+                    onChange={(e) => setCustomTagName(e.target.value)}
+                    placeholder="Nueva etiqueta..."
+                    className="flex-1 h-8 px-3 text-xs rounded-lg border border-glass-border bg-white dark:bg-black/20 text-on-surface outline-none"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        if (isAdmin) handleAdminAddPresetTag();
+                        else addCustomTagToParcel();
+                      }
+                    }}
+                  />
+                  <input
+                    type="color"
+                    value={customTagColor}
+                    onChange={(e) => setCustomTagColor(e.target.value)}
+                    className="w-8 h-8 rounded cursor-pointer border-0 p-0"
+                  />
+                  <button
+                    onClick={() => {
+                      if (isAdmin) handleAdminAddPresetTag();
+                      else addCustomTagToParcel();
+                    }}
+                    className="px-2 py-1 text-xs rounded-lg bg-primary text-on-primary font-semibold"
+                  >
+                    {isAdmin ? "Crear" : "+"}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -374,84 +514,6 @@ export function ParcelSheet({
             />
           </div>
 
-          {/* Etiquetas section */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Tag className="w-4 h-4 text-on-surface-variant" />
-                <span className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
-                  Etiquetas
-                </span>
-              </div>
-              <button
-                onClick={() => setShowTagsMenu(!showTagsMenu)}
-                className="w-7 h-7 rounded-full bg-surface-container-highest flex items-center justify-center active:scale-90"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-
-            {showTagsMenu && (
-              <div className="mb-3 p-3 rounded-xl border border-glass-border bg-white/60 dark:bg-black/20 space-y-2">
-                <div className="flex flex-wrap gap-1.5">
-                  {PRESET_TAGS.map((t) => (
-                    <button
-                      key={t.name}
-                      onClick={() => addTag({ name: t.name, color: t.color, date: "" })}
-                      className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-white active:scale-95 transition-transform"
-                      style={{ backgroundColor: t.color }}
-                    >
-                      {t.name}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    value={customTagName}
-                    onChange={(e) => setCustomTagName(e.target.value)}
-                    placeholder="Etiqueta personalizada..."
-                    className="flex-1 h-8 px-3 text-xs rounded-lg border border-glass-border bg-white dark:bg-black/20 text-on-surface outline-none"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") addCustomTag();
-                    }}
-                  />
-                  <input
-                    type="color"
-                    value={customTagColor}
-                    onChange={(e) => setCustomTagColor(e.target.value)}
-                    className="w-8 h-8 rounded cursor-pointer border-0 p-0"
-                  />
-                  <button
-                    onClick={addCustomTag}
-                    className="px-2 py-1 text-xs rounded-lg bg-primary text-on-primary font-semibold"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {tags.map((t, i) => (
-                  <span
-                    key={`${t.name}-${i}`}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
-                    style={{ backgroundColor: t.color }}
-                  >
-                    {t.name}
-                    <button
-                      onClick={() => removeTag(t.name)}
-                      className="w-3.5 h-3.5 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/40"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
           {/* Notas section */}
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -461,17 +523,10 @@ export function ParcelSheet({
             </div>
             <textarea
               value={localNotes}
-              onChange={(e) => setLocalNotes(e.target.value)}
-              onBlur={handleNotesBlur}
+              onChange={(e) => handleNotesChange(e.target.value)}
               placeholder="Agregar notas..."
               className="w-full h-20 px-3 py-2 rounded-lg border border-glass-border bg-white/40 dark:bg-black/20 text-on-surface text-sm outline-none resize-none focus:border-primary"
             />
-          </div>
-
-          <div className="sticky bottom-0 pt-3 border-t border-glass-border">
-            <Button variant="outline" onClick={onClose} className="w-full">
-              Cerrar
-            </Button>
           </div>
 
           {!isAvailable && !isTakenByMe && parcel.setter && (
@@ -493,36 +548,22 @@ export function ParcelSheet({
             </div>
           )}
 
-          {(visitObjections.length > 0 || visitNotAvailTags.length > 0) && (
+          {visitNotAvailTags.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
                 Historial de Visita
               </h3>
-              {visitObjections.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {visitObjections.map((o, i) => (
-                    <span
-                      key={i}
-                      className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/10 text-secondary border border-secondary/20"
-                    >
-                      {o.name}
-                    </span>
-                  ))}
-                </div>
-              )}
-              {visitNotAvailTags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {visitNotAvailTags.map((vt, i) => (
-                    <span
-                      key={i}
-                      className="px-2 py-0.5 rounded-full text-[10px] font-medium"
-                      style={{ backgroundColor: vt.color + "20", color: vt.color, border: `1px solid ${vt.color}40` }}
-                    >
-                      {vt.name}
-                    </span>
-                  ))}
-                </div>
-              )}
+              <div className="flex flex-wrap gap-1.5">
+                {visitNotAvailTags.map((vt, i) => (
+                  <span
+                    key={i}
+                    className="px-2 py-0.5 rounded-full text-[10px] font-medium"
+                    style={{ backgroundColor: vt.color + "20", color: vt.color, border: `1px solid ${vt.color}40` }}
+                  >
+                    {vt.name}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -537,94 +578,14 @@ export function ParcelSheet({
 
           {canVisit && (isAvailable || isTakenByMe || isClaimedByMySetter) && parcel.status !== "CUSTOMER" && (
             <>
-              {/* Collapsible "Actividad de Puerta" section */}
-              <button
-                onClick={() => setShowActivity(!showActivity)}
-                className="w-full flex items-center justify-between p-3 rounded-xl bg-surface-container-low hover:bg-surface-container-high transition-colors"
-              >
-                <span className="text-sm font-semibold text-on-surface uppercase tracking-wider">
-                  Actividad de Puerta
-                </span>
-                {showActivity ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              </button>
-
-              {showActivity && (
-                <div className="p-3 rounded-xl border border-glass-border bg-white/40 dark:bg-black/20 space-y-3">
-                  {notAvailTags.length > 0 && (
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1.5">
-                        No Disponible
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {notAvailTags.map((t) => (
-                          <button
-                            key={t.id}
-                            onClick={() => toggleNotAvailTag(t.id)}
-                            className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all ${
-                              selectedNotAvailTagIds.includes(t.id)
-                                ? "text-white ring-2 ring-offset-1 ring-offset-transparent ring-white/40"
-                                : "text-white/70 hover:text-white"
-                            }`}
-                            style={{ backgroundColor: t.color }}
-                          >
-                            {t.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {objections.length > 0 && (
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1.5">
-                        Objeciones
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {objections.map((o) => (
-                          <button
-                            key={o.id}
-                            onClick={() => toggleObjection(o.id)}
-                            className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all ${
-                              selectedObjectionIds.includes(o.id)
-                                ? "text-white ring-2 ring-offset-1 ring-offset-transparent ring-white/40"
-                                : "text-white/70 hover:text-white"
-                            }`}
-                            style={{ backgroundColor: o.color }}
-                          >
-                            {o.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <textarea
-                    value={activityNotes}
-                    onChange={(e) => setActivityNotes(e.target.value)}
-                    placeholder="Notas de la visita..."
-                    className="w-full h-16 px-3 py-2 rounded-lg border border-glass-border bg-white dark:bg-black/20 text-on-surface text-xs outline-none resize-none"
-                  />
-                </div>
-              )}
-
               <div className="flex gap-2">
-                <Button
-                  onClick={handleSaveActivity}
-                  disabled={saving}
-                  variant="outline"
-                  className="flex-1 h-12 text-sm uppercase tracking-widest"
-                >
-                  <Save className="w-4 h-4" />
-                  {saving ? "Guardando..." : "Guardar Actividad"}
-                </Button>
-
                 {isAvailable ? (
                   <Button
                     onClick={handleKnockDoor}
                     disabled={claiming}
                   >
                     <DoorOpen className="w-4 h-4" />
-                    Crear Lead
+                    Tocar Puerta
                   </Button>
                 ) : (isTakenByMe || isClaimedByMySetter) ? (
                   <Button
@@ -642,6 +603,12 @@ export function ParcelSheet({
                 Cerrar
               </Button>
             </>
+          )}
+
+          {canVisit && parcel.status === "CUSTOMER" && (
+            <Button variant="outline" onClick={onClose} className="w-full">
+              Cerrar
+            </Button>
           )}
         </div>
       </div>
@@ -674,7 +641,7 @@ function StatusBadge({ status }: { status: string }) {
   };
 
   const tooltips = {
-    AVAILABLE: "Esta parcela aún no ha sido visitada por ningún representante",
+    AVAILABLE: "Esta parcela aun no ha sido visitada por ningun representante",
     LEAD: "",
     CUSTOMER: "",
   };

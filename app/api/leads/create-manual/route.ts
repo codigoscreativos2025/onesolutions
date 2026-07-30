@@ -60,7 +60,7 @@ export async function POST(request: Request) {
         parcelId: parcel.id,
         setterId: assignedSetterId,
         closerId: assignedCloserId,
-        stage: 'IN_PROGRESS',
+        stage: 'PROPOSAL_ACCEPTED',
         outcome: 'MANUAL_LEAD',
         notes: notes || null,
         scheduledAt: scheduledDate ? new Date(scheduledDate) : null,

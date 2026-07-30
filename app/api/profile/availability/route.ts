@@ -21,10 +21,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const userId = parseInt(session.user.id);
+  const { searchParams } = new URL(request.url);
+  const userId = searchParams.get('userId') ? parseInt(searchParams.get('userId')!) : parseInt(session.user.id);
 
   try {
-    const { searchParams } = new URL(request.url);
     const month = searchParams.get('month');
     const year = searchParams.get('year');
     const now = new Date();

@@ -29,7 +29,7 @@ interface Parcel {
   }[];
 }
 
-const defaultCenter: [number, number] = [32.7767, -96.7970]; // Dallas, TX (trial county)
+const defaultCenter: [number, number] = [32.7767, -96.7970];
 
 export default function MapView({ center }: { center?: [number, number] | null }) {
   const { data: session } = useSession();
@@ -38,11 +38,15 @@ export default function MapView({ center }: { center?: [number, number] | null }
   const mapTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const initializedRef = useRef(false);
+  const centerRef = useRef(center);
 
   const initMap = useCallback(() => {
-    if (!mapContainer.current || map.current) return;
+    if (!mapContainer.current || initializedRef.current) return;
+    initializedRef.current = true;
 
     const initialCenter = center || defaultCenter;
+    centerRef.current = center;
     const zoom = center ? 18 : 15;
 
     const m = new maplibregl.Map({
@@ -78,7 +82,6 @@ export default function MapView({ center }: { center?: [number, number] | null }
 
     m.on("load", () => {
       if (mapTimeout.current) clearTimeout(mapTimeout.current);
-      // Add the Regrid parcel vector tile source using our proxy
       m.addSource("regrid-parcels", {
         type: "vector",
         tiles: [`${window.location.origin}/api/regrid/tiles/{z}/{x}/{y}`],
@@ -86,77 +89,81 @@ export default function MapView({ center }: { center?: [number, number] | null }
         maxzoom: 22,
       });
 
-      // Parcel borders
-          m.addLayer({
-            id: "parcel-borders",
-            type: "line",
-            source: "regrid-parcels",
-            "source-layer": "parcels",
-            paint: {
-              "line-color": "#088",
-              "line-width": 1,
-            },
-          });
+      m.addLayer({
+        id: "parcel-borders",
+        type: "line",
+        source: "regrid-parcels",
+        "source-layer": "parcels",
+        paint: {
+          "line-color": "#088",
+          "line-width": 1,
+        },
+      });
 
-          // Parcel fill
-          m.addLayer({
-            id: "parcel-fills",
-            type: "fill",
-            source: "regrid-parcels",
-            "source-layer": "parcels",
-            paint: {
-              "fill-color": "#088",
-              "fill-opacity": 0.1,
-            },
-          });
+      m.addLayer({
+        id: "parcel-fills",
+        type: "fill",
+        source: "regrid-parcels",
+        "source-layer": "parcels",
+        paint: {
+          "fill-color": "#088",
+          "fill-opacity": 0.1,
+        },
+      });
 
-          // Selected parcel highlight (added BEFORE hover so hover overrides)
-          m.addLayer({
-            id: "parcel-selected",
-            type: "fill",
-            source: "regrid-parcels",
-            "source-layer": "parcels",
-            paint: {
-              "fill-color": "#f48221",
-              "fill-opacity": 0.5,
-            },
-            filter: ["==", "ll_uuid", ""],
-          });
+      m.addSource("selected-source", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
 
-          // Selected border
-          m.addLayer({
-            id: "parcel-selected-border",
-            type: "line",
-            source: "regrid-parcels",
-            "source-layer": "parcels",
-            paint: {
-              "line-color": "#f48221",
-              "line-width": 3,
-            },
-            filter: ["==", "ll_uuid", ""],
-          });
+      m.addLayer({
+        id: "parcel-selected",
+        type: "fill",
+        source: "selected-source",
+        paint: {
+          "fill-color": ["get", "fillColor"],
+          "fill-opacity": 0.5,
+        },
+      });
 
-          // Hover highlight
-          m.addLayer({
-            id: "parcel-hover",
-            type: "fill",
-            source: "regrid-parcels",
-            "source-layer": "parcels",
-            paint: {
-              "fill-color": "#ff8800",
-              "fill-opacity": 0.4,
-            },
-            filter: ["==", "ll_uuid", ""],
-          });
+      m.addLayer({
+        id: "parcel-selected-border",
+        type: "line",
+        source: "selected-source",
+        paint: {
+          "line-color": ["get", "borderColor"],
+          "line-width": 3,
+        },
+      });
 
-      // Click on parcel — fetch full data from Regrid JSON API
+      m.addLayer({
+        id: "parcel-hover",
+        type: "fill",
+        source: "regrid-parcels",
+        "source-layer": "parcels",
+        paint: {
+          "fill-color": "#ff8800",
+          "fill-opacity": 0.4,
+        },
+        filter: ["==", "ll_uuid", ""],
+      });
+
       m.on("click", "parcel-fills", async (e) => {
         if (!e.features?.[0]) return;
         const props = e.features[0].properties;
         const llUuid = props.ll_uuid || "";
         const { lng, lat } = e.lngLat;
 
-        // First show basic info from tile data
+        const getTagColor = (parcelTags?: string): string | null => {
+          try {
+            if (parcelTags) {
+              const tags = JSON.parse(parcelTags);
+              if (Array.isArray(tags) && tags.length > 0) return tags[0].color;
+            }
+          } catch { /* */ }
+          return null;
+        };
+
         const basicParcel: Parcel = {
           id: props.ll_uuid || `regrid-${props.fid}`,
           address: props.address || props.headline || "Sin direccion",
@@ -171,10 +178,21 @@ export default function MapView({ center }: { center?: [number, number] | null }
           }),
         };
         setSelectedParcel(basicParcel);
-        map.current?.setFilter("parcel-selected", ["==", "ll_uuid", llUuid]);
-        map.current?.setFilter("parcel-selected-border", ["==", "ll_uuid", llUuid]);
 
-        // Fetch full details from Regrid JSON API via our proxy
+        const tagColor = getTagColor(basicParcel.parcelTags);
+        const selectedColor = tagColor || "#f48221";
+        (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
+          type: "FeatureCollection",
+          features: [{
+            type: "Feature" as const,
+            geometry: (e.features[0] as unknown as { geometry: GeoJSON.Geometry }).geometry || e.features[0].geometry,
+            properties: {
+              fillColor: selectedColor,
+              borderColor: selectedColor,
+            },
+          }],
+        });
+
         try {
           const res = await fetch(`/api/regrid/parcels?lat=${lat}&lng=${lng}`);
           if (res.ok) {
@@ -201,12 +219,25 @@ export default function MapView({ center }: { center?: [number, number] | null }
                 }),
               };
               setSelectedParcel(updatedParcel);
+
+              const updatedTagColor = getTagColor(fullParcel.parcelTags);
+              const selColor = updatedTagColor || (fullParcel.status === "LEAD" ? "#f59e0b" : fullParcel.status === "CUSTOMER" ? "#10b981" : "#ef4444");
+              (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
+                type: "FeatureCollection",
+                features: [{
+                  type: "Feature" as const,
+                  geometry: (e.features[0] as unknown as { geometry: GeoJSON.Geometry }).geometry || e.features[0].geometry,
+                  properties: {
+                    fillColor: selColor,
+                    borderColor: selColor,
+                  },
+                }],
+              });
             }
           }
-        } catch { /* keep basic data if fetch fails */ }
+        } catch { /* keep basic data */ }
       });
 
-      // Hover effect
       m.on("mousemove", "parcel-fills", (e) => {
         if (!e.features?.[0]) return;
         m.getCanvas().style.cursor = "pointer";
@@ -219,29 +250,43 @@ export default function MapView({ center }: { center?: [number, number] | null }
         m.setFilter("parcel-hover", ["==", "ll_uuid", ""]);
       });
 
-      // Click outside → deselect
       m.on("click", (e) => {
         const features = m.queryRenderedFeatures(e.point, { layers: ["parcel-fills"] });
         if (features.length === 0) {
           setSelectedParcel(null);
-          map.current?.setFilter("parcel-selected", ["==", "ll_uuid", ""]);
-          map.current?.setFilter("parcel-selected-border", ["==", "ll_uuid", ""]);
+          (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
+            type: "FeatureCollection",
+            features: [],
+          });
         }
       });
 
       map.current = m;
       setMapReady(true);
     });
+  }, [center, mapReady]);
+
+  useEffect(() => {
+    if (center && centerRef.current && center[0] === centerRef.current[0] && center[1] === centerRef.current[1]) {
+      return;
+    }
+    if (center && map.current) {
+      map.current.flyTo({ center: [center[1], center[0]], zoom: 18 });
+      centerRef.current = center;
+    }
   }, [center]);
 
   useEffect(() => {
     initMap();
     return () => {
       if (mapTimeout.current) clearTimeout(mapTimeout.current);
-      map.current?.remove();
-      map.current = null;
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+        initializedRef.current = false;
+      }
     };
-  }, [initMap]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClaim = async (parcelId: string) => {
     const res = await fetch(`/api/parcels/${parcelId}/claim`, {
@@ -281,8 +326,10 @@ export default function MapView({ center }: { center?: [number, number] | null }
         parcel={selectedParcel}
         onClose={() => {
           setSelectedParcel(null);
-          map.current?.setFilter("parcel-selected", ["==", "ll_uuid", ""]);
-          map.current?.setFilter("parcel-selected-border", ["==", "ll_uuid", ""]);
+          (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
+            type: "FeatureCollection",
+            features: [],
+          });
         }}
         onClaim={handleClaim}
         onVisitStarted={() => {
