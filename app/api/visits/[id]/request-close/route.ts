@@ -43,7 +43,7 @@ export async function POST(
         userId: admin.id,
         title: "Solicitud de Cierre",
         body: `${userName} solicita cerrar el proyecto de ${clientName} (Visita #${visit.id})`,
-        link: `/admin/crm?highlight=${visit.id}`,
+        link: `/lead/${visit.id}`,
       })),
     });
 

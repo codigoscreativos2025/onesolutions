@@ -983,7 +983,11 @@ export default function LeadDetailPage() {
             )}
 
             {visit.stage === "CLOSED" && (
-              <DatosClosedPanel
+              <>
+                {isAdmin && (
+                  <AssignPartnerPanel visitId={visit.id} currentPartnerId={visit.parcel?.partnerId} onRefresh={fetchVisitDetails} />
+                )}
+                <DatosClosedPanel
                 visit={visit}
                 fieldMetas={fieldMetas}
                 selectedProjectNames={selectedProjectNames}
@@ -2175,6 +2179,56 @@ function ReadOnlyField({
       ) : (
         <p className="mt-1 text-on-surface">{value}</p>
       )}
+    </div>
+  );
+}
+
+function AssignPartnerPanel({ visitId, currentPartnerId, onRefresh }: { visitId: number; currentPartnerId?: number; onRefresh: () => void }) {
+  const [partners, setPartners] = useState<{ id: number; name: string }[]>([]);
+  const [selectedPartnerId, setSelectedPartnerId] = useState(String(currentPartnerId || ""));
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/users/transferable?all=true")
+      .then((r) => r.json())
+      .then((users: { id: number; name: string; role: string }[]) => {
+        setPartners(users.filter((u) => u.role === "PARTNER"));
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleAssignPartner = async () => {
+    setSaving(true);
+    try {
+      const pid = selectedPartnerId ? parseInt(selectedPartnerId) : null;
+      const res = await fetch(`/api/visits/${visitId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ partnerId: pid }),
+      });
+      if (res.ok) {
+        toast.success(pid ? "Partner asignado" : "Partner removido");
+        onRefresh();
+      } else {
+        toast.error("Error al asignar");
+      }
+    } catch { toast.error("Error"); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800 mb-4">
+      <h4 className="text-sm font-semibold text-purple-700 dark:text-purple-300 mb-2">Asignar Partner</h4>
+      <div className="flex gap-2">
+        <select value={selectedPartnerId} onChange={(e) => setSelectedPartnerId(e.target.value)}
+          className="flex-1 h-9 px-2 rounded-lg border border-purple-200 dark:border-purple-700 bg-white dark:bg-gray-800 text-sm">
+          <option value="">Sin partner</option>
+          {partners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+        <Button onClick={handleAssignPartner} disabled={saving} size="sm" className="gap-1">
+          {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Guardar"}
+        </Button>
+      </div>
     </div>
   );
 }
