@@ -276,6 +276,7 @@ export default function VisitPage() {
   const isStartProject = visit
     ? visit.stage === "PROPOSAL_ACCEPTED" || visit.stage === "IN_PROGRESS"
     : false;
+  const isProject = visit?.stage === "PROJECT";
 
   const projectCompletion = calculateProjectCompletion(projectDetailsForm, loadedFieldNames);
 
