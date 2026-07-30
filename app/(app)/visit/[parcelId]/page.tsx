@@ -917,7 +917,7 @@ export default function VisitPage() {
 
   const tabThreeLabel = isClosingMode
     ? isStartProject
-      ? "Iniciar Proyecto"
+      ? "Agendar Visita"
       : "Cerrar Proyecto"
     : "Acepta Propuesta";
 
@@ -1281,7 +1281,7 @@ export default function VisitPage() {
           </motion.div>
         )}
 
-        {activeTab === "propuesta" && isClosingMode && (
+        {activeTab === "propuesta" && isClosingMode && isProject && (
           <CloserForm
             visit={visit}
             clientName={clientName}
@@ -1319,7 +1319,7 @@ export default function VisitPage() {
           />
         )}
 
-        {activeTab === "propuesta" && !isClosingMode && (
+        {activeTab === "propuesta" && (!isClosingMode || isStartProject) && (
           <motion.div
             key="propuesta"
             initial={{ opacity: 0, y: 24, scale: 0.97 }}
