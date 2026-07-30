@@ -335,7 +335,17 @@ export default function MapView({ center }: { center?: [number, number] | null }
         onVisitStarted={() => {
           setSelectedParcel(null);
         }}
-        onParcelUpdated={(updated) => setSelectedParcel(updated)}
+        onParcelUpdated={(updated) => {
+          setSelectedParcel(updated);
+          // Update selected layer color from tag
+          try {
+            const tags = updated.parcelTags ? JSON.parse(updated.parcelTags) : [];
+            const tagColor = tags.length > 0 ? tags[0].color : null;
+            if (map.current && updated.id) {
+              map.current.setPaintProperty("parcel-selected", "fill-color", tagColor || "#f48221");
+            }
+          } catch { /* */ }
+        }}
         userRole={session?.user?.role || ""}
         userId={session?.user?.id || ""}
       />

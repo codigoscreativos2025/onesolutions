@@ -126,6 +126,11 @@ export function ParcelSheet({
 
   const saveTagsAuto = useCallback(async (newTags: TagObject[]) => {
     if (!parcel || isSavingRef.current) return;
+    // Optimistic update - update parent immediately for instant visual feedback
+    const prevParcel = { ...parcel };
+    const updatedParcel = { ...parcel, parcelTags: JSON.stringify(newTags) };
+    onParcelUpdated?.(updatedParcel as typeof parcel);
+    
     isSavingRef.current = true;
     try {
       const res = await fetch(`/api/parcels/${parcel.id}`, {
@@ -136,8 +141,10 @@ export function ParcelSheet({
       if (res.ok) {
         const updated = await res.json();
         if (onParcelUpdated) onParcelUpdated({ ...parcel, parcelTags: updated.parcelTags });
+      } else {
+        onParcelUpdated?.(prevParcel as typeof parcel);
       }
-    } catch { /* ignore */ }
+    } catch { onParcelUpdated?.(prevParcel as typeof parcel); }
     finally { isSavingRef.current = false; }
   }, [parcel, onParcelUpdated]);
 
