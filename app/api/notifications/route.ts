@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { sendEmail, emailTemplates } from "@/lib/email";
 import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
 
@@ -56,6 +57,23 @@ export async function POST(request: Request) {
       link: link || null,
     },
   });
+
+  const user = await prisma.user.findUnique({
+    where: { id: parseInt(userId) },
+    select: { email: true, name: true },
+  });
+
+  if (user && user.email && !user.email.endsWith("@onesolutions.com")) {
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: "Nueva notificaci\u00f3n - One Solutions",
+        html: emailTemplates.notification(user.name || "", title, notificationBody),
+      });
+    } catch {
+      // email failure shouldn't break notification creation
+    }
+  }
 
   return NextResponse.json(notification);
 }

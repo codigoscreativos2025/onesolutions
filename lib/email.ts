@@ -35,3 +35,5 @@ export async function sendEmail(options: EmailOptions) {
   const from = process.env.EMAIL_FROM || process.env.SMTP_USER || "";
   return getTransporter().sendMail({ from, ...options });
 }
+
+export { emailTemplates } from "./email-templates";

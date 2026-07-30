@@ -266,6 +266,7 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
       const originalHeight = contractEl.style.height;
       const originalOverflow = contractEl.style.overflow;
       const originalMaxHeight = contractEl.style.maxHeight;
+      const originalScrollTop = contractEl.scrollTop;
 
       contractEl.style.height = "auto";
       contractEl.style.overflow = "visible";
@@ -274,17 +275,38 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
       await document.fonts.ready;
       await new Promise(r => setTimeout(r, 200));
 
-      const canvas = await html2canvas(contractEl, { scale: 1.5, useCORS: true, backgroundColor: "#ffffff", logging: false });
-      const img = canvas.toDataURL("image/png");
+      const totalHeight = contractEl.scrollHeight;
+      const viewportHeight = 1122;
+      const pages = Math.ceil(totalHeight / viewportHeight);
       const pdf = new jsPDF("p", "mm", "a4");
       const w = pdf.internal.pageSize.getWidth();
-      const h = (canvas.height * w) / canvas.width;
-      pdf.addImage(img, "PNG", 0, 0, w, h);
+
+      for (let page = 0; page < pages; page++) {
+        contractEl.scrollTop = page * viewportHeight;
+        await new Promise(r => setTimeout(r, 100));
+
+        const canvas = await html2canvas(contractEl, {
+          scale: 1.0,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          logging: false,
+          y: page * viewportHeight,
+          height: Math.min(viewportHeight, totalHeight - page * viewportHeight),
+          windowHeight: viewportHeight,
+        });
+
+        const img = canvas.toDataURL("image/jpeg", 0.7);
+        const h = (canvas.height * w) / canvas.width;
+        if (page > 0) pdf.addPage();
+        pdf.addImage(img, "JPEG", 0, 0, w, h);
+      }
+
       pdf.save(`contrato_${visitId}.pdf`);
 
       contractEl.style.height = originalHeight;
       contractEl.style.overflow = originalOverflow;
       contractEl.style.maxHeight = originalMaxHeight;
+      contractEl.scrollTop = originalScrollTop;
     } catch (error) {
       console.error("Error generating PDF:", error);
     } finally {
@@ -335,6 +357,7 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
       const originalHeight = contractEl.style.height;
       const originalOverflow = contractEl.style.overflow;
       const originalMaxHeight = contractEl.style.maxHeight;
+      const originalScrollTop = contractEl.scrollTop;
 
       contractEl.style.height = "auto";
       contractEl.style.overflow = "visible";
@@ -343,17 +366,38 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
       await document.fonts.ready;
       await new Promise(r => setTimeout(r, 200));
 
-      const canvas = await html2canvas(contractEl, { scale: 1.5, useCORS: true, backgroundColor: "#ffffff", logging: false });
-      const img = canvas.toDataURL("image/png");
+      const totalHeight = contractEl.scrollHeight;
+      const viewportHeight = 1122;
+      const pages = Math.ceil(totalHeight / viewportHeight);
       const pdf = new jsPDF("p", "mm", "a4");
       const w = pdf.internal.pageSize.getWidth();
-      const h = (canvas.height * w) / canvas.width;
-      pdf.addImage(img, "PNG", 0, 0, w, h);
+
+      for (let page = 0; page < pages; page++) {
+        contractEl.scrollTop = page * viewportHeight;
+        await new Promise(r => setTimeout(r, 100));
+
+        const canvas = await html2canvas(contractEl, {
+          scale: 1.0,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          logging: false,
+          y: page * viewportHeight,
+          height: Math.min(viewportHeight, totalHeight - page * viewportHeight),
+          windowHeight: viewportHeight,
+        });
+
+        const img = canvas.toDataURL("image/jpeg", 0.7);
+        const h = (canvas.height * w) / canvas.width;
+        if (page > 0) pdf.addPage();
+        pdf.addImage(img, "JPEG", 0, 0, w, h);
+      }
+
       const pdfBase64 = pdf.output("datauristring").split(",")[1];
 
       contractEl.style.height = originalHeight;
       contractEl.style.overflow = originalOverflow;
       contractEl.style.maxHeight = originalMaxHeight;
+      contractEl.scrollTop = originalScrollTop;
 
       const res = await fetch("/api/email/send", {
         method: "POST",

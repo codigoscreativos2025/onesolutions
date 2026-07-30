@@ -144,4 +144,15 @@ export const emailTemplates = {
       </div>
       <p ${subtitleStyle}>Si tienes alguna duda sobre el uso de la plataforma, consulta con tu administrador o gerente.</p>
     `),
+
+  notification: (userName: string, title: string, body: string) =>
+    wrapper(`
+      <h2 ${headingStyle}>Nueva notificaci\u00f3n</h2>
+      <p ${textStyle}>Hola, ${userName}. Tienes una nueva notificaci\u00f3n en One Solutions:</p>
+      <div style="text-align:center;margin:28px 0;">
+        <span style="display:inline-block;padding:12px 28px;background-color:#f48221;color:#ffffff;border-radius:8px;font-weight:bold;font-size:16px;">${title}</span>
+      </div>
+      <p ${subtitleStyle}>${body}</p>
+      <p ${subtitleStyle}>Ingresa a la plataforma para ver m\u00e1s detalles.</p>
+    `),
 };
