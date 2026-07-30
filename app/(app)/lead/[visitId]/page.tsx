@@ -245,6 +245,7 @@ interface VisitDetails {
     id: string;
     address: string;
     ownerName: string | null;
+    partnerId?: number | null;
     metadata: string | null;
     visitHistory?: {
       id: number;
