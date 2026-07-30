@@ -40,6 +40,7 @@ export default function MapView({ center }: { center?: [number, number] | null }
   const [mapReady, setMapReady] = useState(false);
   const initializedRef = useRef(false);
   const centerRef = useRef(center);
+  const selectedGeometryRef = useRef<GeoJSON.Geometry | null>(null);
 
   const initMap = useCallback(() => {
     if (!mapContainer.current || initializedRef.current) return;
@@ -179,13 +180,15 @@ export default function MapView({ center }: { center?: [number, number] | null }
         };
         setSelectedParcel(basicParcel);
 
+        const geom = (e.features[0] as unknown as { geometry: GeoJSON.Geometry }).geometry || e.features[0].geometry;
+        selectedGeometryRef.current = geom;
         const tagColor = getTagColor(basicParcel.parcelTags);
         const selectedColor = tagColor || "#f48221";
         (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
           type: "FeatureCollection",
           features: [{
             type: "Feature" as const,
-            geometry: (e.features[0] as unknown as { geometry: GeoJSON.Geometry }).geometry || e.features[0].geometry,
+            geometry: geom,
             properties: {
               fillColor: selectedColor,
               borderColor: selectedColor,
@@ -222,6 +225,7 @@ export default function MapView({ center }: { center?: [number, number] | null }
 
               const updatedTagColor = getTagColor(fullParcel.parcelTags);
               const selColor = updatedTagColor || (fullParcel.status === "LEAD" ? "#f59e0b" : fullParcel.status === "CUSTOMER" ? "#10b981" : "#ef4444");
+              selectedGeometryRef.current = geom;
               (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
                 type: "FeatureCollection",
                 features: [{
@@ -326,6 +330,7 @@ export default function MapView({ center }: { center?: [number, number] | null }
         parcel={selectedParcel}
         onClose={() => {
           setSelectedParcel(null);
+          selectedGeometryRef.current = null;
           (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
             type: "FeatureCollection",
             features: [],
@@ -337,12 +342,22 @@ export default function MapView({ center }: { center?: [number, number] | null }
         }}
         onParcelUpdated={(updated) => {
           setSelectedParcel(updated);
-          // Update selected layer color from tag
           try {
             const tags = updated.parcelTags ? JSON.parse(updated.parcelTags) : [];
             const tagColor = tags.length > 0 ? tags[0].color : null;
-            if (map.current && updated.id) {
-              map.current.setPaintProperty("parcel-selected", "fill-color", tagColor || "#f48221");
+            const color = tagColor || "#f48221";
+            if (map.current && selectedGeometryRef.current) {
+              (map.current.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
+                type: "FeatureCollection",
+                features: [{
+                  type: "Feature" as const,
+                  geometry: selectedGeometryRef.current!,
+                  properties: {
+                    fillColor: color,
+                    borderColor: color,
+                  },
+                }],
+              });
             }
           } catch { /* */ }
         }}

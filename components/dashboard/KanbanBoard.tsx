@@ -657,6 +657,15 @@ function KanbanCard({
         </span>
       </div>
 
+      {visit.stage === "IN_PROGRESS" && visit.createdAt && (() => {
+        const daysLeft = Math.max(0, 30 - Math.floor((Date.now() - new Date(visit.createdAt).getTime()) / (1000 * 60 * 60 * 24)));
+        return (
+          <p className={`text-xs mt-1 font-medium ${daysLeft <= 5 ? "text-red-500" : "text-orange-500"}`}>
+            Expira en {daysLeft} días
+          </p>
+        );
+      })()}
+
       {visit.projects.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
           {visit.projects.map((p) => (

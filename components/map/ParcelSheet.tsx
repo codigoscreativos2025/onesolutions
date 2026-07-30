@@ -89,6 +89,8 @@ export function ParcelSheet({
     }
     const pId = parcel.id;
     if (!pId) return;
+    const isRegridParcel = pId.includes("-") && pId.length > 30;
+    if (isRegridParcel) return;
     fetch(`/api/parcels/${pId}`)
       .then((r) => {
         if (!r.ok) return null;
