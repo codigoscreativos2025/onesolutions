@@ -97,22 +97,18 @@ export async function PATCH(
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });
   }
 
-  const exists = await prisma.parcel.findUnique({ where: { id } });
+  // Use upsert for Regrid parcels (may not exist in DB yet)
+  const upsertData = { ...updateData };
   if (!exists) {
-    // Create parcel if it doesn't exist (Regrid parcel first claim)
-    const created = await prisma.parcel.create({
-      data: { id, ...updateData },
-      include: {
-        setter: { select: { id: true, name: true } },
-        partner: { select: { id: true, name: true } },
-      },
-    });
-    return NextResponse.json(created);
+    upsertData.id = id;
+    upsertData.address = updateData.address || "Sin direccion";
+    upsertData.geometry = JSON.stringify({ type: "Polygon", coordinates: [] });
   }
 
-  const updated = await prisma.parcel.update({
+  const result = await prisma.parcel.upsert({
     where: { id },
-    data: updateData,
+    update: updateData,
+    create: upsertData as unknown as Parameters<typeof prisma.parcel.create>[0]["data"],
     include: {
       setter: { select: { id: true, name: true } },
       partner: { select: { id: true, name: true } },
@@ -131,5 +127,5 @@ export async function PATCH(
     });
   }
 
-  return NextResponse.json(updated);
+  return NextResponse.json(result);
 }
