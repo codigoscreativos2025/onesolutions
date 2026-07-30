@@ -61,7 +61,8 @@ export async function POST(request: Request) {
     ];
     for (const key of numericFields) {
       if (processedDetails[key] !== undefined && processedDetails[key] !== "" && processedDetails[key] !== null) {
-        processedDetails[key] = parseFloat(String(processedDetails[key]));
+        const num = parseFloat(String(processedDetails[key]));
+        if (!isNaN(num)) processedDetails[key] = num;
       }
     }
 
@@ -97,8 +98,9 @@ export async function POST(request: Request) {
         result = await prisma.projectDetails.create({ data: { visitId: parseInt(visitId), ...filteredDetails } });
       }
     } catch (prismaError: unknown) {
-      console.error("Prisma error saving project details:", JSON.stringify(prismaError, null, 2));
-      return NextResponse.json({ error: "Database error", details: String(prismaError) }, { status: 500 });
+      const msg = (prismaError as Error).message || String(prismaError);
+      console.error("Prisma error saving project details:", msg);
+      return NextResponse.json({ error: "Database error", details: msg }, { status: 500 });
     }
 
     return NextResponse.json(result);
@@ -143,7 +145,8 @@ export async function PATCH(request: Request) {
     ];
     for (const key of numericFields) {
       if (processedDetails[key] !== undefined && processedDetails[key] !== "" && processedDetails[key] !== null) {
-        processedDetails[key] = parseFloat(String(processedDetails[key]));
+        const num = parseFloat(String(processedDetails[key]));
+        if (!isNaN(num)) processedDetails[key] = num;
       }
     }
 
