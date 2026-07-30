@@ -25,7 +25,17 @@ export async function PATCH(
   }
 
   const body = await request.json();
-  const { contractSignatures, contractType, commissions, rejectionReason, setterId, closerId, ...updateData } = body;
+  const { contractSignatures, contractType, commissions, rejectionReason, setterId, closerId, bill, ...updateData } = body;
+
+  // Handle bill upsert separately (Prisma doesn't support nested upsert in visit.update for SQLite)
+  if (bill) {
+    const existingBill = await prisma.bill.findUnique({ where: { visitId } });
+    if (existingBill) {
+      await prisma.bill.update({ where: { visitId }, data: bill.upsert?.update || bill.upsert?.create || bill });
+    } else {
+      await prisma.bill.create({ data: { ...bill.upsert?.create, visitId } });
+    }
+  }
 
   if (contractSignatures) {
     await prisma.visit.update({
