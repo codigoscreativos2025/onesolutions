@@ -78,10 +78,10 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
   );
 
   const [partnerFilter, setPartnerFilter] = useState({ address: "", client: "" });
-  const [columnFilter, setColumnFilter] = useState<Record<string, boolean>>({});
   const [projectTypeFilter, setProjectTypeFilter] = useState("");
   const [addressFilter, setAddressFilter] = useState("");
   const [clientFilter, setClientFilter] = useState("");
+  const [activeColumn, setActiveColumn] = useState<string | null>(null);
 
   useEffect(() => {
     if (isAdmin) {
@@ -237,7 +237,7 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
   };
 
   const clearFilters = () => {
-    setColumnFilter({});
+    setActiveColumn(null);
     setProjectTypeFilter("");
     setAddressFilter("");
     setClientFilter("");
@@ -298,7 +298,18 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
     );
   }
 
-  const hasActiveFilters = projectTypeFilter || addressFilter || clientFilter || Object.values(columnFilter).some((v) => v === false);
+  const hasActiveFilters = projectTypeFilter || addressFilter || clientFilter || activeColumn !== null;
+
+  // Compute unique project types from loaded data
+  const projectTypeOptions = useMemo(() => {
+    const names = new Set<string>();
+    Object.values(data).forEach((visits) => {
+      visits.forEach((v) => {
+        v.projects?.forEach((p) => names.add(p.projectType.name));
+      });
+    });
+    return Array.from(names).sort();
+  }, [data]);
 
   return (
     <div className="space-y-4">
@@ -313,15 +324,18 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
         </div>
         <div className="flex flex-wrap gap-2">
           {COLS.map((col) => {
-            const hidden = columnFilter[col.stage] === false;
+            const isActive = activeColumn === col.stage;
+            const dimmed = activeColumn !== null && !isActive;
             return (
               <button
                 key={col.stage}
-                onClick={() => setColumnFilter((prev) => ({ ...prev, [col.stage]: !hidden }))}
+                onClick={() => setActiveColumn(isActive ? null : col.stage)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
-                  hidden
-                    ? "bg-transparent text-on-surface-variant border-outline-variant opacity-50"
-                    : "bg-primary/10 text-primary border-primary/30"
+                  dimmed
+                    ? "bg-transparent text-on-surface-variant border-outline-variant opacity-40"
+                    : isActive
+                    ? "bg-primary/10 text-primary border-primary/30"
+                    : "bg-transparent text-on-surface-variant border-outline-variant"
                 }`}
               >
                 <span className="flex items-center gap-1.5">
@@ -333,13 +347,16 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
           })}
         </div>
         <div className="flex flex-wrap gap-3 mt-3">
-          <input
-            type="text"
-            placeholder="Tipo de proyecto..."
+          <select
             value={projectTypeFilter}
             onChange={(e) => setProjectTypeFilter(e.target.value)}
             className="h-9 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface flex-1 min-w-[160px]"
-          />
+          >
+            <option value="">Todos los proyectos</option>
+            {projectTypeOptions.map((name) => (
+              <option key={name} value={name}>{name}</option>
+            ))}
+          </select>
           <input
             type="text"
             placeholder="Dirección..."
@@ -366,7 +383,7 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
       >
         <div className="flex gap-4 overflow-x-auto pb-4 min-h-[60vh]">
           {COLS.map((col, idx) => {
-            if (columnFilter[col.stage] === false) return null;
+            if (activeColumn !== null && activeColumn !== col.stage) return null;
             const rawVisits = data[col.stage] || [];
             const visits = filterVisits(rawVisits);
             const isLeads = col.stage === "IN_PROGRESS";
