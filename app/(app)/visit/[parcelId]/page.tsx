@@ -11,8 +11,7 @@ import { QuoteModal } from "@/components/quote/QuoteModal";
 import { ContractModal } from "@/components/quote/ContractModal";
 import { SlotPicker } from "@/components/calendar/SlotPicker";
 
-interface Slot { id: number; startAt: string; endAt: string }
-interface Closer { id: number; name: string; email: string; slots: Slot[] }
+interface Closer { id: number; name: string; email: string }
 interface ProjectType { id: number; name: string; description?: string }
 interface Visit {
   id: number; stage: string;
@@ -86,10 +85,9 @@ export default function VisitPage() {
   const [projectTypes, setProjectTypes] = useState<ProjectType[]>([]);
   const [selectedProjectTypes, setSelectedProjectTypes] = useState<number[]>([]);
 
-  const [scheduleDate, setScheduleDate] = useState("");
-  const [scheduleTime, setScheduleTime] = useState("");
+  const [selectedScheduleDate, setSelectedScheduleDate] = useState("");
+  const [selectedScheduleTime, setSelectedScheduleTime] = useState("");
   const [selectedCloserId, setSelectedCloserId] = useState("");
-  const [selectedSlotId, setSelectedSlotId] = useState("");
   const [closers, setClosers] = useState<Closer[]>([]);
 
   const [showCelebration, setShowCelebration] = useState(false);
@@ -173,7 +171,7 @@ export default function VisitPage() {
   async function handleSaveAndSchedule() {
     if (!visit) return;
     if (!phone.trim()) { toast.error("El teléfono es requerido"); return; }
-    if (!scheduleDate || !scheduleTime) { toast.error("Debes seleccionar fecha y hora para agendar"); return; }
+    if (!selectedScheduleDate || !selectedScheduleTime) { toast.error("Debes seleccionar fecha y hora para agendar"); return; }
     if (showCloserDropdown && !selectedCloserId) { toast.error("Debes seleccionar un Closer"); return; }
     setSaving(true);
     try {
@@ -181,32 +179,24 @@ export default function VisitPage() {
       if (billFile) billUrl = await uploadFile(billFile);
       if (idFile) idUrl = await uploadFile(idFile);
 
-      if (showCloserDropdown && selectedCloserId && selectedSlotId) {
-        const res = await fetch(`/api/visits/${visit.id}/proposal`, {
-          method: "PATCH", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            phone: phone.trim(), clientName: clientName.trim() || null, clientEmail: clientEmail.trim() || null,
-            billImageUrl: billUrl || null, slotId: selectedSlotId, closerId: selectedCloserId,
-            projectTypeIds: selectedProjectTypes, notes: notes.trim() || null,
-          }),
-        });
-        if (!res.ok) throw new Error((await res.json()).error ?? "Error al agendar");
-      } else {
-        const scheduledAt = new Date(`${scheduleDate}T${scheduleTime}:00`).toISOString();
-        const billData = makeBillData(billUrl, idUrl);
-        await fetch(`/api/visits/${visit.id}/projects`, {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ visitId: visit.id, projectTypeIds: selectedProjectTypes }),
-        });
-        await fetch(`/api/visits/${visit.id}`, {
-          method: "PATCH", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            notes: notes.trim() || null, scheduledAt, stage: "PROPOSAL_ACCEPTED",
-            ...(isSelfAssigned ? { closerId: Number(session?.user?.id) } : {}),
-            bill: { upsert: { create: billData, update: billData } },
-          }),
-        });
-      }
+      const scheduledAt = new Date(`${selectedScheduleDate}T${selectedScheduleTime}:00`).toISOString();
+      const billData = makeBillData(billUrl, idUrl);
+
+      await fetch(`/api/visits/${visit.id}/projects`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visitId: visit.id, projectTypeIds: selectedProjectTypes }),
+      });
+
+      await fetch(`/api/visits/${visit.id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          notes: notes.trim() || null, scheduledAt, stage: "PROPOSAL_ACCEPTED",
+          ...(showCloserDropdown && selectedCloserId ? { closerId: Number(selectedCloserId) } : {}),
+          ...(isSelfAssigned ? { closerId: Number(session?.user?.id) } : {}),
+          bill: { upsert: { create: billData, update: billData } },
+        }),
+      });
+
       toast.success("Visita agendada");
       router.push(`/dashboard?highlight=${visit.id}`);
     } catch (err) {
@@ -308,40 +298,23 @@ export default function VisitPage() {
           <label className={labelClass}>Agendar Visita</label>
 
           {showCloserDropdown && (
-            <select value={selectedCloserId} onChange={(e) => { setSelectedCloserId(e.target.value); setSelectedSlotId(""); }}
+            <select value={selectedCloserId} onChange={(e) => setSelectedCloserId(e.target.value)}
               className={`${inputNoIcon} px-4`} required>
               <option value="">-- Selecciona un Closer --</option>
               {closers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           )}
 
-          {showCloserDropdown && selectedCloserId && (
+          {session?.user?.id && (
             <SlotPicker
-              closerId={Number(selectedCloserId)}
-              selectedSlotId={selectedSlotId ? Number(selectedSlotId) : undefined}
-              onSlotSelect={(slotId) => setSelectedSlotId(String(slotId))}
-              onSlotSelectWithDate={(slot) => {
-                setSelectedSlotId(String(slot.id));
-                setScheduleDate(slot.startAt.split("T")[0]);
-                setScheduleTime(slot.startAt.split("T")[1]?.substring(0, 5) ?? "");
+              userId={showCloserDropdown && selectedCloserId ? Number(selectedCloserId) : Number(session.user.id)}
+              selectedDate={selectedScheduleDate || undefined}
+              selectedTime={selectedScheduleTime || undefined}
+              onSelect={(date, time) => {
+                setSelectedScheduleDate(date);
+                setSelectedScheduleTime(time);
               }}
             />
-          )}
-
-          {!showCloserDropdown && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} className={inputNoIcon} />
-                <input type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className={inputNoIcon} />
-              </div>
-              {session?.user?.id && (
-                <SlotPicker
-                  closerId={Number(session.user.id)}
-                  selectedSlotId={selectedSlotId ? Number(selectedSlotId) : undefined}
-                  onSlotSelect={(slotId) => setSelectedSlotId(String(slotId))}
-                />
-              )}
-            </div>
           )}
         </section>
       </motion.div>

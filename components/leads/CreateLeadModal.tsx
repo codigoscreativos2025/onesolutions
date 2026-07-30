@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { X, MapPin, User, Phone, FileText } from 'lucide-react';
+import { X, MapPin, User, Phone, FileText, Calendar, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { toast } from 'sonner';
@@ -28,8 +28,10 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
   const [selectedProjects, setSelectedProjects] = useState<number[]>([]);
   const [closers, setClosers] = useState<{id: number, name: string}[]>([]);
   const [selectedCloserId, setSelectedCloserId] = useState("");
-  const [scheduledDate, setScheduledDate] = useState("");
-  const [scheduledTime, setScheduledTime] = useState("");
+  const [slots, setSlots] = useState<any[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<string>("");
+  const [selectedSlot, setSelectedSlot] = useState<any>(null);
   const [formData, setFormData] = useState({
     address: '',
     ownerName: '',
@@ -37,16 +39,33 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
     notes: '',
   });
 
+  const role = session?.user?.role;
+  const userId = session?.user?.id;
+
+  const hasPanelSolar = selectedProjects.some((id) => {
+    const pt = projectTypes.find((p) => p.id === id);
+    return pt?.name.toLowerCase().includes("panel solar");
+  });
+
+  const showCloserDropdown = role === "SETTER_JR" || (role === "SETTER" && hasPanelSolar);
+  const autoAssignSelf = role === "CLOSER" || (role === "SETTER" && !hasPanelSolar);
+  const effectiveCloserId = autoAssignSelf ? String(userId) : selectedCloserId;
+
   useEffect(() => {
     if (isOpen) {
       fetchProjectTypes();
-      fetchClosers();
+      if (role !== "CLOSER") {
+        fetchClosers();
+      }
       setFormData({
         address: initialAddress || "",
         ownerName: initialOwnerName || "",
         phone: "",
         notes: "",
       });
+      setSelectedDay("");
+      setSelectedSlot(null);
+      setSlots([]);
     }
   }, [isOpen, initialAddress, initialOwnerName]);
 
@@ -71,8 +90,8 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
 
       const data = await res.json();
       setClosers(data);
-      if (session?.user?.role === 'CLOSER') {
-        setSelectedCloserId(String(session.user.id));
+      if (data?.length === 1) {
+        setSelectedCloserId(String(data[0].id));
       }
     } catch (error) {
       console.error('Error fetching closers:', error);
@@ -83,9 +102,38 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
     }
   };
 
+  const fetchSlots = async (closerId: string) => {
+    setSlotsLoading(true);
+    setSelectedDay("");
+    setSelectedSlot(null);
+    try {
+      const res = await fetch(`/api/slots?closerId=${closerId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSlots(data || []);
+      }
+    } catch {
+      setSlots([]);
+    } finally {
+      setSlotsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen && effectiveCloserId) {
+      fetchSlots(effectiveCloserId);
+    }
+  }, [isOpen, effectiveCloserId]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    if (showCloserDropdown && !selectedCloserId) {
+      toast.error("Selecciona un Closer");
+      setLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch('/api/leads/create-manual', {
@@ -94,8 +142,8 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
         body: JSON.stringify({
           ...formData,
           projectTypeIds: selectedProjects,
-          closerId: selectedCloserId || undefined,
-          scheduledDate: scheduledDate ? new Date(scheduledDate + "T" + (scheduledTime || "00:00")).toISOString() : undefined,
+          closerId: effectiveCloserId || undefined,
+          scheduledDate: selectedSlot ? new Date(selectedSlot.startAt).toISOString() : undefined,
         }),
       });
 
@@ -106,8 +154,9 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
         setFormData({ address: '', ownerName: '', phone: '', notes: '' });
         setSelectedProjects([]);
         setSelectedCloserId('');
-        setScheduledDate('');
-        setScheduledTime('');
+        setSelectedDay('');
+        setSelectedSlot(null);
+        setSlots([]);
       } else {
         const err = await res.json().catch(() => ({}));
         toast.error(err.error || 'Error al crear lead');
@@ -225,51 +274,51 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
             </div>
           </div>
 
-          <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              <User className="w-4 h-4" />
-              Closer (opcional)
-            </label>
-            <select
-              value={selectedCloserId}
-              onChange={(e) => setSelectedCloserId(e.target.value)}
-              disabled={loadingClosers}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            >
-              <option value="">
-                {loadingClosers ? 'Cargando closers...' : 'Seleccionar closer...'}
-              </option>
-              {closers.map((closer) => (
-                <option key={closer.id} value={closer.id}>
-                  {closer.name}
+          {showCloserDropdown && (
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <User className="w-4 h-4" />
+                Closer *
+              </label>
+              <select
+                value={selectedCloserId}
+                onChange={(e) => setSelectedCloserId(e.target.value)}
+                disabled={loadingClosers}
+                required
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              >
+                <option value="">
+                  {loadingClosers ? 'Cargando closers...' : 'Seleccionar closer...'}
                 </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-              Fecha de Visita (opcional)
-            </label>
-            <div className="flex gap-2">
-              <Input
-                type="date"
-                value={scheduledDate}
-                onChange={(e) => setScheduledDate(e.target.value)}
-                min="1900-01-01"
-                max="2100-12-31"
-                onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity("Fecha fuera de rango")}
-                onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")}
-                className="flex-1"
-              />
-              <input
-                type="time"
-                value={scheduledTime}
-                onChange={(e) => setScheduledTime(e.target.value)}
-                className="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              />
+                {closers.map((closer) => (
+                  <option key={closer.id} value={closer.id}>
+                    {closer.name}
+                  </option>
+                ))}
+              </select>
             </div>
-          </div>
+          )}
+
+          {effectiveCloserId && (
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                Fecha de Visita (opcional)
+              </label>
+              {slotsLoading ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                </div>
+              ) : (
+                <MiniCalendar
+                  slots={slots}
+                  selectedDay={selectedDay}
+                  selectedSlot={selectedSlot}
+                  onSelectDay={setSelectedDay}
+                  onSelectSlot={setSelectedSlot}
+                />
+              )}
+            </div>
+          )}
 
           {/* Botones dentro del form para que sean visibles en movil */}
           <div className="flex gap-3 pt-4 sticky bottom-0 bg-white dark:bg-gray-800">
@@ -291,6 +340,110 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
           </div>
         </form>
       </div>
+    </div>
+  );
+}
+
+function MiniCalendar({
+  slots,
+  selectedDay,
+  selectedSlot,
+  onSelectDay,
+  onSelectSlot,
+}: {
+  slots: any[];
+  selectedDay: string;
+  selectedSlot: any;
+  onSelectDay: (day: string) => void;
+  onSelectSlot: (slot: any) => void;
+}) {
+  const availableSlots = slots.filter((s: any) => !s.isBooked);
+  const slotsByDate: Record<string, any[]> = {};
+  availableSlots.forEach((s: any) => {
+    const d = s.startAt.split("T")[0];
+    (slotsByDate[d] ??= []).push(s);
+  });
+
+  const toDateKey = (d: Date): string => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const dayLabels = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+
+  const next14Days = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-1 overflow-x-auto pb-1">
+        {next14Days.map((day, i) => {
+          const key = toDateKey(day);
+          const hasSlots = (slotsByDate[key] || []).length > 0;
+          const isSelected = selectedDay === key;
+          return (
+            <button
+              key={i}
+              type="button"
+              disabled={!hasSlots}
+              onClick={() => onSelectDay(key)}
+              className={`flex-shrink-0 w-16 py-2 rounded-lg border text-center transition-all ${
+                !hasSlots
+                  ? 'border-gray-200 dark:border-gray-700 opacity-40 cursor-not-allowed'
+                  : isSelected
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-gray-300 dark:border-gray-600 hover:border-primary/50'
+              }`}
+            >
+              <div className="text-xs font-medium">{dayLabels[day.getDay()]}</div>
+              <div className="text-sm font-bold">{day.getDate()}</div>
+            </button>
+          );
+        })}
+      </div>
+
+      {selectedDay && slotsByDate[selectedDay] && slotsByDate[selectedDay].length > 0 && (
+        <div>
+          <p className="text-xs font-medium text-gray-500 mb-2">
+            Horarios para {new Date(selectedDay + 'T00:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'short' })}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {slotsByDate[selectedDay].map((s: any) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => onSelectSlot(s)}
+                className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                  selectedSlot?.id === s.id
+                    ? 'bg-primary/10 border-primary text-primary'
+                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-primary/50'
+                }`}
+              >
+                {new Date(s.startAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {selectedDay && (!slotsByDate[selectedDay] || slotsByDate[selectedDay].length === 0) && (
+        <p className="text-sm text-gray-400 text-center py-2">No hay horarios disponibles para este dia</p>
+      )}
+
+      {selectedSlot && (
+        <div className="flex items-center gap-2 text-sm text-primary bg-primary/5 rounded-lg px-3 py-2">
+          <Calendar className="w-4 h-4" />
+          <span>
+            {new Date(selectedSlot.startAt).toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' })} a las{' '}
+            {new Date(selectedSlot.startAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

@@ -29,6 +29,7 @@ import {
   Trash2,
   CheckCircle,
   Calendar,
+  Play,
 } from "lucide-react";
 
 const FIELD_LABEL_MAP: Record<string, string> = {
@@ -626,6 +627,25 @@ export default function LeadDetailPage() {
     }
   };
 
+  const handleStartProject = async () => {
+    if (!visit) return;
+    try {
+      const res = await fetch(`/api/visits/${visit.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stage: "PROJECT" }),
+      });
+      if (res.ok) {
+        toast.success("Proyecto iniciado");
+        fetchVisitDetails();
+      } else {
+        toast.error("Error al iniciar proyecto");
+      }
+    } catch {
+      toast.error("Error al iniciar proyecto");
+    }
+  };
+
   const handleToggleTag = async (tag: string) => {
     if (!visit) return;
     let newTags: string[];
@@ -762,6 +782,15 @@ export default function LeadDetailPage() {
             {tab.label}
           </button>
         ))}
+        {visit.stage === "PROPOSAL_ACCEPTED" && (
+          <button
+            onClick={handleStartProject}
+            className="ml-auto flex items-center gap-1.5 px-4 py-3 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-all whitespace-nowrap shrink-0"
+          >
+            <Play className="w-4 h-4" />
+            Comenzar Proyecto
+          </button>
+        )}
       </div>
 
       <AnimatePresence mode="wait">
