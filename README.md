@@ -51,6 +51,9 @@ npm run db:seed
 rm -f /app/data/dev.db
 npm run db:push
 npm run db:seed
+
+# Si da error "attempt to write a readonly database":
+chmod 666 /app/data/dev.db
 ```
 
 ## Usuarios de prueba (seed)

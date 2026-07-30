@@ -1,9 +1,35 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
-export const dynamic = 'force-dynamic';
+import { NextRequest, NextResponse } from "next/server";
+export const dynamic = "force-dynamic";
 
-export async function GET() {
+function getDateRanges() {
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  return { startOfToday, startOfWeek, startOfMonth };
+}
+
+async function resolveUserNames(
+  items: { id: number; count: number }[]
+): Promise<{ id: number; name: string; count: number }[]> {
+  const result: { id: number; name: string; count: number }[] = [];
+  for (const item of items) {
+    const user = await prisma.user.findUnique({
+      where: { id: item.id },
+      select: { name: true },
+    });
+    if (user) {
+      result.push({ id: item.id, name: user.name, count: item.count });
+    }
+  }
+  return result;
+}
+
+export async function GET(request: NextRequest) {
   const session = await auth();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -11,6 +37,12 @@ export async function GET() {
 
   const userId = parseInt(session.user.id);
   const role = session.user.role;
+
+  const { searchParams } = new URL(request.url);
+  const type = searchParams.get("type");
+  const mode = searchParams.get("mode");
+
+  const { startOfToday, startOfWeek, startOfMonth } = getDateRanges();
 
   let whereClause: Record<string, unknown> = {};
   if (role === "SETTER" || role === "SETTER_JR") {
@@ -21,6 +53,159 @@ export async function GET() {
     whereClause = { parcel: { partnerId: userId } };
   }
 
+  // ── ADMIN VIEW ──────────────────────────────────────────────
+  if (type === "admin") {
+    const adminWhere = {};
+
+    const [
+      doorsToday,
+      doorsWeek,
+      doorsMonth,
+      leadsToday,
+      leadsWeek,
+      leadsMonth,
+      closedToday,
+      closedWeek,
+      closedMonth,
+      billingDetails,
+      topClosersRaw,
+      topSettersRaw,
+    ] = await Promise.all([
+      prisma.visit.count({ where: { ...adminWhere, createdAt: { gte: startOfToday } } }),
+      prisma.visit.count({ where: { ...adminWhere, createdAt: { gte: startOfWeek } } }),
+      prisma.visit.count({ where: { ...adminWhere, createdAt: { gte: startOfMonth } } }),
+      prisma.visit.count({
+        where: { ...adminWhere, stage: "PROPOSAL_ACCEPTED", createdAt: { gte: startOfToday } },
+      }),
+      prisma.visit.count({
+        where: { ...adminWhere, stage: "PROPOSAL_ACCEPTED", createdAt: { gte: startOfWeek } },
+      }),
+      prisma.visit.count({
+        where: { ...adminWhere, stage: "PROPOSAL_ACCEPTED", createdAt: { gte: startOfMonth } },
+      }),
+      prisma.visit.count({
+        where: { ...adminWhere, stage: "CLOSED", completedAt: { gte: startOfToday } },
+      }),
+      prisma.visit.count({
+        where: { ...adminWhere, stage: "CLOSED", completedAt: { gte: startOfWeek } },
+      }),
+      prisma.visit.count({
+        where: { ...adminWhere, stage: "CLOSED", completedAt: { gte: startOfMonth } },
+      }),
+      prisma.projectDetails.findMany({
+        where: { visit: { stage: "CLOSED" } },
+        select: {
+          roofSalePrice: true,
+          solarSalePrice: true,
+          waterSalePrice: true,
+          otherSalePrice: true,
+        },
+      }),
+      prisma.visit.groupBy({
+        by: ["closerId"],
+        _count: { closerId: true },
+        where: { stage: "CLOSED", closerId: { not: null } },
+        orderBy: { _count: { closerId: "desc" } },
+        take: 3,
+      }),
+      prisma.visit.groupBy({
+        by: ["setterId"],
+        _count: { setterId: true },
+        orderBy: { _count: { setterId: "desc" } },
+        take: 3,
+      }),
+    ]);
+
+    const totalBilling = billingDetails.reduce(
+      (sum, p) =>
+        sum + (p.roofSalePrice || 0) + (p.solarSalePrice || 0) + (p.waterSalePrice || 0) + (p.otherSalePrice || 0),
+      0
+    );
+
+    const topClosers = await resolveUserNames(
+      topClosersRaw
+        .filter((i) => i.closerId != null)
+        .map((i) => ({ id: i.closerId!, count: i._count.closerId }))
+    );
+    const topSetters = await resolveUserNames(
+      topSettersRaw.map((i) => ({ id: i.setterId, count: i._count.setterId }))
+    );
+
+    return NextResponse.json({
+      doorsKnockedToday: doorsToday,
+      doorsKnockedWeek: doorsWeek,
+      doorsKnockedMonth: doorsMonth,
+      leadsCreatedToday: leadsToday,
+      leadsCreatedWeek: leadsWeek,
+      leadsCreatedMonth: leadsMonth,
+      projectsClosedToday: closedToday,
+      projectsClosedWeek: closedWeek,
+      projectsClosedMonth: closedMonth,
+      totalBilling,
+      topClosers,
+      topSetters,
+    });
+  }
+
+  // ── PERSONAL VIEW ───────────────────────────────────────────
+  if (mode === "own") {
+    const [
+      doorsToday,
+      doorsWeek,
+      doorsMonth,
+      doorsTotal,
+      leadsToday,
+      leadsWeek,
+      leadsMonth,
+      leadsTotal,
+      closedToday,
+      closedWeek,
+      closedMonth,
+      closedTotal,
+    ] = await Promise.all([
+      prisma.visit.count({ where: { ...whereClause, createdAt: { gte: startOfToday } } }),
+      prisma.visit.count({ where: { ...whereClause, createdAt: { gte: startOfWeek } } }),
+      prisma.visit.count({ where: { ...whereClause, createdAt: { gte: startOfMonth } } }),
+      prisma.visit.count({ where: whereClause }),
+      prisma.visit.count({
+        where: { ...whereClause, stage: "PROPOSAL_ACCEPTED", createdAt: { gte: startOfToday } },
+      }),
+      prisma.visit.count({
+        where: { ...whereClause, stage: "PROPOSAL_ACCEPTED", createdAt: { gte: startOfWeek } },
+      }),
+      prisma.visit.count({
+        where: { ...whereClause, stage: "PROPOSAL_ACCEPTED", createdAt: { gte: startOfMonth } },
+      }),
+      prisma.visit.count({ where: { ...whereClause, stage: "PROPOSAL_ACCEPTED" } }),
+      prisma.visit.count({
+        where: { ...whereClause, stage: "CLOSED", completedAt: { gte: startOfToday } },
+      }),
+      prisma.visit.count({
+        where: { ...whereClause, stage: "CLOSED", completedAt: { gte: startOfWeek } },
+      }),
+      prisma.visit.count({
+        where: { ...whereClause, stage: "CLOSED", completedAt: { gte: startOfMonth } },
+      }),
+      prisma.visit.count({ where: { ...whereClause, stage: "CLOSED" } }),
+    ]);
+
+    return NextResponse.json({
+      doorsKnockedToday: doorsToday,
+      doorsKnockedWeek: doorsWeek,
+      doorsKnockedMonth: doorsMonth,
+      doorsKnockedTotal: doorsTotal,
+      leadsGeneratedToday: leadsToday,
+      leadsGeneratedWeek: leadsWeek,
+      leadsGeneratedMonth: leadsMonth,
+      leadsGeneratedTotal: leadsTotal,
+      projectsClosedToday: closedToday,
+      projectsClosedWeek: closedWeek,
+      projectsClosedMonth: closedMonth,
+      projectsClosedTotal: closedTotal,
+    });
+  }
+
+  // ── EXISTING FULL RESPONSE (BACKWARD COMPATIBLE) ────────────
   const [
     doorsKnocked,
     parcels,
@@ -33,43 +218,20 @@ export async function GET() {
     closerObjectionsCount,
     appointments,
   ] = await Promise.all([
-    // Todas las visitas (stats)
     prisma.visit.count({ where: whereClause }),
-    // Parcelas activas (IN_PROGRESS)
+    prisma.visit.count({ where: { ...whereClause, stage: "IN_PROGRESS" } }),
+    prisma.visitObjection.count({ where: { visit: whereClause } }),
+    prisma.visit.count({ where: { ...whereClause, stage: "PROPOSAL_ACCEPTED" } }),
     prisma.visit.count({
-      where: { ...whereClause, stage: "IN_PROGRESS" },
+      where:
+        role === "CLOSER"
+          ? { closerId: userId, stage: "PROPOSAL_ACCEPTED" }
+          : { ...whereClause, stage: "PROPOSAL_ACCEPTED" },
     }),
-    // Objeciones de setter
-    prisma.visitObjection.count({
-      where: { visit: whereClause },
-    }),
-    // Leads generados (PROPOSAL_ACCEPTED para setter)
-    prisma.visit.count({
-      where: { ...whereClause, stage: "PROPOSAL_ACCEPTED" },
-    }),
-    // Leads del closer (PROPOSAL_ACCEPTED asignados como closer)
-    prisma.visit.count({
-      where: role === "CLOSER"
-        ? { closerId: userId, stage: "PROPOSAL_ACCEPTED" }
-        : { ...whereClause, stage: "PROPOSAL_ACCEPTED" },
-    }),
-    // Proyectos en elaboración (PROJECT)
-    prisma.visit.count({
-      where: { ...whereClause, stage: "PROJECT" },
-    }),
-    // Proyectos cerrados
-    prisma.visit.count({
-      where: { ...whereClause, stage: "CLOSED" },
-    }),
-    // Proyectos cancelados
-    prisma.visit.count({
-      where: { ...whereClause, stage: "CANCELLED" },
-    }),
-    // Objeciones de closer
-    prisma.visitCloserObjection.count({
-      where: { visit: whereClause },
-    }),
-    // Citas agendadas
+    prisma.visit.count({ where: { ...whereClause, stage: "PROJECT" } }),
+    prisma.visit.count({ where: { ...whereClause, stage: "CLOSED" } }),
+    prisma.visit.count({ where: { ...whereClause, stage: "CANCELLED" } }),
+    prisma.visitCloserObjection.count({ where: { visit: whereClause } }),
     prisma.visit.count({
       where: {
         ...whereClause,
@@ -81,18 +243,10 @@ export async function GET() {
   const now = new Date();
   const [weeklyGoal, monthlyGoal] = await Promise.all([
     prisma.businessGoal.findFirst({
-      where: {
-        period: "weekly",
-        startDate: { lte: now },
-        endDate: { gte: now },
-      },
+      where: { period: "weekly", startDate: { lte: now }, endDate: { gte: now } },
     }),
     prisma.businessGoal.findFirst({
-      where: {
-        period: "monthly",
-        startDate: { lte: now },
-        endDate: { gte: now },
-      },
+      where: { period: "monthly", startDate: { lte: now }, endDate: { gte: now } },
     }),
   ]);
 
@@ -107,15 +261,9 @@ export async function GET() {
       orderBy: { _count: { setterId: "desc" } },
       take: 10,
     });
-
     for (const item of doorsData) {
-      const user = await prisma.user.findUnique({
-        where: { id: item.setterId },
-        select: { name: true },
-      });
-      if (user) {
-        topDoorsKnocked.push({ id: item.setterId, name: user.name, count: item._count.setterId });
-      }
+      const user = await prisma.user.findUnique({ where: { id: item.setterId }, select: { name: true } });
+      if (user) topDoorsKnocked.push({ id: item.setterId, name: user.name, count: item._count.setterId });
     }
 
     const prospectsData = await prisma.visit.groupBy({
@@ -125,15 +273,9 @@ export async function GET() {
       orderBy: { _count: { setterId: "desc" } },
       take: 10,
     });
-
     for (const item of prospectsData) {
-      const user = await prisma.user.findUnique({
-        where: { id: item.setterId },
-        select: { name: true },
-      });
-      if (user) {
-        topProspects.push({ id: item.setterId, name: user.name, count: item._count.setterId });
-      }
+      const user = await prisma.user.findUnique({ where: { id: item.setterId }, select: { name: true } });
+      if (user) topProspects.push({ id: item.setterId, name: user.name, count: item._count.setterId });
     }
 
     const projectsData = await prisma.visit.groupBy({
@@ -143,16 +285,10 @@ export async function GET() {
       orderBy: { _count: { closerId: "desc" } },
       take: 10,
     });
-
     for (const item of projectsData) {
       if (item.closerId) {
-        const user = await prisma.user.findUnique({
-          where: { id: item.closerId },
-          select: { name: true },
-        });
-        if (user) {
-          topProjectsClosed.push({ id: item.closerId, name: user.name, count: item._count.closerId });
-        }
+        const user = await prisma.user.findUnique({ where: { id: item.closerId }, select: { name: true } });
+        if (user) topProjectsClosed.push({ id: item.closerId, name: user.name, count: item._count.closerId });
       }
     }
   }
@@ -163,7 +299,6 @@ export async function GET() {
     orderBy: { _count: { objectionId: "desc" } },
     take: 10,
   });
-
   const setterObjectionsWithNames = [];
   for (const item of topSetterObjections) {
     const objection = await prisma.objection.findUnique({
@@ -171,12 +306,7 @@ export async function GET() {
       select: { name: true, color: true },
     });
     if (objection) {
-      setterObjectionsWithNames.push({
-        id: item.objectionId,
-        name: objection.name,
-        color: objection.color,
-        count: item._count.objectionId,
-      });
+      setterObjectionsWithNames.push({ id: item.objectionId, name: objection.name, color: objection.color, count: item._count.objectionId });
     }
   }
 
@@ -186,7 +316,6 @@ export async function GET() {
     orderBy: { _count: { closerObjectionId: "desc" } },
     take: 10,
   });
-
   const closerObjectionsWithNames = [];
   for (const item of topCloserObjections) {
     const objection = await prisma.closerObjection.findUnique({
@@ -194,78 +323,45 @@ export async function GET() {
       select: { name: true, color: true },
     });
     if (objection) {
-      closerObjectionsWithNames.push({
-        id: item.closerObjectionId,
-        name: objection.name,
-        color: objection.color,
-        count: item._count.closerObjectionId,
-      });
+      closerObjectionsWithNames.push({ id: item.closerObjectionId, name: objection.name, color: objection.color, count: item._count.closerObjectionId });
     }
   }
 
   const topSetterObjectionsByUser: { id: number; name: string; count: number }[] = [];
   if (role === "ADMIN") {
-    const setterObjectionsData = await prisma.visitObjection.groupBy({
-      by: ["visitId"],
-      _count: { visitId: true },
-    });
-
+    const setterObjectionsData = await prisma.visitObjection.groupBy({ by: ["visitId"], _count: { visitId: true } });
     const userObjections: Record<number, number> = {};
     for (const item of setterObjectionsData) {
-      const visit = await prisma.visit.findUnique({
-        where: { id: item.visitId },
-        select: { setterId: true },
-      });
+      const visit = await prisma.visit.findUnique({ where: { id: item.visitId }, select: { setterId: true } });
       if (visit?.setterId) {
         userObjections[visit.setterId] = (userObjections[visit.setterId] || 0) + item._count.visitId;
       }
     }
-
     const sortedUsers = Object.entries(userObjections)
       .sort(([, a], [, b]) => b - a)
       .slice(0, 10);
-
-    for (const [userId, count] of sortedUsers) {
-      const user = await prisma.user.findUnique({
-        where: { id: parseInt(userId) },
-        select: { name: true },
-      });
-      if (user) {
-        topSetterObjectionsByUser.push({ id: parseInt(userId), name: user.name, count });
-      }
+    for (const [uid, count] of sortedUsers) {
+      const user = await prisma.user.findUnique({ where: { id: parseInt(uid) }, select: { name: true } });
+      if (user) topSetterObjectionsByUser.push({ id: parseInt(uid), name: user.name, count });
     }
   }
 
   const topCloserObjectionsByUser: { id: number; name: string; count: number }[] = [];
   if (role === "ADMIN") {
-    const closerObjectionsData = await prisma.visitCloserObjection.groupBy({
-      by: ["visitId"],
-      _count: { visitId: true },
-    });
-
+    const closerObjectionsData = await prisma.visitCloserObjection.groupBy({ by: ["visitId"], _count: { visitId: true } });
     const userObjections: Record<number, number> = {};
     for (const item of closerObjectionsData) {
-      const visit = await prisma.visit.findUnique({
-        where: { id: item.visitId },
-        select: { closerId: true },
-      });
+      const visit = await prisma.visit.findUnique({ where: { id: item.visitId }, select: { closerId: true } });
       if (visit?.closerId) {
         userObjections[visit.closerId] = (userObjections[visit.closerId] || 0) + item._count.visitId;
       }
     }
-
     const sortedUsers = Object.entries(userObjections)
       .sort(([, a], [, b]) => b - a)
       .slice(0, 10);
-
-    for (const [userId, count] of sortedUsers) {
-      const user = await prisma.user.findUnique({
-        where: { id: parseInt(userId) },
-        select: { name: true },
-      });
-      if (user) {
-        topCloserObjectionsByUser.push({ id: parseInt(userId), name: user.name, count });
-      }
+    for (const [uid, count] of sortedUsers) {
+      const user = await prisma.user.findUnique({ where: { id: parseInt(uid) }, select: { name: true } });
+      if (user) topCloserObjectionsByUser.push({ id: parseInt(uid), name: user.name, count });
     }
   }
 
@@ -274,69 +370,34 @@ export async function GET() {
 
   const topConversionBySetter: { id: number; name: string; doors: number; prospects: number; rate: number }[] = [];
   if (role === "ADMIN") {
-    const setters = await prisma.user.findMany({
-      where: { role: "SETTER" },
-      select: { id: true, name: true },
-    });
-
+    const setters = await prisma.user.findMany({ where: { role: "SETTER" }, select: { id: true, name: true } });
     for (const setter of setters) {
       const doors = await prisma.visit.count({ where: { setterId: setter.id } });
-      const prospects = await prisma.visit.count({
-        where: { setterId: setter.id, stage: "PROPOSAL_ACCEPTED" },
-      });
-      const rate = doors > 0 ? (prospects / doors) * 100 : 0;
-      topConversionBySetter.push({
-        id: setter.id,
-        name: setter.name,
-        doors,
-        prospects,
-        rate,
-      });
+      const prospects = await prisma.visit.count({ where: { setterId: setter.id, stage: "PROPOSAL_ACCEPTED" } });
+      topConversionBySetter.push({ id: setter.id, name: setter.name, doors, prospects, rate: doors > 0 ? (prospects / doors) * 100 : 0 });
     }
-
     topConversionBySetter.sort((a, b) => b.rate - a.rate);
   }
 
   const topConversionByCloser: { id: number; name: string; prospects: number; closed: number; rate: number }[] = [];
   if (role === "ADMIN") {
-    const closers = await prisma.user.findMany({
-      where: { role: "CLOSER" },
-      select: { id: true, name: true },
-    });
-
+    const closers = await prisma.user.findMany({ where: { role: "CLOSER" }, select: { id: true, name: true } });
     for (const closer of closers) {
       const prospects = await prisma.visit.count({
         where: { closerId: closer.id, stage: { in: ["PROPOSAL_ACCEPTED", "PROJECT"] } },
       });
-      const closed = await prisma.visit.count({
-        where: { closerId: closer.id, stage: "CLOSED" },
-      });
-      const rate = prospects > 0 ? (closed / prospects) * 100 : 0;
-      topConversionByCloser.push({
-        id: closer.id,
-        name: closer.name,
-        prospects,
-        closed,
-        rate,
-      });
+      const closed = await prisma.visit.count({ where: { closerId: closer.id, stage: "CLOSED" } });
+      topConversionByCloser.push({ id: closer.id, name: closer.name, prospects, closed, rate: prospects > 0 ? (closed / prospects) * 100 : 0 });
     }
-
     topConversionByCloser.sort((a, b) => b.rate - a.rate);
   }
 
   const projectTypes = await prisma.projectType.findMany({
-    include: {
-      visits: {
-        select: { visitId: true },
-      },
-    },
+    include: { visits: { select: { visitId: true } } },
   });
-
-  const projectMetrics = projectTypes.map((pt) => ({
-    id: pt.id,
-    name: pt.name,
-    count: pt.visits.length,
-  })).sort((a, b) => b.count - a.count);
+  const projectMetrics = projectTypes
+    .map((pt) => ({ id: pt.id, name: pt.name, count: pt.visits.length }))
+    .sort((a, b) => b.count - a.count);
 
   return NextResponse.json({
     doorsKnocked,

@@ -73,6 +73,19 @@ async function main() {
     await prisma.projectType.create({ data: pt });
   }
 
+  const mapTags = [
+    { name: "No abrio", nameEn: "No answer", color: "#ba1a1a" },
+    { name: "Pasar despues", nameEn: "Come back later", color: "#fb7800" },
+    { name: "Ya tiene paneles", nameEn: "Already has panels", color: "#006e00" },
+    { name: "No le interesa", nameEn: "Not interested", color: "#545f64" },
+    { name: "Interesado", nameEn: "Interested", color: "#f48221" },
+    { name: "No molestar", nameEn: "Do not disturb", color: "#1d1d1b" },
+  ];
+
+  for (const tag of mapTags) {
+    await prisma.notAvailableTag.create({ data: tag });
+  }
+
   const badgesData = [
     { name: "20 Puertas Tocadas", description: "Tocó 20 puertas", icon: "🥉", color: "#CE8946", role: "SETTER", doorsThreshold: 20 },
     { name: "10 Leads Generados", description: "Generó 10 leads", icon: "🥈", color: "#C4C4C4", role: "SETTER", prospectsThreshold: 10 },
