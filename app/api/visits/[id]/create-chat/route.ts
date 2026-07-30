@@ -38,9 +38,9 @@ export async function POST(
       return NextResponse.json({ error: 'Visit not found' }, { status: 404 });
     }
 
-    if (visit.stage !== 'CLOSED') {
+    if (visit.stage !== 'PROJECT' && visit.stage !== 'CLOSED') {
       return NextResponse.json(
-        { error: 'Can only create chat for closed visits' },
+        { error: 'Chat can only be created for projects in progress or closed' },
         { status: 400 }
       );
     }
