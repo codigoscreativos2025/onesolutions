@@ -498,14 +498,20 @@ export default function LeadDetailPage() {
     setSaving(true);
     try {
       const payload: Record<string, unknown> = {};
-      for (const key of COMMON_FIELDS) {
-        if (editFields[key] !== undefined && editFields[key] !== "") {
-          payload[key] = editFields[key];
+      // Save ALL edited fields (both common and specific), exclude _bill* internal fields
+      for (const [key, value] of Object.entries(editFields)) {
+        if (key.startsWith("_bill")) continue;
+        if (value !== undefined && value !== "") {
+          payload[key] = value;
         }
       }
       if (payload.closingDate && typeof payload.closingDate === "string") {
         payload.closingDate = new Date(payload.closingDate).toISOString();
       }
+      if (payload.siteSurveyDate && typeof payload.siteSurveyDate === "string") {
+        payload.siteSurveyDate = new Date(payload.siteSurveyDate).toISOString();
+      }
+      if (Object.keys(payload).length === 0) { setSaving(false); return; }
 
       const res = await fetch("/api/project-details", {
         method: "POST",
