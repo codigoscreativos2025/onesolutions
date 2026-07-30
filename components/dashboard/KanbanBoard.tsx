@@ -243,6 +243,17 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
     setClientFilter("");
   };
 
+  // Compute unique project types from loaded data (must be before early returns)
+  const projectTypeOptions = useMemo(() => {
+    const names = new Set<string>();
+    Object.values(data).forEach((visits) => {
+      visits.forEach((v) => {
+        v.projects?.forEach((p) => names.add(p.projectType.name));
+      });
+    });
+    return Array.from(names).sort();
+  }, [data]);
+
   if (isPartner) {
     const allVisits = Object.values(data).flat();
     const filtered = allVisits.filter((v) => {
@@ -299,17 +310,6 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
   }
 
   const hasActiveFilters = projectTypeFilter || addressFilter || clientFilter || activeColumn !== null;
-
-  // Compute unique project types from loaded data
-  const projectTypeOptions = useMemo(() => {
-    const names = new Set<string>();
-    Object.values(data).forEach((visits) => {
-      visits.forEach((v) => {
-        v.projects?.forEach((p) => names.add(p.projectType.name));
-      });
-    });
-    return Array.from(names).sort();
-  }, [data]);
 
   return (
     <div className="space-y-4">
