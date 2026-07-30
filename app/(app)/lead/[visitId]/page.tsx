@@ -2185,9 +2185,9 @@ function ReadOnlyField({
   );
 }
 
-function AssignPartnerPanel({ visitId, currentPartnerId, onRefresh }: { visitId: number; currentPartnerId?: number; onRefresh: () => void }) {
+function AssignPartnerPanel({ visitId, currentPartnerId, onRefresh }: { visitId: number; currentPartnerId?: number | null; onRefresh: () => void }) {
   const [partners, setPartners] = useState<{ id: number; name: string }[]>([]);
-  const [selectedPartnerId, setSelectedPartnerId] = useState(String(currentPartnerId || ""));
+  const [selectedPartnerId, setSelectedPartnerId] = useState(String(currentPartnerId ?? ""));
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
