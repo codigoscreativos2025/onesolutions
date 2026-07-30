@@ -1,0 +1,422 @@
+"use client";
+
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+} from "@dnd-kit/core";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { MapPin, User, GripVertical } from "lucide-react";
+
+const COLS = [
+  { stage: "IN_PROGRESS", title: "Leads", color: "bg-blue-500", colorBar: "bg-blue-500" },
+  { stage: "PROPOSAL_ACCEPTED", title: "Leads Potenciales", color: "bg-amber-500", colorBar: "bg-amber-500" },
+  { stage: "PROJECT", title: "En Proyecto", color: "bg-purple-500", colorBar: "bg-purple-500" },
+  { stage: "CLOSED", title: "Proyecto Cerrado", color: "bg-green-500", colorBar: "bg-green-500" },
+  { stage: "CANCELLED", title: "Proyecto Cancelado", color: "bg-red-500", colorBar: "bg-red-500" },
+] as const;
+
+const STAGE_SET = new Set<string>(COLS.map((c) => c.stage));
+
+interface KanbanVisit {
+  id: number;
+  stage: string;
+  parcel: { id: string; address: string; ownerName: string | null };
+  setter: { id: number; name: string };
+  closer: { id: number; name: string } | null;
+  projects: { projectType: { id: number; name: string } }[];
+}
+
+type GroupedVisits = Record<string, KanbanVisit[]>;
+
+interface KanbanBoardProps {
+  isAdmin: boolean;
+  isSetterJr: boolean;
+  isSetter: boolean;
+}
+
+export function KanbanBoard({ isAdmin, isSetterJr, isSetter }: KanbanBoardProps) {
+  const router = useRouter();
+  const [data, setData] = useState<GroupedVisits>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeVisit, setActiveVisit] = useState<KanbanVisit | null>(null);
+  const overColumnRef = useRef<string | null>(null);
+
+  const visitStageMap = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const [stage, visits] of Object.entries(data)) {
+      for (const v of visits) {
+        map.set(v.id, stage);
+      }
+    }
+    return map;
+  }, [data]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const fetchData = useCallback(async () => {
+    setError(null);
+    try {
+      const res = await fetch("/api/visits/kanban");
+      if (!res.ok) throw new Error("Failed to fetch");
+      const json = await res.json();
+      setData(json);
+    } catch {
+      setError("Error al cargar los datos del tablero.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const moveCard = useCallback(
+    async (visitId: number, targetStage: string) => {
+      const sourceStage = visitStageMap.get(visitId);
+      if (!sourceStage || sourceStage === targetStage) return;
+
+      const visit = data[sourceStage]?.find((v) => v.id === visitId);
+      if (!visit) return;
+
+      setData((prev) => {
+        const next = { ...prev };
+        next[sourceStage] = (next[sourceStage] || []).filter((v) => v.id !== visitId);
+        next[targetStage] = [{ ...visit, stage: targetStage }, ...(next[targetStage] || [])];
+        return next;
+      });
+
+      try {
+        const res = await fetch(`/api/visits/${visitId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ stage: targetStage }),
+        });
+        if (!res.ok) {
+          throw new Error("Failed to update");
+        }
+        toast.success(`Lead movido a "${COLS.find((c) => c.stage === targetStage)?.title}"`);
+      } catch {
+        toast.error("Error al mover el lead. Reintenta.");
+        fetchData();
+      }
+    },
+    [data, visitStageMap, fetchData]
+  );
+
+  function handleDragStart(event: DragStartEvent) {
+    const visitId = event.active.id as number;
+    for (const col of COLS) {
+      const v = data[col.stage]?.find((v) => v.id === visitId);
+      if (v) {
+        setActiveVisit(v);
+        break;
+      }
+    }
+    overColumnRef.current = null;
+  }
+
+  function handleDragOver(event: DragOverEvent) {
+    const { over } = event;
+    if (!over) {
+      overColumnRef.current = null;
+      return;
+    }
+    if (STAGE_SET.has(over.id as string)) {
+      overColumnRef.current = over.id as string;
+    } else {
+      const cardStage = visitStageMap.get(over.id as number);
+      overColumnRef.current = cardStage || null;
+    }
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    setActiveVisit(null);
+    const { active } = event;
+    const visitId = active.id as number;
+    const targetStage = overColumnRef.current;
+
+    if (!targetStage) return;
+
+    const sourceStage = visitStageMap.get(visitId);
+    if (!sourceStage || sourceStage === targetStage) return;
+
+    moveCard(visitId, targetStage);
+    overColumnRef.current = null;
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-4">
+        <p className="text-on-surface-variant">{error}</p>
+        <button
+          onClick={fetchData}
+          className="text-primary font-medium hover:underline"
+        >
+          Reintentar
+        </button>
+      </div>
+    );
+  }
+
+  const showOverlay = isSetter || isSetterJr;
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="flex gap-4 overflow-x-auto pb-4 min-h-[60vh]">
+        {COLS.map((col, idx) => {
+          const visits = data[col.stage] || [];
+          const isLeads = col.stage === "IN_PROGRESS";
+          const restricted = showOverlay && !isLeads;
+
+          return (
+            <KanbanColumn
+              key={col.stage}
+              col={col}
+              visits={visits}
+              isAdmin={isAdmin}
+              idx={idx}
+              restricted={restricted}
+              onCardClick={(visitId) => router.push(`/lead/${visitId}`)}
+            />
+          );
+        })}
+      </div>
+      <DragOverlay>
+        {activeVisit ? (
+          <KanbanCardOverlay visit={activeVisit} />
+        ) : null}
+      </DragOverlay>
+    </DndContext>
+  );
+}
+
+function KanbanColumn({
+  col,
+  visits,
+  isAdmin,
+  idx,
+  restricted,
+  onCardClick,
+}: {
+  col: (typeof COLS)[number];
+  visits: KanbanVisit[];
+  isAdmin: boolean;
+  idx: number;
+  restricted: boolean;
+  onCardClick: (id: number) => void;
+}) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: col.stage,
+    disabled: !isAdmin,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`flex-shrink-0 w-72 rounded-2xl transition-colors flex flex-col ${
+        isOver && isAdmin
+          ? "bg-primary/5 border-2 border-dashed border-primary"
+          : "bg-surface-container-low border border-outline-variant"
+      }`}
+      style={{ animationDelay: `${idx * 0.1}s` }}
+    >
+      <div className="p-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className={`w-3 h-3 rounded-full ${col.colorBar}`} />
+          <h3 className="font-headline text-sm font-bold text-on-surface">
+            {col.title}
+          </h3>
+        </div>
+        <span className="text-xs font-bold text-on-surface-variant bg-surface-container-high rounded-full px-2 py-0.5">
+          {visits.length}
+        </span>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-2 relative min-h-[120px]">
+        {restricted && (
+          <div className="absolute inset-0 z-10 glass-panel rounded-xl flex items-center justify-center mx-2 mb-2">
+            <p className="text-xs text-on-surface-variant text-center px-4 font-medium">
+              No tienes acceso a esta etapa
+            </p>
+          </div>
+        )}
+
+        {!restricted && visits.length === 0 && (
+          <div className="flex items-center justify-center h-20">
+            <p className="text-xs text-on-surface-variant">Sin leads</p>
+          </div>
+        )}
+
+        {!restricted &&
+          visits.map((visit) => (
+            <KanbanCard
+              key={visit.id}
+              visit={visit}
+              isAdmin={isAdmin}
+              onClick={() => onCardClick(visit.id)}
+            />
+          ))}
+      </div>
+    </div>
+  );
+}
+
+function KanbanCard({
+  visit,
+  isAdmin,
+  onClick,
+}: {
+  visit: KanbanVisit;
+  isAdmin: boolean;
+  onClick: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id: visit.id,
+      data: { visit, sourceColumn: visit.stage },
+      disabled: !isAdmin,
+    });
+
+  const style = transform
+    ? { transform: CSS.Translate.toString(transform), zIndex: 20 }
+    : undefined;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`glass-panel rounded-xl p-3 cursor-pointer transition-all hover:shadow-md ${
+        isDragging ? "opacity-50 shadow-lg ring-2 ring-primary" : ""
+      }`}
+      onClick={onClick}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-on-surface truncate">
+            {visit.parcel.ownerName || visit.parcel.address}
+          </p>
+          <div className="flex items-center gap-1 mt-0.5 text-on-surface-variant">
+            <MapPin className="w-3 h-3 shrink-0" />
+            <p className="text-xs truncate">{visit.parcel.address}</p>
+          </div>
+        </div>
+        {isAdmin && (
+          <button
+            {...attributes}
+            {...listeners}
+            className="p-1 rounded-lg hover:bg-surface-container-high transition-colors shrink-0 text-on-surface-variant cursor-grab active:cursor-grabbing"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GripVertical className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2 mt-2 text-xs text-on-surface-variant">
+        <div className="flex items-center gap-1">
+          <User className="w-3 h-3" />
+          <span className="truncate max-w-[80px]">
+            {visit.setter?.name || "—"}
+          </span>
+        </div>
+        {visit.closer && (
+          <>
+            <span className="text-outline-variant">|</span>
+            <span className="truncate max-w-[80px] text-primary font-medium">
+              {visit.closer.name}
+            </span>
+          </>
+        )}
+      </div>
+
+      {visit.projects.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-2">
+          {visit.projects.map((p) => (
+            <span
+              key={p.projectType.id}
+              className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium"
+            >
+              {p.projectType.name}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function KanbanCardOverlay({ visit }: { visit: KanbanVisit }) {
+  return (
+    <div className="glass-panel rounded-xl p-3 shadow-xl ring-2 ring-primary w-72">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-on-surface truncate">
+            {visit.parcel.ownerName || visit.parcel.address}
+          </p>
+          <div className="flex items-center gap-1 mt-0.5 text-on-surface-variant">
+            <MapPin className="w-3 h-3 shrink-0" />
+            <p className="text-xs truncate">{visit.parcel.address}</p>
+          </div>
+        </div>
+        <GripVertical className="w-4 h-4 text-on-surface-variant" />
+      </div>
+
+      <div className="flex items-center gap-2 mt-2 text-xs text-on-surface-variant">
+        <div className="flex items-center gap-1">
+          <User className="w-3 h-3" />
+          <span className="truncate max-w-[80px]">{visit.setter?.name || "—"}</span>
+        </div>
+        {visit.closer && (
+          <>
+            <span className="text-outline-variant">|</span>
+            <span className="truncate max-w-[80px] text-primary font-medium">
+              {visit.closer.name}
+            </span>
+          </>
+        )}
+      </div>
+
+      {visit.projects.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-2">
+          {visit.projects.map((p) => (
+            <span
+              key={p.projectType.id}
+              className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium"
+            >
+              {p.projectType.name}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

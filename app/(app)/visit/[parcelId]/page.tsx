@@ -1,161 +1,53 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
-import {
-  ArrowLeft,
-  DoorOpen,
-  CalendarX,
-  XCircle,
-  CheckCircle,
-  Upload,
-  Phone,
-  User,
-  Loader2,
-  FileText,
-  Tag,
-  MessageSquare,
-  Briefcase,
-} from "lucide-react";
-import { LocationValidator } from "@/components/map/LocationValidator";
-import { SlotPicker } from "@/components/calendar/SlotPicker";
+import { ArrowLeft, Upload, Phone, User, Loader2, FileText, X, CheckCircle } from "lucide-react";
 import { QuoteModal } from "@/components/quote/QuoteModal";
 import { ContractModal } from "@/components/quote/ContractModal";
 
-interface NotAvailableTag {
-  id: number;
-  name: string;
-  color: string;
-}
-
+interface Slot { id: number; startAt: string; endAt: string }
+interface Closer { id: number; name: string; email: string; slots: Slot[] }
+interface ProjectType { id: number; name: string; description?: string }
 interface Visit {
-  id: number;
-  parcel: {
-    address: string;
-    geometry?: string;
-    metadata?: string;
-    ownerName?: string;
-  };
-  stage: string;
-  projects?: {
-    projectType: {
-      id: number;
-      name: string;
-    };
-  }[];
-  projectDetails?: Record<string, unknown> | null;
-  chatRoom?: { id: number } | null;
+  id: number; stage: string;
+  parcel: { address: string; ownerName?: string; metadata?: string };
+  bill?: { phone?: string; clientName?: string; clientEmail?: string; notes?: string; imageUrl?: string; additionalFileUrl?: string; additionalFileName?: string };
+  projects?: { projectType: { id: number; name: string } }[];
 }
-
-interface Objection {
-  id: number;
-  name: string;
-  color: string;
-}
-
-interface Closer {
-  id: number;
-  name: string;
-  email: string;
-  slots: {
-    id: number;
-    startAt: string;
-    endAt: string;
-  }[];
-}
-
-interface ProjectType {
-  id: number;
-  name: string;
-  description?: string;
-}
-
-const tabTransition = { duration: 0.35, ease: "easeOut" as const };
 
 function CelebrationOverlay({ onComplete }: { onComplete: () => void }) {
   const particles = Array.from({ length: 40 }, (_, i) => ({
-    id: i,
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-    size: Math.random() * 10 + 6,
-    rotation: Math.random() * 360,
-    delay: Math.random() * 0.8,
-    duration: Math.random() * 1.5 + 1.5,
-    color: [
-      "#fb7800", "#FFD700", "#FF6B6B", "#4ECDC4", "#A78BFA",
-      "#34D399", "#60A5FA", "#F472B6",
-    ][Math.floor(Math.random() * 8)],
+    id: i, x: Math.random() * 100, y: Math.random() * 100, size: Math.random() * 10 + 6,
+    rotation: Math.random() * 360, delay: Math.random() * 0.8, duration: Math.random() * 1.5 + 1.5,
+    color: ["#fb7800","#FFD700","#FF6B6B","#4ECDC4","#A78BFA","#34D399","#60A5FA","#F472B6"][Math.floor(Math.random()*8)],
   }));
-
   return (
-    <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onAnimationComplete={() => {
-        setTimeout(onComplete, 1200);
-      }}
-    >
+    <motion.div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      onAnimationComplete={() => { setTimeout(onComplete, 1200); }}>
       {particles.map((p) => (
-        <motion.div
-          key={p.id}
-          className="absolute rounded-full pointer-events-none"
-          style={{
-            left: `${p.x}%`,
-            top: `${p.y}%`,
-            width: p.size,
-            height: p.size,
-            backgroundColor: p.color,
-          }}
+        <motion.div key={p.id} className="absolute rounded-full pointer-events-none"
+          style={{ left: `${p.x}%`, top: `${p.y}%`, width: p.size, height: p.size, backgroundColor: p.color }}
           initial={{ scale: 0, rotate: 0, opacity: 1 }}
-          animate={{
-            scale: [0, 1.5, 0],
-            rotate: p.rotation + 360,
-            opacity: [1, 1, 0],
-            y: [0, -200 - Math.random() * 200],
-            x: [0, (Math.random() - 0.5) * 150],
-          }}
-          transition={{
-            duration: p.duration,
-            delay: p.delay,
-            ease: "easeOut",
-          }}
-        />
+          animate={{ scale: [0,1.5,0], rotate: p.rotation + 360, opacity: [1,1,0], y: [0,-200-Math.random()*200], x: [0,(Math.random()-0.5)*150] }}
+          transition={{ duration: p.duration, delay: p.delay, ease: "easeOut" }} />
       ))}
-      <motion.div
-        className="text-center relative z-10"
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-      >
-        <motion.div
-          className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-2xl shadow-primary/40"
-          animate={{ rotate: [0, 10, -10, 0] }}
-          transition={{ repeat: Infinity, duration: 1.5 }}
-        >
+      <motion.div className="text-center relative z-10" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3, type: "spring", stiffness: 200 }}>
+        <motion.div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-2xl shadow-primary/40"
+          animate={{ rotate: [0,10,-10,0] }} transition={{ repeat: Infinity, duration: 1.5 }}>
           <svg className="w-14 h-14 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </motion.div>
-        <motion.h2
-          className="mt-6 text-3xl font-headline font-bold text-white drop-shadow-lg"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-        >
+        <motion.h2 className="mt-6 text-3xl font-headline font-bold text-white drop-shadow-lg" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
           Proyecto Cerrado!
         </motion.h2>
-        <motion.p
-          className="mt-2 text-white/70 text-lg"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-        >
+        <motion.p className="mt-2 text-white/70 text-lg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
           Excelente trabajo
         </motion.p>
       </motion.div>
@@ -163,1924 +55,370 @@ function CelebrationOverlay({ onComplete }: { onComplete: () => void }) {
   );
 }
 
-function calculateProjectCompletion(details: Record<string, string>, extraFields: string[] = []): number {
-  const coreFields = [
-    "clientName", "clientEmail", "address", "closingDate", "paymentMethod",
-    "primaryRep", "primaryRepCommPct",
-  ];
-  const optionalFields = [
-    "secondaryRep", "secondaryRepCommPct",
-    "tertiaryRep", "tertiaryRepCommPct",
-  ];
-  const baseKeys = [...coreFields, ...extraFields];
-  const allKeys = Array.from(new Set(baseKeys));
-  // Optional fields only increase total if they have a value
-  const optionalFilled = optionalFields.filter((f) => details[f] && details[f] !== "" && details[f] !== "[]");
-  const total = allKeys.filter((f) => details[f] !== undefined || optionalFields.includes(f)).length + optionalFilled.length;
-  const filled = allKeys.filter((f) => details[f] && details[f] !== "" && details[f] !== "[]").length + optionalFilled.length;
-  return total === 0 ? 0 : Math.min(100, Math.round((filled / total) * 100));
+function groupByDate(slots: Slot[]): Record<string, Slot[]> {
+  const m: Record<string, Slot[]> = {};
+  for (const s of slots) { const d = s.startAt.split("T")[0]; (m[d] ??= []).push(s); }
+  return m;
 }
 
-const PROJECT_DETAIL_FIELDS = [
-  "clientName", "clientEmail", "address", "closingDate", "paymentMethod",
-  "primaryRep", "primaryRepCommPct", "secondaryRep", "secondaryRepCommPct",
-  "tertiaryRep", "tertiaryRepCommPct",
-  "solarFinancier", "systemSize", "hoaInfo", "ppwSold", "umbrella", "mpuPanels",
-  "siteSurveyDate", "panelsUpCount", "panelsDownCount", "panelsPhotoUrl",
-  "solarCostPrice", "solarSalePrice", "solarCommission",
-  "electricBillUrl", "homeInsuranceUrl", "homeTitleUrl", "idDocumentUrl",
-  "roofType", "roofCostPrice", "roofSalePrice", "roofCommission",
-  "nocUrl", "roofReportUrl", "exteriorScopeUrl", "propertyPhotosJson",
-  "waterSystemType", "waterCostPrice", "waterSalePrice", "waterCommission",
-  "clientIncentive", "otherCostPrice", "otherSalePrice", "otherCommission",
-];
-
-const FIELD_LABEL_MAP: Record<string, string> = {
-  solarFinancier: "Financiadora", systemSize: "Tamaño de sistema (kW)", hoaInfo: "HOA Información",
-  ppwSold: "PPW o EPC sold", umbrella: "Umbrella", clientIncentive: "Incentivo al cliente",
-  mpuPanels: "MPU Panels", siteSurveyDate: "Site survey", panelsUpCount: "Subir paneles",
-  panelsDownCount: "Bajar paneles", panelsPhotoUrl: "Fotos de paneles y techo",
-  solarCostPrice: "Precio costo solar", solarSalePrice: "Precio venta solar", solarCommission: "Comisión solar",
-  electricBillUrl: "Factura eléctrica", closingFormUrl: "Formulario de cierre",
-  homeInsuranceUrl: "Seguro de casa", homeTitleUrl: "Título de casa", idDocumentUrl: "ID del cliente",
-  roofType: "Trabajo a realizar", roofCostPrice: "Precio costo techo", roofSalePrice: "Precio venta techo",
-  roofCommission: "Comisión techo", nocUrl: "NOC firmado", materialsOrderUrl: "Orden de materiales",
-  roofReportUrl: "Reporte de techo", exteriorScopeUrl: "Exterior scope work",
-  propertyPhotosJson: "Fotos de la propiedad", waterSystemType: "Tipo de tratamiento",
-  waterCostPrice: "Precio costo agua", waterSalePrice: "Precio venta agua", waterCommission: "Comisión agua",
-  otherCostPrice: "Otro costo", otherSalePrice: "Otro precio venta", otherCommission: "Otra comisión",
-};
+const inputClass =
+  "w-full h-12 pl-12 pr-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface";
+const inputNoIcon =
+  "w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface";
+const labelClass = "text-xs font-semibold text-on-surface-variant uppercase tracking-wider";
 
 export default function VisitPage() {
   const params = useParams();
   const router = useRouter();
   const { data: session } = useSession();
   const parcelId = params.parcelId as string;
+  const role = session?.user?.role ?? "";
 
   const [visit, setVisit] = useState<Visit | null>(null);
-  const [objections, setObjections] = useState<Objection[]>([]);
-  const [closerObjections, setCloserObjections] = useState<Objection[]>([]);
-  const [closers, setClosers] = useState<Closer[]>([]);
-  const [projectTypes, setProjectTypes] = useState<ProjectType[]>([]);
-  const [notAvailableTags, setNotAvailableTags] = useState<NotAvailableTag[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  const [selectedNotAvailableTags, setSelectedNotAvailableTags] = useState<number[]>([]);
-  const [notAvailableNotes, setNotAvailableNotes] = useState("");
-
-  const [selectedObjections, setSelectedObjections] = useState<number[]>([]);
-  const [selectedCloserObjections, setSelectedCloserObjections] = useState<number[]>([]);
-  const [objectionNotes, setObjectionNotes] = useState("");
-
-  const [billFile, setBillFile] = useState<File | null>(null);
-  const [billPreview, setBillPreview] = useState("");
-  const [billFileName, setBillFileName] = useState("");
-
-  const [phone, setPhone] = useState("");
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [notes, setNotes] = useState("");
 
-  const [selectedSlotId, setSelectedSlotId] = useState("");
-  const [selectedCloserId, setSelectedCloserId] = useState("");
+  const [idFile, setIdFile] = useState<File | null>(null);
+  const [idPreview, setIdPreview] = useState("");
+  const [billFile, setBillFile] = useState<File | null>(null);
+  const [billPreview, setBillPreview] = useState("");
+
+  const [projectTypes, setProjectTypes] = useState<ProjectType[]>([]);
   const [selectedProjectTypes, setSelectedProjectTypes] = useState<number[]>([]);
-  const [proposalNotes, setProposalNotes] = useState("");
-  const [closingNotes, setClosingNotes] = useState("");
 
-  const [projectDetailsForm, setProjectDetailsForm] = useState<Record<string, string>>({});
-  const [savingProjectDetails, setSavingProjectDetails] = useState(false);
-
-  const [loadedFieldNames, setLoadedFieldNames] = useState<string[]>([]);
-
-  const [saving, setSaving] = useState(false);
-  const [showLocationValidator, setShowLocationValidator] = useState(false);
-  const [locationValidated, setLocationValidated] = useState(false);
-  const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
+  const [selectedCloserId, setSelectedCloserId] = useState("");
+  const [selectedSlotId, setSelectedSlotId] = useState("");
+  const [selfAssign, setSelfAssign] = useState(false);
+  const [closers, setClosers] = useState<Closer[]>([]);
 
   const [showCelebration, setShowCelebration] = useState(false);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [showContractModal, setShowContractModal] = useState(false);
-  const [showProjectTypeSelector, setShowProjectTypeSelector] = useState(false);
-  const [directSale, setDirectSale] = useState(false);
-  const [commissions] = useState<{ userId: number; name: string; percentage: number }[]>([]);
-  const isCloser = session?.user?.role === "CLOSER" || session?.user?.role === "SETTER";
-  const isClosingMode = isCloser;
-  const isTrainee = session?.user?.role === "SETTER";
 
-  useEffect(() => {
-    if (isClosingMode && visit) {
-      setActiveTab("propuesta");
-    }
-  }, [isClosingMode, visit?.id]);
+  const isSetter = role === "SETTER";
+  const isSetterJr = role === "SETTER_JR";
+  const isCloser = role === "CLOSER";
+  const hasPanelSolar = projectTypes.some((pt) => selectedProjectTypes.includes(pt.id) && pt.name.toLowerCase().includes("panel solar"));
+  const showCloserDropdown = isSetter || (isSetterJr && hasPanelSolar);
+  const showSelfAssign = isCloser || (isSetterJr && !hasPanelSolar);
+  const closer = closers.find((c) => c.id === Number(selectedCloserId)) ?? null;
+  const slotsByDate = closer ? groupByDate(closer.slots) : {};
 
-  const isStartProject = visit
-    ? visit.stage === "PROPOSAL_ACCEPTED" || visit.stage === "IN_PROGRESS"
-    : false;
-  const isProject = visit?.stage === "PROJECT";
+  useEffect(() => { fetchData(); }, [parcelId]); // eslint-disable-line
+  useEffect(() => { if (isCloser) setSelfAssign(true); }, [isCloser]);
 
-  const projectCompletion = calculateProjectCompletion(projectDetailsForm, loadedFieldNames);
-
-  useEffect(() => {
-    fetchData();
-  }, [parcelId]);
-
-  useEffect(() => {
-    fetchProjectTypeFields(selectedProjectTypes);
-  }, [selectedProjectTypes]);
-
-  const fetchData = async () => {
+  async function fetchData() {
     try {
-      const fetches: Promise<Response>[] = [
+      const [visitRes, ptRes, closersRes] = await Promise.all([
         fetch(`/api/visits/active?parcelId=${parcelId}`),
-        fetch("/api/objections"),
-        fetch("/api/closers"),
         fetch("/api/project-types"),
-        fetch("/api/admin/not-available-tags"),
-      ];
-
-      if (isCloser) {
-        fetches.push(fetch("/api/closer-objections"));
-      }
-
-      const results = await Promise.all(fetches);
-
-      if (!results[0].ok) {
-        setLoading(false);
-        return;
-      }
-
-      const visitData = await results[0].json();
-      const objData = await results[1].json();
-      const closersData = await results[2].json();
-      const projectTypesData = await results[3].json();
-
-      let tagsData: NotAvailableTag[] = [];
-      try {
-        tagsData = await results[4].json();
-      } catch {
-        tagsData = [];
-      }
-
-      let closerObjData: Objection[] = [];
-      if (isCloser && results.length > 5) {
-        try {
-          closerObjData = await results[5].json();
-        } catch {
-          closerObjData = [];
-        }
-      }
-
+        isSetter || isSetterJr ? fetch("/api/closers") : Promise.resolve(null),
+      ]);
+      if (!visitRes.ok) { setLoading(false); return; }
+      const visitData: Visit = await visitRes.json();
+      const ptData: ProjectType[] = await ptRes.json();
       setVisit(visitData);
-      setObjections(objData);
-      setCloserObjections(closerObjData);
-      setClosers(closersData);
-      setProjectTypes(projectTypesData);
-      setNotAvailableTags(tagsData);
+      setProjectTypes(ptData);
 
-      if (isCloser && closersData.length === 1) {
-        setSelectedCloserId(String(closersData[0].id));
-      }
-
-      if (visitData?.projects) {
-        const projectTypeIds = visitData.projects.map((p: { projectType: { id: number } }) => p.projectType.id);
-        setSelectedProjectTypes(projectTypeIds);
-        fetchProjectTypeFields(projectTypeIds);
-      }
-
-      let effectiveClientName = "";
-      let effectiveClientEmail = "";
-      let effectivePhone = "";
-      let effectiveProposalNotes = "";
-
-      if (visitData?.parcel?.metadata) {
+      let name = visitData.bill?.clientName ?? "";
+      let email = visitData.bill?.clientEmail ?? "";
+      let tel = visitData.bill?.phone ?? "";
+      let nts = visitData.bill?.notes ?? "";
+      if (visitData.parcel?.metadata) {
         try {
-          const metadata = JSON.parse(visitData.parcel.metadata);
-          if (metadata.isManual) {
-            effectivePhone = metadata.phone || "";
-            effectiveClientName = visitData.parcel.ownerName || metadata.ownerName || "";
-            effectiveClientEmail = metadata.email || "";
-            effectiveProposalNotes = metadata.notes || "";
+          const m = JSON.parse(visitData.parcel.metadata);
+          if (m.isManual) {
+            name = name || m.ownerName || ""; email = email || m.email || ""; tel = tel || m.phone || ""; nts = nts || m.notes || "";
           }
-        } catch {
-          // metadata parse failed, ignore
-        }
+        } catch { /* */ }
       }
-
-      if (visitData?.bill) {
-        if (visitData.bill.clientName) effectiveClientName = visitData.bill.clientName;
-        if (visitData.bill.phone) effectivePhone = visitData.bill.phone;
-        if (visitData.bill.clientEmail) effectiveClientEmail = visitData.bill.clientEmail;
-        if (visitData.bill.notes) setClosingNotes(visitData.bill.notes);
-        if (visitData.bill.additionalFileName) setBillFileName(visitData.bill.additionalFileName);
+      if (!name) name = visitData.parcel?.ownerName ?? "";
+      setClientName(name); setClientEmail(email); setPhone(tel); setNotes(nts);
+      if (visitData.bill?.imageUrl) setBillPreview(visitData.bill.imageUrl);
+      if (visitData.bill?.additionalFileUrl) setIdPreview(visitData.bill.additionalFileUrl);
+      if (visitData.projects) setSelectedProjectTypes(visitData.projects.map((p) => p.projectType.id));
+      if (closersRes) {
+        const cData: Closer[] = await closersRes.json();
+        setClosers(cData);
+        if (cData.length === 1) setSelectedCloserId(String(cData[0].id));
       }
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
+  }
 
-      if (!effectiveClientName && visitData?.parcel?.ownerName) {
-        effectiveClientName = visitData.parcel.ownerName;
-      }
+  async function uploadFile(file: File) {
+    const fd = new FormData(); fd.append("file", file);
+    const res = await fetch("/api/upload", { method: "POST", body: fd });
+    if (!res.ok) throw new Error("Error al subir archivo");
+    return (await res.json()).url as string;
+  }
 
-      setPhone(effectivePhone);
-      setClientName(effectiveClientName);
-      setClientEmail(effectiveClientEmail);
-      setProposalNotes(effectiveProposalNotes);
-
-      if (visitData?.projectDetails) {
-        const raw = visitData.projectDetails as Record<string, unknown>;
-        const form: Record<string, string> = {};
-        for (const [k, v] of Object.entries(raw)) {
-          if (v !== null && v !== undefined) {
-            form[k] = String(v);
-          }
-        }
-        setProjectDetailsForm(form);
-      } else {
-        setProjectDetailsForm({
-          address: visitData?.parcel?.address || "",
-          clientName: effectiveClientName,
-          clientEmail: effectiveClientEmail,
-        });
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchProjectTypeFields = async (projectTypeIds: number[]) => {
-    if (projectTypeIds.length === 0) {
-      setLoadedFieldNames([]);
-      return;
-    }
-    try {
-      const allFields: string[] = [];
-      for (const ptId of projectTypeIds) {
-        const res = await fetch(`/api/admin/project-type-fields?projectTypeId=${ptId}`);
-        const fields = await res.json();
-        if (Array.isArray(fields)) {
-          fields.forEach((f: { fieldName: string }) => {
-            if (!allFields.includes(f.fieldName) && PROJECT_DETAIL_FIELDS.includes(f.fieldName)) {
-              allFields.push(f.fieldName);
-            }
-          });
-        }
-      }
-      setLoadedFieldNames(allFields);
-    } catch {
-      setLoadedFieldNames([]);
-    }
-  };
-
-  const isManualLead = (() => {
-    try {
-      const m = JSON.parse(visit?.parcel?.metadata || "{}");
-      return m.isManual === true;
-    } catch {
-      return false;
-    }
-  })();
-
-  const needsLocationValidation =
-    !isCloser && !isManualLead && !locationValidated && session?.user?.locationValidationEnabled !== false;
-
-  const executeWithLocationCheck = (action: string, handler: () => Promise<void>) => {
-    if (needsLocationValidation) {
-      setPendingAction(action);
-      setShowLocationValidator(true);
-      return;
-    }
-    handler();
-  };
-
-  const handleNotAvailable = async () => {
-    if (selectedNotAvailableTags.length === 0 || !visit) return;
-
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/visits/${visit.id}/not-available`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tagIds: selectedNotAvailableTags,
-          notes: notAvailableNotes || null,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Error al registrar");
-      }
-
-      toast.success("Visita registrada como no disponible");
-      router.push("/dashboard");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Error al registrar");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleObjection = async () => {
-    if (selectedObjections.length === 0 || !visit) return;
-
-    const doSubmit = async () => {
-      setSaving(true);
-      try {
-        const res = await fetch(`/api/visits/${visit.id}/objection`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            objectionIds: selectedObjections,
-            notes: objectionNotes,
-          }),
-        });
-
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || "Error al registrar objeción");
-        }
-
-        toast.success("Objeción registrada correctamente");
-        router.push("/map");
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Error al registrar");
-      } finally {
-        setSaving(false);
-      }
+  function makeBillData(billImageUrl: string, idDocUrl: string) {
+    return {
+      phone: phone.trim(), clientName: clientName.trim() || null, clientEmail: clientEmail.trim() || null,
+      imageUrl: billImageUrl || null, notes: notes.trim() || null,
+      additionalFileUrl: idDocUrl || null, additionalFileName: idFile?.name || null,
     };
+  }
 
-    executeWithLocationCheck("objection", doSubmit);
-  };
+  function fileChanged(setFile: (f: File) => void, setPreview: (p: string) => void) {
+    return (e: React.ChangeEvent<HTMLInputElement>) => {
+      const f = e.target.files?.[0];
+      if (f) { setFile(f); setPreview(URL.createObjectURL(f)); }
+    };
+  }
 
-  const handleCloserObjection = async () => {
-    if (selectedCloserObjections.length === 0 || !visit) return;
+  function toggleProjectType(id: number) {
+    setSelectedProjectTypes((prev) => prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]);
+  }
+
+  async function handleSaveWithoutSchedule() {
+    if (!visit) return;
+    if (!phone.trim()) { toast.error("El teléfono es requerido"); return; }
     setSaving(true);
     try {
-      const res = await fetch(`/api/visits/${visit.id}/closer-objection`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          objectionIds: selectedCloserObjections,
-          notes: objectionNotes,
-        }),
-      });
+      let billUrl = billPreview, idUrl = idPreview;
+      if (billFile) billUrl = await uploadFile(billFile);
+      if (idFile) idUrl = await uploadFile(idFile);
+      const billData = makeBillData(billUrl, idUrl);
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Error al registrar objeción");
-      }
-
-      toast.success("Objeción registrada correctamente");
-      router.push("/map");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Error al registrar");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleStartProject = async () => {
-    if (!visit) return;
-
-    if (!clientName) {
-      toast.error("El nombre del cliente es requerido");
-      return;
-    }
-
-    setSaving(true);
-    try {
-      let billImageUrl = "";
-      if (billFile) {
-        const formData = new FormData();
-        formData.append("file", billFile);
-        const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-        const uploadData = await uploadRes.json();
-        billImageUrl = uploadData.url;
-      }
-
-      const res = await fetch(`/api/visits/${visit.id}/close`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          notes: closingNotes || clientName,
-          billImageUrl,
-          billFileName: billFileName || billFile?.name || "",
-          action: "start-project",
-          clientName: clientName || undefined,
-          clientEmail: clientEmail || undefined,
-          clientPhone: phone || undefined,
-          projectTypeIds: selectedProjectTypes.length > 0 ? selectedProjectTypes : undefined,
-          commissions: commissions.length > 0 ? commissions.map(c => ({ userId: c.userId, percentage: c.percentage })) : undefined,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Error al iniciar proyecto");
-      }
-
-      await saveProjectDetailsInternal();
-      await fetchData();
-      toast.success("Proyecto iniciado");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Error al procesar");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleCloseProject = async () => {
-    if (!visit) return;
-
-    setSaving(true);
-    try {
-      await saveProjectDetailsInternal();
-
-      let billImageUrl = "";
-      if (billFile) {
-        const formData = new FormData();
-        formData.append("file", billFile);
-        const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-        const uploadData = await uploadRes.json();
-        billImageUrl = uploadData.url;
-      }
-
-      const res = await fetch(`/api/visits/${visit.id}/close`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          notes: closingNotes || clientName,
-          billImageUrl,
-          billFileName: billFileName || billFile?.name || "",
-          clientName: projectDetailsForm.clientName || clientName || undefined,
-          clientEmail: projectDetailsForm.clientEmail || clientEmail || undefined,
-          clientPhone: phone || undefined,
-          projectTypeIds: selectedProjectTypes.length > 0 ? selectedProjectTypes : undefined,
-          commissions: commissions.length > 0 ? commissions.map(c => ({ userId: c.userId, percentage: c.percentage })) : undefined,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Error al cerrar proyecto");
-      }
-
-      setShowCelebration(true);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Error al procesar");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleRequestClose = async () => {
-    if (!visit) return;
-
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/visits/${visit.id}/request-close`, {
-        method: "POST",
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Error al enviar solicitud");
-      }
-
-      toast.success("Solicitud enviada al administrador");
-      router.push("/my-projects");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Error al procesar");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const saveProjectDetailsInternal = async () => {
-    if (!visit) return;
-    const nonEmpty = Object.fromEntries(
-      Object.entries(projectDetailsForm).filter(([, v]) => v !== "" && v !== null && v !== undefined)
-    );
-    if (Object.keys(nonEmpty).length === 0) return;
-
-    try {
-      await fetch("/api/project-details", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ visitId: visit.id, ...nonEmpty }),
-      });
-    } catch {
-      // silent
-    }
-  };
-
-  const handleSaveProjectDetails = async () => {
-    if (!visit) return;
-    setSavingProjectDetails(true);
-    try {
-      const nonEmpty = Object.fromEntries(
-        Object.entries(projectDetailsForm).filter(([, v]) => v !== "" && v !== null && v !== undefined)
-      );
-      const res = await fetch("/api/project-details", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ visitId: visit.id, ...nonEmpty }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Error al guardar");
-      }
-      toast.success("Detalles guardados correctamente");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Error al guardar");
-    } finally {
-      setSavingProjectDetails(false);
-    }
-  };
-
-  const handleCreateChat = async () => {
-    if (!visit) return;
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/visits/${visit.id}/create-chat`, {
-        method: "POST",
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Error al crear chat");
-      }
-      toast.success("Chat creado correctamente");
-      router.push("/chat");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Error al crear chat");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleUpdateProjectTypes = async () => {
-    if (!visit) return;
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/visits/${visit.id}/projects`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      await fetch(`/api/visits/${visit.id}/projects`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ visitId: visit.id, projectTypeIds: selectedProjectTypes }),
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Error al actualizar proyectos");
-      }
-      toast.success("Proyectos actualizados correctamente");
-      setShowProjectTypeSelector(false);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Error al actualizar");
-    } finally {
-      setSaving(false);
-    }
-  };
+      await fetch(`/api/visits/${visit.id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: notes.trim() || null, bill: { upsert: { create: billData, update: billData } } }),
+      });
+      toast.success("Visita guardada");
+      router.push("/dashboard");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al guardar");
+    } finally { setSaving(false); }
+  }
 
-  const handleProposal = async () => {
+  async function handleSaveAndSchedule() {
     if (!visit) return;
-
-    const doSubmit = async () => {
-      setSaving(true);
-
-      try {
-        if (isTrainee && directSale) {
-          if (!phone || selectedProjectTypes.length === 0) {
-            setSaving(false);
-            toast.error("Completa todos los campos requeridos");
-            return;
-          }
-        } else if (!phone || !selectedSlotId || !selectedCloserId || selectedProjectTypes.length === 0) {
-          setSaving(false);
-          toast.error("Completa todos los campos requeridos");
-          return;
-        }
-
-        let billImageUrl = "";
-        if (billFile) {
-          const formData = new FormData();
-          formData.append("file", billFile);
-          const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-          const uploadData = await uploadRes.json();
-          billImageUrl = uploadData.url;
-        }
-
-        const res = await fetch(`/api/visits/${visit.id}/proposal`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            phone,
-            clientName,
-            clientEmail,
-            billImageUrl,
-            slotId: directSale ? null : selectedSlotId,
-            closerId: directSale ? session?.user?.id : selectedCloserId,
-            projectTypeIds: selectedProjectTypes,
-            notes: proposalNotes,
-            directSale: directSale,
-          }),
-        });
-
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || "Error al registrar propuesta");
-        }
-
-        toast.success("Propuesta registrada correctamente");
-        router.push("/map");
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Error al procesar");
-      } finally {
-        setSaving(false);
-      }
-    };
-
-    executeWithLocationCheck("proposal", doSubmit);
-  };
-
-  const handleCancel = async () => {
-    if (!visit) return;
-    const reason = prompt("Motivo de cancelación:");
-    if (reason === null) return;
-
+    if (!phone.trim()) { toast.error("El teléfono es requerido"); return; }
     setSaving(true);
     try {
-      const res = await fetch(`/api/visits/${visit.id}/cancel`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason }),
-      });
+      let billUrl = billPreview, idUrl = idPreview;
+      if (billFile) billUrl = await uploadFile(billFile);
+      if (idFile) idUrl = await uploadFile(idFile);
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Error al cancelar");
+      if (showCloserDropdown && selectedCloserId && selectedSlotId) {
+        const res = await fetch(`/api/visits/${visit.id}/proposal`, {
+          method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            phone: phone.trim(), clientName: clientName.trim() || null, clientEmail: clientEmail.trim() || null,
+            billImageUrl: billUrl || null, slotId: selectedSlotId, closerId: selectedCloserId,
+            projectTypeIds: selectedProjectTypes, notes: notes.trim() || null,
+          }),
+        });
+        if (!res.ok) throw new Error((await res.json()).error ?? "Error al agendar");
+      } else {
+        const scheduledAt = scheduleDate && scheduleTime ? new Date(`${scheduleDate}T${scheduleTime}:00`).toISOString() : null;
+        const billData = makeBillData(billUrl, idUrl);
+        await fetch(`/api/visits/${visit.id}/projects`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ visitId: visit.id, projectTypeIds: selectedProjectTypes }),
+        });
+        await fetch(`/api/visits/${visit.id}`, {
+          method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            notes: notes.trim() || null, scheduledAt,
+            ...(selfAssign ? { closerId: Number(session?.user?.id) } : {}),
+            bill: { upsert: { create: billData, update: billData } },
+          }),
+        });
       }
-
-      toast.success("Proyecto cancelado");
-      router.push("/my-projects");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Error al cancelar");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleLocationValidated = useCallback(async () => {
-    setLocationValidated(true);
-    setShowLocationValidator(false);
-
-    if (pendingAction === "notAvailable") {
-      await handleNotAvailable();
-    } else if (pendingAction === "objection") {
-      await handleObjection();
-    } else if (pendingAction === "proposal") {
-      await handleProposal();
-    }
-
-    setPendingAction(null);
-  }, [pendingAction, visit, selectedNotAvailableTags, notAvailableNotes, selectedObjections, objectionNotes]);
-
-  const handleLocationCancelled = () => {
-    setShowLocationValidator(false);
-    setPendingAction(null);
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setBillFile(file);
-      setBillPreview(URL.createObjectURL(file));
-    }
-  };
-
-  const toggleObjection = (id: number) => {
-    setSelectedObjections((prev) =>
-      prev.includes(id) ? prev.filter((o) => o !== id) : [...prev, id]
-    );
-  };
-
-  const toggleCloserObjection = (id: number) => {
-    setSelectedCloserObjections((prev) =>
-      prev.includes(id) ? prev.filter((o) => o !== id) : [...prev, id]
-    );
-  };
-
-  const toggleProjectType = (id: number) => {
-    setSelectedProjectTypes((prev) =>
-      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
-    );
-  };
-
-  const toggleNotAvailableTag = (id: number) => {
-    setSelectedNotAvailableTags((prev) =>
-      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
-    );
-  };
-
-  const handleProjectDetailChange = (key: string, value: string) => {
-    setProjectDetailsForm((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleCelebrationComplete = () => {
-    setShowCelebration(false);
-    toast.success("Proyecto cerrado exitosamente!");
-    router.push("/my-projects");
-  };
+      toast.success("Visita agendada");
+      router.push(`/dashboard?highlight=${visit.id}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al agendar");
+    } finally { setSaving(false); }
+  }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 
   if (!visit) {
     return (
-      <motion.div
-        className="text-center py-12"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
+      <motion.div className="text-center py-12" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <p className="text-on-surface-variant">No se encontró visita activa</p>
-        <Button
-          variant="outline"
-          className="mt-4"
-          onClick={() => router.push("/map")}
-        >
-          Volver al mapa
-        </Button>
+        <Button variant="outline" className="mt-4" onClick={() => router.push("/dashboard")}>Volver</Button>
       </motion.div>
     );
   }
 
-  const tabThreeLabel = isClosingMode
-    ? isStartProject
-      ? "Agendar Visita"
-      : "Cerrar Proyecto"
-    : "Acepta Propuesta";
-
   return (
     <div className="space-y-6 pb-8">
       <AnimatePresence>
-        {showCelebration && (
-          <CelebrationOverlay onComplete={handleCelebrationComplete} />
-        )}
+        {showCelebration && <CelebrationOverlay onComplete={() => { setShowCelebration(false); router.push("/dashboard"); }} />}
       </AnimatePresence>
+      <QuoteModal isOpen={showQuoteModal} onClose={() => setShowQuoteModal(false)} visitId={visit.id} />
+      <ContractModal isOpen={showContractModal} onClose={() => setShowContractModal(false)} visitId={visit.id} />
 
-      <QuoteModal
-        isOpen={showQuoteModal}
-        onClose={() => setShowQuoteModal(false)}
-        visitId={visit.id}
-      />
-
-      <ContractModal
-        isOpen={showContractModal}
-        onClose={() => setShowContractModal(false)}
-        visitId={visit.id}
-      />
-
-      <motion.header
-        className="flex items-center gap-3"
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <button
-          onClick={() => router.push("/map")}
-          className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container-high transition-colors"
-        >
+      <motion.header className="flex items-center gap-3" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+        <button onClick={() => router.push("/dashboard")} className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container-high">
           <ArrowLeft className="w-5 h-5 text-primary" />
         </button>
-        <div className="flex-1">
-          <h1 className="font-headline text-xl font-bold text-primary">
-            One Solutions
-          </h1>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowProjectTypeSelector(!showProjectTypeSelector)}
-          className="text-xs gap-1.5"
-        >
-          <Briefcase className="w-4 h-4" />
-          Cambiar Proyectos
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowQuoteModal(true)}
-          className="text-xs gap-1.5"
-        >
-          <FileText className="w-4 h-4" />
-          Ver Cotización
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowContractModal(true)}
-          className="text-xs gap-1.5"
-        >
-          <FileText className="w-4 h-4" />
-          Documentos
-        </Button>
+        <h1 className="font-headline text-xl font-bold text-primary">One Solutions</h1>
+        <div className="flex-1" />
+        <Button variant="ghost" size="sm" onClick={() => setShowQuoteModal(true)} className="text-xs gap-1.5"><FileText className="w-4 h-4" /> Cotización</Button>
+        <Button variant="ghost" size="sm" onClick={() => setShowContractModal(true)} className="text-xs gap-1.5"><FileText className="w-4 h-4" /> Documentos</Button>
       </motion.header>
 
-      {showProjectTypeSelector && (
-        <motion.section
-          className="glass-panel rounded-xl p-4 space-y-3"
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          exit={{ opacity: 0, height: 0 }}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-on-surface-variant uppercase tracking-wider">
-              Seleccionar Tipos de Proyecto
-            </span>
+      <motion.section className="glass-panel rounded-xl p-4 flex justify-between items-center" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center text-primary"><CheckCircle className="w-5 h-5" /></div>
+          <div><h2 className="font-semibold text-on-surface">{visit.parcel.address}</h2><p className="text-sm text-on-surface-variant">Visita en curso</p></div>
+        </div>
+        <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold uppercase rounded-full border border-primary/20">Activa</span>
+      </motion.section>
+
+      <motion.div className="glass-panel rounded-xl p-6 space-y-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+        <div className="space-y-2">
+          <label className={labelClass}>Nombre</label>
+          <div className="relative">
+            <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
+            <input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Nombre del cliente" className={inputClass} />
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className={labelClass}>Correo (opcional)</label>
+          <div className="relative">
+            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            <input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} placeholder="Correo electrónico" className={inputClass} />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className={labelClass}>Teléfono *</label>
+          <div className="relative">
+            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
+            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Número de teléfono" required className={inputClass} />
+          </div>
+        </div>
+
+        <UploadField label="ID del Cliente (opcional)" preview={idPreview}
+          onChange={fileChanged(setIdFile, setIdPreview)} onClear={() => { setIdFile(null); setIdPreview(""); }} />
+
+        <UploadField label="Recibo de Luz (opcional)" preview={billPreview}
+          onChange={fileChanged(setBillFile, setBillPreview)} onClear={() => { setBillFile(null); setBillPreview(""); }} />
+
+        <div className="space-y-3">
+          <label className={labelClass}>Tipos de Proyecto</label>
           <div className="flex flex-wrap gap-2">
             {projectTypes.map((pt) => (
-              <motion.button
-                key={pt.id}
-                onClick={() => toggleProjectType(pt.id)}
-                whileTap={{ scale: 0.95 }}
-                className={`px-4 py-2.5 rounded-full border text-sm font-medium transition-all ${
-                  selectedProjectTypes.includes(pt.id)
-                    ? "bg-primary/10 border-primary text-primary shadow-sm"
-                    : "bg-surface-container-lowest border-outline-variant text-on-surface hover:border-primary/30"
-                }`}
-              >
+              <motion.button key={pt.id} type="button" onClick={() => toggleProjectType(pt.id)} whileTap={{ scale: 0.95 }}
+                className={`px-4 py-2.5 rounded-full border text-sm font-medium transition-all ${selectedProjectTypes.includes(pt.id) ? "bg-primary/10 border-primary text-primary shadow-sm" : "bg-surface-container-lowest border-outline-variant text-on-surface hover:border-primary/30"}`}>
                 {pt.name}
               </motion.button>
             ))}
           </div>
-          <Button
-            onClick={handleUpdateProjectTypes}
-            disabled={saving}
-            variant="outline"
-            size="sm"
-          >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar Cambios"}
-          </Button>
-        </motion.section>
-      )}
-
-      <motion.section
-        className="glass-panel rounded-xl p-4 flex justify-between items-center"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center text-primary">
-            <DoorOpen className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-on-surface">
-              {visit.parcel.address}
-            </h2>
-            <p className="text-sm text-on-surface-variant">Visita en curso</p>
-          </div>
         </div>
-        <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold uppercase rounded-full border border-primary/20">
-          Activa
-        </span>
-      </motion.section>
 
-      <motion.section
-        initial="hidden"
-        animate="visible"
-        variants={{
-          visible: { transition: { staggerChildren: 0.08 } },
-        }}
-      >
-        <motion.h3
-          className="font-headline text-lg font-bold text-on-surface mb-4"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: "easeOut" as const }}
-        >
-          Resultado de la Visita
-        </motion.h3>
-        <motion.div
-          className="grid grid-cols-1 md:grid-cols-3 gap-3"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.06, duration: 0.3, ease: "easeOut" as const }}
-        >
-          <OutcomeTab
-            icon={CalendarX}
-            label="No Disponible"
-            isActive={activeTab === "no-disponible"}
-            onClick={() =>
-              setActiveTab(activeTab === "no-disponible" ? null : "no-disponible")
-            }
-            color="primary"
-          />
-          <OutcomeTab
-            icon={XCircle}
-            label="Objeción"
-            isActive={activeTab === "objecion"}
-            onClick={() =>
-              setActiveTab(activeTab === "objecion" ? null : "objecion")
-            }
-            color="secondary"
-          />
-          <OutcomeTab
-            icon={CheckCircle}
-            label={tabThreeLabel}
-            isActive={activeTab === "propuesta"}
-            onClick={() =>
-              setActiveTab(activeTab === "propuesta" ? null : "propuesta")
-            }
-            color="primary"
-          />
-        </motion.div>
-      </motion.section>
+        <div className="space-y-2">
+          <label className={labelClass}>Notas (opcional)</label>
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notas adicionales..."
+            className="w-full min-h-[80px] bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none rounded-xl p-4 resize-none text-on-surface" />
+        </div>
 
-      <AnimatePresence mode="wait">
-        {activeTab === "no-disponible" && (
-          <motion.div
-            key="no-disponible"
-            initial={{ opacity: 0, y: 24, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            transition={tabTransition}
-            className="glass-panel rounded-xl p-6 space-y-6"
-          >
-            <div className="flex items-center gap-2 text-primary">
-              <CalendarX className="w-5 h-5" />
-              <h4 className="font-semibold uppercase tracking-wider text-sm">
-                No Disponible
-              </h4>
-            </div>
+        <section className="space-y-4 border-t border-outline-variant pt-6">
+          <label className={labelClass}>Agendar Visita</label>
+          <div className="grid grid-cols-2 gap-3">
+            <input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} className={inputNoIcon} />
+            <input type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className={inputNoIcon} />
+          </div>
 
-            {notAvailableTags.length === 0 ? (
-              <div className="text-center py-6">
-                <Tag className="w-10 h-10 text-on-surface-variant mx-auto mb-3 opacity-40" />
-                <p className="text-on-surface-variant text-sm">
-                  No hay etiquetas de &quot;No Disponible&quot; configuradas.
-                  Contacta a un administrador.
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                    Selecciona el motivo
-                  </label>
+          {showCloserDropdown && (
+            <select value={selectedCloserId} onChange={(e) => { setSelectedCloserId(e.target.value); setSelectedSlotId(""); }}
+              className={`${inputNoIcon} px-4`}>
+              <option value="">-- Selecciona un Closer --</option>
+              {closers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          )}
+
+          {showSelfAssign && (
+            <label className="flex items-center gap-3 p-3 bg-primary/5 rounded-xl border border-primary/10 cursor-pointer">
+              <input type="checkbox" checked={selfAssign} onChange={(e) => setSelfAssign(e.target.checked)}
+                className="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary" />
+              <span className="text-sm font-medium text-on-surface">Asignarme a mí mismo</span>
+            </label>
+          )}
+
+          {showCloserDropdown && selectedCloserId && (
+            <motion.div className="space-y-3" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} transition={{ duration: 0.25 }}>
+              <label className={labelClass}>Disponibilidad de {closer?.name}</label>
+              {Object.keys(slotsByDate).length === 0 ? (
+                <p className="text-sm text-on-surface-variant italic">Sin slots disponibles</p>
+              ) : Object.entries(slotsByDate).map(([date, daySlots]) => (
+                <div key={date} className="space-y-1.5">
+                  <p className="text-xs font-medium text-on-surface-variant">{date}</p>
                   <div className="flex flex-wrap gap-2">
-                    {notAvailableTags.map((tag) => {
-                      const isSelected = selectedNotAvailableTags.includes(tag.id);
-                      return (
-                        <motion.button
-                          key={tag.id}
-                          onClick={() => toggleNotAvailableTag(tag.id)}
-                          whileTap={{ scale: 0.95 }}
-                          className={`px-4 py-2.5 rounded-full border text-sm font-medium transition-all ${
-                            isSelected
-                              ? "border-primary/60 bg-primary/10 text-primary shadow-sm"
-                              : "border-outline-variant bg-surface-container-lowest text-on-surface hover:border-primary/30 hover:bg-primary/5"
-                          }`}
-                        >
-                          {tag.name}
-                        </motion.button>
-                      );
-                    })}
+                    {daySlots.map((s) => (
+                      <button key={s.id} type="button"
+                        onClick={() => { setSelectedSlotId(String(s.id)); setScheduleDate(s.startAt.split("T")[0]); setScheduleTime(s.startAt.split("T")[1]?.substring(0, 5) ?? ""); }}
+                        className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${selectedSlotId === String(s.id) ? "bg-primary/10 border-primary text-primary" : "bg-surface-container-lowest border-outline-variant text-on-surface hover:border-primary/30"}`}>
+                        {new Date(s.startAt).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
+                      </button>
+                    ))}
                   </div>
-                  {selectedNotAvailableTags.length === 0 && (
-                    <p className="text-xs text-secondary italic">
-                      Selecciona al menos una etiqueta
-                    </p>
-                  )}
                 </div>
+              ))}
+            </motion.div>
+          )}
+        </section>
+      </motion.div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                    Notas (opcional)
-                  </label>
-                  <textarea
-                    value={notAvailableNotes}
-                    onChange={(e) => setNotAvailableNotes(e.target.value)}
-                    className="w-full min-h-[80px] bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none rounded-xl p-4 resize-none text-on-surface"
-                    placeholder="Notas adicionales..."
-                  />
-                </div>
-
-                <Button
-                  onClick={handleNotAvailable}
-                  disabled={selectedNotAvailableTags.length === 0 || saving}
-                  className="w-full h-14 uppercase tracking-widest"
-                >
-                  {saving ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    "Registrar"
-                  )}
-                </Button>
-              </>
-            )}
-          </motion.div>
-        )}
-
-        {activeTab === "objecion" && (
-          <motion.div
-            key="objecion"
-            initial={{ opacity: 0, y: 24, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            transition={tabTransition}
-            className="glass-panel rounded-xl p-6 space-y-6"
-          >
-            <div className="flex items-center gap-2 text-secondary">
-              <XCircle className="w-5 h-5" />
-              <h4 className="font-semibold uppercase tracking-wider text-sm">
-                Registrar Objeciones
-              </h4>
-            </div>
-
-            {isClosingMode && closerObjections.length === 0 ? (
-              <div className="text-center py-6">
-                <Tag className="w-10 h-10 text-on-surface-variant mx-auto mb-3 opacity-40" />
-                <p className="text-on-surface-variant text-sm">
-                  No hay objeciones de closer configuradas. Contacta a un administrador.
-                </p>
-              </div>
-            ) : !isClosingMode && objections.length === 0 ? (
-              <div className="text-center py-6">
-                <Tag className="w-10 h-10 text-on-surface-variant mx-auto mb-3 opacity-40" />
-                <p className="text-on-surface-variant text-sm">
-                  No hay objeciones configuradas. Contacta a un administrador.
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="flex flex-wrap gap-2">
-                  {isClosingMode
-                    ? closerObjections.map((obj) => (
-                        <motion.button
-                          key={obj.id}
-                          onClick={() => toggleCloserObjection(obj.id)}
-                          whileTap={{ scale: 0.95 }}
-                          className={`px-4 py-2.5 rounded-full border text-sm font-medium transition-all ${
-                            selectedCloserObjections.includes(obj.id)
-                              ? "bg-secondary/10 border-secondary text-secondary shadow-sm"
-                              : "bg-surface-container-lowest border-outline-variant text-on-surface hover:border-secondary/40"
-                          }`}
-                        >
-                          {obj.name}
-                        </motion.button>
-                      ))
-                    : objections.map((obj) => (
-                        <motion.button
-                          key={obj.id}
-                          onClick={() => toggleObjection(obj.id)}
-                          whileTap={{ scale: 0.95 }}
-                          className={`px-4 py-2.5 rounded-full border text-sm font-medium transition-all ${
-                            selectedObjections.includes(obj.id)
-                              ? "bg-secondary/10 border-secondary text-secondary shadow-sm"
-                              : "bg-surface-container-lowest border-outline-variant text-on-surface hover:border-secondary/40"
-                          }`}
-                        >
-                          {obj.name}
-                        </motion.button>
-                      ))}
-                </div>
-                {(isClosingMode && selectedCloserObjections.length === 0) ||
-                  (!isClosingMode && selectedObjections.length === 0) ? (
-                  <p className="text-xs text-secondary italic">
-                    Selecciona al menos una objeción
-                  </p>
-                ) : null}
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                    Notas adicionales
-                  </label>
-                  <textarea
-                    value={objectionNotes}
-                    onChange={(e) => setObjectionNotes(e.target.value)}
-                    className="w-full min-h-[120px] bg-surface-container-low border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary outline-none rounded-xl p-4 resize-none text-on-surface"
-                    placeholder="Escribe detalles adicionales..."
-                  />
-                </div>
-                <Button
-                  onClick={isClosingMode ? handleCloserObjection : handleObjection}
-                  disabled={
-                    isClosingMode
-                      ? selectedCloserObjections.length === 0 || saving
-                      : selectedObjections.length === 0 || saving
-                  }
-                  variant="secondary"
-                  className="w-full h-14 uppercase tracking-widest"
-                >
-                  {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Registrar"}
-                </Button>
-              </>
-            )}
-          </motion.div>
-        )}
-
-        {activeTab === "propuesta" && isClosingMode && isProject && (
-          <CloserForm
-            visit={visit}
-            clientName={clientName}
-            setClientName={setClientName}
-            clientEmail={clientEmail}
-            setClientEmail={setClientEmail}
-            phone={phone}
-            setPhone={setPhone}
-            projectTypes={projectTypes}
-            selectedProjectTypes={selectedProjectTypes}
-            toggleProjectType={toggleProjectType}
-            billFile={billFile}
-            billPreview={billPreview}
-            billFileName={billFileName}
-            setBillFileName={setBillFileName}
-            handleFileChange={handleFileChange}
-            setBillFile={setBillFile}
-            setBillPreview={setBillPreview}
-            closingNotes={closingNotes}
-            setClosingNotes={setClosingNotes}
-            saving={saving}
-            savingProjectDetails={savingProjectDetails}
-            handleStartProject={handleStartProject}
-            handleCloseProject={handleCloseProject}
-            handleRequestClose={handleRequestClose}
-            handleCancel={handleCancel}
-            handleSaveProjectDetails={handleSaveProjectDetails}
-            handleCreateChat={handleCreateChat}
-            projectDetailsForm={projectDetailsForm}
-            onProjectDetailChange={handleProjectDetailChange}
-            projectCompletion={projectCompletion}
-            loadedFieldNames={loadedFieldNames}
-            onUpdateProjectTypes={handleUpdateProjectTypes}
-            userRole={session?.user?.role || ""}
-          />
-        )}
-
-        {activeTab === "propuesta" && (!isClosingMode || isStartProject) && (
-          <motion.div
-            key="propuesta"
-            initial={{ opacity: 0, y: 24, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            transition={tabTransition}
-            className="glass-panel rounded-xl p-6 space-y-6"
-          >
-            <div className="flex items-center gap-2 text-primary">
-              <CheckCircle className="w-5 h-5" />
-              <h4 className="font-semibold uppercase tracking-wider text-sm">
-                Nueva Oportunidad
-              </h4>
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                Paso 1: Subir Recibo de Luz (opcional)
-              </label>
-              <label className="w-full h-32 border-2 border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center bg-surface-container-lowest hover:bg-primary/5 transition-colors cursor-pointer group">
-                <Upload className="w-8 h-8 text-on-surface-variant group-hover:text-primary transition-colors" />
-                <span className="text-sm text-on-surface-variant mt-2">
-                  {billFile ? billFile.name : "Haz clic para subir archivo"}
-                </span>
-                <input
-                  type="file"
-                  accept="image/*,.pdf"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </label>
-              {billPreview && (
-                <motion.div
-                  className="relative"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                >
-                  <img
-                    src={billPreview}
-                    alt="Preview"
-                    className="w-full h-40 object-cover rounded-xl"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBillFile(null);
-                      setBillPreview("");
-                    }}
-                    className="absolute top-2 right-2 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors"
-                  >
-                    <XCircle className="w-5 h-5" />
-                  </button>
-                </motion.div>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                Paso 2: Información de Contacto
-              </label>
-              <div className="relative">
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Número de teléfono"
-                  className="w-full h-12 pl-12 pr-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
-                />
-              </div>
-              <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
-                <input
-                  type="text"
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  placeholder="Nombre del cliente"
-                  className="w-full h-12 pl-12 pr-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
-                />
-              </div>
-              <div className="relative">
-                <svg
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                  />
-                </svg>
-                <input
-                  type="email"
-                  value={clientEmail}
-                  onChange={(e) => setClientEmail(e.target.value)}
-                  placeholder="Correo electrónico"
-                  className="w-full h-12 pl-12 pr-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                  Paso 3: Seleccionar Proyectos
-                </label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowProjectTypeSelector(!showProjectTypeSelector)}
-                  className="text-[10px] gap-1"
-                >
-                  <Briefcase className="w-3 h-3" />
-                  Cambiar
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {projectTypes.map((pt) => (
-                  <motion.button
-                    key={pt.id}
-                    onClick={() => toggleProjectType(pt.id)}
-                    whileTap={{ scale: 0.95 }}
-                    className={`px-4 py-2.5 rounded-full border text-sm font-medium transition-all ${
-                      selectedProjectTypes.includes(pt.id)
-                        ? "bg-primary/10 border-primary text-primary shadow-sm"
-                        : "bg-surface-container-lowest border-outline-variant text-on-surface hover:border-primary/30"
-                    }`}
-                  >
-                    {pt.name}
-                  </motion.button>
-                ))}
-              </div>
-              {selectedProjectTypes.length === 0 && (
-                <p className="text-xs text-secondary italic">
-                  Selecciona al menos un proyecto
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                Notas adicionales
-              </label>
-              <textarea
-                value={proposalNotes}
-                onChange={(e) => setProposalNotes(e.target.value)}
-                className="w-full min-h-[80px] bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none rounded-xl p-4 resize-none text-on-surface"
-                placeholder="Información adicional sobre el cliente o la visita..."
-              />
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex justify-between items-end">
-                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                  Paso 4: Agendar con Closer
-                </label>
-                <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded uppercase font-bold">
-                  Seleccionar Fecha y Hora
-                </span>
-              </div>
-
-              {isTrainee && (
-                <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-xl border border-primary/10">
-                  <input
-                    type="checkbox"
-                    id="directSale"
-                    checked={directSale}
-                    onChange={(e) => {
-                      setDirectSale(e.target.checked);
-                      if (e.target.checked) {
-                        setSelectedCloserId("");
-                        setSelectedSlotId("");
-                      }
-                    }}
-                    className="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary"
-                  />
-                  <label htmlFor="directSale" className="text-sm font-medium text-on-surface cursor-pointer">
-                    Venta directa (sin closer)
-                  </label>
-                </div>
-              )}
-
-              {!directSale && (
-                <>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-on-surface">
-                      Selecciona un Closer
-                    </label>
-                    <select
-                      value={selectedCloserId}
-                      onChange={(e) => {
-                        setSelectedCloserId(e.target.value);
-                        setSelectedSlotId("");
-                      }}
-                      className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
-                    >
-                      <option value="">-- Selecciona un Closer --</option>
-                      {closers.map((closer) => (
-                        <option key={closer.id} value={closer.id}>
-                          {closer.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {selectedCloserId && (
-                    <motion.div
-                      className="space-y-2"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <label className="text-sm font-medium text-on-surface">
-                        Selecciona Fecha y Hora
-                      </label>
-                      <SlotPicker
-                        closerId={parseInt(selectedCloserId)}
-                        selectedSlotId={
-                          selectedSlotId ? parseInt(selectedSlotId) : undefined
-                        }
-                        onSlotSelect={(slotId) =>
-                          setSelectedSlotId(String(slotId))
-                        }
-                      />
-                    </motion.div>
-                  )}
-                </>
-              )}
-            </div>
-
-            <Button
-              onClick={handleProposal}
-              disabled={
-                directSale
-                  ? !phone ||
-                    selectedProjectTypes.length === 0 ||
-                    saving
-                  : !phone ||
-                    !selectedSlotId ||
-                    !selectedCloserId ||
-                    selectedProjectTypes.length === 0 ||
-                    saving
-              }
-              className="w-full h-14 uppercase tracking-widest"
-            >
-              {saving ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                "Confirmar Cita"
-              )}
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {showLocationValidator && (
-        <LocationValidator
-          parcelId={parcelId}
-          onValidated={handleLocationValidated}
-          onCancel={handleLocationCancelled}
-        />
-      )}
+      <div className="flex gap-3">
+        <Button variant="outline" onClick={handleSaveWithoutSchedule} disabled={saving} className="flex-1 h-14">
+          {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Guardar sin Agendar"}
+        </Button>
+        <Button onClick={handleSaveAndSchedule} disabled={saving || !phone.trim()} className="flex-1 h-14">
+          {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Guardar y Agendar"}
+        </Button>
+      </div>
     </div>
   );
 }
 
-function OutcomeTab({
-  icon: Icon,
-  label,
-  isActive,
-  onClick,
-  color,
-}: {
-  icon: React.ElementType;
-  label: string;
-  isActive: boolean;
-  onClick: () => void;
-  color: "primary" | "secondary";
+function UploadField({ label, preview, onChange, onClear }: {
+  label: string; preview: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; onClear: () => void;
 }) {
-  return (
-    <motion.button
-      onClick={onClick}
-      whileTap={{ scale: 0.97 }}
-      whileHover={{ y: -2 }}
-      className={`outcome-tab flex flex-col items-center justify-center p-6 rounded-xl glass-panel border-2 transition-all ${
-        isActive
-          ? color === "secondary"
-            ? "border-secondary bg-secondary/5 shadow-lg shadow-secondary/10"
-            : "border-primary bg-primary/5 shadow-lg shadow-primary/10"
-          : "border-transparent hover:bg-surface-container-high hover:border-outline-variant"
-      }`}
-    >
-      <Icon
-        className={`w-8 h-8 mb-2 transition-colors ${
-          isActive
-            ? color === "secondary"
-              ? "text-secondary"
-              : "text-primary"
-            : "text-on-surface-variant"
-        }`}
-      />
-      <span className="font-semibold text-sm uppercase tracking-wider text-on-surface">
-        {label}
-      </span>
-    </motion.button>
-  );
-}
-
-function CloserForm({
-  visit,
-  clientName,
-  setClientName,
-  clientEmail,
-  setClientEmail,
-  phone,
-  setPhone,
-  projectTypes,
-  selectedProjectTypes,
-  toggleProjectType,
-  billFile,
-  billPreview,
-  billFileName,
-  setBillFileName,
-  handleFileChange,
-  setBillFile,
-  setBillPreview,
-  closingNotes,
-  setClosingNotes,
-  saving,
-  savingProjectDetails,
-  handleStartProject,
-  handleCloseProject,
-  handleRequestClose,
-  handleCancel,
-  handleSaveProjectDetails,
-  handleCreateChat,
-  projectDetailsForm,
-  onProjectDetailChange,
-  projectCompletion,
-  loadedFieldNames,
-  onUpdateProjectTypes,
-  userRole,
-}: {
-  visit: Visit;
-  clientName: string;
-  setClientName: (v: string) => void;
-  clientEmail: string;
-  setClientEmail: (v: string) => void;
-  phone: string;
-  setPhone: (v: string) => void;
-  projectTypes: ProjectType[];
-  selectedProjectTypes: number[];
-  toggleProjectType: (id: number) => void;
-  billFile: File | null;
-  billPreview: string;
-  billFileName: string;
-  setBillFileName: (v: string) => void;
-  handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  setBillFile: (f: File | null) => void;
-  setBillPreview: (v: string) => void;
-  closingNotes: string;
-  setClosingNotes: (v: string) => void;
-  saving: boolean;
-  savingProjectDetails: boolean;
-  handleStartProject: () => void;
-  handleCloseProject: () => void;
-  handleRequestClose: () => void;
-  handleCancel: () => void;
-  handleSaveProjectDetails: () => void;
-  handleCreateChat: () => void;
-  projectDetailsForm: Record<string, string>;
-  onProjectDetailChange: (key: string, value: string) => void;
-  projectCompletion: number;
-  loadedFieldNames: string[];
-  onUpdateProjectTypes: () => void;
-  userRole: string;
-}) {
-  const isStartProject =
-    visit.stage === "PROPOSAL_ACCEPTED" || visit.stage === "IN_PROGRESS";
-  const isProject = visit.stage === "PROJECT";
-  const isFullyComplete = projectCompletion === 100;
-  const isClosing = userRole === "CLOSER" || userRole === "SETTER";
-
-  const PAYMENT_OPTIONS = ["Cash", "Transferencia", "Cheques", "LightReach", "SkyLight", "SunGage", "Sunrise Capital", "Foundations Finance", "Otro"];
-
-  return (
-    <motion.div
-      key="closer-form"
-      initial={{ opacity: 0, y: 24, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -20, scale: 0.95 }}
-      transition={{ duration: 0.35, ease: "easeOut" as const }}
-      className="glass-panel rounded-xl p-6 space-y-6"
-    >
-      <div className="flex items-center gap-2 text-primary">
-        <CheckCircle className="w-5 h-5" />
-        <h4 className="font-semibold uppercase tracking-wider text-sm">
-          {isStartProject ? "Iniciar Proyecto" : isProject ? "Cerrar Proyecto" : "Proyecto"}
-        </h4>
-      </div>
-
-      <div className="space-y-3">
-        <div className="flex justify-between text-xs text-on-surface-variant font-medium">
-          <span>Progreso de Información</span>
-          <span>{projectCompletion}%</span>
-        </div>
-        <div className="w-full h-3 bg-surface-container-low rounded-full overflow-hidden">
-          <motion.div
-            className={`h-full rounded-full ${
-              isFullyComplete ? "bg-green-500" : projectCompletion >= 50 ? "bg-yellow-500" : "bg-red-500"
-            }`}
-            initial={{ width: 0 }}
-            animate={{ width: `${projectCompletion}%` }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-          />
-        </div>
-        {isFullyComplete && (
-          <p className="text-xs text-green-600 font-medium">
-            Información completa
-          </p>
-        )}
-      </div>
-
-      <div className="space-y-4">
-          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-            Detalles del Proyecto
-          </label>
-          <div className="space-y-2">
-            <label className="block text-xs font-medium text-on-surface-variant">Nombre del Cliente</label>
-            <input
-              type="text"
-              value={projectDetailsForm["clientName"] || ""}
-              onChange={(e) => onProjectDetailChange("clientName", e.target.value)}
-              placeholder="Nombre completo"
-              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-xs font-medium text-on-surface-variant">Email del Cliente</label>
-            <input
-              type="email"
-              value={projectDetailsForm["clientEmail"] || ""}
-              onChange={(e) => onProjectDetailChange("clientEmail", e.target.value)}
-              placeholder="correo@ejemplo.com"
-              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-xs font-medium text-on-surface-variant">Dirección</label>
-            <input
-              type="text"
-              value={projectDetailsForm["address"] || ""}
-              onChange={(e) => onProjectDetailChange("address", e.target.value)}
-              placeholder="Dirección del proyecto"
-              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-xs font-medium text-on-surface-variant">Fecha de Cierre</label>
-            <div className="flex gap-2">
-              <input
-                type="date"
-                value={(projectDetailsForm["closingDate"] || "").split("T")[0] || ""}
-                onChange={(e) => {
-                  const d = e.target.value;
-                  const timePart = (projectDetailsForm["closingDate"] || "").split("T")[1]?.substring(0, 5) || "";
-                  const combined = d ? `${d}T${timePart || "00:00"}:00` : "";
-                  onProjectDetailChange("closingDate", combined);
-                }}
-                className="flex-1 h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
-              />
-              <input
-                type="time"
-                step="1"
-                value={(projectDetailsForm["closingDate"] || "").split("T")[1]?.substring(0, 5) || ""}
-                onChange={(e) => {
-                  const t = e.target.value;
-                  const datePart = (projectDetailsForm["closingDate"] || "").split("T")[0] || "";
-                  const combined = datePart ? `${datePart}T${t || "00:00"}:00` : "";
-                  onProjectDetailChange("closingDate", combined);
-                }}
-                className="flex-1 h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="block text-xs font-medium text-on-surface-variant">Método de Pago</label>
-            <select
-              value={projectDetailsForm["paymentMethod"] || ""}
-              onChange={(e) => onProjectDetailChange("paymentMethod", e.target.value)}
-              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
-            >
-              <option value="">Seleccionar...</option>
-              {PAYMENT_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-2">
-            <label className="block text-xs font-medium text-on-surface-variant">Representante Principal</label>
-            <input type="text" value={projectDetailsForm["primaryRep"] || ""} onChange={(e) => onProjectDetailChange("primaryRep", e.target.value)}
-              placeholder="Nombre del representante"
-              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface" />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-xs font-medium text-on-surface-variant">% Comisión Principal</label>
-            <input type="number" value={projectDetailsForm["primaryRepCommPct"] || ""} onChange={(e) => onProjectDetailChange("primaryRepCommPct", e.target.value)}
-              placeholder="0"
-              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface" />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-xs font-medium text-on-surface-variant">Representante Secundario</label>
-            <input type="text" value={projectDetailsForm["secondaryRep"] || ""} onChange={(e) => onProjectDetailChange("secondaryRep", e.target.value)}
-              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface" />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-xs font-medium text-on-surface-variant">% Comisión Secundario</label>
-            <input type="number" value={projectDetailsForm["secondaryRepCommPct"] || ""} onChange={(e) => onProjectDetailChange("secondaryRepCommPct", e.target.value)}
-              placeholder="0"
-              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface" />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-xs font-medium text-on-surface-variant">Representante Terciario</label>
-            <input type="text" value={projectDetailsForm["tertiaryRep"] || ""} onChange={(e) => onProjectDetailChange("tertiaryRep", e.target.value)}
-              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface" />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-xs font-medium text-on-surface-variant">% Comisión Terciario</label>
-            <input type="number" value={projectDetailsForm["tertiaryRepCommPct"] || ""} onChange={(e) => onProjectDetailChange("tertiaryRepCommPct", e.target.value)}
-              placeholder="0"
-              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface" />
-          </div>
-          {loadedFieldNames.filter(f => !["clientName","clientEmail","address","closingDate","paymentMethod","primaryRep","primaryRepCommPct","secondaryRep","secondaryRepCommPct","tertiaryRep","tertiaryRepCommPct"].includes(f)).map((fieldName) => (
-            <div key={fieldName} className="space-y-2">
-              <label className="block text-xs font-medium text-on-surface-variant">{FIELD_LABEL_MAP[fieldName] || fieldName}</label>
-              <input type="text" value={projectDetailsForm[fieldName] || ""} onChange={(e) => onProjectDetailChange(fieldName, e.target.value)}
-                className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface" />
-            </div>
-          ))}
-          <Button
-            onClick={handleSaveProjectDetails}
-            disabled={savingProjectDetails}
-            variant="outline"
-            className="w-full"
-          >
-            {savingProjectDetails ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              "Guardar Detalles"
-            )}
-          </Button>
-        </div>
-
-      {!isProject && !isClosing && (
-        <div className="space-y-3">
-          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-            Información del Cliente
-          </label>
-          <label className="block text-sm font-medium text-on-surface mb-1">Nombre del Cliente *</label>
-          <div className="relative">
-            <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
-            <input
-              type="text"
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-              placeholder="Nombre del cliente *"
-              className="w-full h-12 pl-12 pr-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
-            />
-          </div>
-          <label className="block text-sm font-medium text-on-surface mb-1">Correo Electrónico</label>
-          <div className="relative">
-            <svg
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-              />
-            </svg>
-            <input
-              type="email"
-              value={clientEmail}
-              onChange={(e) => setClientEmail(e.target.value)}
-              placeholder="Correo electrónico"
-              className="w-full h-12 pl-12 pr-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
-            />
-          </div>
-          <label className="block text-sm font-medium text-on-surface mb-1">Teléfono</label>
-          <div className="relative">
-            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Número de teléfono"
-              className="w-full h-12 pl-12 pr-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
-            />
-          </div>
-        </div>
-      )}
-
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-            Tipo de Proyecto
-          </label>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onUpdateProjectTypes}
-            disabled={saving || selectedProjectTypes.length === 0}
-            className="text-[10px] gap-1"
-          >
-            <Briefcase className="w-3 h-3" />
-            Actualizar
-          </Button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {projectTypes.map((pt) => (
-            <motion.button
-              key={pt.id}
-              onClick={() => toggleProjectType(pt.id)}
-              whileTap={{ scale: 0.95 }}
-              className={`px-4 py-2.5 rounded-full border text-sm font-medium transition-all ${
-                selectedProjectTypes.includes(pt.id)
-                  ? "bg-primary/10 border-primary text-primary shadow-sm"
-                  : "bg-surface-container-lowest border-outline-variant text-on-surface hover:border-primary/30"
-              }`}
-            >
-              {pt.name}
-            </motion.button>
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-          Adjuntar documento (opcional)
-        </label>
-        <label className="w-full h-32 border-2 border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center bg-surface-container-lowest hover:bg-primary/5 transition-colors cursor-pointer group">
-          <Upload className="w-8 h-8 text-on-surface-variant group-hover:text-primary transition-colors" />
-          <span className="text-sm text-on-surface-variant mt-2">
-            {billFile ? billFile.name : "Haz clic para subir archivo"}
-          </span>
-          <input
-            type="file"
-            accept="image/*,.pdf"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-        </label>
-        {billPreview && (
-          <motion.div
-            className="relative"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-          >
-            <img
-              src={billPreview}
-              alt="Preview"
-              className="w-full h-40 object-cover rounded-xl"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                setBillFile(null);
-                setBillPreview("");
-              }}
-              className="absolute top-2 right-2 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors"
-            >
-              <XCircle className="w-5 h-5" />
-            </button>
-          </motion.div>
-        )}
-      </div>
-
+  if (preview) {
+    return (
       <div className="space-y-2">
-        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-          Nombre del archivo
-        </label>
-        <input
-          value={billFileName}
-          onChange={(e) => setBillFileName(e.target.value)}
-          placeholder="Ej: Contrato firmado, Documento de cierre..."
-          className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
-        />
+        <label className={labelClass}>{label}</label>
+        <motion.div className="relative" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+          <img src={preview} alt="Preview" className="w-full h-40 object-cover rounded-xl" />
+          <button type="button" onClick={onClear} className="absolute top-2 right-2 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70">
+            <X className="w-4 h-4" />
+          </button>
+        </motion.div>
       </div>
-
-      <div className="space-y-2">
-        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-          Notas
-        </label>
-        <textarea
-          value={closingNotes}
-          onChange={(e) => setClosingNotes(e.target.value)}
-          className="w-full min-h-[120px] bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none rounded-xl p-4 resize-none text-on-surface"
-          placeholder="Detalles del cierre..."
-        />
-      </div>
-
-      <div className="space-y-3">
-        {isProject && isFullyComplete && (
-          <Button
-            onClick={handleCreateChat}
-            disabled={saving}
-            variant="outline"
-            className="w-full h-14 gap-2"
-          >
-            <MessageSquare className="w-5 h-5" />
-            Crear Chat
-          </Button>
-        )}
-
-        <Button
-          onClick={
-            isProject
-              ? userRole === "ADMIN"
-                ? handleCloseProject
-                : handleRequestClose
-              : handleStartProject
-          }
-          disabled={
-            isProject
-              ? !isFullyComplete || saving
-              : isStartProject
-              ? !clientName || saving
-              : saving
-          }
-          className="w-full h-14 uppercase tracking-widest"
-        >
-          {saving ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : isStartProject ? (
-            "Iniciar Proyecto"
-          ) : isProject ? (
-            userRole === "ADMIN" ? "Cerrar Proyecto" : "Solicitar Cierre"
-          ) : (
-            ""
-          )}
-        </Button>
-
-        {isProject && (
-          <Button
-            onClick={handleCancel}
-            variant="secondary"
-            disabled={saving}
-            className="w-full h-14 uppercase tracking-widest"
-          >
-            Cancelar Proyecto
-          </Button>
-        )}
-      </div>
-    </motion.div>
+    );
+  }
+  return (
+    <div className="space-y-2">
+      <label className={labelClass}>{label}</label>
+      <label className="w-full h-24 border-2 border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center bg-surface-container-lowest hover:bg-primary/5 transition-colors cursor-pointer group">
+        <Upload className="w-6 h-6 text-on-surface-variant group-hover:text-primary transition-colors" />
+        <span className="text-xs text-on-surface-variant mt-1">Haz clic para subir archivo</span>
+        <input type="file" accept="image/*,.pdf" onChange={onChange} className="hidden" />
+      </label>
+    </div>
   );
 }

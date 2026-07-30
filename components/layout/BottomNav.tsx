@@ -3,17 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLocale } from "@/lib/locale-context";
-import {
-  Map,
-  LayoutDashboard,
-  Trophy,
-  MessageSquare,
-  Shield,
-  Calendar,
-  Briefcase,
-  Target,
-  User,
-} from "lucide-react";
+import { Map, LayoutDashboard, Trophy, MessageSquare, Calendar } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 
@@ -26,20 +16,10 @@ export function BottomNav() {
 
   const navItems = [
     { href: "/map", label: t.nav.map, icon: Map, roles: ["SETTER", "SETTER_JR", "CLOSER", "ADMIN"] },
-    {
-      href: "/ranking",
-      label: t.nav.ranking,
-      icon: Trophy,
-      roles: ["SETTER", "SETTER_JR", "CLOSER", "ADMIN"],
-      highlighted: true,
-    },
+    { href: "/ranking", label: t.nav.ranking, icon: Trophy, roles: ["SETTER", "SETTER_JR", "CLOSER", "ADMIN"], highlighted: true },
     { href: "/dashboard", label: t.nav.dashboard, icon: LayoutDashboard, roles: ["SETTER", "SETTER_JR", "CLOSER", "ADMIN"] },
-    { href: "/leads", label: "Leads", icon: Target, roles: ["SETTER", "SETTER_JR", "CLOSER", "PARTNER"] },
-    { href: "/my-projects", label: "Leads Potenciales", icon: Briefcase, roles: ["SETTER", "SETTER_JR", "CLOSER"] },
-    { href: "/calendar", label: t.nav.calendar, icon: Calendar, roles: ["SETTER", "CLOSER", "ADMIN"] },
+    { href: "/calendar", label: t.nav.calendar, icon: Calendar, roles: ["SETTER_JR", "CLOSER", "ADMIN"] },
     { href: "/chat", label: t.nav.chat, icon: MessageSquare, roles: ["SETTER", "SETTER_JR", "CLOSER", "ADMIN", "PARTNER"] },
-    { href: "/admin", label: t.nav.admin, icon: Shield, roles: ["ADMIN"] },
-    { href: "/profile", label: "Perfil", icon: User, roles: ["PARTNER"] },
   ];
 
   const visibleItems = navItems.filter((item) =>
@@ -68,17 +48,11 @@ export function BottomNav() {
                 <motion.div
                   layoutId="nav-active-indicator"
                   className="absolute inset-0 rounded-xl bg-primary/10"
-                  transition={{
-                    type: "spring",
-                    stiffness: 500,
-                    damping: 35,
-                  }}
+                  transition={{ type: "spring", stiffness: 500, damping: 35 }}
                 />
               )}
               <Icon className="w-5 h-5 relative z-10" />
-              <span className="text-[10px] font-medium relative z-10">
-                {item.label}
-              </span>
+              <span className="text-[10px] font-medium relative z-10">{item.label}</span>
             </Link>
           );
         })}
