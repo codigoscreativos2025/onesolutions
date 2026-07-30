@@ -86,13 +86,13 @@ export async function PATCH(
   if (setterId !== undefined || closerId !== undefined) {
     // Allow non-admin to set closerId for the first time (scheduling) or self-assign
     const isFirstTimeCloser = closerId !== undefined && !visit.closerId;
-    const isSelfAssign = closerId !== undefined && closerId === session.user.id;
-    const isSetToSelf = setterId !== undefined && setterId === session.user.id;
+    const isSelfAssign = closerId !== undefined && String(closerId) === session.user.id;
+    const isSetToSelf = setterId !== undefined && String(setterId) === session.user.id;
     if (session.user.role !== "ADMIN" && !isFirstTimeCloser && !isSelfAssign && !isSetToSelf) {
       return NextResponse.json({ error: "Only admins can transfer leads" }, { status: 403 });
     }
 
-    const transferData: Record<string, unknown> = {};
+    const transferData: Record<string, unknown> = { ...updateData };
     if (setterId !== undefined) {
       transferData.setterId = setterId;
       if (visit.parcelId) {

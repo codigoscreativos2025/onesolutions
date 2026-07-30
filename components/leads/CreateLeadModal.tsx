@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { X, MapPin, User, Phone, FileText, Calendar, Loader2 } from 'lucide-react';
+import { X, MapPin, User, Phone, FileText, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { SlotPicker } from '@/components/calendar/SlotPicker';
 import { toast } from 'sonner';
 
 interface CreateLeadModalProps {
@@ -28,10 +29,8 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
   const [selectedProjects, setSelectedProjects] = useState<number[]>([]);
   const [closers, setClosers] = useState<{id: number, name: string}[]>([]);
   const [selectedCloserId, setSelectedCloserId] = useState("");
-  const [slots, setSlots] = useState<any[]>([]);
-  const [slotsLoading, setSlotsLoading] = useState(false);
-  const [selectedDay, setSelectedDay] = useState<string>("");
-  const [selectedSlot, setSelectedSlot] = useState<any>(null);
+  const [selectedScheduleDate, setSelectedScheduleDate] = useState("");
+  const [selectedScheduleTime, setSelectedScheduleTime] = useState("");
   const [formData, setFormData] = useState({
     address: '',
     ownerName: '',
@@ -63,9 +62,8 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
         phone: "",
         notes: "",
       });
-      setSelectedDay("");
-      setSelectedSlot(null);
-      setSlots([]);
+      setSelectedScheduleDate("");
+      setSelectedScheduleTime("");
     }
   }, [isOpen, initialAddress, initialOwnerName]);
 
@@ -102,29 +100,6 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
     }
   };
 
-  const fetchSlots = async (closerId: string) => {
-    setSlotsLoading(true);
-    setSelectedDay("");
-    setSelectedSlot(null);
-    try {
-      const res = await fetch(`/api/slots?closerId=${closerId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setSlots(data || []);
-      }
-    } catch {
-      setSlots([]);
-    } finally {
-      setSlotsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isOpen && effectiveCloserId) {
-      fetchSlots(effectiveCloserId);
-    }
-  }, [isOpen, effectiveCloserId]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -143,7 +118,9 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
           ...formData,
           projectTypeIds: selectedProjects,
           closerId: effectiveCloserId || undefined,
-          scheduledDate: selectedSlot ? new Date(selectedSlot.startAt).toISOString() : undefined,
+          scheduledDate: selectedScheduleDate && selectedScheduleTime
+            ? new Date(`${selectedScheduleDate}T${selectedScheduleTime}:00`).toISOString()
+            : undefined,
         }),
       });
 
@@ -154,9 +131,8 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
         setFormData({ address: '', ownerName: '', phone: '', notes: '' });
         setSelectedProjects([]);
         setSelectedCloserId('');
-        setSelectedDay('');
-        setSelectedSlot(null);
-        setSlots([]);
+        setSelectedScheduleDate('');
+        setSelectedScheduleTime('');
       } else {
         const err = await res.json().catch(() => ({}));
         toast.error(err.error || 'Error al crear lead');
@@ -304,19 +280,15 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
                 Fecha de Visita (opcional)
               </label>
-              {slotsLoading ? (
-                <div className="flex justify-center py-4">
-                  <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-                </div>
-              ) : (
-                <MiniCalendar
-                  slots={slots}
-                  selectedDay={selectedDay}
-                  selectedSlot={selectedSlot}
-                  onSelectDay={setSelectedDay}
-                  onSelectSlot={setSelectedSlot}
-                />
-              )}
+              <SlotPicker
+                userId={Number(effectiveCloserId)}
+                selectedDate={selectedScheduleDate || undefined}
+                selectedTime={selectedScheduleTime || undefined}
+                onSelect={(date, time) => {
+                  setSelectedScheduleDate(date);
+                  setSelectedScheduleTime(time);
+                }}
+              />
             </div>
           )}
 
@@ -344,106 +316,3 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
   );
 }
 
-function MiniCalendar({
-  slots,
-  selectedDay,
-  selectedSlot,
-  onSelectDay,
-  onSelectSlot,
-}: {
-  slots: any[];
-  selectedDay: string;
-  selectedSlot: any;
-  onSelectDay: (day: string) => void;
-  onSelectSlot: (slot: any) => void;
-}) {
-  const availableSlots = slots.filter((s: any) => !s.isBooked);
-  const slotsByDate: Record<string, any[]> = {};
-  availableSlots.forEach((s: any) => {
-    const d = s.startAt.split("T")[0];
-    (slotsByDate[d] ??= []).push(s);
-  });
-
-  const toDateKey = (d: Date): string => {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  };
-
-  const dayLabels = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
-
-  const next14Days = Array.from({ length: 14 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    return d;
-  });
-
-  return (
-    <div className="space-y-3">
-      <div className="flex gap-1 overflow-x-auto pb-1">
-        {next14Days.map((day, i) => {
-          const key = toDateKey(day);
-          const hasSlots = (slotsByDate[key] || []).length > 0;
-          const isSelected = selectedDay === key;
-          return (
-            <button
-              key={i}
-              type="button"
-              disabled={!hasSlots}
-              onClick={() => onSelectDay(key)}
-              className={`flex-shrink-0 w-16 py-2 rounded-lg border text-center transition-all ${
-                !hasSlots
-                  ? 'border-gray-200 dark:border-gray-700 opacity-40 cursor-not-allowed'
-                  : isSelected
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-gray-300 dark:border-gray-600 hover:border-primary/50'
-              }`}
-            >
-              <div className="text-xs font-medium">{dayLabels[day.getDay()]}</div>
-              <div className="text-sm font-bold">{day.getDate()}</div>
-            </button>
-          );
-        })}
-      </div>
-
-      {selectedDay && slotsByDate[selectedDay] && slotsByDate[selectedDay].length > 0 && (
-        <div>
-          <p className="text-xs font-medium text-gray-500 mb-2">
-            Horarios para {new Date(selectedDay + 'T00:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'short' })}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {slotsByDate[selectedDay].map((s: any) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => onSelectSlot(s)}
-                className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
-                  selectedSlot?.id === s.id
-                    ? 'bg-primary/10 border-primary text-primary'
-                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-primary/50'
-                }`}
-              >
-                {new Date(s.startAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {selectedDay && (!slotsByDate[selectedDay] || slotsByDate[selectedDay].length === 0) && (
-        <p className="text-sm text-gray-400 text-center py-2">No hay horarios disponibles para este dia</p>
-      )}
-
-      {selectedSlot && (
-        <div className="flex items-center gap-2 text-sm text-primary bg-primary/5 rounded-lg px-3 py-2">
-          <Calendar className="w-4 h-4" />
-          <span>
-            {new Date(selectedSlot.startAt).toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' })} a las{' '}
-            {new Date(selectedSlot.startAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
-          </span>
-        </div>
-      )}
-    </div>
-  );
-}

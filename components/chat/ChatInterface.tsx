@@ -84,7 +84,7 @@ interface Message {
 
 type ColumnView = "list" | "conversation" | "info";
 
-export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdmin?: boolean; initialRoomId?: number | null }) {
+export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomList = false }: { isAdmin?: boolean; initialRoomId?: number | null; hideRoomList?: boolean }) {
   const { data: session } = useSession();
 
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -456,6 +456,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
       ) : (
         <div className="glass-panel rounded-2xl overflow-hidden flex h-full">
           {/* LEFT COLUMN: Chat list */}
+          {!hideRoomList && (
           <div className={`w-full lg:w-72 border-r border-outline-variant/30 overflow-y-auto flex-shrink-0
             ${mobileColumn !== "list" ? "hidden lg:flex lg:flex-col" : "flex flex-col"}
           `}>
@@ -499,6 +500,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
               </div>
             )}
           </div>
+          )}
 
           {/* CENTER COLUMN: Conversation */}
           <div className={`flex-1 flex flex-col min-h-0

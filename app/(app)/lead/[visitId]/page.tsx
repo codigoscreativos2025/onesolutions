@@ -197,16 +197,27 @@ function getTimelineColor(action: string): string {
   return "#6b7280";
 }
 
+const OPTIONAL_FIELDS = ["secondaryRep", "secondaryRepCommPct", "tertiaryRep", "tertiaryRepCommPct"];
+
 function calculateProjectCompletion(
   projectDetails: Record<string, unknown> | null | undefined,
   fieldMetas: { fieldName: string }[]
 ): number {
   if (!projectDetails) return 0;
 
-  let totalFields = COMMON_FIELDS.length;
-  let completedFields = COMMON_FIELDS.filter(
+  const requiredCommonFields = COMMON_FIELDS.filter((f) => !OPTIONAL_FIELDS.includes(f));
+  let totalFields = requiredCommonFields.length;
+  let completedFields = requiredCommonFields.filter(
     (f) => projectDetails[f] !== undefined && projectDetails[f] !== "" && projectDetails[f] !== null
   ).length;
+
+  for (const field of OPTIONAL_FIELDS) {
+    const val = projectDetails[field];
+    if (val !== undefined && val !== "" && val !== null) {
+      totalFields++;
+      completedFields++;
+    }
+  }
 
   for (const meta of fieldMetas) {
     if (COMMON_FIELDS.includes(meta.fieldName) || FILE_FIELD_KEYS.has(meta.fieldName)) continue;
@@ -638,6 +649,14 @@ export default function LeadDetailPage() {
       if (res.ok) {
         toast.success("Proyecto iniciado");
         fetchVisitDetails();
+        fetch(`/api/visits/${visit.id}/create-chat`, { method: "POST" })
+          .then((chatRes) => chatRes.json())
+          .then((chatRoom) => {
+            setVisit((prev) =>
+              prev ? { ...prev, chatRoom: { id: chatRoom.id } } : prev
+            );
+          })
+          .catch(() => {});
       } else {
         toast.error("Error al iniciar proyecto");
       }
@@ -947,7 +966,7 @@ export default function LeadDetailPage() {
 
         {activeTab === "chat" && (
           <TabContent key="chat">
-            <ChatInterface initialRoomId={visit.chatRoom?.id ?? null} />
+            <ChatInterface initialRoomId={visit.chatRoom?.id ?? null} hideRoomList />
           </TabContent>
         )}
 
@@ -1500,6 +1519,8 @@ function DatosClosedPanel({
 }) {
   const pd = visit.projectDetails || {};
 
+  const nonCommonFields = fieldMetas.filter((m) => !COMMON_FIELDS.includes(m.fieldName));
+
   return (
     <div className="space-y-6">
       {isAdmin && (
@@ -1533,41 +1554,63 @@ function DatosClosedPanel({
         </Panel>
       )}
 
+      <Panel title="Campos del Proyecto" icon={Pencil}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {COMMON_FIELDS.map((key) => (
+            <ReadOnlyField
+              key={key}
+              label={fieldLabel(key)}
+              value={
+                pd[key] !== undefined && pd[key] !== null && pd[key] !== ""
+                  ? key === "closingDate"
+                    ? new Date(String(pd[key])).toLocaleDateString()
+                    : String(pd[key])
+                  : "-"
+              }
+            />
+          ))}
+        </div>
+      </Panel>
+
       <Panel title="Resumen del Proyecto" icon={User}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ReadOnlyField label="Nombre" value={String(pd.clientName || visit.bill?.clientName || "-")} />
           <ReadOnlyField label="Email" value={String(pd.clientEmail || visit.bill?.clientEmail || "-")} />
           <ReadOnlyField label="Dirección" value={String(pd.address || visit.parcel.address)} />
-          <ReadOnlyField label="Fecha de Cierre" value={pd.closingDate ? new Date(String(pd.closingDate)).toLocaleDateString() : "-"} />
-          <ReadOnlyField label="Método de Pago" value={String(pd.paymentMethod || "-")} />
-          <ReadOnlyField label="Rep. Principal" value={`${String(pd.primaryRep || "-")}${pd.primaryRepCommPct ? ` (${pd.primaryRepCommPct}%)` : ""}`} />
         </div>
       </Panel>
 
-      {fieldMetas.length > 0 && (
-        <Panel title={`Campos de ${selectedProjectNames.join(", ") || "Proyecto"}`} icon={Package}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {fieldMetas
-              .filter((m) => pd[m.fieldName] !== undefined && pd[m.fieldName] !== null && pd[m.fieldName] !== "")
-              .map((meta) => (
-                <ReadOnlyField
-                  key={meta.fieldName}
-                  label={meta.fieldLabel}
-                  value={
-                    meta.fieldType === "file" || meta.fieldType === "photos"
-                      ? ""
-                      : String(pd[meta.fieldName])
-                  }
-                  linkUrl={
-                    meta.fieldType === "file" || meta.fieldType === "photos"
-                      ? String(pd[meta.fieldName])
-                      : undefined
-                  }
-                />
-              ))}
+      {nonCommonFields.length > 0 && (() => {
+        const { groups } = groupFieldsByType(nonCommonFields as { fieldName: string; fieldLabel?: string; fieldType?: string }[]);
+        return (
+          <div className="space-y-4">
+            {Object.entries(groups).map(([key, fields]) => (
+              <Panel key={key} title={FIELD_GROUPS[key]?.label || key} icon={Package}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {fields
+                    .filter((meta) => pd[meta.fieldName] !== undefined && pd[meta.fieldName] !== null && pd[meta.fieldName] !== "")
+                    .map((meta) => (
+                      <ReadOnlyField
+                        key={meta.fieldName}
+                        label={meta.fieldLabel || meta.fieldName}
+                        value={
+                          meta.fieldType === "file" || meta.fieldType === "photos"
+                            ? ""
+                            : String(pd[meta.fieldName])
+                        }
+                        linkUrl={
+                          meta.fieldType === "file" || meta.fieldType === "photos"
+                            ? String(pd[meta.fieldName])
+                            : undefined
+                        }
+                      />
+                    ))}
+                </div>
+              </Panel>
+            ))}
           </div>
-        </Panel>
-      )}
+        );
+      })()}
 
       {visit.bill?.notes && (
         <Panel title="Notas" icon={Pencil}>
