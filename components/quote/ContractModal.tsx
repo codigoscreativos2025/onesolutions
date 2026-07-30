@@ -659,7 +659,8 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
                         <Button
                           variant="outline"
                           onClick={() => {
-                            setSendToEmail("");
+                            const email = activeContract?.data?.clientEmail || "";
+                            setSendToEmail(email);
                             setShowSendEmail(true);
                           }}
                           className="gap-2 text-sm"

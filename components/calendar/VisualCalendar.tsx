@@ -137,7 +137,11 @@ export function VisualCalendar({ visits, onDayClick, dayAvailability }: VisualCa
                     : isSelected
                     ? 'border-primary bg-primary/10'
                     : hasVisits
-                    ? 'border-primary/40 bg-primary/5 hover:border-primary/60'
+                    ? 'border-yellow-300 bg-yellow-100 hover:border-yellow-400'
+                    : avail === true
+                    ? 'border-green-200 bg-green-50 hover:border-green-300'
+                    : avail === false
+                    ? 'border-red-200 bg-red-50 hover:border-red-300'
                     : isToday
                     ? 'border-gray-300 dark:border-gray-600'
                     : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'

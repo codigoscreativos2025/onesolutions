@@ -121,6 +121,7 @@ export async function GET(request: Request) {
     const contracts = matchingTemplates.map(template => {
       const data: Record<string, string> = {};
       data.clientName = clientName;
+      data.clientEmail = visit.bill?.clientEmail || details?.clientEmail || "";
       data.date = fmtDate(details?.closingDate) || fmtDate(new Date());
 
       if (template.projectType === "Techo" || template.projectType === "Flat Roofing") {
@@ -312,6 +313,7 @@ export async function POST(request: Request) {
     const contracts = matchingTemplates.map(template => {
       const data: Record<string, string> = {};
       data.clientName = clientName;
+      data.clientEmail = visit.bill?.clientEmail || details?.clientEmail || "";
       data.date = fmtDate(details?.closingDate) || fmtDate(new Date());
 
       if (template.projectType === "Techo" || template.projectType === "Flat Roofing") {

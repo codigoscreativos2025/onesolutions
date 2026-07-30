@@ -312,6 +312,7 @@ export default function LeadDetailPage() {
 
   const [postCloseTags, setPostCloseTags] = useState<string[]>([]);
   const [tagSaving, setTagSaving] = useState(false);
+  const [showContractModal, setShowContractModal] = useState(false);
 
   const [scheduleDate, setScheduleDate] = useState("");
   const [scheduleTime, setScheduleTime] = useState("");
@@ -493,7 +494,7 @@ export default function LeadDetailPage() {
     }
   }, [visit]);
 
-  const saveProjectDetailsAction = async () => {
+  const saveProjectDetailsAction = async (silent = false) => {
     if (!visit || !visitId) return;
     setSaving(true);
     try {
@@ -524,12 +525,12 @@ export default function LeadDetailPage() {
         setVisit((prev) =>
           prev ? { ...prev, projectDetails: { ...prev.projectDetails, ...updated } } : prev
         );
-        toast.success("Datos guardados");
+        if (!silent) toast.success("Datos guardados");
       } else {
-        toast.error("Error al guardar");
+        if (!silent) toast.error("Error al guardar");
       }
     } catch {
-      toast.error("Error al guardar");
+      if (!silent) toast.error("Error al guardar");
     } finally {
       setSaving(false);
     }
@@ -647,6 +648,8 @@ export default function LeadDetailPage() {
   const handleStartProject = async () => {
     if (!visit) return;
     try {
+      await saveProjectDetailsAction(true);
+
       const res = await fetch(`/api/visits/${visit.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -655,14 +658,60 @@ export default function LeadDetailPage() {
       if (res.ok) {
         toast.success("Proyecto iniciado");
         fetchVisitDetails();
-        fetch(`/api/visits/${visit.id}/create-chat`, { method: "POST" })
-          .then((chatRes) => chatRes.json())
-          .then((chatRoom) => {
-            setVisit((prev) =>
-              prev ? { ...prev, chatRoom: { id: chatRoom.id } } : prev
-            );
-          })
-          .catch(() => {});
+
+        const chatRes = await fetch(`/api/visits/${visit.id}/create-chat`, { method: "POST" });
+        if (chatRes.ok) {
+          const chatRoom = await chatRes.json();
+          setVisit((prev) =>
+            prev ? { ...prev, chatRoom: { id: chatRoom.id } } : prev
+          );
+
+          const hasSolar = visit.projects?.some((p) => p.projectType.name.toLowerCase().includes("panel solar")) ?? false;
+
+          if (role === "CLOSER") {
+            fetch("/api/notifications", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                title: "Nuevo proyecto iniciado",
+                body: `El closer ha iniciado un nuevo proyecto en ${visit.parcel.address}`,
+                link: `/lead/${visit.id}`,
+              }),
+            }).catch(() => {});
+          } else if (role === "SETTER" || role === "SETTER_JR") {
+            if (hasSolar && visit.closer) {
+              fetch("/api/notifications", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  title: "Nuevo proyecto iniciado",
+                  body: `Se ha iniciado un nuevo proyecto en ${visit.parcel.address}`,
+                  link: `/lead/${visit.id}`,
+                }),
+              }).catch(() => {});
+              fetch("/api/notifications", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  userId: visit.closer.id,
+                  title: "Nuevo proyecto iniciado",
+                  body: `Se ha iniciado un nuevo proyecto en ${visit.parcel.address}`,
+                  link: `/lead/${visit.id}`,
+                }),
+              }).catch(() => {});
+            } else {
+              fetch("/api/notifications", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  title: "Nuevo proyecto iniciado",
+                  body: `Se ha iniciado un nuevo proyecto en ${visit.parcel.address}`,
+                  link: `/lead/${visit.id}`,
+                }),
+              }).catch(() => {});
+            }
+          }
+        }
       } else {
         toast.error("Error al iniciar proyecto");
       }
@@ -964,15 +1013,33 @@ export default function LeadDetailPage() {
 
         {activeTab === "contratos" && (
           <TabContent key="contratos">
-            <div className="relative rounded-xl overflow-hidden border border-outline-variant/30" style={{ height: "70vh" }}>
-              <ContractModal isOpen={true} onClose={() => {}} visitId={visitId} />
-            </div>
+            {showContractModal ? (
+              <div className="relative rounded-xl overflow-hidden border border-outline-variant/30" style={{ height: "70vh" }}>
+                <ContractModal isOpen={true} onClose={() => setShowContractModal(false)} visitId={visitId} />
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 glass-panel rounded-xl">
+                <FileText className="w-16 h-16 mb-4 opacity-30" />
+                <p className="text-lg font-medium text-on-surface mb-4">Documentos del proyecto</p>
+                <Button onClick={() => setShowContractModal(true)}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Ver Documentos
+                </Button>
+              </div>
+            )}
           </TabContent>
         )}
 
         {activeTab === "chat" && (
           <TabContent key="chat">
-            <ChatInterface initialRoomId={visit.chatRoom?.id ?? null} hideRoomList />
+            {visit.stage !== "PROJECT" && visit.stage !== "CLOSED" ? (
+              <div className="flex flex-col items-center justify-center py-12 glass-panel rounded-xl">
+                <MessageSquare className="w-16 h-16 mb-4 opacity-30" />
+                <p className="text-lg font-medium text-on-surface">Chat solo disponible en la etapa En Proyecto</p>
+              </div>
+            ) : (
+              <ChatInterface initialRoomId={visit.chatRoom?.id ?? null} hideRoomList />
+            )}
           </TabContent>
         )}
 

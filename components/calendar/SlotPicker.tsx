@@ -164,10 +164,10 @@ export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: Slo
                 !isCurrentMonth
                   ? 'border-transparent opacity-30 cursor-default'
                   : !available
-                  ? 'border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed'
+                  ? 'border-red-200 bg-red-50 dark:border-gray-700 opacity-50 cursor-not-allowed'
                   : isSelected
                   ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-primary/50 cursor-pointer'
+                  : 'border-green-300 bg-green-50 text-green-800 hover:border-green-400 cursor-pointer'
               }`}
             >
               {format(day, 'd')}

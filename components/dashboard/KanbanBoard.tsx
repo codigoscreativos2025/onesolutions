@@ -79,12 +79,19 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
   const [addressFilter, setAddressFilter] = useState("");
   const [clientFilter, setClientFilter] = useState("");
   const [activeColumn, setActiveColumn] = useState<string | null>(null);
+  const [userTypeFilter, setUserTypeFilter] = useState("");
+  const [specificUserFilter, setSpecificUserFilter] = useState("");
+  const [allUsers, setAllUsers] = useState<TransferUser[]>([]);
 
   useEffect(() => {
     if (isAdmin) {
       fetch("/api/users/transferable")
         .then((r) => r.json())
         .then(setTransferUsers)
+        .catch(() => {});
+      fetch("/api/users/transferable?all=true")
+        .then((r) => r.json())
+        .then(setAllUsers)
         .catch(() => {});
     }
   }, [isAdmin]);
@@ -227,9 +234,30 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
       const pt = v.projects?.map((p) => p.projectType.name.toLowerCase()).join(" ") || "";
       const addr = v.parcel.address?.toLowerCase() || "";
       const client = (v.parcel.ownerName || "").toLowerCase();
-      return (!projectTypeFilter || pt.includes(projectTypeFilter.toLowerCase()))
-        && (!addressFilter || addr.includes(addressFilter.toLowerCase()))
-        && (!clientFilter || client.includes(clientFilter.toLowerCase()));
+      const matchesType = !projectTypeFilter || pt.includes(projectTypeFilter.toLowerCase());
+      const matchesAddr = !addressFilter || addr.includes(addressFilter.toLowerCase());
+      const matchesClient = !clientFilter || client.includes(clientFilter.toLowerCase());
+      if (!matchesType || !matchesAddr || !matchesClient) return false;
+
+      if (userTypeFilter) {
+        if (userTypeFilter === "SETTER" && v.setter?.id) {
+          const setterUser = allUsers.find((u) => u.id === v.setter.id);
+          if (!setterUser || setterUser.role !== "SETTER") return false;
+        } else if (userTypeFilter === "SETTER_JR" && v.setter?.id) {
+          const setterUser = allUsers.find((u) => u.id === v.setter.id);
+          if (!setterUser || setterUser.role !== "SETTER_JR") return false;
+        } else if (userTypeFilter === "CLOSER" && v.closer?.id) {
+          const closerUser = allUsers.find((u) => u.id === v.closer!.id);
+          if (!closerUser || closerUser.role !== "CLOSER") return false;
+        }
+      }
+
+      if (specificUserFilter) {
+        const uid = parseInt(specificUserFilter);
+        if (v.setter?.id !== uid && v.closer?.id !== uid) return false;
+      }
+
+      return true;
     });
   };
 
@@ -238,6 +266,8 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
     setProjectTypeFilter("");
     setAddressFilter("");
     setClientFilter("");
+    setUserTypeFilter("");
+    setSpecificUserFilter("");
   };
 
   // Compute unique project types from loaded data
@@ -304,7 +334,7 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
     );
   }
 
-  const hasActiveFilters = projectTypeFilter || addressFilter || clientFilter || activeColumn !== null;
+  const hasActiveFilters = projectTypeFilter || addressFilter || clientFilter || activeColumn !== null || userTypeFilter || specificUserFilter;
 
   return (
     <div className="space-y-4">
@@ -367,6 +397,30 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
             className="h-9 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface flex-1 min-w-[160px]"
           />
         </div>
+        {isAdmin && (
+          <div className="flex flex-wrap gap-3 mt-3">
+            <select
+              value={userTypeFilter}
+              onChange={(e) => { setUserTypeFilter(e.target.value); setSpecificUserFilter(""); }}
+              className="h-9 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface flex-1 min-w-[140px]"
+            >
+              <option value="">Todos</option>
+              <option value="SETTER">Trainee</option>
+              <option value="SETTER_JR">Setter</option>
+              <option value="CLOSER">Closer</option>
+            </select>
+            <select
+              value={specificUserFilter}
+              onChange={(e) => { setSpecificUserFilter(e.target.value); setUserTypeFilter(""); }}
+              className="h-9 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface flex-1 min-w-[160px]"
+            >
+              <option value="">Todos los usuarios</option>
+              {allUsers.map((u) => (
+                <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       <DndContext
