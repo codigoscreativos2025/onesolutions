@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -63,15 +63,12 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
   const [transferOpen, setTransferOpen] = useState<number | null>(null);
   const [transferUsers, setTransferUsers] = useState<TransferUser[]>([]);
 
-  const visitStageMap = useMemo(() => {
-    const map = new Map<number, string>();
-    for (const [stage, visits] of Object.entries(data)) {
-      for (const v of visits) {
-        map.set(v.id, stage);
-      }
+  const visitStageMap = new Map<number, string>();
+  for (const [stage, visits] of Object.entries(data)) {
+    for (const v of visits) {
+      visitStageMap.set(v.id, stage);
     }
-    return map;
-  }, [data]);
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -243,16 +240,14 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
     setClientFilter("");
   };
 
-  // Compute unique project types from loaded data (must be before early returns)
-  const projectTypeOptions = useMemo(() => {
-    const names = new Set<string>();
-    Object.values(data).forEach((visits) => {
-      visits.forEach((v) => {
-        v.projects?.forEach((p) => names.add(p.projectType.name));
-      });
+  // Compute unique project types from loaded data
+  const projectTypes = new Set<string>();
+  Object.values(data).forEach((visits) => {
+    visits.forEach((v) => {
+      v.projects?.forEach((p) => projectTypes.add(p.projectType.name));
     });
-    return Array.from(names).sort();
-  }, [data]);
+  });
+  const projectTypeOptions = Array.from(projectTypes).sort();
 
   if (isPartner) {
     const allVisits = Object.values(data).flat();
