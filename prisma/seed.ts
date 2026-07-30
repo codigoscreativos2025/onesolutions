@@ -73,6 +73,30 @@ async function main() {
     await prisma.projectType.create({ data: pt });
   }
 
+  const badgesData = [
+    { name: "20 Puertas Tocadas", description: "Tocó 20 puertas", icon: "🥉", color: "#CE8946", role: "SETTER", doorsThreshold: 20 },
+    { name: "10 Leads Generados", description: "Generó 10 leads", icon: "🥈", color: "#C4C4C4", role: "SETTER", prospectsThreshold: 10 },
+    { name: "5 Proyectos Cerrados", description: "Cerró 5 proyectos", icon: "🥇", color: "#EFBF04", role: "CLOSER", projectsThreshold: 5 },
+  ];
+
+  for (const badge of badgesData) {
+    const existing = await prisma.badge.findFirst({ where: { name: badge.name } });
+    if (!existing) {
+      await prisma.badge.create({
+        data: {
+          name: badge.name,
+          description: badge.description,
+          icon: badge.icon,
+          color: badge.color,
+          role: badge.role,
+          doorsThreshold: badge.doorsThreshold ?? null,
+          prospectsThreshold: badge.prospectsThreshold ?? null,
+          projectsThreshold: badge.projectsThreshold ?? null,
+        },
+      });
+    }
+  }
+
   // Create user profiles for all users
   for (const user of [admin, closer, trainee, setter, partner]) {
     await prisma.userProfile.create({

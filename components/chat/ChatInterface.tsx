@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Send, Paperclip, Loader2, MessageSquare, Package, FileText, Pencil, CheckCheck } from "lucide-react";
+import { Send, Paperclip, Loader2, MessageSquare, Package, FileText, Pencil, CheckCheck, Search, ArrowLeft, Info, List, X, MapPin, User, PlusCircle, Phone } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { ContractModal } from "@/components/quote/ContractModal";
 
@@ -82,6 +82,8 @@ interface Message {
   createdAt: string;
 }
 
+type ColumnView = "list" | "conversation" | "info";
+
 export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdmin?: boolean; initialRoomId?: number | null }) {
   const { data: session } = useSession();
 
@@ -92,7 +94,6 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [showFullInfo, setShowFullInfo] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showContractModal, setShowContractModal] = useState(false);
   const [editForm, setEditForm] = useState<ProjectDetails>({});
@@ -101,7 +102,11 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
   const [showMentionDropdown, setShowMentionDropdown] = useState(false);
   const [mentionSearch, setMentionSearch] = useState("");
   const [commonFields, setCommonFields] = useState<CommonField[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showInfoPanel, setShowInfoPanel] = useState(false);
+  const [mobileColumn, setMobileColumn] = useState<ColumnView>("list");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     fetchRooms();
@@ -113,6 +118,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
       if (room) {
         setSelectedRoomId(room.id);
         setSelectedRoom(room);
+        setMobileColumn("conversation");
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -122,6 +128,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
     if (selectedRoomId) {
       fetchMessages(selectedRoomId);
       fetchMentionUsers(selectedRoomId);
+      setMobileColumn("conversation");
     }
   }, [selectedRoomId]);
 
@@ -257,11 +264,9 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
     const value = e.target.value;
     setNewMessage(value);
 
-    // Detectar si se está escribiendo una mención
     const lastAtIndex = value.lastIndexOf("@");
     if (lastAtIndex !== -1) {
       const textAfterAt = value.slice(lastAtIndex + 1);
-      // Si no hay espacios después de @, mostrar dropdown
       if (!textAfterAt.includes(" ")) {
         setMentionSearch(textAfterAt);
         setShowMentionDropdown(true);
@@ -288,7 +293,6 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
     user.name.toLowerCase().includes(mentionSearch.toLowerCase())
   );
 
-  // Función para resaltar menciones en el texto
   const renderMessageWithMentions = (text: string) => {
     const parts = text.split(/(@\w+)/g);
     return parts.map((part, index) => {
@@ -334,6 +338,19 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
     setSending(false);
   };
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+  };
+
+  const filteredRooms = rooms.filter((room) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const address = room.visit.parcel.address.toLowerCase();
+    const clientName = (room.visit.bill?.clientName || "").toLowerCase();
+    return address.includes(q) || clientName.includes(q);
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -346,7 +363,6 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
   const projects = selectedRoom?.visit.projects || [];
   const bill = selectedRoom?.visit.bill;
 
-  // Calcular porcentaje de completitud del proyecto
   const calculateCompletion = () => {
     if (!projectDetails) return 0;
 
@@ -367,7 +383,6 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
       projectDetails[field as keyof ProjectDetails]
     ).length;
 
-    // Agregar campos específicos según los proyectos seleccionados
     projects.forEach(p => {
       const fields = projectSpecificFields[p.projectType.name];
       if (fields) {
@@ -378,7 +393,6 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
       }
     });
 
-    // Agregar comisiones
     totalFields += 2;
     if (projectDetails.primaryRep) completedFields++;
     if (projectDetails.primaryRepCommPct) completedFields++;
@@ -388,17 +402,50 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
 
   const completionPercentage = calculateCompletion();
 
+  const stageLabels: Record<string, string> = {
+    IN_PROGRESS: "En Progreso",
+    PROPOSAL_ACCEPTED: "Propuesta Aceptada",
+    PROJECT: "En Proyecto",
+    CLOSED: "Cerrado",
+    CANCELLED: "Cancelado",
+  };
+
   return (
     <div className="space-y-4 h-[calc(100dvh-180px)]">
-      <div>
-        <h1 className="font-headline text-2xl font-bold text-on-surface">
-          {isAdmin ? "Chats Internos" : "Chat"}
-        </h1>
-        <p className="text-on-surface-variant">
-          {isAdmin
-            ? "Monitorea las conversaciones de proyectos aprobados"
-            : "Comunicación interna de proyectos"}
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-headline text-2xl font-bold text-on-surface">
+            {isAdmin ? "Chats Internos" : "Chat"}
+          </h1>
+          <p className="text-on-surface-variant">
+            {isAdmin
+              ? "Monitorea las conversaciones de proyectos aprobados"
+              : "Comunicación interna de proyectos"}
+          </p>
+        </div>
+        {/* Mobile nav buttons */}
+        <div className="flex gap-2 lg:hidden">
+          <button
+            onClick={() => setMobileColumn("list")}
+            className={`p-2 rounded-lg ${mobileColumn === "list" ? "bg-primary/10 text-primary" : "text-on-surface-variant"}`}
+          >
+            <List className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setMobileColumn("conversation")}
+            className={`p-2 rounded-lg ${mobileColumn === "conversation" ? "bg-primary/10 text-primary" : "text-on-surface-variant"}`}
+          >
+            <MessageSquare className="w-5 h-5" />
+          </button>
+          {selectedRoom && (
+            <button
+              onClick={() => { setShowInfoPanel(!showInfoPanel); setMobileColumn("info"); }}
+              className={`p-2 rounded-lg ${mobileColumn === "info" && showInfoPanel ? "bg-primary/10 text-primary" : "text-on-surface-variant"}`}
+            >
+              <Info className="w-5 h-5" />
+            </button>
+          )}
+        </div>
       </div>
 
       {rooms.length === 0 ? (
@@ -407,9 +454,25 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
           <p>No hay chats activos</p>
         </div>
       ) : (
-        <div className="glass-panel rounded-2xl overflow-hidden flex flex-col md:flex-row h-full">
-          <div className="w-full md:w-80 border-r border-outline-variant/30 overflow-y-auto max-h-48 md:max-h-full">
-            {rooms.map((room) => (
+        <div className="glass-panel rounded-2xl overflow-hidden flex h-full">
+          {/* LEFT COLUMN: Chat list */}
+          <div className={`w-full lg:w-72 border-r border-outline-variant/30 overflow-y-auto flex-shrink-0
+            ${mobileColumn !== "list" ? "hidden lg:flex lg:flex-col" : "flex flex-col"}
+          `}>
+            {/* Search input */}
+            <div className="p-3 border-b border-outline-variant/20">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
+                <input
+                  type="text"
+                  placeholder="Buscar chat..."
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  className="w-full h-10 pl-9 pr-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-sm text-on-surface"
+                />
+              </div>
+            </div>
+            {filteredRooms.map((room) => (
               <button
                 key={room.id}
                 onClick={() => handleSelectRoom(room)}
@@ -420,22 +483,44 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
                 }`}
               >
                 <p className="font-semibold text-on-surface text-sm">
+                  {room.visit.bill?.clientName || room.visit.parcel.address}
+                </p>
+                <p className="text-xs text-on-surface-variant mt-0.5 truncate">
                   {room.visit.parcel.address}
                 </p>
-                <p className="text-xs text-on-surface-variant mt-1">
+                <p className="text-xs text-on-surface-variant/70 mt-1 truncate">
                   {room.messages[0]?.body || "Sin mensajes"}
                 </p>
               </button>
             ))}
+            {filteredRooms.length === 0 && (
+              <div className="p-4 text-center text-sm text-on-surface-variant">
+                Sin resultados
+              </div>
+            )}
           </div>
 
-          <div className="flex-1 flex flex-col min-h-0">
+          {/* CENTER COLUMN: Conversation */}
+          <div className={`flex-1 flex flex-col min-h-0
+            ${mobileColumn !== "conversation" ? "hidden lg:flex" : "flex"}
+          `}>
             {selectedRoom ? (
               <>
                 <div className="p-4 border-b border-outline-variant/30">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="font-semibold text-on-surface">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => { setMobileColumn("list"); }}
+                          className="lg:hidden p-1 -ml-1 rounded-lg hover:bg-surface-container-high text-on-surface-variant"
+                        >
+                          <ArrowLeft className="w-4 h-4" />
+                        </button>
+                        <p className="font-semibold text-on-surface">
+                          {selectedRoom.visit.bill?.clientName || selectedRoom.visit.parcel.address}
+                        </p>
+                      </div>
+                      <p className="text-xs text-on-surface-variant ml-0 lg:ml-0 mt-1">
                         {selectedRoom.visit.parcel.address}
                       </p>
                       <p className="text-xs text-on-surface-variant">
@@ -453,33 +538,29 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
                         )}
                       </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-shrink-0">
+                      {/* Info toggle for md */}
+                      <button
+                        onClick={() => setShowInfoPanel(!showInfoPanel)}
+                        className="hidden md:flex lg:hidden px-3 py-1 text-xs font-medium rounded-full transition-colors bg-primary/10 text-primary hover:bg-primary/20 items-center gap-1"
+                      >
+                        <Info className="w-3 h-3" />
+                        Info
+                      </button>
                       <button
                         onClick={() => setShowContractModal(true)}
                         className="px-3 py-1 text-xs font-medium rounded-full transition-colors"
                         style={{ backgroundColor: "#f4822120", color: "#f48221" }}
                       >
-                        <FileText className="w-3 h-3 inline mr-1" />
-                        Documentos
-                      </button>
-                      <button
-                        onClick={() => setShowFullInfo(!showFullInfo)}
-                        className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                          showFullInfo
-                            ? 'bg-primary text-on-primary'
-                            : 'bg-primary/10 text-primary hover:bg-primary/20'
-                        }`}
-                      >
-                        <Package className="w-3 h-3 inline mr-1" />
-                        Info Proyecto
+                        <FileText className="w-3 h-3" />
+                        Doc
                       </button>
                       {(session?.user?.role === "ADMIN" || session?.user?.role === "CLOSER") && (
                         <button
                           onClick={handleOpenEditModal}
                           className="px-3 py-1 text-xs font-medium bg-secondary/10 text-secondary rounded-full hover:bg-secondary/20 transition-colors"
                         >
-                          <Pencil className="w-3 h-3 inline mr-1" />
-                          Editar
+                          <Pencil className="w-3 h-3" />
                         </button>
                       )}
                       {selectedRoom.visit.stage === 'CLOSED' && !selectedRoom.visit.finalizedAt && (session?.user?.role === 'ADMIN' || (session?.user?.role === 'CLOSER' && selectedRoom.visit.closerId === parseInt(session?.user?.id || '0'))) && (
@@ -487,14 +568,12 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
                           onClick={handleFinalize}
                           className="px-3 py-1 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-full hover:bg-emerald-200 transition-colors"
                         >
-                          <CheckCheck className="w-3 h-3 inline mr-1" />
-                          Finalizar
+                          <CheckCheck className="w-3 h-3" />
                         </button>
                       )}
                     </div>
                   </div>
                   
-                  {/* Barra de progreso de completitud */}
                   {projectDetails && (
                     <div className="mt-3">
                       <div className="flex justify-between items-center mb-1">
@@ -519,19 +598,9 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
                       </div>
                     </div>
                   )}
-                  </div>
+                </div>
 
-                {/* Collapsible Full Project Info Panel */}
-                {showFullInfo && selectedRoom && (
-                  <div className="border-b border-outline-variant/30 bg-surface-container-low/50">
-                    <ProjectInfoPanel
-                      room={selectedRoom}
-                      projects={projects}
-                      bill={bill}
-                    />
-                  </div>
-                )}
-
+                {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
                   {messages.map((msg) => {
                     const isMe =
@@ -583,7 +652,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
                   onSubmit={handleSend}
                   className="p-4 border-t border-outline-variant/30 flex gap-2 relative"
                 >
-                  <label className="w-11 h-11 flex items-center justify-center rounded-xl bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest transition-colors cursor-pointer">
+                  <label className="w-11 h-11 flex items-center justify-center rounded-xl bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest transition-colors cursor-pointer flex-shrink-0">
                     <Paperclip className="w-5 h-5" />
                     <input
                       type="file"
@@ -598,7 +667,6 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
                       placeholder="Escribe un mensaje... usa @ para mencionar"
                       className="w-full"
                     />
-                    {/* Dropdown de menciones */}
                     {showMentionDropdown && filteredMentionUsers.length > 0 && (
                       <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto z-10">
                         {filteredMentionUsers.map((user) => (
@@ -620,7 +688,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
                   <Button
                     type="submit"
                     disabled={!newMessage.trim() || sending}
-                    className="w-11 h-11 p-0"
+                    className="w-11 h-11 p-0 flex-shrink-0"
                   >
                     <Send className="w-5 h-5" />
                   </Button>
@@ -632,6 +700,29 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
               </div>
             )}
           </div>
+
+          {/* RIGHT COLUMN: Info Panel */}
+          {selectedRoom && (
+            <div className={`w-full lg:w-80 border-l border-outline-variant/30 overflow-y-auto bg-surface-container-low/30 flex-shrink-0
+              ${(!showInfoPanel && mobileColumn !== "info") ? "hidden lg:block" : "block"}
+            `}>
+              <div className="p-4 border-b border-outline-variant/20 flex items-center justify-between">
+                <h3 className="font-semibold text-on-surface text-sm">Detalles del Proyecto</h3>
+                <button
+                  onClick={() => { setShowInfoPanel(false); setMobileColumn("conversation"); }}
+                  className="lg:hidden p-1 rounded-lg hover:bg-surface-container-high text-on-surface-variant"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <InfoPanelContent
+                room={selectedRoom}
+                projects={projects}
+                bill={bill}
+                stageLabels={stageLabels}
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -692,7 +783,6 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
             </div>
           </div>
 
-          {/* Panel Solar */}
           {projects.some(p => p.projectType.name === "Panel Solar") && (
             <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-3">
               <p className="text-sm font-semibold text-on-surface">Panel Solar</p>
@@ -711,7 +801,6 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
             </div>
           )}
 
-          {/* Comisiones */}
           <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-3">
             <p className="text-sm font-semibold text-on-surface">Comisiones</p>
             <div className="grid grid-cols-2 gap-3">
@@ -729,7 +818,6 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
             </div>
           </div>
 
-          {/* Campos Comunes */}
           {commonFields.length > 0 && (
             <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-3">
               <p className="text-sm font-semibold text-on-surface">Campos Comunes</p>
@@ -809,238 +897,256 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null }: { isAdm
   );
 }
 
-function ProjectInfoPanel({
+function InfoPanelContent({
   room,
   projects,
   bill,
+  stageLabels,
 }: {
   room: Room;
   projects: { projectType: ProjectType }[];
   bill?: { imageUrl: string; phone: string; clientName: string; clientEmail: string; additionalFileUrl?: string; additionalFileName?: string };
+  stageLabels: Record<string, string>;
 }) {
   const { visit } = room;
   const projectDetails = visit.projectDetails;
-  const stageLabels: Record<string, string> = {
-    IN_PROGRESS: "En Progreso",
-    PROPOSAL_ACCEPTED: "Propuesta Aceptada",
-    PROJECT: "En Proyecto",
-    CLOSED: "Cerrado",
-    CANCELLED: "Cancelado",
-  };
 
   return (
-    <div className="p-4 max-h-64 overflow-y-auto">
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-        {visit.stage && (
-          <div className="col-span-2 md:col-span-3">
-            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
-              visit.stage === 'CLOSED' ? 'bg-primary/10 text-primary' :
-              visit.stage === 'CANCELLED' ? 'bg-error/10 text-error' :
-              'bg-secondary/10 text-secondary'
-            }`}>
-              {stageLabels[visit.stage] || visit.stage}
+    <div className="p-4 space-y-4">
+      {/* Stage */}
+      {visit.stage && (
+        <div className="flex flex-wrap gap-2">
+          <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+            visit.stage === 'CLOSED' ? 'bg-primary/10 text-primary' :
+            visit.stage === 'CANCELLED' ? 'bg-error/10 text-error' :
+            'bg-secondary/10 text-secondary'
+          }`}>
+            {stageLabels[visit.stage] || visit.stage}
+          </span>
+          {projects.length > 0 && projects.map((p) => (
+            <span
+              key={p.projectType.id}
+              className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full"
+            >
+              {p.projectType.name}
             </span>
-          </div>
-        )}
-
-        {bill?.clientName && (
-          <div>
-            <p className="text-xs text-on-surface-variant">Cliente</p>
-            <p className="font-medium text-on-surface text-sm">{bill.clientName}</p>
-          </div>
-        )}
-        {bill?.phone && (
-          <div>
-            <p className="text-xs text-on-surface-variant">Teléfono</p>
-            <p className="font-medium text-on-surface text-sm">{bill.phone}</p>
-          </div>
-        )}
-        {bill?.clientEmail && (
-          <div>
-            <p className="text-xs text-on-surface-variant">Email</p>
-            <p className="font-medium text-on-surface text-sm truncate">{bill.clientEmail}</p>
-          </div>
-        )}
-
-        <div>
-          <p className="text-xs text-on-surface-variant">Dirección</p>
-          <p className="font-medium text-on-surface text-sm">{visit.parcel.address}</p>
+          ))}
         </div>
+      )}
 
-        {projects.length > 0 && (
-          <div>
-            <p className="text-xs text-on-surface-variant">Proyectos</p>
-            <div className="flex flex-wrap gap-1 mt-0.5">
-              {projects.map((p) => (
-                <span
-                  key={p.projectType.id}
-                  className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full"
-                >
-                  {p.projectType.name}
+      {/* Client Info */}
+      <div className="space-y-2">
+        <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center gap-1">
+          <User className="w-3 h-3" /> Cliente
+        </h4>
+        <div className="space-y-1 text-sm">
+          {bill?.clientName && (
+            <div className="flex justify-between">
+              <span className="text-on-surface-variant">Nombre:</span>
+              <span className="font-medium text-on-surface">{bill.clientName}</span>
+            </div>
+          )}
+          {bill?.clientEmail && (
+            <div className="flex justify-between">
+              <span className="text-on-surface-variant">Email:</span>
+              <span className="font-medium text-on-surface truncate max-w-[140px]">{bill.clientEmail}</span>
+            </div>
+          )}
+          {bill?.phone && (
+            <div className="flex justify-between">
+              <span className="text-on-surface-variant">Teléfono:</span>
+              <span className="font-medium text-on-surface">{bill.phone}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Address */}
+      <div className="space-y-2">
+        <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center gap-1">
+          <MapPin className="w-3 h-3" /> Dirección
+        </h4>
+        <p className="text-sm text-on-surface">{visit.parcel.address}</p>
+      </div>
+
+      {/* Project Details */}
+      {projectDetails && (
+        <div className="space-y-2">
+          <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center gap-1">
+            <Package className="w-3 h-3" /> Detalles
+          </h4>
+          <div className="space-y-1 text-sm">
+            {projectDetails.closingDate && (
+              <div className="flex justify-between">
+                <span className="text-on-surface-variant">Fecha de Cierre:</span>
+                <span className="font-medium text-on-surface">
+                  {new Date(projectDetails.closingDate).toLocaleDateString()}
                 </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {projectDetails?.closingDate && (
-          <div>
-            <p className="text-xs text-on-surface-variant">Fecha de Cierre</p>
-            <p className="font-medium text-on-surface text-sm">
-              {new Date(projectDetails.closingDate).toLocaleDateString()}
-            </p>
-          </div>
-        )}
-        {projectDetails?.paymentMethod && (
-          <div>
-            <p className="text-xs text-on-surface-variant">Método de Pago</p>
-            <p className="font-medium text-on-surface text-sm capitalize">{projectDetails.paymentMethod}</p>
-          </div>
-        )}
-        {projectDetails?.solarFinancier && (
-          <div>
-            <p className="text-xs text-on-surface-variant">Financiadora Solar</p>
-            <p className="font-medium text-on-surface text-sm">{projectDetails.solarFinancier}</p>
-          </div>
-        )}
-        {projectDetails?.systemSize && (
-          <div>
-            <p className="text-xs text-on-surface-variant">Tamaño del Sistema</p>
-            <p className="font-medium text-on-surface text-sm">{projectDetails.systemSize}</p>
-          </div>
-        )}
-        {projectDetails?.otherSalePrice !== undefined && (
-          <div>
-            <p className="text-xs text-on-surface-variant">Precio de Venta</p>
-            <p className="font-medium text-on-surface text-sm">${projectDetails.otherSalePrice?.toLocaleString()}</p>
-          </div>
-        )}
-        {projectDetails?.primaryRep && (
-          <div>
-            <p className="text-xs text-on-surface-variant">Rep. Principal</p>
-            <p className="font-medium text-on-surface text-sm">
-              {projectDetails.primaryRep}
-              {projectDetails.primaryRepCommPct !== undefined && ` (${projectDetails.primaryRepCommPct}%)`}
-            </p>
-          </div>
-        )}
-
-        {visit.objections && visit.objections.length > 0 && (
-          <div className="col-span-2 md:col-span-3">
-            <p className="text-xs text-on-surface-variant mb-1">Objeciones (Trainee)</p>
-            <div className="flex flex-wrap gap-1">
-              {visit.objections.map((o, i) => (
-                <span
-                  key={i}
-                  className="px-2 py-0.5 rounded-full text-xs font-medium"
-                  style={{
-                    backgroundColor: o.objection?.color ? `${o.objection.color}20` : undefined,
-                    color: o.objection?.color || undefined,
-                    border: o.objection?.color ? `1px solid ${o.objection.color}40` : undefined,
-                  }}
-                >
-                  {o.objection?.name}
+              </div>
+            )}
+            {projectDetails.paymentMethod && (
+              <div className="flex justify-between">
+                <span className="text-on-surface-variant">Método de Pago:</span>
+                <span className="font-medium text-on-surface capitalize">{projectDetails.paymentMethod}</span>
+              </div>
+            )}
+            {projectDetails.solarFinancier && (
+              <div className="flex justify-between">
+                <span className="text-on-surface-variant">Financiadora:</span>
+                <span className="font-medium text-on-surface">{projectDetails.solarFinancier}</span>
+              </div>
+            )}
+            {projectDetails.systemSize && (
+              <div className="flex justify-between">
+                <span className="text-on-surface-variant">Tamaño Sistema:</span>
+                <span className="font-medium text-on-surface">{projectDetails.systemSize}</span>
+              </div>
+            )}
+            {projectDetails.otherSalePrice !== undefined && (
+              <div className="flex justify-between">
+                <span className="text-on-surface-variant">Precio Venta:</span>
+                <span className="font-medium text-on-surface">${projectDetails.otherSalePrice?.toLocaleString()}</span>
+              </div>
+            )}
+            {projectDetails.primaryRep && (
+              <div className="flex justify-between">
+                <span className="text-on-surface-variant">Rep. Principal:</span>
+                <span className="font-medium text-on-surface">
+                  {projectDetails.primaryRep}
+                  {projectDetails.primaryRepCommPct !== undefined && ` (${projectDetails.primaryRepCommPct}%)`}
                 </span>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
+      )}
 
-        {visit.closerObjections && visit.closerObjections.length > 0 && (
-          <div className="col-span-2 md:col-span-3">
-            <p className="text-xs text-on-surface-variant mb-1">Objeciones (Closer)</p>
-            <div className="flex flex-wrap gap-1">
-              {visit.closerObjections.map((o, i) => (
-                <span
-                  key={i}
-                  className="px-2 py-0.5 rounded-full text-xs font-medium"
-                  style={{
-                    backgroundColor: o.closerObjection?.color ? `${o.closerObjection.color}20` : undefined,
-                    color: o.closerObjection?.color || undefined,
-                    border: o.closerObjection?.color ? `1px solid ${o.closerObjection.color}40` : undefined,
-                  }}
-                >
-                  {o.closerObjection?.name}
+      {/* Objections */}
+      {visit.objections && visit.objections.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Objeciones (Trainee)</h4>
+          <div className="flex flex-wrap gap-1">
+            {visit.objections.map((o, i) => (
+              <span
+                key={i}
+                className="px-2 py-0.5 rounded-full text-xs font-medium"
+                style={{
+                  backgroundColor: o.objection?.color ? `${o.objection.color}20` : undefined,
+                  color: o.objection?.color || undefined,
+                  border: o.objection?.color ? `1px solid ${o.objection.color}40` : undefined,
+                }}
+              >
+                {o.objection?.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {visit.closerObjections && visit.closerObjections.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Objeciones (Closer)</h4>
+          <div className="flex flex-wrap gap-1">
+            {visit.closerObjections.map((o, i) => (
+              <span
+                key={i}
+                className="px-2 py-0.5 rounded-full text-xs font-medium"
+                style={{
+                  backgroundColor: o.closerObjection?.color ? `${o.closerObjection.color}20` : undefined,
+                  color: o.closerObjection?.color || undefined,
+                  border: o.closerObjection?.color ? `1px solid ${o.closerObjection.color}40` : undefined,
+                }}
+              >
+                {o.closerObjection?.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Commissions */}
+      {visit.commissions && visit.commissions.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Comisiones</h4>
+          <div className="space-y-1 text-sm">
+            {visit.commissions.map((c) => (
+              <div key={c.id} className="flex justify-between">
+                <span className="text-on-surface-variant">
+                  {c.user.name}
+                  <span className="text-xs ml-1">({c.role === "CLOSER" ? "Closer" : "Trainee"})</span>
                 </span>
-              ))}
-            </div>
+                <span className="font-bold text-primary">{c.percentage}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Notes */}
+      {visit.notes && (
+        <div className="space-y-2">
+          <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Notas</h4>
+          <p className="text-sm text-on-surface whitespace-pre-wrap">{visit.notes}</p>
+        </div>
+      )}
+
+      {/* Dates */}
+      <div className="space-y-1 text-xs text-on-surface-variant">
+        {visit.scheduledAt && (
+          <div className="flex justify-between">
+            <span>Cita Programada:</span>
+            <span>{new Date(visit.scheduledAt).toLocaleDateString()}</span>
           </div>
         )}
-
-        {visit.commissions && visit.commissions.length > 0 ? (
-          <div className="col-span-2 md:col-span-3">
-            <p className="text-xs text-on-surface-variant mb-1">Comisiones</p>
-            <div className="grid grid-cols-3 gap-1 text-sm">
-              {visit.commissions.map((c) => (
-                <div key={c.id} className="flex gap-1 items-center">
-                  <span className="font-medium">{c.user.name}</span>
-                  <span className="text-xs text-on-surface-variant">({c.role === "CLOSER" ? "Closer" : "Trainee"})</span>
-                  <span className="font-bold text-primary ml-auto">{c.percentage}%</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        {visit.notes && (
-          <div className="col-span-2 md:col-span-3">
-            <p className="text-xs text-on-surface-variant mb-1">Notas</p>
-            <p className="text-sm text-on-surface whitespace-pre-wrap">{visit.notes}</p>
+        {visit.completedAt && (
+          <div className="flex justify-between">
+            <span>Completado:</span>
+            <span>{new Date(visit.completedAt).toLocaleDateString()}</span>
           </div>
         )}
+        {visit.cancelledAt && (
+          <div>
+            <span className="text-error">Cancelado:</span>
+            <span> {new Date(visit.cancelledAt).toLocaleDateString()}</span>
+            {visit.cancellationReason && <p>— {visit.cancellationReason}</p>}
+          </div>
+        )}
+        {visit.createdAt && (
+          <div className="flex justify-between">
+            <span>Creado:</span>
+            <span>{new Date(visit.createdAt).toLocaleDateString()}</span>
+          </div>
+        )}
+      </div>
 
-        {bill && (
-          <div className="col-span-2 md:col-span-3">
-            <p className="text-xs text-on-surface-variant mb-1">Recibo de Luz</p>
-            <div className="flex flex-wrap gap-2">
+      {/* Bill file */}
+      {bill && (
+        <div className="space-y-2">
+          <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center gap-1">
+            <FileText className="w-3 h-3" /> Recibo de Luz
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={bill.imageUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline text-xs flex items-center gap-1"
+            >
+              <FileText className="w-3 h-3" /> Ver recibo
+            </a>
+            {bill.additionalFileUrl && (
               <a
-                href={bill.imageUrl}
+                href={bill.additionalFileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:underline text-xs flex items-center gap-1"
               >
-                <FileText className="w-3 h-3" /> Ver recibo
+                <FileText className="w-3 h-3" /> {bill.additionalFileName || "Archivo adicional"}
               </a>
-              {bill.additionalFileUrl && (
-                <a
-                  href={bill.additionalFileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline text-xs flex items-center gap-1"
-                >
-                  <FileText className="w-3 h-3" /> {bill.additionalFileName || "Archivo adicional"}
-                </a>
-              )}
-            </div>
+            )}
           </div>
-        )}
-
-        {visit.scheduledAt && (
-          <div>
-            <p className="text-xs text-on-surface-variant">Cita Programada</p>
-            <p className="font-medium text-on-surface text-sm">
-              {new Date(visit.scheduledAt).toLocaleDateString()}
-            </p>
-          </div>
-        )}
-        {visit.cancelledAt && (
-          <div className="col-span-2 md:col-span-3">
-            <p className="text-xs text-error mb-1">Cancelado</p>
-            <p className="text-sm text-on-surface">
-              {new Date(visit.cancelledAt).toLocaleDateString()}
-              {visit.cancellationReason && ` — ${visit.cancellationReason}`}
-            </p>
-          </div>
-        )}
-        {visit.completedAt && (
-          <div>
-            <p className="text-xs text-on-surface-variant">Completado</p>
-            <p className="font-medium text-on-surface text-sm">
-              {new Date(visit.completedAt).toLocaleDateString()}
-            </p>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

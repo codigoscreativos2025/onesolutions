@@ -16,6 +16,8 @@ interface RankingItem {
   leads?: number;
   doors: number;
   leadsGenerated?: number;
+  badgeCount?: number;
+  badges?: { icon: string; name: string }[];
 }
 
 function getMedal(rank: number) {
@@ -38,6 +40,7 @@ export default function RankingPage() {
   const [activeTab, setActiveTab] = useState<"trainers" | "setters">("trainers");
   const [loading, setLoading] = useState(true);
   const [defaultTabSet, setDefaultTabSet] = useState(false);
+  const [period, setPeriod] = useState<"day" | "week" | "month" | "all">("all");
 
   const role = session?.user?.role;
 
@@ -62,19 +65,19 @@ export default function RankingPage() {
   const fetchData = useCallback(async (type: "trainers" | "setters") => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/ranking?type=${type}`);
+      const res = await fetch(`/api/ranking?type=${type}&period=${period}`);
       const json = await res.json();
       setData(json);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [period]);
 
   useEffect(() => {
     if (role === "PARTNER") return;
     const type = activeTab === "trainers" ? "trainers" : "setters";
     fetchData(type);
-  }, [activeTab, fetchData, role]);
+  }, [activeTab, fetchData, role, period]);
 
   const userId = session?.user?.id ? parseInt(session.user.id) : null;
   const isTrainers = activeTab === "trainers";
@@ -179,6 +182,23 @@ export default function RankingPage() {
             </div>
           </div>
 
+          <div className="flex gap-1.5 px-4 py-2 border-b border-[#333]">
+            {(["day", "week", "month", "all"] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={cn(
+                  "px-3 py-1 rounded-full text-xs font-medium transition-colors",
+                  period === p
+                    ? "bg-[#f48221] text-[#1d1d1b]"
+                    : "text-[#aaaaaa] hover:text-white border border-[#444]"
+                )}
+              >
+                {p === "day" ? "Hoy" : p === "week" ? "Esta Semana" : p === "month" ? "Este Mes" : "Global"}
+              </button>
+            ))}
+          </div>
+
           {loading && (
             <div className="flex items-center justify-center h-48">
               <div className="w-6 h-6 border-2 border-[#f48221] border-t-transparent rounded-full animate-spin" />
@@ -254,9 +274,16 @@ export default function RankingPage() {
                     <span className="text-[13px] font-normal text-white uppercase tracking-[1px] italic leading-tight">
                       {firstName}
                     </span>
-                    <span className="text-[22px] font-black text-white uppercase tracking-[0.5px] leading-tight max-sm:text-[16px]">
-                      {lastName || firstName}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[22px] font-black text-white uppercase tracking-[0.5px] leading-tight max-sm:text-[16px]">
+                        {lastName || firstName}
+                      </span>
+                      {item.badgeCount != null && item.badgeCount > 0 && (
+                        <span className="text-xs bg-[#f48221]/20 text-[#f48221] px-1.5 py-0.5 rounded-full font-semibold">
+                          {item.badgeCount} {item.badgeCount === 1 ? "medalla" : "medallas"}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex items-stretch flex-shrink-0 ml-auto">

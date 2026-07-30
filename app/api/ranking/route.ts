@@ -5,6 +5,22 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const type = request.nextUrl.searchParams.get("type") || "trainers";
+  const period = request.nextUrl.searchParams.get("period") || "all";
+
+  let dateFilter: Record<string, unknown> = {};
+  if (period !== "all") {
+    const now = new Date();
+    let startDate: Date;
+    if (period === "day") {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (period === "week") {
+      const day = now.getDay();
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+    } else {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+    dateFilter = { createdAt: { gte: startDate } };
+  }
 
   if (type === "setters") {
     const raw = await prisma.user.findMany({
@@ -14,7 +30,13 @@ export async function GET(request: NextRequest) {
         name: true,
         role: true,
         phone: true,
+        userBadges: {
+          include: {
+            badge: { select: { id: true, name: true, icon: true } },
+          },
+        },
         visitsAsSetter: {
+          where: dateFilter,
           select: { id: true, stage: true },
         },
       },
@@ -34,6 +56,8 @@ export async function GET(request: NextRequest) {
         phone: user.phone,
         leadsGenerated,
         doors,
+        badgeCount: user.userBadges.length,
+        badges: user.userBadges.map((ub) => ({ icon: ub.badge.icon, name: ub.badge.name })),
       };
     });
 
@@ -49,11 +73,17 @@ export async function GET(request: NextRequest) {
       name: true,
       role: true,
       phone: true,
+      userBadges: {
+        include: {
+          badge: { select: { id: true, name: true, icon: true } },
+        },
+      },
       visitsAsCloser: {
+        where: dateFilter,
         select: { id: true, completedAt: true, stage: true },
       },
       visitsAsSetter: {
-        where: { stage: "IN_PROGRESS" },
+        where: { stage: "IN_PROGRESS", ...dateFilter },
         select: { id: true },
       },
     },
@@ -75,6 +105,8 @@ export async function GET(request: NextRequest) {
       projectsClosed,
       leads,
       doors,
+      badgeCount: user.userBadges.length,
+      badges: user.userBadges.map((ub) => ({ icon: ub.badge.icon, name: ub.badge.name })),
     };
   });
 

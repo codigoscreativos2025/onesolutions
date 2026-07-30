@@ -16,7 +16,7 @@ import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { MapPin, User, GripVertical } from "lucide-react";
+import { MapPin, User, GripVertical, ArrowLeftRight } from "lucide-react";
 
 const COLS = [
   { stage: "IN_PROGRESS", title: "Leads", color: "bg-blue-500", colorBar: "bg-blue-500" },
@@ -37,6 +37,12 @@ interface KanbanVisit {
   projects: { projectType: { id: number; name: string } }[];
 }
 
+interface TransferUser {
+  id: number;
+  name: string;
+  role: string;
+}
+
 type GroupedVisits = Record<string, KanbanVisit[]>;
 
 interface KanbanBoardProps {
@@ -53,6 +59,8 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
   const [error, setError] = useState<string | null>(null);
   const [activeVisit, setActiveVisit] = useState<KanbanVisit | null>(null);
   const overColumnRef = useRef<string | null>(null);
+  const [transferOpen, setTransferOpen] = useState<number | null>(null);
+  const [transferUsers, setTransferUsers] = useState<TransferUser[]>([]);
 
   const visitStageMap = useMemo(() => {
     const map = new Map<number, string>();
@@ -69,6 +77,15 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
   );
 
   const [partnerFilter, setPartnerFilter] = useState({ address: "", client: "" });
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetch("/api/users/transferable")
+        .then((r) => r.json())
+        .then(setTransferUsers)
+        .catch(() => {});
+    }
+  }, [isAdmin]);
 
   const fetchData = useCallback(async () => {
     setError(null);
@@ -161,6 +178,23 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
     moveCard(visitId, targetStage);
     overColumnRef.current = null;
   }
+
+  const handleTransfer = async (visitId: number, newUserId: number) => {
+    try {
+      const res = await fetch(`/api/visits/${visitId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ setterId: newUserId }),
+      });
+      if (!res.ok) throw new Error("Failed to transfer");
+      const user = transferUsers.find((u) => u.id === newUserId);
+      toast.success(`Lead transferido a ${user?.name || "usuario"}`);
+      setTransferOpen(null);
+      fetchData();
+    } catch {
+      toast.error("Error al transferir el lead");
+    }
+  };
 
   if (loading) {
     return (
@@ -264,6 +298,10 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
               idx={idx}
               restricted={restricted}
               onCardClick={(visitId) => router.push(`/lead/${visitId}`)}
+              transferOpen={transferOpen}
+              setTransferOpen={setTransferOpen}
+              transferUsers={transferUsers}
+              onTransfer={handleTransfer}
             />
           );
         })}
@@ -284,6 +322,10 @@ function KanbanColumn({
   idx,
   restricted,
   onCardClick,
+  transferOpen,
+  setTransferOpen,
+  transferUsers,
+  onTransfer,
 }: {
   col: (typeof COLS)[number];
   visits: KanbanVisit[];
@@ -291,6 +333,10 @@ function KanbanColumn({
   idx: number;
   restricted: boolean;
   onCardClick: (id: number) => void;
+  transferOpen: number | null;
+  setTransferOpen: (id: number | null) => void;
+  transferUsers: TransferUser[];
+  onTransfer: (visitId: number, newUserId: number) => void;
 }) {
   const { isOver, setNodeRef } = useDroppable({
     id: col.stage,
@@ -341,6 +387,10 @@ function KanbanColumn({
               visit={visit}
               isAdmin={isAdmin}
               onClick={() => onCardClick(visit.id)}
+              transferOpen={transferOpen}
+              setTransferOpen={setTransferOpen}
+              transferUsers={transferUsers}
+              onTransfer={onTransfer}
             />
           ))}
       </div>
@@ -352,10 +402,18 @@ function KanbanCard({
   visit,
   isAdmin,
   onClick,
+  transferOpen,
+  setTransferOpen,
+  transferUsers,
+  onTransfer,
 }: {
   visit: KanbanVisit;
   isAdmin: boolean;
   onClick: () => void;
+  transferOpen: number | null;
+  setTransferOpen: (id: number | null) => void;
+  transferUsers: TransferUser[];
+  onTransfer: (visitId: number, newUserId: number) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
@@ -368,11 +426,13 @@ function KanbanCard({
     ? { transform: CSS.Translate.toString(transform), zIndex: 20 }
     : undefined;
 
+  const isOpen = transferOpen === visit.id;
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`glass-panel rounded-xl p-3 cursor-pointer transition-all hover:shadow-md ${
+      className={`glass-panel rounded-xl p-3 cursor-pointer transition-all hover:shadow-md relative ${
         isDragging ? "opacity-50 shadow-lg ring-2 ring-primary" : ""
       }`}
       onClick={onClick}
@@ -387,16 +447,51 @@ function KanbanCard({
             <p className="text-xs truncate">{visit.parcel.address}</p>
           </div>
         </div>
-        {isAdmin && (
-          <button
-            {...attributes}
-            {...listeners}
-            className="p-1 rounded-lg hover:bg-surface-container-high transition-colors shrink-0 text-on-surface-variant cursor-grab active:cursor-grabbing"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <GripVertical className="w-4 h-4" />
-          </button>
-        )}
+        <div className="flex items-center gap-1 shrink-0">
+          {isAdmin && (
+            <div className="relative">
+              <button
+                className="p-1 rounded-lg hover:bg-surface-container-high transition-colors text-on-surface-variant"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setTransferOpen(isOpen ? null : visit.id);
+                }}
+                title="Transferir"
+              >
+                <ArrowLeftRight className="w-4 h-4" />
+              </button>
+              {isOpen && (
+                <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-30 w-48 max-h-48 overflow-y-auto">
+                  <div className="p-1">
+                    {transferUsers.map((user) => (
+                      <button
+                        key={user.id}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center gap-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onTransfer(visit.id, user.id);
+                        }}
+                      >
+                        <span>{user.name}</span>
+                        <span className="text-xs text-gray-400 ml-auto">{user.role}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          {isAdmin && (
+            <button
+              {...attributes}
+              {...listeners}
+              className="p-1 rounded-lg hover:bg-surface-container-high transition-colors shrink-0 text-on-surface-variant cursor-grab active:cursor-grabbing"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <GripVertical className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-2 mt-2 text-xs text-on-surface-variant">

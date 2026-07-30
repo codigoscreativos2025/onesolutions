@@ -24,7 +24,6 @@ export async function PATCH() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Marcar todas como leídas
   await prisma.notification.updateMany({
     where: {
       userId: parseInt(session.user.id),
@@ -34,4 +33,29 @@ export async function PATCH() {
   });
 
   return NextResponse.json({ success: true });
+}
+
+export async function POST(request: Request) {
+  const session = await auth();
+  if (!session || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await request.json();
+  const { userId, title, body: notificationBody, link } = body;
+
+  if (!userId || !title || !notificationBody) {
+    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  }
+
+  const notification = await prisma.notification.create({
+    data: {
+      userId: parseInt(userId),
+      title,
+      body: notificationBody,
+      link: link || null,
+    },
+  });
+
+  return NextResponse.json(notification);
 }

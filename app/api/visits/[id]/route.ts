@@ -17,6 +17,7 @@ export async function PATCH(
 
   const visit = await prisma.visit.findUnique({
     where: { id: visitId },
+    include: { slot: true },
   });
 
   if (!visit) {
@@ -24,7 +25,8 @@ export async function PATCH(
   }
 
   const body = await request.json();
-  const { contractSignatures, contractType, commissions, stage, ...updateData } = body;
+  const { contractSignatures, contractType, commissions, stage, rejectionReason, setterId, closerId, ...updateData } = body;
+
   if (contractSignatures) {
     await prisma.visit.update({
       where: { id: visitId },
@@ -81,6 +83,89 @@ export async function PATCH(
     return NextResponse.json({ success: true });
   }
 
+  if (setterId !== undefined || closerId !== undefined) {
+    if (session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Only admins can transfer leads" }, { status: 403 });
+    }
+
+    const transferData: Record<string, unknown> = {};
+    if (setterId !== undefined) {
+      transferData.setterId = setterId;
+      if (visit.parcelId) {
+        await prisma.parcel.update({
+          where: { id: visit.parcelId },
+          data: { setterId, lastUpdatedAt: new Date() },
+        });
+      }
+    }
+    if (closerId !== undefined) transferData.closerId = closerId;
+    if (updateData.scheduledAt !== undefined) transferData.scheduledAt = new Date(updateData.scheduledAt);
+
+    await prisma.visit.update({
+      where: { id: visitId },
+      data: transferData,
+    });
+
+    if (setterId !== undefined) {
+      await prisma.notification.create({
+        data: {
+          userId: setterId,
+          title: 'Lead Transferido',
+          body: `Se te ha asignado un nuevo lead.`,
+          link: `/lead/${visitId}`,
+        },
+      });
+    }
+    if (closerId !== undefined && closerId !== setterId) {
+      await prisma.notification.create({
+        data: {
+          userId: closerId,
+          title: 'Lead Transferido',
+          body: `Se te ha asignado un nuevo lead como closer.`,
+          link: `/lead/${visitId}`,
+        },
+      });
+    }
+
+    return NextResponse.json({ success: true });
+  }
+
+  const hasRejection = visit.scheduledAt !== null && updateData.scheduledAt === null && rejectionReason;
+  if (hasRejection) {
+    await prisma.visit.update({
+      where: { id: visitId },
+      data: { scheduledAt: null, notes: rejectionReason ? `[RECHAZO] ${rejectionReason}` : visit.notes },
+    });
+
+    if (visit.slot?.id) {
+      await prisma.closerSlot.update({
+        where: { id: visit.slot.id },
+        data: { isBooked: false, visitId: null },
+      });
+    }
+
+    const adminUsers = await prisma.user.findMany({
+      where: { role: "ADMIN" },
+      select: { id: true },
+    });
+
+    const setterName = (await prisma.user.findUnique({ where: { id: visit.setterId }, select: { name: true } }))?.name || "Usuario";
+    const parcelName = visit.parcelId || "parcela";
+
+    for (const admin of adminUsers) {
+      await prisma.notification.create({
+        data: {
+          userId: admin.id,
+          title: "Cita rechazada",
+          body: `${setterName} rechazó una cita. Motivo: ${rejectionReason}`,
+          link: "/calendar",
+        },
+      });
+    }
+
+    return NextResponse.json({ success: true });
+  }
+
   if (Object.keys(updateData).length > 0) {
     await prisma.visit.update({
       where: { id: visitId },
@@ -105,4 +190,51 @@ export async function PATCH(
   }
 
   return NextResponse.json({ error: "No data provided" }, { status: 400 });
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const visitId = parseInt(id);
+
+  try {
+    const visit = await prisma.visit.findUnique({
+      where: { id: visitId },
+    });
+
+    if (!visit) {
+      return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+    }
+
+    await prisma.chatMessage.deleteMany({ where: { room: { visitId } } });
+    await prisma.chatRoom.deleteMany({ where: { visitId } });
+    await prisma.visitObjection.deleteMany({ where: { visitId } });
+    await prisma.visitCloserObjection.deleteMany({ where: { visitId } });
+    await prisma.visitNotAvailableTag.deleteMany({ where: { visitId } });
+    await prisma.closerCommission.deleteMany({ where: { visitId } });
+    await prisma.visitProject.deleteMany({ where: { visitId } });
+    await prisma.projectDetails.deleteMany({ where: { visitId } });
+    await prisma.bill.deleteMany({ where: { visitId } });
+    await prisma.visitLocation.deleteMany({ where: { visitId } });
+    await prisma.closerSlot.updateMany({
+      where: { visitId },
+      data: { isBooked: false, visitId: null },
+    });
+
+    await prisma.visit.delete({
+      where: { id: visitId },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting visit:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }

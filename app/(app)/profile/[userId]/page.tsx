@@ -29,6 +29,7 @@ interface UserProfile {
   setters?: { id: number; name: string }[];
   userBadges: {
     badge: Badge;
+    earnedAt: string;
   }[];
   stats: {
     totalVisits: number;
@@ -386,11 +387,11 @@ export default function PublicProfilePage() {
             Medallas
           </h2>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {profile.userBadges.map(({ badge }) => (
+          <div className="flex gap-4 overflow-x-auto pb-2">
+            {profile.userBadges.map(({ badge, earnedAt }) => (
               <div
                 key={badge.id}
-                className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 dark:border-gray-700"
+                className="flex-shrink-0 flex items-center gap-3 p-4 rounded-lg border border-gray-200 dark:border-gray-700 min-w-[180px]"
               >
                 <div
                   className="w-12 h-12 rounded-full flex items-center justify-center text-2xl"
@@ -399,7 +400,10 @@ export default function PublicProfilePage() {
                   {badge.icon}
                 </div>
                 <div>
-                  <p className="font-semibold">{badge.name}</p>
+                  <p className="font-semibold text-sm">{badge.name}</p>
+                  <p className="text-xs text-gray-500">
+                    {new Date(earnedAt).toLocaleDateString("es", { year: "numeric", month: "short", day: "numeric" })}
+                  </p>
                 </div>
               </div>
             ))}

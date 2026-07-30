@@ -1,92 +1,67 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
-import { sendEmail } from '@/lib/email';
-import { emailTemplates } from '@/lib/email-templates';
 export const dynamic = 'force-dynamic';
 
-// Cron job que se ejecuta diariamente para verificar parcelas sin actividad por 30 días
-// Solo expiran leads con objeciones o no-disponible; avances exitosos NO expiran
 export async function POST() {
-  const session = await auth();
-  if (!session?.user || session.user.role !== 'ADMIN') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    // Encontrar parcelas que:
-    // 1. Tienen un setter asignado
-    // 2. No están en estado CUSTOMER
-    // 3. Todas sus visitas más recientes son OBJECTION o NOT_AVAILABLE
-    //    (avances exitosos como PROPOSAL_ACCEPTED, PROJECT, CLOSED no expiran)
-    const allParcels = await prisma.parcel.findMany({
+    const adminUser = await prisma.user.findFirst({
+      where: { role: 'ADMIN' },
+      select: { id: true },
+    });
+    const adminId = adminUser?.id;
+
+    const parcelsToExpire = await prisma.parcel.findMany({
       where: {
         setterId: { not: null },
         status: { not: 'CUSTOMER' },
         OR: [
           { lastActivityAt: { lt: thirtyDaysAgo } },
-          { lastActivityAt: null, claimedAt: { lt: thirtyDaysAgo } },
+          {
+            lastActivityAt: null,
+            lastUpdatedAt: { lt: thirtyDaysAgo },
+          },
+          {
+            lastActivityAt: null,
+            lastUpdatedAt: null,
+            claimedAt: { lt: thirtyDaysAgo },
+          },
         ],
+        ...(adminId ? { setterId: { not: adminId } } : {}),
       },
       include: {
-        setter: {
-          select: { id: true, name: true, email: true },
-        },
+        setter: { select: { id: true, name: true } },
         visits: {
           orderBy: { createdAt: 'desc' },
-          select: { id: true, stage: true, outcome: true },
+          take: 1,
+          select: { id: true, stage: true },
         },
       },
-    });
-
-    // Filtrar: solo expiran leads donde la última visita es OBJECTION o NOT_AVAILABLE
-    // Si la última visita es PROPOSAL_ACCEPTED, PROJECT, CLOSED o no tiene visitas con objeciones → NO expira
-    const parcelsToExpire = allParcels.filter((parcel) => {
-      const latestVisit = parcel.visits[0];
-      if (!latestVisit) return true; // sin visitas → expira
-      // Solo expira si la última visita fue objeción o no disponible
-      return latestVisit.stage === 'OBJECTION' || latestVisit.outcome === 'NOT_AVAILABLE';
     });
 
     const expiredParcels = [];
 
     for (const parcel of parcelsToExpire) {
-      // Liberar la parcela
       await prisma.parcel.update({
         where: { id: parcel.id },
         data: {
           setterId: null,
           status: 'AVAILABLE',
-          lastActivityAt: null,
-          claimedAt: null,
         },
       });
 
-      // Notificar al setter que perdió la parcela
       if (parcel.setterId) {
         await prisma.notification.create({
           data: {
             userId: parcel.setterId,
-            title: 'Parcela Liberada',
-            body: `La parcela "${parcel.address}" ha sido liberada por inactividad (30 días sin actividad).`,
+            title: 'Lead Expirado',
+            body: `El lead "${parcel.address}" ha expirado por inactividad (30 días sin actividad).`,
             link: '/leads',
           },
         });
-
-        try {
-          if (parcel.setter?.email) {
-            await sendEmail({
-              to: parcel.setter.email,
-              subject: "Lead Expirado - One Solutions",
-              html: emailTemplates.leadExpiring(parcel.setter.name, parcel.address, 0),
-            });
-          }
-        } catch (emailError) {
-          console.error("Error sending expiration email:", emailError);
-        }
       }
 
       expiredParcels.push({
@@ -107,7 +82,6 @@ export async function POST() {
   }
 }
 
-// Endpoint para verificar el estado de las parcelas de un setter
 export async function GET() {
   const session = await auth();
   if (!session?.user) {
@@ -129,27 +103,16 @@ export async function GET() {
     const parcels = await prisma.parcel.findMany({
       where: whereClause,
       include: {
-        setter: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+        setter: { select: { id: true, name: true } },
         visits: {
           orderBy: { createdAt: 'desc' },
           take: 1,
-          select: {
-            stage: true,
-          },
+          select: { stage: true },
         },
       },
-      orderBy: {
-        claimedAt: 'desc',
-      },
+      orderBy: { claimedAt: 'desc' },
     });
 
-    // Filtrar parcelas cuya última visita esté en PROPOSAL_ACCEPTED, PROJECT, o CLOSED
-    // Estas NO expiran porque son avances exitosos
     const filteredParcels = parcels.filter((p) => {
       const latestVisit = p.visits?.[0];
       if (!latestVisit) return true;
@@ -158,7 +121,7 @@ export async function GET() {
 
     const parcelsWithDaysRemaining = filteredParcels.map((parcel) => {
       const now = new Date();
-      const lastActivity = parcel.lastActivityAt || parcel.claimedAt || now;
+      const lastActivity = parcel.lastActivityAt || parcel.lastUpdatedAt || parcel.claimedAt || now;
       const daysSinceActivity = Math.floor(
         (now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24)
       );

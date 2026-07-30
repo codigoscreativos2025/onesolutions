@@ -54,6 +54,8 @@ export async function GET(
             clientName: true,
             clientEmail: true,
             notes: true,
+            additionalFileUrl: true,
+            additionalFileName: true,
           },
         },
         projectDetails: true,
@@ -95,6 +97,9 @@ export async function GET(
               select: { id: true, name: true },
             },
           },
+        },
+        chatRoom: {
+          select: { id: true },
         },
       },
     });

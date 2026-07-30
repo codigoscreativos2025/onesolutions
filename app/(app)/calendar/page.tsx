@@ -93,6 +93,22 @@ export default function CalendarPage() {
   const [allUsers, setAllUsers] = useState<AdminUser[]>([]);
   const [appointmentSaving, setAppointmentSaving] = useState(false);
 
+  const [rejectVisitId, setRejectVisitId] = useState<number | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [rejectSaving, setRejectSaving] = useState(false);
+
+  const [adminReassignVisit, setAdminReassignVisit] = useState<CalendarVisit | null>(null);
+  const [adminReassignUserId, setAdminReassignUserId] = useState("");
+  const [adminReassignDate, setAdminReassignDate] = useState("");
+  const [adminReassignTime, setAdminReassignTime] = useState("");
+  const [isAdminReassignModalOpen, setIsAdminReassignModalOpen] = useState(false);
+  const [adminReassignUsers, setAdminReassignUsers] = useState<AdminUser[]>([]);
+  const [adminReassignSaving, setAdminReassignSaving] = useState(false);
+
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [nameFilter, setNameFilter] = useState("");
+
   const isAdmin = session?.user?.role === "ADMIN";
   const isSetter = session?.user?.role === "SETTER";
   const isSetterJr = session?.user?.role === "SETTER_JR";
@@ -126,7 +142,7 @@ export default function CalendarPage() {
       if (res.ok) {
         const data = await res.json();
         toast.success(available ? "Marcado como disponible" : "Marcado como no disponible");
-        setDayData((prev) => ({ ...prev, [key]: data }));
+        setDayData((prev) => ({ ...prev, [key]: { available: data.available, ranges: data.ranges } }));
       } else {
         toast.error("Error al actualizar disponibilidad");
       }
@@ -354,19 +370,113 @@ export default function CalendarPage() {
     return visit.bill?.clientName || visit.parcel.ownerName || visit.parcel.address || "Sin dirección";
   };
 
+  const handleRejectAppointment = async () => {
+    if (!rejectVisitId || !rejectReason) return;
+    setRejectSaving(true);
+    try {
+      const res = await fetch(`/api/visits/${rejectVisitId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scheduledAt: null, rejectionReason: rejectReason }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Error al rechazar");
+      }
+      toast.success("Cita rechazada correctamente");
+      setIsRejectModalOpen(false);
+      setRejectReason("");
+      setRejectVisitId(null);
+      fetchData();
+    } catch {
+      toast.error("Error al rechazar la cita");
+    } finally {
+      setRejectSaving(false);
+    }
+  };
+
+  const openRejectModal = (visit: CalendarVisit) => {
+    setRejectVisitId(visit.id);
+    setRejectReason("");
+    setIsRejectModalOpen(true);
+  };
+
+  const openAdminReassignModal = async (visit: CalendarVisit) => {
+    setAdminReassignVisit(visit);
+    const date = new Date(visit.scheduledAt);
+    setAdminReassignDate(date.toISOString().split("T")[0]);
+    const h = date.getHours().toString().padStart(2, "0");
+    const m = date.getMinutes().toString().padStart(2, "0");
+    setAdminReassignTime(`${h}:${m}`);
+    setAdminReassignUserId("");
+    setIsAdminReassignModalOpen(true);
+
+    try {
+      const res = await fetch("/api/admin/users");
+      const data = await res.json();
+      setAdminReassignUsers(
+        data.filter(
+          (u: AdminUser) => (u.role === "SETTER" || u.role === "SETTER_JR" || u.role === "CLOSER") && u.id !== visit.setter.id
+        )
+      );
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleAdminReassign = async () => {
+    if (!adminReassignVisit || !adminReassignUserId || !adminReassignDate || !adminReassignTime) {
+      toast.error("Completa todos los campos");
+      return;
+    }
+    setAdminReassignSaving(true);
+    try {
+      const [h, m] = adminReassignTime.split(":");
+      const newDate = new Date(adminReassignDate + `T${h}:${m}:00`);
+      const targetUserId = parseInt(adminReassignUserId);
+
+      const res = await fetch(`/api/visits/${adminReassignVisit.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          closerId: targetUserId,
+          scheduledAt: newDate.toISOString(),
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Error al reasignar");
+      }
+
+      const targetUser = adminReassignUsers.find((u) => u.id === targetUserId);
+      if (targetUser) {
+        await fetch("/api/notifications", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: targetUserId,
+            title: "Nueva cita asignada",
+            body: `Se te ha asignado una cita para el ${adminReassignDate} a las ${adminReassignTime}`,
+            link: "/calendar",
+          }),
+        });
+      }
+
+      toast.success("Cita reasignada correctamente");
+      setIsAdminReassignModalOpen(false);
+      setAdminReassignVisit(null);
+      fetchData();
+    } catch {
+      toast.error("Error al reasignar la cita");
+    } finally {
+      setAdminReassignSaving(false);
+    }
+  };
+
   const handleAppointmentNavigate = (visit: CalendarVisit) => {
     setIsDayModalOpen(false);
-    if (visit.stage === "IN_PROGRESS" || visit.stage === "OBJECTION") {
-      router.push(`/leads?highlight=${visit.parcel.id}`);
-    } else if (
-      visit.stage === "PROPOSAL_ACCEPTED" ||
-      visit.stage === "PROJECT" ||
-      visit.stage === "CLOSED"
-    ) {
-      router.push(`/my-projects?highlight=${visit.id}`);
-    } else {
-      router.push(`/leads?highlight=${visit.parcel.id}`);
-    }
+    router.push(`/lead/${visit.id}`);
   };
 
   const groupVisitsByDate = () => {
@@ -428,11 +538,22 @@ export default function CalendarPage() {
               className="h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-sm text-on-surface"
             >
               <option value="">Mis citas</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name} ({user.role === "CLOSER" ? "Closer" : "Trainee"})
-                </option>
-              ))}
+              {users
+                .filter((u) => {
+                  if (roleFilter === "trainee") return u.role === "SETTER" || u.role === "SETTER_JR";
+                  if (roleFilter === "closer") return u.role === "CLOSER";
+                  return true;
+                })
+                .filter((u) => {
+                  if (!nameFilter) return true;
+                  return u.name.toLowerCase().includes(nameFilter.toLowerCase());
+                })
+                .map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name} ({user.role === "CLOSER" ? "Closer" : "Trainee"})
+                  </option>
+                ))
+              }
             </select>
           )}
           <div className="flex border border-outline-variant rounded-lg overflow-hidden">
@@ -465,6 +586,36 @@ export default function CalendarPage() {
           )}
         </div>
       </div>
+
+      {isAdmin && (
+        <div className="glass-panel rounded-2xl p-4 flex flex-wrap gap-3 items-end">
+          <div>
+            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider block mb-1">Tipo de usuario</label>
+            <select
+              value={roleFilter}
+              onChange={(e) => {
+                setRoleFilter(e.target.value);
+                setSelectedUserId("");
+              }}
+              className="h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-sm text-on-surface"
+            >
+              <option value="all">Todos</option>
+              <option value="trainee">Trainee</option>
+              <option value="closer">Closer</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider block mb-1">Nombre</label>
+            <input
+              type="text"
+              value={nameFilter}
+              onChange={(e) => setNameFilter(e.target.value)}
+              placeholder="Buscar..."
+              className="h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-sm text-on-surface w-48"
+            />
+          </div>
+        </div>
+      )}
 
       {isSetter && (
         <div className="glass-panel rounded-2xl p-4">
@@ -895,13 +1046,12 @@ export default function CalendarPage() {
             <div className="space-y-2">
               {selectedDayVisits.map((visit) => {
                 return (
-                  <button
-                    key={visit.id}
-                    onClick={() => handleAppointmentNavigate(visit)}
-                    className="w-full p-3 rounded-xl bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors text-left"
-                  >
+                  <div key={visit.id} className="w-full p-3 rounded-xl bg-primary/5 border border-primary/20 text-left">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => handleAppointmentNavigate(visit)}
+                        className="flex items-center gap-3 flex-1 text-left hover:opacity-80"
+                      >
                         <div
                           className="w-2 h-8 rounded-full"
                           style={{
@@ -926,7 +1076,7 @@ export default function CalendarPage() {
                             {visit.closer ? ` / ${visit.closer.name}` : ""}
                           </p>
                         </div>
-                      </div>
+                      </button>
                       <div className="flex items-center gap-2">
                         <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
                           {stageLabels[visit.stage] || visit.stage}
@@ -934,7 +1084,34 @@ export default function CalendarPage() {
                         <ArrowRight className="w-4 h-4 text-on-surface-variant" />
                       </div>
                     </div>
-                  </button>
+                    <div className="mt-2 flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-500 border-red-200 hover:bg-red-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openRejectModal(visit);
+                        }}
+                      >
+                        <X className="w-3 h-3 mr-1" />
+                        Rechazar
+                      </Button>
+                      {isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openAdminReassignModal(visit);
+                          }}
+                        >
+                          <RefreshCw className="w-3 h-3 mr-1" />
+                          Reasignar
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 );
               })}
             </div>
@@ -1013,6 +1190,128 @@ export default function CalendarPage() {
               className="flex-1"
             >
               {appointmentSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isRejectModalOpen}
+        onClose={() => {
+          setIsRejectModalOpen(false);
+          setRejectReason("");
+          setRejectVisitId(null);
+        }}
+        title="Rechazar Cita"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-on-surface-variant">
+            Al rechazar esta cita, se eliminará del calendario y se notificará al administrador.
+          </p>
+          <div>
+            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+              Motivo del rechazo
+            </label>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              className="w-full min-h-[100px] bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none rounded-xl p-4 resize-none text-on-surface mt-1"
+              placeholder="Explica por qué rechazas esta cita..."
+            />
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                setIsRejectModalOpen(false);
+                setRejectReason("");
+                setRejectVisitId(null);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleRejectAppointment}
+              disabled={!rejectReason || rejectSaving}
+              className="flex-1"
+              isLoading={rejectSaving}
+            >
+              Confirmar Rechazo
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isAdminReassignModalOpen}
+        onClose={() => {
+          setIsAdminReassignModalOpen(false);
+          setAdminReassignVisit(null);
+        }}
+        title="Reasignar Cita"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-on-surface-variant">
+            Reasigna esta cita a otro usuario con una nueva fecha y hora.
+          </p>
+          <div>
+            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+              Usuario
+            </label>
+            <select
+              value={adminReassignUserId}
+              onChange={(e) => setAdminReassignUserId(e.target.value)}
+              className="w-full h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-sm text-on-surface mt-1"
+            >
+              <option value="">Seleccionar usuario...</option>
+              {adminReassignUsers.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name} ({u.role === "CLOSER" ? "Closer" : "Trainee"})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+              Fecha
+            </label>
+            <input
+              type="date"
+              value={adminReassignDate}
+              onChange={(e) => setAdminReassignDate(e.target.value)}
+              className="w-full h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-sm text-on-surface mt-1"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+              Hora
+            </label>
+            <input
+              type="time"
+              value={adminReassignTime}
+              onChange={(e) => setAdminReassignTime(e.target.value)}
+              className="w-full h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-sm text-on-surface mt-1"
+            />
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                setIsAdminReassignModalOpen(false);
+                setAdminReassignVisit(null);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleAdminReassign}
+              disabled={adminReassignSaving || !adminReassignUserId || !adminReassignDate || !adminReassignTime}
+              className="flex-1"
+              isLoading={adminReassignSaving}
+            >
+              Reasignar
             </Button>
           </div>
         </div>

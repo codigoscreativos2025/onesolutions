@@ -69,6 +69,7 @@ model Parcel {
   parcelTags  String? // JSON array of tag objects: [{ name: "No abrió", color: "#ff0000", date: "..." }]
   parcelNotes String? // Free text notes
   lastActivityAt DateTime?
+  lastUpdatedAt DateTime?
   claimedAt   DateTime?
 
   setterId Int?
