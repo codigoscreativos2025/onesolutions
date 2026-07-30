@@ -2191,6 +2191,10 @@ function AssignPartnerPanel({ visitId, currentPartnerId, onRefresh }: { visitId:
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    setSelectedPartnerId(String(currentPartnerId ?? ""));
+  }, [currentPartnerId]);
+
+  useEffect(() => {
     fetch("/api/users/transferable?all=true")
       .then((r) => r.json())
       .then((users: { id: number; name: string; role: string }[]) => {
