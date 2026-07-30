@@ -117,11 +117,20 @@ export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: Slo
   return (
     <div className="bg-surface-container-low rounded-xl p-4">
       <div className="flex items-center justify-between mb-4">
-        <button
+        <button type="button"
           onClick={() => handleMonthChange(subMonths(currentMonth, 1))}
           className="p-2 hover:bg-surface-container-high rounded-lg transition-colors"
         >
           <ChevronLeft className="w-5 h-5" />
+        </button>
+        <h3 className="font-semibold text-on-surface text-sm">
+          {format(currentMonth, 'MMMM yyyy', { locale: es })}
+        </h3>
+        <button type="button"
+          onClick={() => handleMonthChange(addMonths(currentMonth, 1))}
+          className="p-2 hover:bg-surface-container-high rounded-lg transition-colors"
+        >
+          <ChevronRight className="w-5 h-5" />
         </button>
         <h3 className="text-lg font-bold capitalize">
           {format(currentMonth, 'MMMM yyyy', { locale: es })}
@@ -157,6 +166,7 @@ export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: Slo
 
           return (
             <button
+              type="button"
               key={index}
               onClick={() => handleDayClick(day)}
               disabled={!canClick}
@@ -195,6 +205,7 @@ export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: Slo
                   selectedTime === time;
                 return (
                   <button
+                    type="button"
                     key={time}
                     onClick={() => handleTimeSelect(time)}
                     className={`p-2 rounded-lg border text-sm transition-all ${

@@ -109,6 +109,11 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
       setLoading(false);
       return;
     }
+    if (!selectedScheduleDate || !selectedScheduleTime) {
+      toast.error("Selecciona fecha y hora para agendar");
+      setLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch('/api/leads/create-manual', {
