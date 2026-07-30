@@ -97,6 +97,19 @@ export async function PATCH(
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });
   }
 
+  const exists = await prisma.parcel.findUnique({ where: { id } });
+  if (!exists) {
+    // Create parcel if it doesn't exist (Regrid parcel first claim)
+    const created = await prisma.parcel.create({
+      data: { id, ...updateData },
+      include: {
+        setter: { select: { id: true, name: true } },
+        partner: { select: { id: true, name: true } },
+      },
+    });
+    return NextResponse.json(created);
+  }
+
   const updated = await prisma.parcel.update({
     where: { id },
     data: updateData,

@@ -43,6 +43,9 @@ export async function PATCH(
       data: { partnerId: partnerId || null, lastUpdatedAt: new Date() },
     });
   }
+  if (Object.keys(updateData).length === 0) {
+    return NextResponse.json({ success: true });
+  }
 
   if (contractSignatures) {
     await prisma.visit.update({
