@@ -43,16 +43,7 @@ export async function PATCH(
       data: { partnerId: partnerId || null, lastUpdatedAt: new Date() },
     });
   }
-  if (Object.keys(updateData).length === 0) {
-    return NextResponse.json({ success: true });
-  }
 
-  if (contractSignatures) {
-    await prisma.visit.update({
-      where: { id: visitId },
-      data: { contractSignatures: JSON.stringify(contractSignatures) },
-    });
-  }
 
   if (commissions && session.user.role !== "ADMIN") {
     return NextResponse.json(
@@ -194,11 +185,9 @@ export async function PATCH(
       where: { id: visitId },
       data: updateData,
     });
-
-    return NextResponse.json({ success: true });
   }
 
-  return NextResponse.json({ error: "No data provided" }, { status: 400 });
+  return NextResponse.json({ success: true });
 }
 
 export async function DELETE(
