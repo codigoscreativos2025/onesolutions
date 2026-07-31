@@ -899,9 +899,9 @@ export function metalRoofHtml(data: Record<string, string>): string {
     
     body {
         font-family: 'Montserrat', sans-serif;
-        background-color: #f3f4f6;
+        background-color: #ffffff;
         margin: 0;
-        padding: 40px 0;
+        padding: 0;
         display: flex;
         justify-content: center;
         -webkit-print-color-adjust: exact;
@@ -912,11 +912,9 @@ export function metalRoofHtml(data: Record<string, string>): string {
         background-color: var(--lightbg);
         width: 100%;
         max-width: 210mm;
-        min-height: 297mm;
         position: relative;
         overflow: hidden;
-        display: flex;
-        flex-direction: column;
+        display: block;
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     }
     
@@ -1400,9 +1398,9 @@ export function metalRoofIsoHtml(data: Record<string, string>): string {
     
     body {
         font-family: 'Montserrat', sans-serif;
-        background-color: #f3f4f6;
+        background-color: #ffffff;
         margin: 0;
-        padding: 40px 0;
+        padding: 0;
         display: flex;
         justify-content: center;
         -webkit-print-color-adjust: exact;
@@ -1413,12 +1411,9 @@ export function metalRoofIsoHtml(data: Record<string, string>): string {
         background-color: var(--lightbg);
         width: 100%;
         max-width: 210mm;
-        min-height: 297mm;
         position: relative;
         overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        display: block;
     }
     
     header {
@@ -1906,26 +1901,9 @@ export function skylightHtml(data: Record<string, string>): string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Skylight Contract - One Solutions</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Contract - One Solutions</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Montserrat', 'sans-serif'],
-                    },
-                    colors: {
-                        brand: '#f1853b',
-                        dark: '#18181b',
-                        lightbg: '#ffffff'
-                    }
-                }
-            }
-        }
-    </script>
     <style>
         body {
             -webkit-print-color-adjust: exact;
@@ -1937,10 +1915,10 @@ export function skylightHtml(data: Record<string, string>): string {
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex justify-center py-4 md:py-10 px-2 md:px-0 font-sans">
+<body class="bg-white flex justify-center font-sans m-0 p-0">
 
     <!-- A4 Paper Container -->
-    <div class="bg-white w-full max-w-[210mm] min-h-screen md:min-h-[297mm] shadow-2xl relative overflow-hidden flex flex-col p-0">
+    <div class="bg-white w-full max-w-[210mm] shadow-2xl relative overflow-hidden block p-0">
         
         <!-- Header -->
         <header class="relative w-full h-[140px]">
@@ -2157,25 +2135,8 @@ export function taperedHtml(data: Record<string, string>): string {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tapered System Contract - One Solutions</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Montserrat', 'sans-serif'],
-                    },
-                    colors: {
-                        brand: '#f1853b',
-                        dark: '#18181b',
-                        lightbg: '#ffffff'
-                    }
-                }
-            }
-        }
-    </script>
     <style>
         body {
             -webkit-print-color-adjust: exact;
@@ -2187,10 +2148,10 @@ export function taperedHtml(data: Record<string, string>): string {
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex justify-center py-4 md:py-10 px-2 md:px-0 font-sans">
+<body class="bg-white flex justify-center font-sans m-0 p-0">
 
     <!-- A4 Paper Container -->
-    <div class="bg-white w-full max-w-[210mm] min-h-screen md:min-h-[297mm] shadow-2xl relative overflow-hidden flex flex-col p-0">
+    <div class="bg-white w-full max-w-[210mm] shadow-2xl relative overflow-hidden block p-0">
         
         <!-- Header -->
         <header class="relative w-full h-[140px]">
@@ -2431,26 +2392,9 @@ export function flatRoofingHtml(data: Record<string, string>): string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flat Roofing Contract - One Solutions</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Flat Roofing System Contract - One Solutions</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Montserrat', 'sans-serif'],
-                    },
-                    colors: {
-                        brand: '#f1853b',
-                        dark: '#18181b',
-                        lightbg: '#ffffff'
-                    }
-                }
-            }
-        }
-    </script>
     <style>
         body {
             -webkit-print-color-adjust: exact;
@@ -2462,10 +2406,10 @@ export function flatRoofingHtml(data: Record<string, string>): string {
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex justify-center py-4 md:py-10 px-2 md:px-0 font-sans">
+<body class="bg-white flex justify-center font-sans m-0 p-0">
 
     <!-- A4 Paper Container -->
-    <div class="bg-white w-full max-w-[210mm] min-h-screen md:min-h-[297mm] shadow-2xl relative overflow-hidden flex flex-col p-0">
+    <div class="bg-white w-full max-w-[210mm] shadow-2xl relative overflow-hidden block p-0">
         
         <!-- Header -->
         <header class="relative w-full h-[140px]">
@@ -2719,9 +2663,9 @@ export function representantesHtml(data: Record<string, string>): string {
     
     body {
         font-family: 'Montserrat', sans-serif;
-        background-color: #f3f4f6;
+        background-color: #ffffff;
         margin: 0;
-        padding: 40px 0;
+        padding: 0;
         display: flex;
         justify-content: center;
         -webkit-print-color-adjust: exact;
@@ -2732,12 +2676,9 @@ export function representantesHtml(data: Record<string, string>): string {
         background-color: var(--lightbg);
         width: 100%;
         max-width: 210mm;
-        min-height: 297mm;
         position: relative;
         overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        display: block;
     }
     
     header {
@@ -3442,28 +3383,36 @@ export function w9Html(data: Record<string, string>): string {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Form W-9</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Helvetica+Neue:wght@400;500;700;800&family=Arial:wght@400;700&display=swap');
         
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
-            background-color: #f3f4f6;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
         }
 
         .w9-container {
-            width: 850px;
-            margin: 40px auto;
+            width: 100%;
+            max-width: 210mm;
+            margin: 0 auto;
             background: white;
-            padding: 40px 45px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         .form-header-grid {
-            display: grid;
-            grid-template-columns: 22% 56% 22%;
+            display: flex;
+            justify-content: space-between;
             border-bottom: 2px solid black;
             padding-bottom: 4px;
         }
@@ -3574,27 +3523,27 @@ export function w9Html(data: Record<string, string>): string {
     <div class="w9-container relative">
         <!-- Header -->
         <div class="form-header-grid">
-            <div class="border-r-[2px] border-black pr-2">
-                <div class="flex items-start gap-1">
-                    <span class="text-[13px] font-bold mt-1">Form</span>
+            <div class="border-r-[2px] border-black pr-2" style="width: 22%; border-right: 2px solid black; padding-right: 8px;">
+                <div class="flex items-start gap-1" style="display: flex; align-items: flex-start; gap: 4px;">
+                    <span class="text-[13px] font-bold mt-1" style="font-size: 13px; font-weight: bold; margin-top: 4px;">Form</span>
                     <span class="header-title">W-9</span>
                 </div>
-                <div class="text-[10px] mt-1">(Rev. March 2024)</div>
-                <div class="text-[9px] mt-3 leading-tight">
+                <div class="text-[10px] mt-1" style="font-size: 10px; margin-top: 4px;">(Rev. March 2024)</div>
+                <div class="text-[9px] mt-3 leading-tight" style="font-size: 9px; margin-top: 12px; line-height: 1.25;">
                     Department of the Treasury<br>
                     Internal Revenue Service
                 </div>
             </div>
-            <div class="text-center px-4 pt-1 flex flex-col justify-between">
-                <div class="text-[20px] font-bold leading-tight mt-1">
+            <div class="text-center px-4 pt-1 flex flex-col justify-between" style="width: 56%; text-align: center; padding: 4px 16px; display: flex; flex-direction: column; justify-content: space-between;">
+                <div class="text-[20px] font-bold leading-tight mt-1" style="font-size: 20px; font-weight: bold; line-height: 1.25; margin-top: 4px;">
                     Request for Taxpayer<br>
                     Identification Number and Certification
                 </div>
-                <div class="text-[11px] font-bold mb-1">
-                    Go to <i class="font-normal">www.irs.gov/FormW9</i> for instructions and the latest information.
+                <div class="text-[11px] font-bold mb-1" style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">
+                    Go to <i class="font-normal" style="font-weight: normal;">www.irs.gov/FormW9</i> for instructions and the latest information.
                 </div>
             </div>
-            <div class="border-l-[2px] border-black pl-2 flex items-center">
+            <div class="border-l-[2px] border-black pl-2 flex items-center" style="width: 22%; border-left: 2px solid black; padding-left: 8px; display: flex; align-items: center;">
                 <div class="req-box w-full">
                     Give form to the<br>
                     requester. Do not<br>
@@ -4289,7 +4238,7 @@ export function fenceHtml(data: Record<string, string>): string {
         width: 100px;
         height: 100px;
         background-color: var(--brand-orange);
-        clip-path: polygon(50% 0%, 100% 30%, 100% 100%, 0% 100%, 0% 30%);
+        border-radius: 20px;
         position: relative;
         display: flex;
         align-items: center;

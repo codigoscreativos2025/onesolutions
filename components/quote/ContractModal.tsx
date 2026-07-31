@@ -6,6 +6,7 @@ import { Loader2, FileText, X, Download, PenLine, Check, ChevronDown, ChevronUp,
 import { Button } from "@/components/ui/Button";
 import { SignatureCanvas } from "./SignatureCanvas";
 import { toast } from "sonner";
+import { tailwindCssString } from "@/lib/tailwind-styles";
 
 interface ContractType {
   type: string;
@@ -259,54 +260,37 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
     });
 
     try {
-      const html2canvas = (await import("html2canvas")).default;
-      const { jsPDF } = await import("jspdf");
+      const html2pdf = (await import("html2pdf.js")).default;
 
       const contractEl = contractContentRef.current;
-      const originalHeight = contractEl.style.height;
-      const originalOverflow = contractEl.style.overflow;
-      const originalMaxHeight = contractEl.style.maxHeight;
-      const originalScrollTop = contractEl.scrollTop;
+      const targetEl = (contractEl.querySelector('.contract-html') as HTMLElement) || contractEl;
+      
+      
+      const styleEl = document.createElement("style");
+      styleEl.innerHTML = `
+        .contract-html {
+          color: #000000 !important;
+        }
+        h2, h3, p, li, table, tr, .signature-block, .highlight-box, .cancellation-box, .client-info, .customer-info, .signatures-container, .mini-col, .section-row, .flex.gap-\\[1px\\] {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+        ${tailwindCssString}
+      `;
+      targetEl.appendChild(styleEl);
 
-      contractEl.style.height = "auto";
-      contractEl.style.overflow = "visible";
-      contractEl.style.maxHeight = "none";
+      const opt: any = {
+        margin:       10,
+        filename:     `contrato_${visitId}.pdf`,
+        image:        { type: 'png' }, // PNG avoids black backgrounds on transparent elements
+        html2canvas:  { scale: 3, useCORS: true }, // Higher scale for HD text quality
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak:    { mode: ['css', 'legacy'] } // Respects the page-break-inside CSS rules
+      };
 
-      await document.fonts.ready;
-      await new Promise(r => setTimeout(r, 200));
+      await html2pdf().set(opt).from(targetEl).save();
 
-      const totalHeight = contractEl.scrollHeight;
-      const viewportHeight = 1122;
-      const pages = Math.ceil(totalHeight / viewportHeight);
-      const pdf = new jsPDF("p", "mm", "a4");
-      const w = pdf.internal.pageSize.getWidth();
-
-      for (let page = 0; page < pages; page++) {
-        contractEl.scrollTop = page * viewportHeight;
-        await new Promise(r => setTimeout(r, 100));
-
-        const canvas = await html2canvas(contractEl, {
-          scale: 1.0,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-          logging: false,
-          y: page * viewportHeight,
-          height: Math.min(viewportHeight, totalHeight - page * viewportHeight),
-          windowHeight: viewportHeight,
-        });
-
-        const img = canvas.toDataURL("image/jpeg", 0.7);
-        const h = (canvas.height * w) / canvas.width;
-        if (page > 0) pdf.addPage();
-        pdf.addImage(img, "JPEG", 0, 0, w, h);
-      }
-
-      pdf.save(`contrato_${visitId}.pdf`);
-
-      contractEl.style.height = originalHeight;
-      contractEl.style.overflow = originalOverflow;
-      contractEl.style.maxHeight = originalMaxHeight;
-      contractEl.scrollTop = originalScrollTop;
+      targetEl.removeChild(styleEl);
     } catch (error) {
       console.error("Error generating PDF:", error);
     } finally {
@@ -350,54 +334,33 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
     });
 
     try {
-      const html2canvas = (await import("html2canvas")).default;
-      const { jsPDF } = await import("jspdf");
+      const html2pdf = (await import("html2pdf.js")).default;
 
       const contractEl = contractContentRef.current;
-      const originalHeight = contractEl.style.height;
-      const originalOverflow = contractEl.style.overflow;
-      const originalMaxHeight = contractEl.style.maxHeight;
-      const originalScrollTop = contractEl.scrollTop;
+      
+      const styleEl = document.createElement("style");
+      styleEl.innerHTML = `
+        h2, h3, p, li, table, tr, .signature-block, .highlight-box, .cancellation-box, .client-info, .customer-info, .signatures-container, .mini-col {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+        ${tailwindCssString}
+      `;
+      contractEl.appendChild(styleEl);
 
-      contractEl.style.height = "auto";
-      contractEl.style.overflow = "visible";
-      contractEl.style.maxHeight = "none";
+      const opt: any = {
+        margin:       10,
+        filename:     `contrato_${visitId}.pdf`,
+        image:        { type: 'png' },
+        html2canvas:  { scale: 3, useCORS: true },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak:    { mode: ['css', 'legacy'] }
+      };
 
-      await document.fonts.ready;
-      await new Promise(r => setTimeout(r, 200));
-
-      const totalHeight = contractEl.scrollHeight;
-      const viewportHeight = 1122;
-      const pages = Math.ceil(totalHeight / viewportHeight);
-      const pdf = new jsPDF("p", "mm", "a4");
-      const w = pdf.internal.pageSize.getWidth();
-
-      for (let page = 0; page < pages; page++) {
-        contractEl.scrollTop = page * viewportHeight;
-        await new Promise(r => setTimeout(r, 100));
-
-        const canvas = await html2canvas(contractEl, {
-          scale: 1.0,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-          logging: false,
-          y: page * viewportHeight,
-          height: Math.min(viewportHeight, totalHeight - page * viewportHeight),
-          windowHeight: viewportHeight,
-        });
-
-        const img = canvas.toDataURL("image/jpeg", 0.7);
-        const h = (canvas.height * w) / canvas.width;
-        if (page > 0) pdf.addPage();
-        pdf.addImage(img, "JPEG", 0, 0, w, h);
-      }
-
-      const pdfBase64 = pdf.output("datauristring").split(",")[1];
-
-      contractEl.style.height = originalHeight;
-      contractEl.style.overflow = originalOverflow;
-      contractEl.style.maxHeight = originalMaxHeight;
-      contractEl.scrollTop = originalScrollTop;
+      const pdfBase64DataUri = await html2pdf().set(opt).from(contractEl).outputPdf('datauristring');
+      const pdfBase64 = pdfBase64DataUri.split(",")[1];
+      
+      contractEl.removeChild(styleEl);
 
       const res = await fetch("/api/email/send", {
         method: "POST",

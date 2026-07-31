@@ -174,7 +174,6 @@ export async function PATCH(
     });
 
     const setterName = (await prisma.user.findUnique({ where: { id: visit.setterId }, select: { name: true } }))?.name || "Usuario";
-    const parcelName = visit.parcelId || "parcela";
 
     for (const admin of adminUsers) {
       await prisma.notification.create({

@@ -71,12 +71,9 @@ export async function PATCH(
   const { partnerId, parcelTags, parcelNotes, visitedStatus } = body;
 
   const parcel = await prisma.parcel.findUnique({ where: { id } });
-  if (!parcel) {
-    return NextResponse.json({ error: "Parcel not found" }, { status: 404 });
-  }
 
   const isAdmin = session.user.role === "ADMIN";
-  const isOwner = parcel.setterId === parseInt(session.user.id);
+  const isOwner = parcel?.setterId === parseInt(session.user.id);
   const isSetterOrCloser = session.user.role === "SETTER" || session.user.role === "CLOSER";
 
   const updateData: Record<string, unknown> = {};
