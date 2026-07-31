@@ -160,6 +160,18 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
     });
   }, [signatures, activeContract]);
 
+  useEffect(() => {
+    if (activeContract && activeContract.data) {
+      const existingSigs: Record<string, string> = {};
+      activeContract.fields?.forEach(f => {
+        if (f.type === "signature" && activeContract.data[f.key]) {
+          existingSigs[f.key] = activeContract.data[f.key];
+        }
+      });
+      setSignatures(existingSigs);
+    }
+  }, [activeContract]);
+
   const fetchContracts = async () => {
     setLoading(true);
     try {
@@ -167,9 +179,12 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
       if (!res.ok) throw new Error("Error fetching contracts");
       const json: ContractData = await res.json();
       setData(json);
-      if (json.contracts?.length > 0) {
+      
+      // Select first tab if none selected
+      if (json.contracts?.length > 0 && !activeTab) {
         setActiveTab(json.contracts[0].type);
       }
+      
     } catch (error) {
       console.error(error);
       toast.error("Error al cargar los contratos");
@@ -200,6 +215,7 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
       });
       if (!res.ok) throw new Error("Error saving signatures");
       toast.success("Firmas guardadas");
+      fetchContracts();
     } catch (error) {
       console.error(error);
       toast.error("Error al guardar firmas");
@@ -337,16 +353,20 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
       const html2pdf = (await import("html2pdf.js")).default;
 
       const contractEl = contractContentRef.current;
+      const targetEl = (contractEl.querySelector('.contract-html') as HTMLElement) || contractEl;
       
       const styleEl = document.createElement("style");
       styleEl.innerHTML = `
-        h2, h3, p, li, table, tr, .signature-block, .highlight-box, .cancellation-box, .client-info, .customer-info, .signatures-container, .mini-col {
+        .contract-html {
+          color: #000000 !important;
+        }
+        h2, h3, p, li, table, tr, .signature-block, .highlight-box, .cancellation-box, .client-info, .customer-info, .signatures-container, .mini-col, .section-row, .flex.gap-\\[1px\\] {
           page-break-inside: avoid !important;
           break-inside: avoid !important;
         }
         ${tailwindCssString}
       `;
-      contractEl.appendChild(styleEl);
+      targetEl.appendChild(styleEl);
 
       const opt: any = {
         margin:       10,
@@ -357,10 +377,10 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
         pagebreak:    { mode: ['css', 'legacy'] }
       };
 
-      const pdfBase64DataUri = await html2pdf().set(opt).from(contractEl).outputPdf('datauristring');
+      const pdfBase64DataUri = await html2pdf().set(opt).from(targetEl).output('datauristring');
       const pdfBase64 = pdfBase64DataUri.split(",")[1];
       
-      contractEl.removeChild(styleEl);
+      targetEl.removeChild(styleEl);
 
       const res = await fetch("/api/email/send", {
         method: "POST",
