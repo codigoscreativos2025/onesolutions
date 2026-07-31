@@ -1506,19 +1506,6 @@ function DatosProjectFieldsPanel({
 }) {
   const pd = visit.projectDetails || {};
   const nonCommonFields = fieldMetas.filter((m) => !COMMON_FIELDS.includes(m.fieldName));
-
-  const [allProjectTypes, setAllProjectTypes] = useState<{ id: number; name: string }[]>([]);
-  const [selectedProjectTypeIds, setSelectedProjectTypeIds] = useState<number[]>([]);
-  const [projectTypesSaving, setProjectTypesSaving] = useState(false);
-
-  useEffect(() => {
-    const fetchAllProjectTypes = async () => {
-      try {
-        const res = await fetch("/api/project-types");
-        const data = await res.json();
-        if (Array.isArray(data)) setAllProjectTypes(data);
-      } catch { /* */ }
-    };
     fetchAllProjectTypes();
     setSelectedProjectTypeIds(visit.projects.map((p) => p.projectType.id));
   }, [visit.id, visit.projects]);
@@ -1570,37 +1557,6 @@ function DatosProjectFieldsPanel({
     <div className="space-y-6">
       {showBillSection && (
         <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={onFieldChange} onUpload={onUpload} onRefresh={onRefresh} leadTags={leadTags} notAvailTags={notAvailTags} onAddTag={onAddTag} onRemoveTag={onRemoveTag} />
-      )}
-
-      {allProjectTypes.length > 0 && (
-        <Panel title="Tipos de Proyecto" icon={Package}>
-          {projectTypesSaving && (
-            <div className="flex items-center gap-2 text-xs text-on-surface-variant mb-3">
-              <Loader2 className="w-3 h-3 animate-spin" />
-              Actualizando...
-            </div>
-          )}
-          <div className="flex flex-wrap gap-2">
-            {allProjectTypes.map((pt) => (
-              <label
-                key={pt.id}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 cursor-pointer text-sm font-medium transition-all ${
-                  selectedProjectTypeIds.includes(pt.id)
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-outline-variant hover:border-primary/30 text-on-surface-variant"
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedProjectTypeIds.includes(pt.id)}
-                  onChange={() => toggleProjectType(pt.id)}
-                  className="rounded accent-primary"
-                />
-                {pt.name}
-              </label>
-            ))}
-          </div>
-        </Panel>
       )}
 
       <Panel title="Campos del Proyecto" icon={Pencil}>
