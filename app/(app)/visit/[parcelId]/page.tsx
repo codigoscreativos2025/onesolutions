@@ -191,10 +191,12 @@ export default function VisitPage() {
 
       const billData = makeBillData(billUrl, idUrl);
 
-      await fetch(`/api/visits/${visit.id}/projects`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ visitId: visit.id, projectTypeIds: selectedProjectTypes }),
-      });
+      if (selectedProjectTypes.length > 0) {
+        await fetch(`/api/visits/${visit.id}/projects`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ visitId: visit.id, projectTypeIds: selectedProjectTypes }),
+        });
+      }
 
       const patchBody: Record<string, unknown> = {
         notes: notes.trim() || null,
