@@ -25,7 +25,17 @@ export async function PATCH(
   }
 
   const body = await request.json();
-  const { contractSignatures, contractType, commissions, rejectionReason, setterId, closerId, bill, partnerId, ...updateData } = body;
+  const { contractSignatures, contractType, commissions, rejectionReason, setterId, closerId, bill, partnerId, projectTypeIds, ...updateData } = body;
+
+  // Handle project type updates
+  if (projectTypeIds !== undefined && Array.isArray(projectTypeIds)) {
+    await prisma.visitProject.deleteMany({ where: { visitId } });
+    if (projectTypeIds.length > 0) {
+      await prisma.visitProject.createMany({
+        data: projectTypeIds.map((ptId: number) => ({ visitId, projectTypeId: ptId })),
+      });
+    }
+  }
 
   // Handle bill upsert separately (Prisma doesn't support nested upsert in visit.update for SQLite)
   if (bill) {
