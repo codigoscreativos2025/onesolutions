@@ -717,6 +717,7 @@ export default function CalendarPage() {
           visits={visits}
           onDayClick={handleDayClick}
           dayAvailability={canSetSchedule ? dayData : undefined}
+          onMonthChange={(date: Date) => fetchAvailability(date)}
         />
       )}
 

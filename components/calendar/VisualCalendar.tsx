@@ -31,6 +31,7 @@ interface VisualCalendarProps {
   visits: CalendarVisit[];
   onDayClick?: (date: string, dayVisits: CalendarVisit[]) => void;
   dayAvailability?: Record<string, { available: boolean; ranges: { start: string; end: string }[] }>;
+  onMonthChange?: (date: Date) => void;
 }
 
 function formatTimeAMPM(dateStr: string): string {
@@ -42,7 +43,7 @@ function formatTimeAMPM(dateStr: string): string {
   return `${hours}:${minutes} ${ampm}`;
 }
 
-export function VisualCalendar({ visits, onDayClick, dayAvailability }: VisualCalendarProps) {
+export function VisualCalendar({ visits, onDayClick, dayAvailability, onMonthChange }: VisualCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
@@ -84,11 +85,16 @@ export function VisualCalendar({ visits, onDayClick, dayAvailability }: VisualCa
     CANCELLED: '#ef4444',
   };
 
+  const handleMonthChange = (newMonth: Date) => {
+    setCurrentMonth(newMonth);
+    onMonthChange?.(newMonth);
+  };
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
       <div className="flex items-center justify-between mb-6">
         <button
-          onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+          onClick={() => handleMonthChange(subMonths(currentMonth, 1))}
           className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -97,7 +103,7 @@ export function VisualCalendar({ visits, onDayClick, dayAvailability }: VisualCa
           {format(currentMonth, 'MMMM yyyy', { locale: es })}
         </h2>
         <button
-          onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+          onClick={() => handleMonthChange(addMonths(currentMonth, 1))}
           className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
         >
           <ChevronRight className="w-5 h-5" />

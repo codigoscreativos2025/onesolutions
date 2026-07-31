@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Plus, Trash2, FileDown, Eye, Send, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Trash2, FileDown, Eye, Send, ChevronDown, ChevronUp, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
 interface Item {
@@ -48,6 +48,7 @@ export default function AdminInvoicesPage() {
   const [billToName, setBillToName] = useState("");
   const [billToPhone, setBillToPhone] = useState("");
   const [billToEmail, setBillToEmail] = useState("");
+  const [billToAddress, setBillToAddress] = useState("");
   const [fromName, setFromName] = useState("One Solutions Companies LLC");
   const [fromPhone, setFromPhone] = useState("(407) 785-4304");
   const [fromEmail, setFromEmail] = useState("payments@onesolutionscompanies.com");
@@ -62,6 +63,20 @@ export default function AdminInvoicesPage() {
 
   const [contacts, setContacts] = useState<FrequentContact[]>([]);
   const [selectedContactId, setSelectedContactId] = useState("");
+  const [showContactsManager, setShowContactsManager] = useState(false);
+
+  const [editingContactId, setEditingContactId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editCompany, setEditCompany] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+
+  const [newName, setNewName] = useState("");
+  const [newCompany, setNewCompany] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newAddress, setNewAddress] = useState("");
 
   const [invoices, setInvoices] = useState<GeneratedInvoice[]>([]);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
@@ -89,6 +104,94 @@ export default function AdminInvoicesPage() {
     }
   };
 
+  const fetchContacts = async () => {
+    try {
+      const res = await fetch("/api/admin/frequent-contacts");
+      const data = await res.json();
+      setContacts(Array.isArray(data) ? data : []);
+    } catch {}
+  };
+
+  const handleCreateContact = async () => {
+    if (!newName.trim()) return;
+    try {
+      const res = await fetch("/api/admin/frequent-contacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newName.trim(),
+          company: newCompany.trim() || null,
+          phone: newPhone.trim() || null,
+          email: newEmail.trim() || null,
+          address: newAddress.trim() || null,
+        }),
+      });
+      if (res.ok) {
+        toast.success("Contacto creado");
+        setNewName("");
+        setNewCompany("");
+        setNewPhone("");
+        setNewEmail("");
+        setNewAddress("");
+        fetchContacts();
+      } else {
+        toast.error("Error al crear contacto");
+      }
+    } catch {
+      toast.error("Error al crear contacto");
+    }
+  };
+
+  const handleUpdateContact = async (id: number) => {
+    if (!editName.trim()) return;
+    try {
+      const res = await fetch(`/api/admin/frequent-contacts/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editName.trim(),
+          company: editCompany.trim() || null,
+          phone: editPhone.trim() || null,
+          email: editEmail.trim() || null,
+          address: editAddress.trim() || null,
+        }),
+      });
+      if (res.ok) {
+        toast.success("Contacto actualizado");
+        setEditingContactId(null);
+        fetchContacts();
+      } else {
+        toast.error("Error al actualizar contacto");
+      }
+    } catch {
+      toast.error("Error al actualizar contacto");
+    }
+  };
+
+  const handleDeleteContact = async (id: number) => {
+    if (!confirm("¿Eliminar este contacto?")) return;
+    try {
+      const res = await fetch(`/api/admin/frequent-contacts/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Contacto eliminado");
+        fetchContacts();
+      } else {
+        toast.error("Error al eliminar contacto");
+      }
+    } catch {
+      toast.error("Error al eliminar contacto");
+    }
+  };
+
+  const startEditContact = (c: FrequentContact) => {
+    setEditingContactId(c.id);
+    setEditName(c.name);
+    setEditCompany(c.company || "");
+    setEditPhone(c.phone || "");
+    setEditEmail(c.email || "");
+    setEditAddress(c.address || "");
+  };
+
   const handleContactSelect = (contactId: string) => {
     setSelectedContactId(contactId);
     if (!contactId) return;
@@ -97,6 +200,7 @@ export default function AdminInvoicesPage() {
       setBillToName(c.name);
       if (c.phone) setBillToPhone(c.phone);
       if (c.email) setBillToEmail(c.email);
+      if (c.address) setBillToAddress(c.address);
     }
   };
 
@@ -134,6 +238,7 @@ export default function AdminInvoicesPage() {
           date,
           billToName,
           billToEmail: billToEmail || null,
+          billToAddress: billToAddress || null,
           total,
           paid,
           balance,
@@ -350,6 +455,118 @@ export default function AdminInvoicesPage() {
             </div>
           )}
 
+          <button
+            onClick={() => setShowContactsManager(!showContactsManager)}
+            className="text-sm text-primary hover:underline text-left"
+          >
+            {showContactsManager ? "Ocultar" : "Gestionar Contactos"}
+          </button>
+
+          {showContactsManager && (
+            <div className="space-y-3 border border-outline-variant rounded-xl p-4">
+              {contacts.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold">Contactos Existentes</h4>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {contacts.map((c) =>
+                      editingContactId === c.id ? (
+                        <div key={c.id} className="space-y-1.5 p-3 rounded-lg bg-surface-container-low border border-outline-variant">
+                          <input
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            placeholder="Nombre"
+                            className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low"
+                          />
+                          <input
+                            value={editCompany}
+                            onChange={(e) => setEditCompany(e.target.value)}
+                            placeholder="Empresa"
+                            className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low"
+                          />
+                          <input
+                            value={editPhone}
+                            onChange={(e) => setEditPhone(e.target.value)}
+                            placeholder="Telefono"
+                            className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low"
+                          />
+                          <input
+                            value={editEmail}
+                            onChange={(e) => setEditEmail(e.target.value)}
+                            placeholder="Email"
+                            className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low"
+                          />
+                          <input
+                            value={editAddress}
+                            onChange={(e) => setEditAddress(e.target.value)}
+                            placeholder="Direccion"
+                            className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low"
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => handleUpdateContact(c.id)}>Guardar</Button>
+                            <Button size="sm" variant="outline" onClick={() => setEditingContactId(null)}>Cancelar</Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div key={c.id} className="flex items-center justify-between p-2 rounded-lg bg-surface-container-low border border-outline-variant">
+                          <div className="text-xs space-y-0.5 min-w-0">
+                            <p className="font-medium truncate">{c.name}{c.company ? ` — ${c.company}` : ""}</p>
+                            <p className="text-on-surface-variant truncate">{c.phone || "-"} | {c.email || "-"}</p>
+                            {c.address && <p className="text-on-surface-variant truncate">{c.address}</p>}
+                          </div>
+                          <div className="flex gap-1 shrink-0 ml-2">
+                            <Button size="sm" variant="outline" onClick={() => startEditContact(c)}>
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => handleDeleteContact(c.id)} className="text-red-500 border-red-200 hover:bg-red-50">
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t border-outline-variant pt-3 space-y-2">
+                <h4 className="text-sm font-semibold">Nuevo Contacto</h4>
+                <input
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Nombre *"
+                  className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low"
+                />
+                <input
+                  value={newCompany}
+                  onChange={(e) => setNewCompany(e.target.value)}
+                  placeholder="Empresa"
+                  className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low"
+                />
+                <input
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value)}
+                  placeholder="Telefono"
+                  className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low"
+                />
+                <input
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder="Email"
+                  className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low"
+                />
+                <input
+                  value={newAddress}
+                  onChange={(e) => setNewAddress(e.target.value)}
+                  placeholder="Direccion"
+                  className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low"
+                />
+                <Button onClick={handleCreateContact} size="sm" className="w-full" disabled={!newName.trim()}>
+                  Guardar Contacto
+                </Button>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-medium text-on-surface-variant">Nro Factura</label>
@@ -378,6 +595,7 @@ export default function AdminInvoicesPage() {
               <Input value={billToName} onChange={(e) => setBillToName(e.target.value)} placeholder="Nombre / Empresa" />
               <Input value={billToPhone} onChange={(e) => setBillToPhone(e.target.value)} placeholder="Telefono" inputMode="tel" pattern="[0-9\-\+\(\) ]*" />
               <Input value={billToEmail} onChange={(e) => setBillToEmail(e.target.value)} placeholder="Email" type="email" />
+              <Input value={billToAddress} onChange={(e) => setBillToAddress(e.target.value)} placeholder="Direccion" />
             </div>
           </div>
 
@@ -463,6 +681,7 @@ export default function AdminInvoicesPage() {
                 {billToName && <div style={{ fontWeight: "bold", color: "#222", fontSize: 14, marginBottom: 5 }}>{billToName}</div>}
                 {billToPhone && <div>{billToPhone}</div>}
                 {billToEmail && <div>{billToEmail}</div>}
+                {billToAddress && <div>{billToAddress}</div>}
                 {!billToName && <div style={{ color: "#ccc", fontStyle: "italic" }}>Nombre del cliente...</div>}
               </div>
               <div style={{ flex: 1, fontSize: 13, color: "#777", lineHeight: 1.6 }}>
