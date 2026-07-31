@@ -216,8 +216,8 @@ export default function VisitPage() {
       });
 
       // Save tags to parcel
-      if (visit.parcel?.id) {
-        await fetch(`/api/parcels/${visit.parcel.id}`, {
+      if (parcelId) {
+        await fetch(`/api/parcels/${parcelId}`, {
           method: "PATCH", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ parcelTags: JSON.stringify(leadTags) }),
         });
