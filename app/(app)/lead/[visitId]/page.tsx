@@ -1507,6 +1507,44 @@ function DatosProjectFieldsPanel({
   const pd = visit.projectDetails || {};
   const nonCommonFields = fieldMetas.filter((m) => !COMMON_FIELDS.includes(m.fieldName));
 
+  const [allProjectTypes, setAllProjectTypes] = useState<{ id: number; name: string }[]>([]);
+  const [selectedProjectTypeIds, setSelectedProjectTypeIds] = useState<number[]>([]);
+  const [projectTypesSaving, setProjectTypesSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchAllProjectTypes = async () => {
+      try {
+        const res = await fetch("/api/project-types");
+        const data = await res.json();
+        if (Array.isArray(data)) setAllProjectTypes(data);
+      } catch { /* */ }
+    };
+    fetchAllProjectTypes();
+    setSelectedProjectTypeIds(visit.projects.map((p) => p.projectType.id));
+  }, [visit.id, visit.projects]);
+
+  const toggleProjectType = async (ptId: number) => {
+    let next: number[];
+    if (selectedProjectTypeIds.includes(ptId)) {
+      next = selectedProjectTypeIds.filter((id) => id !== ptId);
+    } else {
+      next = [...selectedProjectTypeIds, ptId];
+    }
+    setSelectedProjectTypeIds(next);
+    setProjectTypesSaving(true);
+    try {
+      await fetch(`/api/visits/${visit.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectTypeIds: next }),
+      });
+      onRefresh();
+    } catch {
+      toast.error("Error al actualizar tipos de proyecto");
+      setSelectedProjectTypeIds(visit.projects.map((p) => p.projectType.id));
+    } finally {
+      setProjectTypesSaving(false);
+    }
   };
 
   const getValue = (key: string): string => {
