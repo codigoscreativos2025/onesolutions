@@ -543,53 +543,71 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
                             Firmas ({signatureFields.length})
                           </h4>
                           <div className="space-y-4 max-w-lg">
-                            {signatureFields.map((field) => (
-                              <div key={field.id} className="border border-outline-variant/30 rounded-xl overflow-hidden bg-surface-container-low">
-                                <button
-                                  onClick={() =>
-                                    setExpandedSignature(
-                                      expandedSignature === field.id ? null : field.id
-                                    )
-                                  }
-                                  className="w-full flex items-center justify-between p-3 hover:bg-surface-container-low transition-colors"
+                            {signatureFields.map((field) => {
+                              const isExpanded = expandedSignature === field.id;
+                              const isSigned = !!signatures[field.id];
+                              
+                              return (
+                                <div 
+                                  key={field.id} 
+                                  className={`rounded-xl overflow-hidden transition-all duration-200 border-2 shadow-sm ${
+                                    isExpanded ? 'border-[#f48221] shadow-md' : isSigned ? 'border-black' : 'border-[#f48221]/40'
+                                  }`}
                                 >
-                                  <div className="flex items-center gap-2">
-                                    {signatures[field.id] ? (
-                                      <img src={signatures[field.id]} alt="Firma" className="w-12 h-8 object-contain border border-outline-variant rounded" />
-                                    ) : (
-                                      <div className="w-12 h-8 border border-dashed border-outline-variant rounded flex items-center justify-center text-xs text-on-surface-variant">Sin firma</div>
-                                    )}
-                                    <span className="text-sm font-medium">{field.label || field.id}</span>
-                                  </div>
-                                  {expandedSignature === field.id ? (
-                                    <ChevronUp className="w-4 h-4 text-on-surface-variant" />
-                                  ) : (
-                                    <ChevronDown className="w-4 h-4 text-on-surface-variant" />
-                                  )}
-                                </button>
-                                <AnimatePresence>
-                                  {expandedSignature === field.id && (
-                                    <motion.div
-                                      initial={{ height: 0, opacity: 0 }}
-                                      animate={{ height: "auto", opacity: 1 }}
-                                      exit={{ height: 0, opacity: 0 }}
-                                      transition={{ duration: 0.2 }}
-                                      className="overflow-hidden"
-                                    >
-                                      <div className="p-3 pt-0 border-t border-outline-variant/20">
-                                        <SignatureCanvas
-                                          onSignature={(dataUrl) =>
-                                            handleSignatureChange(field.id, dataUrl)
-                                          }
-                                          width={360}
-                                          height={120}
+                                  <button
+                                    onClick={() => setExpandedSignature(isExpanded ? null : field.id)}
+                                    className={`w-full flex items-center justify-between p-4 transition-colors ${
+                                      isExpanded ? 'bg-[#f48221]/5' : 'bg-white hover:bg-gray-50'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      {isSigned ? (
+                                        <img 
+                                          src={signatures[field.id]} 
+                                          alt="Firma" 
+                                          className="w-14 h-9 object-contain border border-gray-200 rounded bg-white p-1 shadow-sm" 
                                         />
-                                      </div>
-                                    </motion.div>
-                                  )}
-                                </AnimatePresence>
-                              </div>
-                            ))}
+                                      ) : (
+                                        <div className="w-14 h-9 border border-dashed border-[#f48221] rounded flex items-center justify-center text-[10px] font-bold text-[#f48221] bg-[#f48221]/10 uppercase tracking-wider">
+                                          Vacío
+                                        </div>
+                                      )}
+                                      <span className={`text-sm font-bold uppercase tracking-wide ${isSigned ? 'text-black' : 'text-gray-700'}`}>
+                                        {field.label || field.id}
+                                      </span>
+                                    </div>
+                                    {isExpanded ? (
+                                      <ChevronUp className="w-5 h-5 text-[#f48221]" />
+                                    ) : (
+                                      <ChevronDown className="w-5 h-5 text-gray-400" />
+                                    )}
+                                  </button>
+                                  <AnimatePresence>
+                                    {isExpanded && (
+                                      <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: "auto", opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="overflow-hidden bg-white"
+                                      >
+                                        <div className="p-4 pt-0 border-t border-gray-100 flex flex-col items-center">
+                                          <div className="w-full max-w-[360px] bg-white rounded-lg overflow-hidden mt-3 mb-4 flex flex-col items-center">
+                                            <SignatureCanvas
+                                              onSignature={(dataUrl) =>
+                                                handleSignatureChange(field.id, dataUrl)
+                                              }
+                                              width={360}
+                                              height={120}
+                                            />
+                                          </div>
+                                        </div>
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
