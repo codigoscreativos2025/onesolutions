@@ -42,6 +42,7 @@ export async function GET() {
             id: true,
             address: true,
             ownerName: true,
+            parcelTags: true,
           },
         },
         setter: {

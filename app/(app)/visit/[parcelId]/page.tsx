@@ -100,6 +100,7 @@ export default function VisitPage() {
   const hasPanelSolar = projectTypes.some((pt) => selectedProjectTypes.includes(pt.id) && pt.name.toLowerCase().includes("panel solar"));
   const showCloserDropdown = isSetterJr || (isSetter && hasPanelSolar);
   const isSelfAssigned = isCloser || (isSetter && !hasPanelSolar);
+  const scheduleSelected = selectedScheduleDate && selectedScheduleTime;
 
   useEffect(() => { fetchData(); }, [parcelId]); // eslint-disable-line
 
@@ -168,18 +169,19 @@ export default function VisitPage() {
     setSelectedProjectTypes((prev) => prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]);
   }
 
-  async function handleSaveAndSchedule() {
+  async function handleSave(mode: 'lead' | 'potential') {
     if (!visit) return;
-    if (!phone.trim()) { toast.error("El teléfono es requerido"); return; }
-    if (!selectedScheduleDate || !selectedScheduleTime) { toast.error("Debes seleccionar fecha y hora para agendar"); return; }
-    if (showCloserDropdown && !selectedCloserId) { toast.error("Debes seleccionar un Closer"); return; }
+    if (!phone.trim()) { toast.error("El telefono es requerido"); return; }
+    if (mode === 'potential') {
+      if (!selectedScheduleDate || !selectedScheduleTime) { toast.error("Debes seleccionar fecha y hora para agendar"); return; }
+      if (showCloserDropdown && !selectedCloserId) { toast.error("Debes seleccionar un Closer"); return; }
+    }
     setSaving(true);
     try {
       let billUrl = billPreview, idUrl = idPreview;
       if (billFile) billUrl = await uploadFile(billFile);
       if (idFile) idUrl = await uploadFile(idFile);
 
-      const scheduledAt = new Date(`${selectedScheduleDate}T${selectedScheduleTime}:00`).toISOString();
       const billData = makeBillData(billUrl, idUrl);
 
       await fetch(`/api/visits/${visit.id}/projects`, {
@@ -187,20 +189,27 @@ export default function VisitPage() {
         body: JSON.stringify({ visitId: visit.id, projectTypeIds: selectedProjectTypes }),
       });
 
+      const patchBody: Record<string, unknown> = {
+        notes: notes.trim() || null,
+        bill: { upsert: { create: billData, update: billData } },
+        ...(showCloserDropdown && selectedCloserId ? { closerId: Number(selectedCloserId) } : {}),
+        ...(isSelfAssigned ? { closerId: Number(session?.user?.id) } : {}),
+      };
+
+      if (mode === 'potential') {
+        patchBody.scheduledAt = new Date(`${selectedScheduleDate}T${selectedScheduleTime}:00`).toISOString();
+        patchBody.stage = "PROPOSAL_ACCEPTED";
+      }
+
       await fetch(`/api/visits/${visit.id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          notes: notes.trim() || null, scheduledAt, stage: "PROPOSAL_ACCEPTED",
-          ...(showCloserDropdown && selectedCloserId ? { closerId: Number(selectedCloserId) } : {}),
-          ...(isSelfAssigned ? { closerId: Number(session?.user?.id) } : {}),
-          bill: { upsert: { create: billData, update: billData } },
-        }),
+        body: JSON.stringify(patchBody),
       });
 
-      toast.success("Visita agendada");
+      toast.success(mode === 'potential' ? "Lead Potencial creado" : "Lead guardado");
       router.push(`/dashboard?highlight=${visit.id}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Error al agendar");
+      toast.error(err instanceof Error ? err.message : "Error al guardar");
     } finally { setSaving(false); }
   }
 
@@ -319,8 +328,8 @@ export default function VisitPage() {
         </section>
       </motion.div>
 
-      <Button onClick={handleSaveAndSchedule} disabled={saving || !phone.trim()} className="w-full h-14">
-        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Guardar y Agendar"}
+      <Button onClick={() => handleSave(scheduleSelected ? 'potential' : 'lead')} disabled={saving || !phone.trim()} className="w-full h-14">
+        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : scheduleSelected ? "Guardar como Lead Potencial" : "Guardar como Lead"}
       </Button>
     </div>
   );

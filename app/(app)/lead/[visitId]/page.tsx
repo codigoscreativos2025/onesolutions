@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ContractModal } from "@/components/quote/ContractModal";
 import { ChatInterface } from "@/components/chat/ChatInterface";
+import { SlotPicker } from "@/components/calendar/SlotPicker";
 import {
   ArrowLeft,
   Loader2,
@@ -30,6 +31,7 @@ import {
   CheckCircle,
   Calendar,
   Play,
+  Tag,
 } from "lucide-react";
 
 const FIELD_LABEL_MAP: Record<string, string> = {
@@ -314,6 +316,9 @@ export default function LeadDetailPage() {
   const [postCloseTags, setPostCloseTags] = useState<string[]>([]);
   const [tagSaving, setTagSaving] = useState(false);
   const [showContractModal, setShowContractModal] = useState(false);
+  const [leadTags, setLeadTags] = useState<{ name: string; color: string }[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [notAvailTags, setNotAvailTags] = useState<any[]>([]);
 
   const [scheduleDate, setScheduleDate] = useState("");
   const [scheduleTime, setScheduleTime] = useState("");
@@ -431,6 +436,24 @@ export default function LeadDetailPage() {
   useEffect(() => {
     if (visit && activeTab === "historial") fetchHistory();
   }, [visit, activeTab]);
+
+  useEffect(() => {
+    if (visit?.parcel?.id) {
+      fetch(`/api/parcels/${visit.parcel.id}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.parcelTags) setLeadTags(JSON.parse(data.parcelTags));
+        })
+        .catch(() => {});
+    }
+  }, [visit?.parcel?.id]);
+
+  useEffect(() => {
+    fetch("/api/admin/not-available-tags")
+      .then(r => r.json())
+      .then(d => { if (Array.isArray(d)) setNotAvailTags(d); })
+      .catch(() => {});
+  }, []);
 
   const handleFieldChange = (key: string, value: string) => {
     setEditFields((prev) => ({ ...prev, [key]: value }));
@@ -721,6 +744,39 @@ export default function LeadDetailPage() {
     }
   };
 
+  const handleAddLeadTag = async (tag: { name: string; color: string }) => {
+    if (!visit?.parcel?.id) return;
+    if (leadTags.some(t => t.name === tag.name)) return;
+    const newTags = [...leadTags, { name: tag.name, color: tag.color }];
+    setLeadTags(newTags);
+    try {
+      await fetch(`/api/parcels/${visit.parcel.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ parcelTags: JSON.stringify(newTags) }),
+      });
+    } catch {
+      toast.error("Error al guardar etiqueta");
+      setLeadTags(leadTags);
+    }
+  };
+
+  const handleRemoveLeadTag = async (tagName: string) => {
+    if (!visit?.parcel?.id) return;
+    const newTags = leadTags.filter(t => t.name !== tagName);
+    setLeadTags(newTags);
+    try {
+      await fetch(`/api/parcels/${visit.parcel.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ parcelTags: JSON.stringify(newTags) }),
+      });
+    } catch {
+      toast.error("Error al eliminar etiqueta");
+      setLeadTags(leadTags);
+    }
+  };
+
   const handleToggleTag = async (tag: string) => {
     if (!visit) return;
     let newTags: string[];
@@ -872,7 +928,7 @@ export default function LeadDetailPage() {
         {activeTab === "datos" && (
           <TabContent key="datos">
             {visit.stage === "IN_PROGRESS" && (
-              <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={handleFieldChange} onUpload={handleUpload} onRefresh={fetchVisitDetails} />
+              <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={handleFieldChange} onUpload={handleUpload} onRefresh={fetchVisitDetails} leadTags={leadTags} notAvailTags={notAvailTags} onAddTag={handleAddLeadTag} onRemoveTag={handleRemoveLeadTag} />
             )}
 
             {visit.stage === "IN_PROGRESS" && !visit.scheduledAt && (
@@ -881,25 +937,11 @@ export default function LeadDetailPage() {
                   <Calendar className="w-5 h-5 text-primary" />
                   Agendar Cita
                 </h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <input
-                    type="date"
-                    value={scheduleDate}
-                    onChange={(e) => setScheduleDate(e.target.value)}
-                    className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
-                  />
-                  <input
-                    type="time"
-                    value={scheduleTime}
-                    onChange={(e) => setScheduleTime(e.target.value)}
-                    className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
-                  />
-                </div>
 
                 {showScheduleCloserDropdown && (
                   <select
                     value={scheduleCloserId}
-                    onChange={(e) => { setScheduleCloserId(e.target.value); setScheduleSlotId(""); }}
+                    onChange={(e) => { setScheduleCloserId(e.target.value); setScheduleDate(""); setScheduleTime(""); }}
                     className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
                   >
                     <option value="">-- Selecciona un Closer --</option>
@@ -909,37 +951,16 @@ export default function LeadDetailPage() {
                   </select>
                 )}
 
-                {showScheduleCloserDropdown && scheduleCloserId && Object.keys(scheduleSlotsByDate).length > 0 && (
-                  <div className="space-y-3">
-                    <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                      Disponibilidad de {scheduleCloser?.name}
-                    </label>
-                    {Object.entries(scheduleSlotsByDate).map(([date, daySlots]: [string, any[]]) => (
-                      <div key={date} className="space-y-1.5">
-                        <p className="text-xs font-medium text-on-surface-variant">{date}</p>
-                        <div className="flex flex-wrap gap-2">
-                          {daySlots.map((s: any) => (
-                            <button
-                              key={s.id}
-                              type="button"
-                              onClick={() => {
-                                setScheduleSlotId(String(s.id));
-                                setScheduleDate(s.startAt.split("T")[0]);
-                                setScheduleTime(s.startAt.split("T")[1]?.substring(0, 5) ?? "");
-                              }}
-                              className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
-                                scheduleSlotId === String(s.id)
-                                  ? "bg-primary/10 border-primary text-primary"
-                                  : "bg-surface-container-lowest border-outline-variant text-on-surface hover:border-primary/30"
-                              }`}
-                            >
-                              {new Date(s.startAt).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                {((showScheduleCloserDropdown && scheduleCloserId) || scheduleIsSelfAssigned) && (
+                  <SlotPicker
+                    userId={scheduleIsSelfAssigned ? Number(session?.user?.id) : Number(scheduleCloserId)}
+                    selectedDate={scheduleDate || undefined}
+                    selectedTime={scheduleTime || undefined}
+                    onSelect={(date, time) => {
+                      setScheduleDate(date);
+                      setScheduleTime(time);
+                    }}
+                  />
                 )}
 
                 <Button onClick={handleScheduleVisit} disabled={scheduleSaving || !scheduleDate || !scheduleTime} className="w-full">
@@ -962,6 +983,10 @@ export default function LeadDetailPage() {
                 onUpload={handleUpload}
                 onRefresh={fetchVisitDetails}
                 showBillSection
+                leadTags={leadTags}
+                notAvailTags={notAvailTags}
+                onAddTag={handleAddLeadTag}
+                onRemoveTag={handleRemoveLeadTag}
               />
             )}
 
@@ -1007,6 +1032,52 @@ export default function LeadDetailPage() {
                 onUncancel={handleUncancel}
                 onDelete={handleDeleteProject}
               />
+            )}
+
+            {(visit.stage === "PROJECT" || visit.stage === "CLOSED" || visit.stage === "CANCELLED") && (
+              <div className="mt-6 glass-panel rounded-xl p-6">
+                <h3 className="font-semibold text-lg mb-4 flex items-center gap-2 text-on-surface">
+                  <Tag className="w-5 h-5 text-primary" />
+                  Etiquetas
+                </h3>
+                {leadTags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {leadTags.map((t, i) => (
+                      <span
+                        key={i}
+                        className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold text-white"
+                        style={{ backgroundColor: t.color }}
+                      >
+                        {t.name}
+                        <button
+                          onClick={() => handleRemoveLeadTag(t.name)}
+                          className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/40 text-white"
+                        >
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {notAvailTags.map((tag) => {
+                    const isSelected = leadTags.some((t) => t.name === tag.name);
+                    return (
+                      <button
+                        key={tag.id}
+                        onClick={() => isSelected ? handleRemoveLeadTag(tag.name) : handleAddLeadTag({ name: tag.name, color: tag.color })}
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                          isSelected
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-outline-variant bg-surface-container-low text-on-surface-variant hover:border-primary/30"
+                        }`}
+                      >
+                        {tag.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             )}
           </TabContent>
         )}
@@ -1203,12 +1274,20 @@ function DatosLeadPanel({
   onFieldChange,
   onUpload,
   onRefresh,
+  leadTags,
+  notAvailTags,
+  onAddTag,
+  onRemoveTag,
 }: {
   visit: VisitDetails;
   editFields: Record<string, string>;
   onFieldChange: (key: string, v: string) => void;
   onUpload: (file: File) => Promise<string>;
   onRefresh: () => void;
+  leadTags: { name: string; color: string }[];
+  notAvailTags: { id: number; name: string; color: string }[];
+  onAddTag: (tag: { name: string; color: string }) => void;
+  onRemoveTag: (tagName: string) => void;
 }) {
   const [idFile, setIdFile] = useState<File | null>(null);
   const [idPreview, setIdPreview] = useState(visit.bill?.additionalFileUrl || "");
@@ -1267,6 +1346,46 @@ function DatosLeadPanel({
           <Input label="Nombre" value={editFields._billClientName || ""} onChange={(e) => onFieldChange("_billClientName", (e.target as HTMLInputElement).value)} placeholder="Nombre del cliente" />
           <Input label="Correo" type="email" value={editFields._billClientEmail || ""} onChange={(e) => onFieldChange("_billClientEmail", (e.target as HTMLInputElement).value)} placeholder="Correo electrónico" />
           <Input label="Teléfono" type="tel" value={editFields._billPhone || ""} onChange={(e) => onFieldChange("_billPhone", (e.target as HTMLInputElement).value)} placeholder="Número de teléfono" />
+        </div>
+      </Panel>
+
+      <Panel title="Etiquetas" icon={Tag}>
+        {leadTags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-3">
+            {leadTags.map((t, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold text-white"
+                style={{ backgroundColor: t.color }}
+              >
+                {t.name}
+                <button
+                  onClick={() => onRemoveTag(t.name)}
+                  className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/40 text-white"
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="flex flex-wrap gap-2">
+          {notAvailTags.map((tag) => {
+            const isSelected = leadTags.some((t) => t.name === tag.name);
+            return (
+              <button
+                key={tag.id}
+                onClick={() => isSelected ? onRemoveTag(tag.name) : onAddTag({ name: tag.name, color: tag.color })}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                  isSelected
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-outline-variant bg-surface-container-low text-on-surface-variant hover:border-primary/30"
+                }`}
+              >
+                {tag.name}
+              </button>
+            );
+          })}
         </div>
       </Panel>
 
@@ -1332,6 +1451,10 @@ function DatosProjectFieldsPanel({
   onUpload,
   onRefresh,
   showBillSection,
+  leadTags,
+  notAvailTags,
+  onAddTag,
+  onRemoveTag,
 }: {
   visit: VisitDetails;
   editFields: Record<string, string>;
@@ -1344,6 +1467,10 @@ function DatosProjectFieldsPanel({
   onUpload: (file: File) => Promise<string>;
   onRefresh: () => void;
   showBillSection?: boolean;
+  leadTags: { name: string; color: string }[];
+  notAvailTags: { id: number; name: string; color: string }[];
+  onAddTag: (tag: { name: string; color: string }) => void;
+  onRemoveTag: (tagName: string) => void;
 }) {
   const pd = visit.projectDetails || {};
   const nonCommonFields = fieldMetas.filter((m) => !COMMON_FIELDS.includes(m.fieldName));
@@ -1410,7 +1537,7 @@ function DatosProjectFieldsPanel({
   return (
     <div className="space-y-6">
       {showBillSection && (
-        <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={onFieldChange} onUpload={onUpload} onRefresh={onRefresh} />
+        <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={onFieldChange} onUpload={onUpload} onRefresh={onRefresh} leadTags={leadTags} notAvailTags={notAvailTags} onAddTag={onAddTag} onRemoveTag={onRemoveTag} />
       )}
 
       {allProjectTypes.length > 0 && (
