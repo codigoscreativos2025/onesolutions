@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
-import { ArrowLeft, Upload, Phone, User, Loader2, FileText, X, CheckCircle } from "lucide-react";
+import { ArrowLeft, Upload, Phone, User, Loader2, FileText, X, CheckCircle, Tag } from "lucide-react";
 import { QuoteModal } from "@/components/quote/QuoteModal";
 import { ContractModal } from "@/components/quote/ContractModal";
 import { SlotPicker } from "@/components/calendar/SlotPicker";
@@ -89,6 +89,8 @@ export default function VisitPage() {
   const [selectedScheduleTime, setSelectedScheduleTime] = useState("");
   const [selectedCloserId, setSelectedCloserId] = useState("");
   const [closers, setClosers] = useState<Closer[]>([]);
+  const [leadTags, setLeadTags] = useState<{ name: string; color: string }[]>([]);
+  const [notAvailTags, setNotAvailTags] = useState<{ id: number; name: string; color: string }[]>([]);
 
   const [showCelebration, setShowCelebration] = useState(false);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
@@ -139,6 +141,11 @@ export default function VisitPage() {
         setClosers(cData);
         if (cData.length === 1) setSelectedCloserId(String(cData[0].id));
       }
+      // Fetch available tags
+      try {
+        const tagsRes = await fetch("/api/admin/not-available-tags");
+        if (tagsRes.ok) { const t = await tagsRes.json(); setNotAvailTags(t); }
+      } catch {}
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   }
@@ -205,6 +212,14 @@ export default function VisitPage() {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(patchBody),
       });
+
+      // Save tags to parcel
+      if (visit.parcelId) {
+        await fetch(`/api/parcels/${visit.parcelId}`, {
+          method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ parcelTags: JSON.stringify(leadTags) }),
+        });
+      }
 
       toast.success(mode === 'potential' ? "Lead Potencial creado" : "Lead guardado");
       router.push(`/dashboard?highlight=${visit.id}`);
@@ -301,6 +316,36 @@ export default function VisitPage() {
           <label className={labelClass}>Notas (opcional)</label>
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notas adicionales..."
             className="w-full min-h-[80px] bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none rounded-xl p-4 resize-none text-on-surface" />
+        </div>
+
+        <div className="space-y-2">
+          <label className={labelClass}><Tag className="w-4 h-4 inline mr-1" />Etiquetas (opcional)</label>
+          <div className="flex flex-wrap gap-1.5">
+            {notAvailTags.map((t) => {
+              const isSelected = leadTags.some((lt) => lt.name === t.name);
+              return (
+                <motion.button key={t.id} type="button" whileTap={{ scale: 0.9 }}
+                  onClick={() => {
+                    if (isSelected) setLeadTags(leadTags.filter((lt) => lt.name !== t.name));
+                    else setLeadTags([...leadTags, { name: t.name, color: t.color }]);
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${isSelected ? "text-white border-transparent" : "text-on-surface-variant border-outline-variant hover:border-primary/30"}`}
+                  style={isSelected ? { backgroundColor: t.color } : {}}
+                >
+                  {t.name}
+                </motion.button>
+              );
+            })}
+          </div>
+          {leadTags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {leadTags.map((t, i) => (
+                <span key={i} className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-white" style={{ backgroundColor: t.color }}>
+                  {t.name}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         <section className="space-y-4 border-t border-outline-variant pt-6">
