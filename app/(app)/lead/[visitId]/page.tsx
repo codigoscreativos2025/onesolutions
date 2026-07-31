@@ -1506,9 +1506,6 @@ function DatosProjectFieldsPanel({
 }) {
   const pd = visit.projectDetails || {};
   const nonCommonFields = fieldMetas.filter((m) => !COMMON_FIELDS.includes(m.fieldName));
-    fetchAllProjectTypes();
-    setSelectedProjectTypeIds(visit.projects.map((p) => p.projectType.id));
-  }, [visit.id, visit.projects]);
 
   const toggleProjectType = async (ptId: number) => {
     let next: number[];
