@@ -1300,7 +1300,7 @@ function DatosLeadPanel({
   useEffect(() => {
     fetch("/api/project-types")
       .then((r) => r.json())
-      .then((d) => { if (Array.isArray(d)) setEditProjectTypes(d); })
+      .then((d) => { if (Array.isArray(d)) setEditProjectTypes(d.filter((pt: { name: string }) => pt.name !== "Campos Comunes")); })
       .catch(() => {});
     setSelectedPTIds(visit.projects.map((p) => p.projectType.id));
   }, [visit.id]);
