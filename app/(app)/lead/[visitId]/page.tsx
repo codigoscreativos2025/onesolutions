@@ -1294,6 +1294,30 @@ function DatosLeadPanel({
   const [billFile, setBillFile] = useState<File | null>(null);
   const [billPreview, setBillPreview] = useState(visit.bill?.imageUrl || "");
   const [saving, setSaving] = useState(false);
+  const [editProjectTypes, setEditProjectTypes] = useState<{ id: number; name: string }[]>([]);
+  const [selectedPTIds, setSelectedPTIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    fetch("/api/project-types")
+      .then((r) => r.json())
+      .then((d) => { if (Array.isArray(d)) setEditProjectTypes(d); })
+      .catch(() => {});
+    setSelectedPTIds(visit.projects.map((p) => p.projectType.id));
+  }, [visit.id]);
+
+  const toggleProjectType = async (ptId: number) => {
+    const next = selectedPTIds.includes(ptId)
+      ? selectedPTIds.filter((id) => id !== ptId)
+      : [...selectedPTIds, ptId];
+    setSelectedPTIds(next);
+    try {
+      await fetch(`/api/visits/${visit.id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectTypeIds: next }),
+      });
+      onRefresh();
+    } catch { /* */ }
+  };
 
   const handleSaveAll = async () => {
     if (!visit) return;
@@ -1414,11 +1438,19 @@ function DatosLeadPanel({
 
       <Panel title="Tipos de Proyecto" icon={Package}>
         <div className="flex flex-wrap gap-2">
-          {visit.projects.map((p) => (
-            <span key={p.projectType.id} className="px-4 py-2 rounded-full border border-primary/30 bg-primary/10 text-primary text-sm font-medium">
-              {p.projectType.name}
-            </span>
-          ))}
+          {editProjectTypes.map((pt) => {
+            const isSelected = selectedPTIds.includes(pt.id);
+            return (
+              <button key={pt.id} type="button" onClick={() => toggleProjectType(pt.id)}
+                className={`px-4 py-2 rounded-full border text-sm font-medium transition-all ${
+                  isSelected ? "bg-primary/10 border-primary text-primary" : "bg-surface-container lowest border-outline-variant text-on-surface-variant hover:border-primary/30"
+                }`}
+              >
+                {isSelected && <CheckCircle className="w-3 h-3 inline mr-1" />}
+                {pt.name}
+              </button>
+            );
+          })}
         </div>
       </Panel>
 
