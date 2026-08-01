@@ -164,7 +164,7 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
     if (activeContract && activeContract.data) {
       const existingSigs: Record<string, string> = {};
       activeContract.fields?.forEach(f => {
-        if (f.type === "signature" && activeContract.data[f.key]) {
+        if (f.type === "signature" && activeContract.data?.[f.key]) {
           existingSigs[f.key] = activeContract.data[f.key];
         }
       });
