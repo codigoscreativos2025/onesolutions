@@ -26,6 +26,38 @@ const COLS = [
   { stage: "CANCELLED", title: "Proyecto Cancelado", color: "bg-red-500", colorBar: "bg-red-500" },
 ] as const;
 
+const COMMON_FIELDS_KANBAN = [
+  "closingDate",
+  "paymentMethod",
+  "primaryRep",
+  "primaryRepCommPct",
+  "secondaryRep",
+  "secondaryRepCommPct",
+  "tertiaryRep",
+  "tertiaryRepCommPct",
+  "generalCostPrice",
+  "generalSalePrice",
+];
+
+const OPTIONAL_FIELDS_KANBAN = ["secondaryRep", "secondaryRepCommPct", "tertiaryRep", "tertiaryRepCommPct"];
+
+function calculateKanbanProgress(pd: Record<string, unknown> | null | undefined): number {
+  if (!pd) return 0;
+  const required = COMMON_FIELDS_KANBAN.filter((f) => !OPTIONAL_FIELDS_KANBAN.includes(f));
+  let total = required.length;
+  let completed = required.filter(
+    (f) => pd[f] !== undefined && pd[f] !== "" && pd[f] !== null
+  ).length;
+  for (const f of OPTIONAL_FIELDS_KANBAN) {
+    const val = pd[f];
+    if (val !== undefined && val !== "" && val !== null) {
+      total++;
+      completed++;
+    }
+  }
+  return total > 0 ? Math.round((completed / total) * 100) : 0;
+}
+
 const STAGE_SET = new Set<string>(COLS.map((c) => c.stage));
 
 interface KanbanVisit {
@@ -36,6 +68,7 @@ interface KanbanVisit {
   setter: { id: number; name: string };
   closer: { id: number; name: string } | null;
   projects: { projectType: { id: number; name: string } }[];
+  projectDetails?: Record<string, unknown> | null;
 }
 
 interface TransferUser {
@@ -719,6 +752,26 @@ function KanbanCard({
           ))}
         </div>
       )}
+
+      {visit.stage === "PROJECT" && visit.projectDetails && (() => {
+        const progress = calculateKanbanProgress(visit.projectDetails);
+        return (
+          <div className="mt-2">
+            <div className="flex justify-between items-center mb-0.5">
+              <span className="text-[10px] text-on-surface-variant">Progreso</span>
+              <span className="text-[10px] font-semibold text-on-surface">{progress}%</span>
+            </div>
+            <div className="w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-300 ${
+                  progress === 100 ? "bg-primary" : progress >= 50 ? "bg-secondary" : "bg-tertiary"
+                }`}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        );
+      })()}
 
       {visit.parcel?.parcelTags && (() => {
         try {

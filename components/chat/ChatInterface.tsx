@@ -105,6 +105,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
   const [searchQuery, setSearchQuery] = useState("");
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [mobileColumn, setMobileColumn] = useState<ColumnView>("list");
+  const [fieldMetas, setFieldMetas] = useState<{ fieldName: string }[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -131,6 +132,26 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
       setMobileColumn("conversation");
     }
   }, [selectedRoomId]);
+
+  useEffect(() => {
+    if (selectedRoom?.visit?.projects && selectedRoom.visit.projects.length > 0) {
+      const fetchFieldMetas = async () => {
+        const allMetas: { fieldName: string }[] = [];
+        const uniqueIds = Array.from(new Set(selectedRoom.visit.projects!.map((p) => p.projectType.id)));
+        for (const typeId of uniqueIds) {
+          try {
+            const res = await fetch(`/api/admin/project-type-fields?projectTypeId=${typeId}`);
+            const fields = await res.json();
+            if (Array.isArray(fields)) allMetas.push(...fields);
+          } catch { /* */ }
+        }
+        setFieldMetas(allMetas);
+      };
+      fetchFieldMetas();
+    } else {
+      setFieldMetas([]);
+    }
+  }, [selectedRoom?.visit?.projects]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -363,39 +384,58 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
   const projects = selectedRoom?.visit.projects || [];
   const bill = selectedRoom?.visit.bill;
 
-  const calculateCompletion = () => {
+  const calculateCompletion = (): number => {
     if (!projectDetails) return 0;
 
-    const requiredFields = [
-      'clientName',
-      'clientEmail',
-      'address',
-      'closingDate',
-      'paymentMethod',
+    const COMMON_FIELDS_CHAT = [
+      "closingDate",
+      "paymentMethod",
+      "primaryRep",
+      "primaryRepCommPct",
+      "secondaryRep",
+      "secondaryRepCommPct",
+      "tertiaryRep",
+      "tertiaryRepCommPct",
+      "generalCostPrice",
+      "generalSalePrice",
     ];
 
-    const projectSpecificFields: Record<string, string[]> = {
-      'Panel Solar': ['solarFinancier', 'systemSize'],
-    };
+    const OPTIONAL_FIELDS_CHAT = ["secondaryRep", "secondaryRepCommPct", "tertiaryRep", "tertiaryRepCommPct"];
 
-    let totalFields = requiredFields.length;
-    let completedFields = requiredFields.filter(field => 
-      projectDetails[field as keyof ProjectDetails]
+    const FILE_FIELD_KEYS_CHAT = new Set([
+      "electricBillUrl",
+      "closingFormUrl",
+      "homeInsuranceUrl",
+      "homeTitleUrl",
+      "idDocumentUrl",
+      "nocUrl",
+      "materialsOrderUrl",
+      "roofReportUrl",
+      "exteriorScopeUrl",
+      "panelsPhotoUrl",
+      "propertyPhotosJson",
+    ]);
+
+    const requiredCommonFields = COMMON_FIELDS_CHAT.filter((f) => !OPTIONAL_FIELDS_CHAT.includes(f));
+    let totalFields = requiredCommonFields.length;
+    let completedFields = requiredCommonFields.filter(
+      (f) => projectDetails[f] !== undefined && projectDetails[f] !== "" && projectDetails[f] !== null
     ).length;
 
-    projects.forEach(p => {
-      const fields = projectSpecificFields[p.projectType.name];
-      if (fields) {
-        totalFields += fields.length;
-        completedFields += fields.filter(field => 
-          projectDetails[field as keyof ProjectDetails]
-        ).length;
+    for (const field of OPTIONAL_FIELDS_CHAT) {
+      const val = projectDetails[field];
+      if (val !== undefined && val !== "" && val !== null) {
+        totalFields++;
+        completedFields++;
       }
-    });
+    }
 
-    totalFields += 2;
-    if (projectDetails.primaryRep) completedFields++;
-    if (projectDetails.primaryRepCommPct) completedFields++;
+    for (const meta of fieldMetas) {
+      if (COMMON_FIELDS_CHAT.includes(meta.fieldName) || FILE_FIELD_KEYS_CHAT.has(meta.fieldName)) continue;
+      totalFields++;
+      const val = projectDetails[meta.fieldName];
+      if (val !== undefined && val !== "" && val !== null) completedFields++;
+    }
 
     return totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
   };
