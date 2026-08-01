@@ -28,8 +28,8 @@ interface SlotPickerProps {
   onSelect: (date: string, time: string) => void;
 }
 
-function generateSlotsFromRanges(ranges: { start: string; end: string }[]): string[] {
-  const slots: string[] = [];
+function generateSlotsFromRanges(ranges: { start: string; end: string }[]): { display: string; value: string }[] {
+  const slots: { display: string; value: string }[] = [];
   for (const range of ranges) {
     if (!range.start || !range.end) continue;
     const [startH, startM] = range.start.split(':').map(Number);
@@ -39,9 +39,12 @@ function generateSlotsFromRanges(ranges: { start: string; end: string }[]): stri
     const endMinutes = endH * 60 + (isNaN(endM) ? 0 : endM);
     if (endMinutes <= startMinutes) continue;
     for (let m = startMinutes; m < endMinutes; m += 60) {
-      const h = Math.floor(m / 60).toString().padStart(2, '0');
+      const h24 = Math.floor(m / 60);
       const min = (m % 60).toString().padStart(2, '0');
-      slots.push(`${h}:${min}`);
+      const ampm = h24 >= 12 ? 'PM' : 'AM';
+      const h12 = h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24;
+      const value = `${h24.toString().padStart(2, '0')}:${min}`;
+      slots.push({ display: `${h12}:${min} ${ampm}`, value });
     }
   }
   return slots;
@@ -111,7 +114,7 @@ export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: Slo
   const handleTimeSelect = (time: string) => {
     if (internalSelectedDate) {
       const dateKey = format(internalSelectedDate, 'yyyy-MM-dd');
-      onSelect(dateKey, time);
+      onSelect(dateKey, time.value);
     }
   };
 
@@ -196,11 +199,11 @@ export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: Slo
                   selectedDate &&
                   selectedTime &&
                   isSameDay(internalSelectedDate, new Date(selectedDate + 'T12:00:00')) &&
-                  selectedTime === time;
+                  selectedTime === time.value;
                 return (
                   <button
                     type="button"
-                    key={time}
+                    key={time.value}
                     onClick={() => handleTimeSelect(time)}
                     className={`p-2 rounded-lg border text-sm transition-all ${
                       isTimeSelected
@@ -210,7 +213,7 @@ export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: Slo
                   >
                     <div className="flex items-center justify-center gap-1">
                       <Clock className="w-3 h-3" />
-                      <span className="font-semibold">{time}</span>
+                      <span className="font-semibold">{time.display}</span>
                     </div>
                   </button>
                 );
