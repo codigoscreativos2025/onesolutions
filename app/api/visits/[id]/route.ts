@@ -25,7 +25,7 @@ export async function PATCH(
   }
 
   const body = await request.json();
-  const { contractSignatures, contractType, commissions, rejectionReason, setterId, closerId, bill, partnerId, projectTypeIds, ...updateData } = body;
+  const { contractSignatures, contractFields, contractType, commissions, rejectionReason, setterId, closerId, bill, partnerId, projectTypeIds, ...updateData } = body;
 
   // Handle project type updates
   if (projectTypeIds !== undefined && Array.isArray(projectTypeIds)) {
@@ -99,6 +99,23 @@ export async function PATCH(
     await prisma.visit.update({
       where: { id: visitId },
       data: { contractSignatures: JSON.stringify(existing) },
+    });
+
+    return NextResponse.json({ success: true });
+  }
+
+  if (contractFields && contractType) {
+    let existing: Record<string, Record<string, string>> = {};
+    if (visit.contractFields) {
+      try {
+        existing = JSON.parse(visit.contractFields);
+      } catch {}
+    }
+    existing[contractType] = contractFields;
+
+    await prisma.visit.update({
+      where: { id: visitId },
+      data: { contractFields: JSON.stringify(existing) },
     });
 
     return NextResponse.json({ success: true });

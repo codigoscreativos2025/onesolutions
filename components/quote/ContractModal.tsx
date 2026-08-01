@@ -298,10 +298,10 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
       const opt: any = {
         margin:       10,
         filename:     `contrato_${visitId}.pdf`,
-        image:        { type: 'png' }, // PNG avoids black backgrounds on transparent elements
-        html2canvas:  { scale: 3, useCORS: true }, // Higher scale for HD text quality
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak:    { mode: ['css', 'legacy'] } // Respects the page-break-inside CSS rules
+        pagebreak:    { mode: ['css', 'legacy'] }
       };
 
       await html2pdf().set(opt).from(targetEl).save();
@@ -371,8 +371,8 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
       const opt: any = {
         margin:       10,
         filename:     `contrato_${visitId}.pdf`,
-        image:        { type: 'png' },
-        html2canvas:  { scale: 3, useCORS: true },
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak:    { mode: ['css', 'legacy'] }
       };
