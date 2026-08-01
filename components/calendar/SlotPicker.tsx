@@ -111,7 +111,7 @@ export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: Slo
     fetchAvailability(next);
   };
 
-  const handleTimeSelect = (time: string) => {
+  const handleTimeSelect = (time: { display: string; value: string }) => {
     if (internalSelectedDate) {
       const dateKey = format(internalSelectedDate, 'yyyy-MM-dd');
       onSelect(dateKey, time.value);
