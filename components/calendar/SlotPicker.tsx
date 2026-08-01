@@ -31,10 +31,13 @@ interface SlotPickerProps {
 function generateSlotsFromRanges(ranges: { start: string; end: string }[]): string[] {
   const slots: string[] = [];
   for (const range of ranges) {
+    if (!range.start || !range.end) continue;
     const [startH, startM] = range.start.split(':').map(Number);
     const [endH, endM] = range.end.split(':').map(Number);
-    const startMinutes = startH * 60 + startM;
-    const endMinutes = endH * 60 + endM;
+    if (isNaN(startH) || isNaN(endH) || isNaN(startM) || isNaN(endM)) continue;
+    const startMinutes = startH * 60 + (isNaN(startM) ? 0 : startM);
+    const endMinutes = endH * 60 + (isNaN(endM) ? 0 : endM);
+    if (endMinutes <= startMinutes) continue;
     for (let m = startMinutes; m < endMinutes; m += 60) {
       const h = Math.floor(m / 60).toString().padStart(2, '0');
       const min = (m % 60).toString().padStart(2, '0');
