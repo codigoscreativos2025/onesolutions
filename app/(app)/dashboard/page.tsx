@@ -25,7 +25,7 @@ export default function DashboardPage() {
   const isSetter = role === "SETTER";
   const isSetterJr = role === "SETTER_JR";
   const isPartner = role === "PARTNER";
-  const canCreateLead = role === "SETTER" || role === "CLOSER" || role === "ADMIN" || role === "SETTER_JR";
+  const canCreateLead = role === "SETTER" || role === "CLOSER" || role === "SETTER_JR";
 
   if (!session) {
     return (

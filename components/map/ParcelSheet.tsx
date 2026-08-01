@@ -177,7 +177,7 @@ export function ParcelSheet({
   if (!parcel) return null;
 
   const metadata = parcel.metadata ? JSON.parse(parcel.metadata) : {};
-  const canVisit = userRole === "SETTER" || userRole === "SETTER_JR" || userRole === "CLOSER" || userRole === "ADMIN";
+  const canVisit = userRole === "SETTER" || userRole === "SETTER_JR" || userRole === "CLOSER";
   const isTakenByMe = parcel.setter?.id === parseInt(userId);
   const isAvailable = parcel.status === "AVAILABLE";
   const isClaimedByMySetter = userRole === "CLOSER" && parcel.status === "LEAD" && parcel.setter;
