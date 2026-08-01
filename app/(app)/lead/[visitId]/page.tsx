@@ -542,6 +542,9 @@ export default function LeadDetailPage() {
     setSaving(true);
     try {
       const payload: Record<string, unknown> = {};
+      // Sync bill file URLs into payload
+      if (visit?.bill?.imageUrl) payload.electricBillUrl = visit.bill.imageUrl;
+      if (visit?.bill?.additionalFileUrl) payload.idDocumentUrl = visit.bill.additionalFileUrl;
       // Save ALL edited fields (both common and specific), exclude _bill* internal fields
       for (const [key, value] of Object.entries(editFields)) {
         if (key.startsWith("_bill")) continue;
