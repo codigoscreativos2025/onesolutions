@@ -44,42 +44,45 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
   useEffect(() => {
     if (autoOpenId && !autoOpenedRef.current) {
       autoOpenedRef.current = true;
-      fetch(`/api/regrid/parcels?lat=${defaultCenter[0]}&lng=${defaultCenter[1]}`)
+      // Fetch the specific parcel from our DB
+      fetch(`/api/parcels/${autoOpenId}`)
         .then(r => r.json())
         .then(data => {
-          if (Array.isArray(data)) {
-            const found = data.find((p: Parcel) => p.id === autoOpenId);
-            if (found) {
-              setSelectedParcel(found);
-              if (map.current) {
-                try {
-                  let geom: GeoJSON.Geometry | null = null;
-                  if (found.geometry) {
-                    const parsed = typeof found.geometry === "string" ? JSON.parse(found.geometry) : found.geometry;
-                    if (parsed.type && (parsed.coordinates || parsed.geometry)) {
-                      geom = parsed;
-                    }
-                  }
-                  if (geom) {
-                    selectedGeometryRef.current = geom;
-                    (map.current.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
-                      type: "FeatureCollection",
-                      features: [{
-                        type: "Feature" as const,
-                        geometry: geom,
-                        properties: {
-                          fillColor: "#f48221",
-                          borderColor: "#f48221",
-                        },
-                      }],
+          if (data && data.id) {
+            const parcel: Parcel = {
+              id: data.id,
+              address: data.address || "Sin direccion",
+              ownerName: data.ownerName,
+              status: data.status || "AVAILABLE",
+              geometry: data.geometry || "",
+              metadata: data.metadata || "",
+              setter: data.setter,
+              visits: data.visits || [],
+            };
+            setSelectedParcel(parcel);
+
+            // Highlight on the map
+            if (map.current && data.geometry) {
+              try {
+                const geom = JSON.parse(data.geometry);
+                if (geom.coordinates?.[0]) {
+                  const coords = geom.coordinates[0].map((c: [number, number]) => [c[1], c[0]]);
+                  const source = map.current.getSource("highlighted-parcel") as maplibregl.GeoJSONSource;
+                  if (source) {
+                    source.setData({
+                      type: "Feature",
+                      properties: { ll_uuid: data.id },
+                      geometry: { type: "Polygon", coordinates: [coords.map(([lng, lat]: [number, number]) => [lng, lat])] },
                     });
-                    map.current.setPaintProperty("parcel-selected", "fill-opacity", 0.6);
-                    setTimeout(() => {
-                      map.current?.setPaintProperty("parcel-selected", "fill-opacity", 0.4);
-                    }, 3000);
                   }
-                } catch { /* geometry parse error */ }
-              }
+                  // Pulse effect
+                  map.current.setPaintProperty("parcel-highlight", "fill-color", "#f48221");
+                  map.current.setPaintProperty("parcel-highlight", "fill-opacity", 0.6);
+                  setTimeout(() => {
+                    map.current?.setPaintProperty("parcel-highlight", "fill-opacity", 0.3);
+                  }, 3000);
+                }
+              } catch {}
             }
           }
         })

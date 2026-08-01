@@ -39,8 +39,29 @@ export default function MapPage() {
   // Auto-open parcel sheet from lead details
   useEffect(() => {
     if (autoOpen && highlightId) {
-      fetch(`/api/regrid/parcels?lat=${32.7767}&lng=${-96.7970}`).catch(() => {});
-      setAutoOpenParcel({ id: highlightId, address: "" });
+      // Fetch parcel from local DB to get metadata + geometry
+      fetch(`/api/parcels/${highlightId}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data && data.geometry) {
+            try {
+              const geom = JSON.parse(data.geometry);
+              if (geom.coordinates?.[0]) {
+                const coords = geom.coordinates[0];
+                // Calculate center of the parcel polygon
+                let sumLat = 0, sumLng = 0, count = 0;
+                coords.forEach((c: number[]) => {
+                  if (c.length >= 2) { sumLat += c[1]; sumLng += c[0]; count++; }
+                });
+                if (count > 0) {
+                  setMapCenter([sumLat / count, sumLng / count]);
+                  setAutoOpenParcel({ id: highlightId, address: data.address || "" });
+                }
+              }
+            } catch {}
+          }
+        })
+        .catch(() => {});
     }
   }, [autoOpen, highlightId]);
 
