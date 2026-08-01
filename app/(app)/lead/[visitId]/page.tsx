@@ -2097,27 +2097,28 @@ function ArchivosPanel({ visit }: { visit: VisitDetails }) {
   interface FileEntry {
     name: string;
     url: string;
+    fieldKey?: string;
   }
 
   const allFilesFlat: FileEntry[] = [];
 
-  const addFile = (name: string, url: string | undefined | null) => {
+  const addFile = (name: string, url: string | undefined | null, fieldKey?: string) => {
     if (!url) return;
-    allFilesFlat.push({ name, url });
+    allFilesFlat.push({ name, url, fieldKey });
   };
 
-  addFile(bill?.additionalFileName || "ID del Cliente", bill?.additionalFileUrl);
-  addFile("Recibo de Luz", bill?.imageUrl);
-  addFile("ID del Cliente (Proyecto)", pd.idDocumentUrl ? String(pd.idDocumentUrl) : undefined);
-  addFile("Recibo de Luz (Proyecto)", pd.electricBillUrl ? String(pd.electricBillUrl) : undefined);
-  addFile("Seguro de Hogar", pd.homeInsuranceUrl ? String(pd.homeInsuranceUrl) : undefined);
-  addFile("Título de Propiedad", pd.homeTitleUrl ? String(pd.homeTitleUrl) : undefined);
-  addFile("NOC", pd.nocUrl ? String(pd.nocUrl) : undefined);
-  addFile("Exterior Scope", pd.exteriorScopeUrl ? String(pd.exteriorScopeUrl) : undefined);
-  addFile("Reporte de Techo", pd.roofReportUrl ? String(pd.roofReportUrl) : undefined);
-  addFile("Fotos de Paneles", pd.panelsPhotoUrl ? String(pd.panelsPhotoUrl) : undefined);
-  addFile("Formulario de Cierre", pd.closingFormUrl ? String(pd.closingFormUrl) : undefined);
-  addFile("Orden de Materiales", pd.materialsOrderUrl ? String(pd.materialsOrderUrl) : undefined);
+  addFile(bill?.additionalFileName || "ID del Cliente", bill?.additionalFileUrl, "additionalFileUrl");
+  addFile("Recibo de Luz", bill?.imageUrl, "imageUrl");
+  addFile("ID del Cliente (Proyecto)", pd.idDocumentUrl ? String(pd.idDocumentUrl) : undefined, "idDocumentUrl");
+  addFile("Recibo de Luz (Proyecto)", pd.electricBillUrl ? String(pd.electricBillUrl) : undefined, "electricBillUrl");
+  addFile("Seguro de Hogar", pd.homeInsuranceUrl ? String(pd.homeInsuranceUrl) : undefined, "homeInsuranceUrl");
+  addFile("Título de Propiedad", pd.homeTitleUrl ? String(pd.homeTitleUrl) : undefined, "homeTitleUrl");
+  addFile("NOC", pd.nocUrl ? String(pd.nocUrl) : undefined, "nocUrl");
+  addFile("Exterior Scope", pd.exteriorScopeUrl ? String(pd.exteriorScopeUrl) : undefined, "exteriorScopeUrl");
+  addFile("Reporte de Techo", pd.roofReportUrl ? String(pd.roofReportUrl) : undefined, "roofReportUrl");
+  addFile("Fotos de Paneles", pd.panelsPhotoUrl ? String(pd.panelsPhotoUrl) : undefined, "panelsPhotoUrl");
+  addFile("Formulario de Cierre", pd.closingFormUrl ? String(pd.closingFormUrl) : undefined, "closingFormUrl");
+  addFile("Orden de Materiales", pd.materialsOrderUrl ? String(pd.materialsOrderUrl) : undefined, "materialsOrderUrl");
 
   if (pd.propertyPhotosJson) {
     try {
@@ -2136,7 +2137,33 @@ function ArchivosPanel({ visit }: { visit: VisitDetails }) {
     allFilesFlat.push({ name: doc.name, url: doc.url });
   });
 
-  const handleDocUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDeleteFile = async (file: FileEntry) => {
+    try {
+      if (file.fieldKey) {
+        // Project/Bill required file — clear the field
+        if (file.fieldKey === "additionalFileUrl" || file.fieldKey === "imageUrl") {
+          await fetch(`/api/visits/${visit.id}`, {
+            method: "PATCH", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ bill: { upsert: { create: { [file.fieldKey]: null }, update: { [file.fieldKey]: null } } } }),
+          });
+        } else {
+          await fetch("/api/project-details", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ visitId: visit.id, [file.fieldKey]: null }),
+          });
+        }
+      } else {
+        // Custom document — remove from customDocs
+        const updatedDocs = customDocs.filter(d => d.url !== file.url);
+        setCustomDocs(updatedDocs);
+        await fetch("/api/project-details", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ visitId: visit.id, customDocs: JSON.stringify(updatedDocs) }),
+        });
+      }
+      toast.success("Archivo eliminado");
+    } catch { toast.error("Error al eliminar"); }
+  };
     const f = e.target.files?.[0];
     if (f) setDocFile(f);
   };
@@ -2232,11 +2259,18 @@ function ArchivosPanel({ visit }: { visit: VisitDetails }) {
           return (
             <motion.div
               key={i}
-              className="glass-panel rounded-xl overflow-hidden border border-outline-variant/30"
+              className="glass-panel rounded-xl overflow-hidden border border-outline-variant/30 relative group"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.03 }}
             >
+              <button
+                onClick={() => handleDeleteFile(file)}
+                className="absolute top-1 left-1 z-10 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                title="Eliminar archivo"
+              >
+                <X className="w-3 h-3" />
+              </button>
               <div className="aspect-square bg-surface-container-low flex items-center justify-center overflow-hidden">
                 {isImage ? (
                   <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
