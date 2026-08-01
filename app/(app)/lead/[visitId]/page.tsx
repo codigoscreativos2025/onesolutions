@@ -1162,7 +1162,38 @@ export default function LeadDetailPage() {
 
       <div className="sticky bottom-0 z-10 p-3 glass-panel border-t border-outline-variant flex justify-center">
         <Button onClick={async () => {
-          await saveProjectDetailsAction(false);
+          setSaving(true);
+          try {
+            // Save project details
+            const payload: Record<string, unknown> = {};
+            for (const [key, value] of Object.entries(editFields)) {
+              if (key.startsWith("_bill")) continue;
+              if (value !== undefined && value !== "") payload[key] = value;
+            }
+            if (payload.closingDate && typeof payload.closingDate === "string")
+              payload.closingDate = new Date(payload.closingDate).toISOString();
+            if (payload.siteSurveyDate && typeof payload.siteSurveyDate === "string")
+              payload.siteSurveyDate = new Date(payload.siteSurveyDate).toISOString();
+            if (Object.keys(payload).length > 0) {
+              await fetch("/api/project-details", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ visitId, ...payload }),
+              });
+            }
+            // Save bill data (notes, phone, etc.)
+            const billData: Record<string, string | null> = {
+              phone: editFields._billPhone?.trim() || visit?.bill?.phone || "",
+              clientName: editFields._billClientName?.trim() || visit?.bill?.clientName || null,
+              clientEmail: editFields._billClientEmail?.trim() || visit?.bill?.clientEmail || null,
+              notes: editFields._billNotes?.trim() || visit?.bill?.notes || null,
+            };
+            await fetch(`/api/visits/${visit?.id}`, {
+              method: "PATCH", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ bill: { upsert: { create: billData, update: billData } } }),
+            });
+            toast.success("Cambios guardados");
+          } catch { toast.error("Error al guardar"); }
+          finally { setSaving(false); }
         }} disabled={saving} className="gap-2 px-8">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Guardar Cambios
