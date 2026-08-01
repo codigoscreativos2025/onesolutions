@@ -49,7 +49,38 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
         .then(data => {
           if (Array.isArray(data)) {
             const found = data.find((p: Parcel) => p.id === autoOpenId);
-            if (found) setSelectedParcel(found);
+            if (found) {
+              setSelectedParcel(found);
+              if (map.current) {
+                try {
+                  let geom: GeoJSON.Geometry | null = null;
+                  if (found.geometry) {
+                    const parsed = typeof found.geometry === "string" ? JSON.parse(found.geometry) : found.geometry;
+                    if (parsed.type && (parsed.coordinates || parsed.geometry)) {
+                      geom = parsed;
+                    }
+                  }
+                  if (geom) {
+                    selectedGeometryRef.current = geom;
+                    (map.current.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
+                      type: "FeatureCollection",
+                      features: [{
+                        type: "Feature" as const,
+                        geometry: geom,
+                        properties: {
+                          fillColor: "#f48221",
+                          borderColor: "#f48221",
+                        },
+                      }],
+                    });
+                    map.current.setPaintProperty("parcel-selected", "fill-opacity", 0.6);
+                    setTimeout(() => {
+                      map.current?.setPaintProperty("parcel-selected", "fill-opacity", 0.4);
+                    }, 3000);
+                  }
+                } catch { /* geometry parse error */ }
+              }
+            }
           }
         })
         .catch(() => {});

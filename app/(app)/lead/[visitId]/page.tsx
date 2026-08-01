@@ -1160,17 +1160,14 @@ export default function LeadDetailPage() {
         )}
       </AnimatePresence>
 
-      {hasChangesRef.current && (
-        <div className="sticky bottom-0 z-10 p-3 glass-panel border-t border-outline-variant flex justify-center">
-          <Button onClick={async () => {
-            await saveProjectDetailsAction(false);
-            hasChangesRef.current = false;
-          }} disabled={saving} className="gap-2 px-8">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Guardar Cambios
-          </Button>
-        </div>
-      )}
+      <div className="sticky bottom-0 z-10 p-3 glass-panel border-t border-outline-variant flex justify-center">
+        <Button onClick={async () => {
+          await saveProjectDetailsAction(false);
+        }} disabled={saving} className="gap-2 px-8">
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          Guardar Cambios
+        </Button>
+      </div>
     </div>
   );
 }
@@ -1772,6 +1769,27 @@ function DatosProjectPanel({
             )}
           </div>
         )}
+      </Panel>
+
+      <Panel title="Documentos" icon={FileText}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FieldRow
+            label="ID del Cliente"
+            value={getValue("idDocumentUrl")}
+            field="idDocumentUrl"
+            isFile
+            onFileUpload={onFileFieldUpload}
+            fileUrl={pd["idDocumentUrl"] ? String(pd["idDocumentUrl"]) : undefined}
+          />
+          <FieldRow
+            label="Recibo de Luz"
+            value={getValue("electricBillUrl")}
+            field="electricBillUrl"
+            isFile
+            onFileUpload={onFileFieldUpload}
+            fileUrl={pd["electricBillUrl"] ? String(pd["electricBillUrl"]) : undefined}
+          />
+        </div>
       </Panel>
 
       <Panel title="Campos Comunes" icon={Pencil}>
