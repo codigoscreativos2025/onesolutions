@@ -555,7 +555,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                         style={{ backgroundColor: "#f4822120", color: "#f48221" }}
                       >
                         <FileText className="w-3 h-3" />
-                        Doc
+                        Contratos
                       </button>
                       {(session?.user?.role === "ADMIN" || session?.user?.role === "CLOSER") && (
                         <button
