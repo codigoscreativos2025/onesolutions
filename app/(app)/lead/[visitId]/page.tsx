@@ -1043,6 +1043,8 @@ export default function LeadDetailPage() {
                 notAvailTags={notAvailTags}
                 onAddTag={handleAddLeadTag}
                 onRemoveTag={handleRemoveLeadTag}
+                onBillFileChange={setPendingBillFile}
+                onIdFileChange={setPendingIdFile}
               />
             )}
 
@@ -1611,6 +1613,8 @@ function DatosProjectFieldsPanel({
   notAvailTags,
   onAddTag,
   onRemoveTag,
+  onBillFileChange,
+  onIdFileChange,
 }: {
   visit: VisitDetails;
   editFields: Record<string, string>;
@@ -1628,6 +1632,8 @@ function DatosProjectFieldsPanel({
   notAvailTags: { id: number; name: string; color: string }[];
   onAddTag: (tag: { name: string; color: string }) => void;
   onRemoveTag: (tagName: string) => void;
+  onBillFileChange?: (f: File | null) => void;
+  onIdFileChange?: (f: File | null) => void;
 }) {
   const pd = visit.projectDetails || {};
   const nonCommonFields = fieldMetas.filter((m) => !COMMON_FIELDS.includes(m.fieldName));
@@ -1702,7 +1708,7 @@ function DatosProjectFieldsPanel({
   return (
     <div className="space-y-6">
       {showBillSection && (
-        <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={onFieldChange} onUpload={onUpload} onRefresh={onRefresh} leadTags={leadTags} notAvailTags={notAvailTags} onAddTag={onAddTag} onRemoveTag={onRemoveTag} />
+        <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={onFieldChange} onUpload={onUpload} onRefresh={onRefresh} leadTags={leadTags} notAvailTags={notAvailTags} onAddTag={onAddTag} onRemoveTag={onRemoveTag} onBillFileChange={onBillFileChange} onIdFileChange={onIdFileChange} />
       )}
 
       <Panel title="Campos Comunes" icon={Pencil}>
