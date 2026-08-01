@@ -86,8 +86,13 @@ export async function PATCH(
       where: { id: parseInt(id) },
       data: visitUpdateData,
       include: {
-        parcel: { select: { address: true } },
+        parcel: { select: { id: true, address: true } },
       },
+    });
+
+    await prisma.parcel.update({
+      where: { id: visit.parcelId },
+      data: { parcelTags: null },
     });
 
     if (directSale) {

@@ -221,12 +221,13 @@ export default function VisitPage() {
         body: JSON.stringify(patchBody),
       });
 
-      // Save tags to parcel
-      if (parcelId) {
-        await fetch(`/api/parcels/${parcelId}`, {
-          method: "PATCH", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ parcelTags: JSON.stringify(leadTags) }),
-        });
+      if (mode !== 'potential') {
+        if (parcelId) {
+          await fetch(`/api/parcels/${parcelId}`, {
+            method: "PATCH", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ parcelTags: JSON.stringify(leadTags) }),
+          });
+        }
       }
 
       toast.success(mode === 'potential' ? "Lead Potencial creado" : "Lead guardado");

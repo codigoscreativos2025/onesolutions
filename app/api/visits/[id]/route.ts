@@ -148,6 +148,13 @@ export async function PATCH(
       data: transferData,
     });
 
+    if (transferData.stage === "PROPOSAL_ACCEPTED" && visit.parcelId) {
+      await prisma.parcel.update({
+        where: { id: visit.parcelId },
+        data: { parcelTags: null },
+      });
+    }
+
     if (setterId !== undefined) {
       await prisma.notification.create({
         data: {
@@ -212,6 +219,13 @@ export async function PATCH(
       where: { id: visitId },
       data: updateData,
     });
+
+    if (updateData.stage === "PROPOSAL_ACCEPTED" && visit.parcelId) {
+      await prisma.parcel.update({
+        where: { id: visit.parcelId },
+        data: { parcelTags: null },
+      });
+    }
   }
 
   return NextResponse.json({ success: true });
