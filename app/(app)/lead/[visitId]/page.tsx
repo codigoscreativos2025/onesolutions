@@ -1093,52 +1093,6 @@ export default function LeadDetailPage() {
                 onDelete={handleDeleteProject}
               />
             )}
-
-            {visit.stage === "IN_PROGRESS" && (
-              <div className="mt-6 glass-panel rounded-xl p-6">
-                <h3 className="font-semibold text-lg mb-4 flex items-center gap-2 text-on-surface">
-                  <Tag className="w-5 h-5 text-primary" />
-                  Etiquetas
-                </h3>
-                {leadTags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {leadTags.map((t, i) => (
-                      <span
-                        key={i}
-                        className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold text-white"
-                        style={{ backgroundColor: t.color }}
-                      >
-                        {t.name}
-                        <button
-                          onClick={() => handleRemoveLeadTag(t.name)}
-                          className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/40 text-white"
-                        >
-                          <X className="w-2.5 h-2.5" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <div className="flex flex-wrap gap-2">
-                  {notAvailTags.map((tag) => {
-                    const isSelected = leadTags.some((t) => t.name === tag.name);
-                    return (
-                      <button
-                        key={tag.id}
-                        onClick={() => isSelected ? handleRemoveLeadTag(tag.name) : handleAddLeadTag({ name: tag.name, color: tag.color })}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
-                          isSelected
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-outline-variant bg-surface-container-low text-on-surface-variant hover:border-primary/30"
-                        }`}
-                      >
-                        {tag.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </TabContent>
         )}
 
