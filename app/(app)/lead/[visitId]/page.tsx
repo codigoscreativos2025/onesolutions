@@ -315,6 +315,17 @@ export default function LeadDetailPage() {
   const [activeTab, setActiveTab] = useState("datos");
 
   const [editFields, setEditFields] = useState<Record<string, string>>({});
+  const hasChangesRef = useRef(false);
+
+  // Warn on navigate away
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasChangesRef.current) { e.preventDefault(); e.returnValue = ""; }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+
   const [fieldMetas, setFieldMetas] = useState<FieldMeta[]>([]);
 
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -463,6 +474,7 @@ export default function LeadDetailPage() {
   }, []);
 
   const handleFieldChange = (key: string, value: string) => {
+    hasChangesRef.current = true;
     setEditFields((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -926,7 +938,7 @@ export default function LeadDetailPage() {
             if (metadata?.isManual) {
               toast.info("Lead creado manualmente, no tiene parcela");
             } else if (visit.parcel?.id) {
-              router.push(`/map?highlight=${visit.parcel.id}`);
+                router.push(`/map?highlight=${visit.parcel.id}&autoOpen=true`);
             }
           }}
           className="flex items-center gap-1.5 px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-on-surface-variant hover:text-on-surface transition-all whitespace-nowrap"
@@ -1147,6 +1159,18 @@ export default function LeadDetailPage() {
           </TabContent>
         )}
       </AnimatePresence>
+
+      {hasChangesRef.current && (
+        <div className="sticky bottom-0 z-10 p-3 glass-panel border-t border-outline-variant flex justify-center">
+          <Button onClick={async () => {
+            await saveProjectDetailsAction(false);
+            hasChangesRef.current = false;
+          }} disabled={saving} className="gap-2 px-8">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            Guardar Cambios
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
