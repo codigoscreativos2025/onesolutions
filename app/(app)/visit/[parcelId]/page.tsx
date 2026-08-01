@@ -117,7 +117,7 @@ export default function VisitPage() {
       const visitData: Visit = await visitRes.json();
       const ptData: ProjectType[] = await ptRes.json();
       setVisit(visitData);
-      setProjectTypes(ptData);
+      setProjectTypes(ptData.filter((pt: ProjectType) => pt.name !== "Campos Comunes"));
 
       let name = visitData.bill?.clientName ?? "";
       let email = visitData.bill?.clientEmail ?? "";
