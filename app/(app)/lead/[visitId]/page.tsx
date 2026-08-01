@@ -913,6 +913,20 @@ export default function LeadDetailPage() {
             {tab.label}
           </button>
         ))}
+        <button
+          onClick={() => {
+            const metadata = visit.parcel?.metadata ? (() => { try { return JSON.parse(visit.parcel.metadata); } catch { return null; } })() : null;
+            if (metadata?.isManual) {
+              toast.info("Lead creado manualmente, no tiene parcela");
+            } else if (visit.parcel?.id) {
+              router.push(`/map?highlight=${visit.parcel.id}`);
+            }
+          }}
+          className="flex items-center gap-1.5 px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-on-surface-variant hover:text-on-surface transition-all whitespace-nowrap"
+        >
+          <MapPin className="w-4 h-4" />
+          Ver en mapa
+        </button>
         {visit.stage === "PROPOSAL_ACCEPTED" && (
           <button
             onClick={handleStartProject}
@@ -1315,7 +1329,6 @@ function DatosLeadPanel({
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectTypeIds: next }),
       });
-      onRefresh();
     } catch { /* */ }
   };
 
@@ -1463,10 +1476,6 @@ function DatosLeadPanel({
         />
       </Panel>
 
-      <Button onClick={handleSaveAll} disabled={saving} className="w-full">
-        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-        Guardar Cambios
-      </Button>
     </div>
   );
 }
@@ -1538,7 +1547,6 @@ function DatosProjectFieldsPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectTypeIds: next }),
       });
-      onRefresh();
     } catch {
       toast.error("Error al actualizar tipos de proyecto");
       setSelectedProjectTypeIds(visit.projects.map((p) => p.projectType.id));
@@ -1627,10 +1635,6 @@ function DatosProjectFieldsPanel({
         })()}
       </Panel>
 
-      <Button onClick={onSave} disabled={saving} className="w-full">
-        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-        Guardar Cambios
-      </Button>
     </div>
   );
 }
@@ -1667,27 +1671,7 @@ function DatosProjectPanel({
   const pd = visit.projectDetails || {};
   const nonCommonFields = fieldMetas.filter((m) => !COMMON_FIELDS.includes(m.fieldName));
 
-  const [idDocPreview, setIdDocPreview] = useState(pd.idDocumentUrl ? String(pd.idDocumentUrl) : "");
-  const [billUploadPreview, setBillUploadPreview] = useState(pd.electricBillUrl ? String(pd.electricBillUrl) : "");
 
-  const handleIdDocUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) {
-      setIdDocPreview(URL.createObjectURL(f));
-      await onFileFieldUpload("idDocumentUrl", f);
-    }
-  };
-
-  const handleBillUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) {
-      setBillUploadPreview(URL.createObjectURL(f));
-      await onFileFieldUpload("electricBillUrl", f);
-    }
-  };
-
-  const handleClearIdDoc = () => setIdDocPreview("");
-  const handleClearBill = () => setBillUploadPreview("");
 
   const getValue = (key: string): string => {
     if (editFields[key] !== undefined) return editFields[key];
@@ -1713,20 +1697,7 @@ function DatosProjectPanel({
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <UploadField
-          label="ID del Cliente"
-          preview={idDocPreview}
-          onChange={handleIdDocUpload}
-          onClear={handleClearIdDoc}
-        />
-        <UploadField
-          label="Recibo de Luz"
-          preview={billUploadPreview}
-          onChange={handleBillUpload}
-          onClear={handleClearBill}
-        />
-      </div>
+
 
       <Panel title="Progreso del Proyecto" icon={BadgeCheck}>
         <div className="space-y-2">
@@ -1802,11 +1773,7 @@ function DatosProjectPanel({
       )}
 
       <div className="flex gap-3">
-        <Button onClick={onSave} disabled={saving} className="flex-1">
-          {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-          Guardar Cambios
-        </Button>
-        <Button onClick={onCancelProject} variant="danger" disabled={saving}>
+        <Button onClick={onCancelProject} variant="danger" disabled={saving} className="flex-1">
           <X className="w-4 h-4" />
           Cancelar Proyecto
         </Button>

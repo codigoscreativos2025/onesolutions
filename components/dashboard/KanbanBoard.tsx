@@ -719,6 +719,23 @@ function KanbanCard({
           ))}
         </div>
       )}
+
+      {visit.parcel?.parcelTags && (() => {
+        try {
+          const tags = JSON.parse(visit.parcel.parcelTags);
+          if (Array.isArray(tags) && tags.length > 0) {
+            return (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {tags.map((t: { name: string; color: string }, i: number) => (
+                  <span key={i} className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold text-white" style={{ backgroundColor: t.color }}>
+                    {t.name}
+                  </span>
+                ))}
+              </div>
+            );
+          }
+        } catch { return null; }
+      })()}
     </div>
   );
 }

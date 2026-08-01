@@ -59,7 +59,7 @@ export async function GET(request: Request) {
   });
 
   if (!visit) {
-    return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+    return NextResponse.json({});
   }
 
   return NextResponse.json(visit);

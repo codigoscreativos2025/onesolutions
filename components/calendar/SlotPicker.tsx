@@ -123,15 +123,6 @@ export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: Slo
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <h3 className="font-semibold text-on-surface text-sm">
-          {format(currentMonth, 'MMMM yyyy', { locale: es })}
-        </h3>
-        <button type="button"
-          onClick={() => handleMonthChange(addMonths(currentMonth, 1))}
-          className="p-2 hover:bg-surface-container-high rounded-lg transition-colors"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
         <h3 className="text-lg font-bold capitalize">
           {format(currentMonth, 'MMMM yyyy', { locale: es })}
         </h3>
@@ -189,7 +180,7 @@ export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: Slo
       {internalSelectedDate && (
         <div className="pt-4 border-t border-outline-variant/30">
           <h4 className="text-sm font-bold mb-3">
-            Horarios disponibles para el {format(internalSelectedDate, 'd de MMMM', { locale: es })}
+            Horarios disponibles para el {format(internalSelectedDate, "d 'de' MMMM", { locale: es })}
           </h4>
           <div className="grid grid-cols-3 gap-2">
             {slots.length === 0 ? (
