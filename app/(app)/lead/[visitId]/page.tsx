@@ -692,6 +692,19 @@ export default function LeadDetailPage() {
     if (!visit) return;
     try {
       await saveProjectDetailsAction(true);
+      // Also save bill data before changing stage
+      const billData: Record<string, string | null> = {
+        phone: editFields._billPhone?.trim() || visit.bill?.phone || "",
+        clientName: editFields._billClientName?.trim() || visit.bill?.clientName || null,
+        clientEmail: editFields._billClientEmail?.trim() || visit.bill?.clientEmail || null,
+        notes: editFields._billNotes?.trim() || visit.bill?.notes || null,
+      };
+      if (Object.values(billData).some(v => v)) {
+        await fetch(`/api/visits/${visit.id}`, {
+          method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ bill: { upsert: { create: billData, update: billData } } }),
+        });
+      }
 
       const res = await fetch(`/api/visits/${visit.id}`, {
         method: "PATCH",
@@ -1408,8 +1421,8 @@ function DatosLeadPanel({
     try {
       let billUrl = billPreview;
       let idUrl = idPreview;
-      if (billFile) billUrl = await onUpload(billFile);
-      if (idFile) idUrl = await onUpload(idFile);
+      if (billFile) { billUrl = await onUpload(billFile); onFieldChange("electricBillUrl", billUrl); }
+      if (idFile) { idUrl = await onUpload(idFile); onFieldChange("idDocumentUrl", idUrl); }
 
       const billData: Record<string, string | null> = {
         phone: editFields._billPhone?.trim() || visit.bill?.phone || "",
