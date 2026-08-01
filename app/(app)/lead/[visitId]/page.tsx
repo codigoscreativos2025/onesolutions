@@ -1199,8 +1199,10 @@ export default function LeadDetailPage() {
             const payload: Record<string, unknown> = { ...editFields };
             if (visit?.bill?.imageUrl) payload.electricBillUrl = payload.electricBillUrl || visit.bill.imageUrl;
             if (visit?.bill?.additionalFileUrl) payload.idDocumentUrl = payload.idDocumentUrl || visit.bill.additionalFileUrl;
-            // Filter out _bill* fields
-            Object.keys(payload).forEach(k => { if (k.startsWith("_bill")) delete payload[k]; });
+            // Filter out _bill* fields and empty values (to avoid Prisma DateTime errors)
+            Object.keys(payload).forEach(k => {
+              if (k.startsWith("_bill") || payload[k] === "" || payload[k] === null) delete payload[k];
+            });
             if (payload.closingDate && typeof payload.closingDate === "string")
               payload.closingDate = new Date(payload.closingDate).toISOString();
             if (payload.siteSurveyDate && typeof payload.siteSurveyDate === "string")
