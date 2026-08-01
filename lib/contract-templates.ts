@@ -141,7 +141,7 @@ function techoHtml(data: Record<string, string>): string {
         height: 20px;
     }
 
-    h2 {
+    .document-container h2 {
         background-color: var(--secondary-color);
         color: #ffffff;
         padding: 10px 15px;
@@ -153,7 +153,7 @@ function techoHtml(data: Record<string, string>): string {
         border-left: 5px solid var(--primary-color);
     }
 
-    h3 {
+    .document-container h3 {
         color: var(--primary-color);
         font-size: 16px;
         margin-top: 25px;
@@ -169,19 +169,19 @@ function techoHtml(data: Record<string, string>): string {
         font-size: 15px;
     }
 
-    p {
+    .document-container p {
         margin-bottom: 15px;
         font-size: 14px;
         text-align: justify;
     }
 
-    ul {
+    .document-container ul {
         margin-top: 0;
         padding-left: 20px;
         font-size: 14px;
     }
 
-    li {
+    .document-container li {
         margin-bottom: 10px;
     }
 
@@ -287,7 +287,7 @@ function techoHtml(data: Record<string, string>): string {
     @media print {
         body { background-color: white; padding: 0; }
         .document-container { box-shadow: none; border-top: none; padding: 0; }
-        h2 { border-left-color: black !important; }
+        .document-container h2 { border-left-color: black !important; }
     }
 </style>
 </head>
@@ -603,7 +603,7 @@ function purificadorAguaHtml(data: Record<string, string>): string {
         font-size: 14px;
     }
 
-    h2 {
+    .document-container h2 {
         background-color: var(--secondary-color);
         color: #ffffff;
         padding: 10px 15px;
@@ -615,7 +615,7 @@ function purificadorAguaHtml(data: Record<string, string>): string {
         border-left: 5px solid var(--primary-color);
     }
 
-    h3 {
+    .document-container h3 {
         color: var(--primary-color);
         font-size: 16px;
         margin-top: 25px;
@@ -623,19 +623,19 @@ function purificadorAguaHtml(data: Record<string, string>): string {
         text-transform: uppercase;
     }
 
-    p {
+    .document-container p {
         margin-bottom: 15px;
         font-size: 14px;
         text-align: justify;
     }
 
-    table {
+    .document-container table {
         width: 100%;
         border-collapse: collapse;
         margin: 15px 0;
     }
 
-    th {
+    .document-container th {
         background-color: var(--secondary-color);
         color: #ffffff;
         padding: 10px 15px;
@@ -644,7 +644,7 @@ function purificadorAguaHtml(data: Record<string, string>): string {
         text-align: left;
     }
 
-    td {
+    .document-container td {
         padding: 10px 15px;
         font-size: 13px;
         border-bottom: 1px solid var(--border-color);
@@ -717,7 +717,7 @@ function purificadorAguaHtml(data: Record<string, string>): string {
     @media print {
         body { background-color: white; padding: 0; }
         .document-container { box-shadow: none; border-top: none; padding: 0; }
-        h2 { border-left-color: black !important; }
+        .document-container h2 { border-left-color: black !important; }
     }
 </style>
 </head>
@@ -1252,7 +1252,7 @@ export function metalRoofHtml(data: Record<string, string>): string {
                         <li class="no-bullet"><strong>Roof Installation</strong></li>
                         <li>Install one layer of POLYGLASS POLYSTICK MTS PLUS underlayment as a dry-in application per 2023 FL BLDG Code.</li>
                         <li>Install valley metal in all valleys.</li>
-                        <li>Install 2½ in. drip edge around perimeter of the roof. COLOR: ${d("dripEdgeColor")}</li>
+                        <li>Install 2Â½ in. drip edge around perimeter of the roof. COLOR: ${d("dripEdgeColor")}</li>
                         <li>Install new (<span class="text-brand">${d("leadBoots2In")}</span>) 2 in. & (<span class="text-brand">${d("leadBoots3In")}</span>) 3 in. lead boots.</li>
                         <li>Install (<span class="text-brand">${d("exhaustVents")}</span>) new exhaust vents.</li>
                         <li>Install (<span class="text-brand">${d("ridgeVentsFt")}</span> ft) new ridge vents.</li>
@@ -1752,7 +1752,7 @@ export function metalRoofIsoHtml(data: Record<string, string>): string {
                         <li>Install one Layer of Owens Corning DeckSeal Self-Adhered Base (Roof System Underlayment) as a dry in application per 2023 FL BLDG Code.</li>
                         <li>Install one layer of POLYGLASS POLYSTICK underlayment as a dry in application per 2021 FL BLDG Code.</li>
                         <li>Install valley metal in all valleys.</li>
-                        <li>Install 2½ in. drip edge around perimeter of the roof. COLOR: ${d("color")}</li>
+                        <li>Install 2Â½ in. drip edge around perimeter of the roof. COLOR: ${d("color")}</li>
                         <li>Install new (${d("new2InLeadBoots")}) 2 in. & (${d("new3InLeadBoots")}) 3 in. lead boots.</li>
                         <li>Install (${d("newExhaustVents")}) new exhaust vents.</li>
                         <li>Install (${d("newRidgeVentsFt")} ft) new ridge vents.</li>
@@ -2236,7 +2236,7 @@ export function taperedHtml(data: Record<string, string>): string {
                             <li>Re-nail entire decking to code to meet code specifications.</li>
                             <li>Roof Installation.</li>
                             <li>Install one Layer of Owens Corning DeckSeal Self-Adhered Base (Roof System Underlayment) as a dry in application per 2023 FL BLDG Code.</li>
-                            <li>Install 2½ in. drip edge around perimeter of the roof. COLOR: ${d("dripEdgeColor")}</li>
+                            <li>Install 2Â½ in. drip edge around perimeter of the roof. COLOR: ${d("dripEdgeColor")}</li>
                             <li>Install new (<span class="text-brand">${d("leadBoots2in")}</span>) 2in. & (<span class="text-brand">${d("leadBoots3in")}</span>) 3in. lead boots.</li>
                             <li>Install (<span class="text-brand">${d("cobraRidgeVents")}</span>) new (cobra ridge) vents and/or (<span class="text-brand">${d("offRidgeVents")}</span>) new (off ridge) vents.</li>
                             <li>Install (<span class="text-brand">${d("exhaustVents")}</span>) new exhaust vents.</li>
@@ -2495,14 +2495,14 @@ export function flatRoofingHtml(data: Record<string, string>): string {
                             <li>Re-nail entire decking to code.</li>
                             <li>Roof Installation.</li>
                             <li>Install one layer of self-adhered Polyglass Polystick TU PLUS as a dry in application per 2023 FL BLDG Code.</li>
-                            <li>Install 2½ In. drip edge around perimeter of the roof with bird stop or anti ponding at eaves and rakes. COLOR: ${d("dripEdgeColor")}</li>
+                            <li>Install 2Â½ In. drip edge around perimeter of the roof with bird stop or anti ponding at eaves and rakes. COLOR: ${d("dripEdgeColor")}</li>
                             <li>Install 26 Gauge 24" formed tile valley.</li>
                             <li>Install new (<span class="text-brand">${d("twoInchLeadBoots")}</span>) 2in. & (<span class="text-brand">${d("threeInchLeadBoots")}</span>) 3in. lead boots.</li>
                             <li>Install (<span class="text-brand">${d("exhaustVents")}</span>) new exhaust vents.</li>
                             <li>Install (<span class="text-brand">${d("offRidgeVents")}</span>) new (off ridge) vents.</li>
-                            <li>Install rake and ridge caps. Rake caps fastened with #8 x 2-½" threaded tile roofing fasteners. Ridge end rake caps to be set with tile-tight mortar substitute (tinted to match tile as closely as possible).</li>
+                            <li>Install rake and ridge caps. Rake caps fastened with #8 x 2-Â½" threaded tile roofing fasteners. Ridge end rake caps to be set with tile-tight mortar substitute (tinted to match tile as closely as possible).</li>
                             <li>Install new tiles.</li>
-                            <li>Mechanically attach tiles to battens using Quick drive 2½ In. ZINC 1.5m screws.</li>
+                            <li>Mechanically attach tiles to battens using Quick drive 2Â½ In. ZINC 1.5m screws.</li>
                             <li>Remove all debris and dispose of it properly.</li>
                             <li>Conduct a magnetic sweep of the yard and driveway.</li>
                             <li>The price includes the specified roofing materials, the cost of the specified labor, taxes, and permits fees (if applicable).</li>
@@ -3040,8 +3040,8 @@ export function representantesHtml(data: Record<string, string>): string {
                         <div class="content-col">
                             <h2 class="section-title">1. PARTES</h2>
                             <p class="content-text">
-                                Este acuerdo se celebra entre ONE SOLUTIONS COMPANIES LLC (en adelante "La Compañía") y el Representante de Ventas Independiente (en adelante "El Representante").<br>
-                                Ambas partes acuerdan cumplir con los términos y condiciones establecidos en este documento.
+                                Este acuerdo se celebra entre ONE SOLUTIONS COMPANIES LLC (en adelante "La CompaÃ±Ã­a") y el Representante de Ventas Independiente (en adelante "El Representante").<br>
+                                Ambas partes acuerdan cumplir con los tÃ©rminos y condiciones establecidos en este documento.
                             </p>
                         </div>
                     </div>
@@ -3053,8 +3053,8 @@ export function representantesHtml(data: Record<string, string>): string {
                         <div class="content-col">
                             <h2 class="section-title">2. NATURALEZA DEL ACUERDO</h2>
                             <p class="content-text">
-                                El Representante actuará como contratista independiente (1099). Este acuerdo constituye a la forma de pago por comisiones.<br>
-                                El Representante no tendrá derecho a salario fijo, beneficios laborales, seguro médico, vacaciones pagadas ni otros beneficios típicos de una relación de empleo.
+                                El Representante actuarÃ¡ como contratista independiente (1099). Este acuerdo constituye a la forma de pago por comisiones.<br>
+                                El Representante no tendrÃ¡ derecho a salario fijo, beneficios laborales, seguro mÃ©dico, vacaciones pagadas ni otros beneficios tÃ­picos de una relaciÃ³n de empleo.
                             </p>
                         </div>
                     </div>
@@ -3065,16 +3065,16 @@ export function representantesHtml(data: Record<string, string>): string {
                         </div>
                         <div class="content-col">
                             <h2 class="section-title">3. ALCANCE DE LOS SERVICIOS</h2>
-                            <p class="content-text">El Representante realizará actividades de:</p>
+                            <p class="content-text">El Representante realizarÃ¡ actividades de:</p>
                             <ul class="content-list">
-                                <li>Prospección de clientes.</li>
-                                <li>Generación de leads.</li>
+                                <li>ProspecciÃ³n de clientes.</li>
+                                <li>GeneraciÃ³n de leads.</li>
                                 <li>Seguimiento y cierre de ventas.</li>
-                                <li>Recolección y entrega de documentación requerida.</li>
+                                <li>RecolecciÃ³n y entrega de documentaciÃ³n requerida.</li>
                                 <li>Ventas puerta a puerta (D2D).</li>
-                                <li>Presentación de productos y servicios.</li>
+                                <li>PresentaciÃ³n de productos y servicios.</li>
                             </ul>
-                            <p class="content-text">Los servicios podrán incluir la comercialización de todos los servicios ofrecidos por ONE SOLUTIONS COMPANIES LLC.</p>
+                            <p class="content-text">Los servicios podrÃ¡n incluir la comercializaciÃ³n de todos los servicios ofrecidos por ONE SOLUTIONS COMPANIES LLC.</p>
                         </div>
                     </div>
 
@@ -3085,26 +3085,26 @@ export function representantesHtml(data: Record<string, string>): string {
                             </div>
                         </div>
                         <div class="content-col">
-                            <h2 class="section-title">4. COMPENSACIÓN</h2>
+                            <h2 class="section-title">4. COMPENSACIÃ“N</h2>
                             <p class="content-text" style="font-weight:700;">&bull; Redline 2.35$ (cerrador)</p>
-                            <p class="content-text">Con 3 ventas SOLARES, el trainee se gradúa y pasa a ser cerrador, accediendo al 100% de la comisión.</p>
+                            <p class="content-text">Con 3 ventas SOLARES, el trainee se gradÃºa y pasa a ser cerrador, accediendo al 100% de la comisiÃ³n.</p>
                             
-                            <p class="content-text" style="font-weight:700; margin-top:6px;">&bull; Ventas realizadas con apoyo de su closer: Split de comisión 50/50.</p>
-                            <p class="content-text">Si el trainee realiza una venta con otro closer que no es el suyo, sin previa conversación su 50% de comisión quedará anulada y transferida al closer original. Y el otro 50% al closer que contactó para el cierre de la venta.</p>
+                            <p class="content-text" style="font-weight:700; margin-top:6px;">&bull; Ventas realizadas con apoyo de su closer: Split de comisiÃ³n 50/50.</p>
+                            <p class="content-text">Si el trainee realiza una venta con otro closer que no es el suyo, sin previa conversaciÃ³n su 50% de comisiÃ³n quedarÃ¡ anulada y transferida al closer original. Y el otro 50% al closer que contactÃ³ para el cierre de la venta.</p>
                             
                             <p class="content-text" style="font-weight:700; margin-top:6px;">&bull; Nuevos ingresos con experiencia:</p>
-                            <p class="content-text">Si ha sido por otro cerrador deberá completar un mínimo de 2 ventas SOLARES aprobadas dentro de ONE SOLUTIONS COMPANIES LLC para acceder al estatus de Cerrador.</p>
+                            <p class="content-text">Si ha sido por otro cerrador deberÃ¡ completar un mÃ­nimo de 2 ventas SOLARES aprobadas dentro de ONE SOLUTIONS COMPANIES LLC para acceder al estatus de Cerrador.</p>
                             <ul class="content-list">
-                                <li>Durante estas primeras 2 ventas, la comisión será 50/50 con su reclutador.</li>
-                                <li>Una vez completadas las 2 ventas solares aprobadas, pasará a recibir el 100% de la comisión correspondiente.</li>
+                                <li>Durante estas primeras 2 ventas, la comisiÃ³n serÃ¡ 50/50 con su reclutador.</li>
+                                <li>Una vez completadas las 2 ventas solares aprobadas, pasarÃ¡ a recibir el 100% de la comisiÃ³n correspondiente.</li>
                             </ul>
                             
-                            <p class="content-text" style="font-weight:700; margin-top:6px;">Todas las comisiones estarán sujetas a:</p>
+                            <p class="content-text" style="font-weight:700; margin-top:6px;">Todas las comisiones estarÃ¡n sujetas a:</p>
                             <div style="display: flex; flex-wrap: wrap; font-size: 8px; font-weight: 500; color: #1f2937;">
-                                <div style="width: 50%; margin-bottom: 2px;"><i class="fa-solid fa-check text-brand" style="margin-right:2px;"></i> Aprobación del proyecto.</div>
-                                <div style="width: 50%; margin-bottom: 2px;"><i class="fa-solid fa-check text-brand" style="margin-right:2px;"></i> Instalación del proyecto.</div>
+                                <div style="width: 50%; margin-bottom: 2px;"><i class="fa-solid fa-check text-brand" style="margin-right:2px;"></i> AprobaciÃ³n del proyecto.</div>
+                                <div style="width: 50%; margin-bottom: 2px;"><i class="fa-solid fa-check text-brand" style="margin-right:2px;"></i> InstalaciÃ³n del proyecto.</div>
                                 <div style="width: 50%;"><i class="fa-solid fa-check text-brand" style="margin-right:2px;"></i> Permanencia activa del cliente.</div>
-                                <div style="width: 50%;"><i class="fa-solid fa-check text-brand" style="margin-right:2px;"></i> Cumplimiento de las políticas.</div>
+                                <div style="width: 50%;"><i class="fa-solid fa-check text-brand" style="margin-right:2px;"></i> Cumplimiento de las polÃ­ticas.</div>
                             </div>
                         </div>
                     </div>
@@ -3115,19 +3115,19 @@ export function representantesHtml(data: Record<string, string>): string {
                         </div>
                         <div class="content-col">
                             <h2 class="section-title">5. FORMA DE PAGO</h2>
-                            <p class="content-text">Las comisiones serán pagadas una vez que el proyecto alcance el estado de NTP (Notice to Proceed) aprobado por la entidad financiera correspondiente.</p>
+                            <p class="content-text">Las comisiones serÃ¡n pagadas una vez que el proyecto alcance el estado de NTP (Notice to Proceed) aprobado por la entidad financiera correspondiente.</p>
                             <p class="content-text" style="font-weight:700;">Solar:</p>
                             <ul class="content-list" style="list-style-type: none; padding-left: 0;">
-                                <li>&bull; M1: $1,500 quince (15) días después del NTP completo.</li>
-                                <li>&bull; M2: 80% quince (15) días después de la instalación.</li>
-                                <li>&bull; M3: 20% luego de haberse firmado la interconexión y el proyecto esté en PTO. (Si hay algún electrical upgrade se tomará del 20% de la comisión restante).</li>
+                                <li>&bull; M1: $1,500 quince (15) dÃ­as despuÃ©s del NTP completo.</li>
+                                <li>&bull; M2: 80% quince (15) dÃ­as despuÃ©s de la instalaciÃ³n.</li>
+                                <li>&bull; M3: 20% luego de haberse firmado la interconexiÃ³n y el proyecto estÃ© en PTO. (Si hay algÃºn electrical upgrade se tomarÃ¡ del 20% de la comisiÃ³n restante).</li>
                             </ul>
-                            <p class="content-text">No se generará pago de comisión cuando:</p>
+                            <p class="content-text">No se generarÃ¡ pago de comisiÃ³n cuando:</p>
                             <ul class="content-list">
                                 <li>El cliente cancele el proyecto.</li>
                                 <li>El proyecto sea rechazado.</li>
                                 <li>El proyecto no llegue a completarse.</li>
-                                <li>Exista información falsa o documentación fraudulenta.</li>
+                                <li>Exista informaciÃ³n falsa o documentaciÃ³n fraudulenta.</li>
                             </ul>
                         </div>
                     </div>
@@ -3140,14 +3140,14 @@ export function representantesHtml(data: Record<string, string>): string {
                             <h2 class="section-title">6. RESPONSABILIDADES DEL REPRESENTANTE</h2>
                             <p class="content-text">El Representante acepta:</p>
                             <ul class="content-list">
-                                <li>Actuar con honestidad, profesionalismo y ética.</li>
-                                <li>Representar adecuadamente la imagen de la compañía.</li>
+                                <li>Actuar con honestidad, profesionalismo y Ã©tica.</li>
+                                <li>Representar adecuadamente la imagen de la compaÃ±Ã­a.</li>
                                 <li>Cumplir con todos los procedimientos internos.</li>
-                                <li>Presentar documentación completa y precisa.</li>
-                                <li>Mantener una comunicación profesional con los clientes y compañeros de equipo.</li>
-                                <li>Cumplir con las metas mínimas de actividad establecidas por la compañía.</li>
+                                <li>Presentar documentaciÃ³n completa y precisa.</li>
+                                <li>Mantener una comunicaciÃ³n profesional con los clientes y compaÃ±eros de equipo.</li>
+                                <li>Cumplir con las metas mÃ­nimas de actividad establecidas por la compaÃ±Ã­a.</li>
                             </ul>
-                            <p class="content-text">Cualquier incumplimiento de las responsabilidades anteriormente mencionadas será motivo para la terminación inmediata de este acuerdo.</p>
+                            <p class="content-text">Cualquier incumplimiento de las responsabilidades anteriormente mencionadas serÃ¡ motivo para la terminaciÃ³n inmediata de este acuerdo.</p>
                         </div>
                     </div>
                 </div>
@@ -3162,14 +3162,14 @@ export function representantesHtml(data: Record<string, string>): string {
                             <h2 class="section-title">7. CONFIDENCIALIDAD</h2>
                             <p class="content-text">El Representante se compromete a mantener estricta confidencialidad sobre:</p>
                             <ul class="content-list">
-                                <li>Información de clientes.</li>
+                                <li>InformaciÃ³n de clientes.</li>
                                 <li>Estrategias comerciales.</li>
                                 <li>Estructuras de precios.</li>
                                 <li>Bases de datos.</li>
                                 <li>Procesos internos.</li>
                                 <li>Material de entrenamiento.</li>
                             </ul>
-                            <p class="content-text">Esta obligación continuará vigente incluso después de finalizada la relación contractual.</p>
+                            <p class="content-text">Esta obligaciÃ³n continuarÃ¡ vigente incluso despuÃ©s de finalizada la relaciÃ³n contractual.</p>
                         </div>
                     </div>
 
@@ -3179,8 +3179,8 @@ export function representantesHtml(data: Record<string, string>): string {
                         </div>
                         <div class="content-col">
                             <h2 class="section-title">8. NO COMPETENCIA</h2>
-                            <p class="content-text">Durante la vigencia del presente acuerdo, el Representante no podrá utilizar información obtenida a través de la compañía para beneficio propio o de terceros.</p>
-                            <p class="content-text">Asimismo, no podrá desviar clientes, oportunidades comerciales o información estratégica perteneciente a la compañía.</p>
+                            <p class="content-text">Durante la vigencia del presente acuerdo, el Representante no podrÃ¡ utilizar informaciÃ³n obtenida a travÃ©s de la compaÃ±Ã­a para beneficio propio o de terceros.</p>
+                            <p class="content-text">Asimismo, no podrÃ¡ desviar clientes, oportunidades comerciales o informaciÃ³n estratÃ©gica perteneciente a la compaÃ±Ã­a.</p>
                         </div>
                     </div>
 
@@ -3190,14 +3190,14 @@ export function representantesHtml(data: Record<string, string>): string {
                         </div>
                         <div class="content-col">
                             <h2 class="section-title">9. CHARGEBACK Y PAGOS PENDIENTES</h2>
-                            <p class="content-text">El Representante será responsable de reembolsar cualquier comisión previamente pagada cuando el proyecto sea cancelado por causas atribuibles a su gestión, información incorrecta, omisiones relevantes o incumplimientos de políticas.</p>
-                            <p class="content-text" style="font-weight:700;">La Compañía podrá:</p>
+                            <p class="content-text">El Representante serÃ¡ responsable de reembolsar cualquier comisiÃ³n previamente pagada cuando el proyecto sea cancelado por causas atribuibles a su gestiÃ³n, informaciÃ³n incorrecta, omisiones relevantes o incumplimientos de polÃ­ticas.</p>
+                            <p class="content-text" style="font-weight:700;">La CompaÃ±Ã­a podrÃ¡:</p>
                             <ul class="content-list">
                                 <li>Descontar dichos montos de futuras comisiones.</li>
                                 <li>Solicitar el reembolso directo.</li>
-                                <li>Iniciar acciones legales para la recuperación de fondos.</li>
+                                <li>Iniciar acciones legales para la recuperaciÃ³n de fondos.</li>
                             </ul>
-                            <p class="content-text">En caso de incumplimiento, la deuda podrá ser remitida a agencias de cobro autorizadas en el Estado de Florida.</p>
+                            <p class="content-text">En caso de incumplimiento, la deuda podrÃ¡ ser remitida a agencias de cobro autorizadas en el Estado de Florida.</p>
                         </div>
                     </div>
 
@@ -3207,19 +3207,19 @@ export function representantesHtml(data: Record<string, string>): string {
                         </div>
                         <div class="content-col">
                             <h2 class="section-title">10. REQUISITOS DE PERMANENCIA ACTIVA</h2>
-                            <p class="content-text">Con el propósito de mantener una participación activa dentro de la organización, el Representante deberá cumplir con los siguientes requisitos:</p>
+                            <p class="content-text">Con el propÃ³sito de mantener una participaciÃ³n activa dentro de la organizaciÃ³n, el Representante deberÃ¡ cumplir con los siguientes requisitos:</p>
                             
-                            <p class="content-text" style="font-weight:700; color:var(--brand);">A Participación Obligatoria en Blitz grupales</p>
-                            <p class="content-text">El Representante deberá asistir como mínimo a un (1) Blitz semanal organizado por la compañía.<br>La participación en los Blitz constituye una actividad esencial para el desarrollo comercial, generación de oportunidades y crecimiento profesional del Representante.<br>La falta reiterada de participación podrá ser considerada motivo de suspensión o inactivación.</p>
+                            <p class="content-text" style="font-weight:700; color:var(--brand);">A ParticipaciÃ³n Obligatoria en Blitz grupales</p>
+                            <p class="content-text">El Representante deberÃ¡ asistir como mÃ­nimo a un (1) Blitz semanal organizado por la compaÃ±Ã­a.<br>La participaciÃ³n en los Blitz constituye una actividad esencial para el desarrollo comercial, generaciÃ³n de oportunidades y crecimiento profesional del Representante.<br>La falta reiterada de participaciÃ³n podrÃ¡ ser considerada motivo de suspensiÃ³n o inactivaciÃ³n.</p>
                             
-                            <p class="content-text" style="font-weight:700; color:var(--brand); margin-top:4px;">B Producción Mínima Mensual</p>
-                            <p class="content-text">El Representante deberá generar un mínimo de una (1) venta aprobada por mes calendario para mantener su condición activa dentro de la compañía.<br>La falta de cumplimiento podrá resultar en revisión de estatus, suspensión temporal o terminación de la relación comercial.</p>
+                            <p class="content-text" style="font-weight:700; color:var(--brand); margin-top:4px;">B ProducciÃ³n MÃ­nima Mensual</p>
+                            <p class="content-text">El Representante deberÃ¡ generar un mÃ­nimo de una (1) venta aprobada por mes calendario para mantener su condiciÃ³n activa dentro de la compaÃ±Ã­a.<br>La falta de cumplimiento podrÃ¡ resultar en revisiÃ³n de estatus, suspensiÃ³n temporal o terminaciÃ³n de la relaciÃ³n comercial.</p>
                             
                             <p class="content-text" style="font-weight:700; color:var(--brand); margin-top:4px;">C Reporte Semanal Obligatorio</p>
-                            <p class="content-text">Se discutirá reporte semanal personalmente, el periodo semanal será comprendido desde el jueves hasta el miércoles de cada semana.<br>La omisión reiterada de reportes podrá ser considerada incumplimiento contractual.</p>
+                            <p class="content-text">Se discutirÃ¡ reporte semanal personalmente, el periodo semanal serÃ¡ comprendido desde el jueves hasta el miÃ©rcoles de cada semana.<br>La omisiÃ³n reiterada de reportes podrÃ¡ ser considerada incumplimiento contractual.</p>
                             
                             <p class="content-text" style="font-weight:700; color:var(--brand); margin-top:4px;">D Capacitaciones y Reuniones</p>
-                            <p class="content-text">La asistencia a capacitaciones, reuniones corporativas, entrenamientos, Zooms y Meetings oficiales de la compañía es obligatoria. La ausencia sin circunstancias justificadas cuando exista una causa justificada y esta sea comunicada previamente a la administración o gerencia correspondiente.</p>
+                            <p class="content-text">La asistencia a capacitaciones, reuniones corporativas, entrenamientos, Zooms y Meetings oficiales de la compaÃ±Ã­a es obligatoria. La ausencia sin circunstancias justificadas cuando exista una causa justificada y esta sea comunicada previamente a la administraciÃ³n o gerencia correspondiente.</p>
                         </div>
                     </div>
 
@@ -3228,22 +3228,22 @@ export function representantesHtml(data: Record<string, string>): string {
                             <i class="fa-solid fa-file-excel text-brand" style="font-size:24px;"></i>
                         </div>
                         <div class="content-col">
-                            <h2 class="section-title">11. TERMINACIÓN</h2>
-                            <p class="content-text">La Compañía podrá terminar este acuerdo de manera inmediata por:</p>
+                            <h2 class="section-title">11. TERMINACIÃ“N</h2>
+                            <p class="content-text">La CompaÃ±Ã­a podrÃ¡ terminar este acuerdo de manera inmediata por:</p>
                             <div style="display:flex;">
                                 <ul class="content-list" style="width:50%;">
                                     <li>Fraude.</li>
                                     <li>Conducta inapropiada.</li>
                                 </ul>
                                 <ul class="content-list" style="width:50%;">
-                                    <li>Incumplimiento de políticas.</li>
-                                    <li>Falsificación de documentos.</li>
+                                    <li>Incumplimiento de polÃ­ticas.</li>
+                                    <li>FalsificaciÃ³n de documentos.</li>
                                 </ul>
                             </div>
                             <ul class="content-list">
-                                <li>Incumplimiento de cualquiera de las cláusulas establecidas en este contrato.</li>
+                                <li>Incumplimiento de cualquiera de las clÃ¡usulas establecidas en este contrato.</li>
                             </ul>
-                            <p class="content-text" style="margin-top:2px; font-style:italic;">El Representante podrá finalizar este acuerdo en cualquier momento mediante notificación escrita.</p>
+                            <p class="content-text" style="margin-top:2px; font-style:italic;">El Representante podrÃ¡ finalizar este acuerdo en cualquier momento mediante notificaciÃ³n escrita.</p>
                         </div>
                     </div>
 
@@ -3257,7 +3257,7 @@ export function representantesHtml(data: Record<string, string>): string {
                                 </div>
                                 <div>
                                     <div class="section-title">12. IMPUESTOS</div>
-                                    <div class="content-text">El Representante reconoce que es responsable de declarar y pagar sus propios impuestos como contratista independiente. La Compañía no realizará retenciones fiscales ni aportes de seguridad social.</div>
+                                    <div class="content-text">El Representante reconoce que es responsable de declarar y pagar sus propios impuestos como contratista independiente. La CompaÃ±Ã­a no realizarÃ¡ retenciones fiscales ni aportes de seguridad social.</div>
                                 </div>
                             </div>
                         </div>
@@ -3269,7 +3269,7 @@ export function representantesHtml(data: Record<string, string>): string {
                                 </div>
                                 <div>
                                     <div class="section-title">13. LEY APLICABLE</div>
-                                    <div class="content-text">Este contrato será interpretado y regido conforme a las leyes del Estado de Florida.</div>
+                                    <div class="content-text">Este contrato serÃ¡ interpretado y regido conforme a las leyes del Estado de Florida.</div>
                                 </div>
                             </div>
                         </div>
@@ -3281,12 +3281,12 @@ export function representantesHtml(data: Record<string, string>): string {
                                 </div>
                                 <div>
                                     <div class="section-title">14. CONDUCTA PROFESIONAL</div>
-                                    <div class="content-text">El Representante deberá:</div>
+                                    <div class="content-text">El Representante deberÃ¡:</div>
                                     <ul class="content-list" style="list-style-type:none; padding-left:0; margin-top:2px;">
                                         <li>&bull; Mantener una apariencia profesional.</li>
                                         <li>&bull; Tratar a los clientes con respeto.</li>
                                         <li>&bull; Actuar con honestidad.</li>
-                                        <li>&bull; Proteger la reputación de la compañía.</li>
+                                        <li>&bull; Proteger la reputaciÃ³n de la compaÃ±Ã­a.</li>
                                     </ul>
                                 </div>
                             </div>
@@ -3605,7 +3605,7 @@ export function w9Html(data: Record<string, string>): string {
                                 <div class="border-b-[1px] border-black w-20 inline-block align-bottom border-dashed text-center">${d("llcTaxClassification")}</div>
                             </div>
                             <div class="sub-text mt-1">
-                                <span class="font-bold">Note:</span> Check the “LLC” box above and, in the entry space, enter the appropriate code (C, S, or P) for the tax<br>
+                                <span class="font-bold">Note:</span> Check the â€œLLCâ€ box above and, in the entry space, enter the appropriate code (C, S, or P) for the tax<br>
                                 classification of the LLC, unless it is a disregarded entity. A disregarded entity should instead check the appropriate<br>
                                 box for the tax classification of its owner.
                             </div>
@@ -3620,7 +3620,7 @@ export function w9Html(data: Record<string, string>): string {
                         <div class="number-box">3b</div>
                         <div class="form-content border-b-0 h-full pr-2 flex gap-2">
                             <div class="flex-grow sub-text pt-1">
-                                If on line 3a you checked “Partnership” or “Trust/estate,” or checked “LLC” and entered “P” as its tax classification,<br>
+                                If on line 3a you checked â€œPartnershipâ€ or â€œTrust/estate,â€ or checked â€œLLCâ€ and entered â€œPâ€ as its tax classification,<br>
                                 and you are providing this form to a partnership, trust, or estate in which you have an ownership interest, check<br>
                                 this box if you have any foreign partners, owners, or beneficiaries. See instructions <span class="tracking-widest">. . . . . . . . .</span>
                             </div>
@@ -3678,7 +3678,7 @@ export function w9Html(data: Record<string, string>): string {
                 </div>
                 <div class="w-[35%] input-line">
                     <div class="form-content border-b-0 h-full pt-1 pl-2 text-[10px] flex flex-col">
-                        <span>Requester’s name and address (optional)</span>
+                        <span>Requesterâ€™s name and address (optional)</span>
                         <span class="mt-1 text-base">${d("requesterNameAddress")}</span>
                     </div>
                 </div>
@@ -3791,7 +3791,7 @@ export function w9Html(data: Record<string, string>): string {
                 <p class="text-[11px] mb-2 leading-tight">Section references are to the Internal Revenue Code unless otherwise<br>noted.</p>
                 <p class="text-[11px] mb-2 leading-tight"><span class="font-bold">Future developments.</span> For the latest information about developments<br>related to Form W-9 and its instructions, such as legislation enacted<br>after they were published, go to <i>www.irs.gov/FormW9</i>.</p>
                 <h3 class="text-[16px] font-bold mb-2 mt-4">What's New</h3>
-                <p class="text-[11px] leading-tight">Line 3a has been modified to clarify how a disregarded entity completes<br>this line. An LLC that is a disregarded entity should check the<br>appropriate box for the tax classification of its owner. Otherwise, it<br>should check the “LLC” box and enter its appropriate tax classification.</p>
+                <p class="text-[11px] leading-tight">Line 3a has been modified to clarify how a disregarded entity completes<br>this line. An LLC that is a disregarded entity should check the<br>appropriate box for the tax classification of its owner. Otherwise, it<br>should check the â€œLLCâ€ box and enter its appropriate tax classification.</p>
             </div>
             <div class="w-1/2">
                 <p class="text-[11px] leading-tight mb-2">
@@ -3850,7 +3850,7 @@ export function w9Html(data: Record<string, string>): string {
                 <li>Certify to your non-foreign status for purposes of withholding under chapter 3 or 4 of the Code (if applicable); and</li>
                 <li>Certify that FATCA code(s) entered on this form (if any) indicating that you are exempt from the FATCA reporting is correct. See <i>What Is FATCA Reporting</i>, later, for further information.</li>
             </ol>
-            <p class="mb-2"><span class="font-bold">Note:</span> If you are a U.S. person and a requester gives you a form other than Form W-9 to request your TIN, you must use the requester’s form if it is substantially similar to this Form W-9.</p>
+            <p class="mb-2"><span class="font-bold">Note:</span> If you are a U.S. person and a requester gives you a form other than Form W-9 to request your TIN, you must use the requesterâ€™s form if it is substantially similar to this Form W-9.</p>
             <p class="mb-2"><span class="font-bold">Definition of a U.S. person.</span> For federal tax purposes, you are considered a U.S. person if you are:</p>
             <ul class="list-disc pl-4 mb-2 space-y-0.5">
                 <li>An individual who is a U.S. citizen or U.S. resident alien;</li>
@@ -3858,7 +3858,7 @@ export function w9Html(data: Record<string, string>): string {
                 <li>An estate (other than a foreign estate); or</li>
                 <li>A domestic trust (as defined in Regulations section 301.7701-7).</li>
             </ul>
-            <p class="mb-2"><span class="font-bold">Establishing U.S. status for purposes of chapter 3 and chapter 4 withholding.</span> Payments made to foreign persons, including certain distributions, allocations of income, or transfers of sales proceeds, may be subject to withholding under chapter 3 or chapter 4 of the Code (sections 1441–1474). Under those rules, if a Form W-9 or other certification of non-foreign status has not been received, a withholding agent, transferee, or partnership (payor) generally applies presumption rules that may require the payor to withhold applicable tax from the recipient, owner, transferor, or partner (payee). See Pub. 515, Withholding of Tax on Nonresident Aliens and Foreign Entities.</p>
+            <p class="mb-2"><span class="font-bold">Establishing U.S. status for purposes of chapter 3 and chapter 4 withholding.</span> Payments made to foreign persons, including certain distributions, allocations of income, or transfers of sales proceeds, may be subject to withholding under chapter 3 or chapter 4 of the Code (sections 1441â€“1474). Under those rules, if a Form W-9 or other certification of non-foreign status has not been received, a withholding agent, transferee, or partnership (payor) generally applies presumption rules that may require the payor to withhold applicable tax from the recipient, owner, transferor, or partner (payee). See Pub. 515, Withholding of Tax on Nonresident Aliens and Foreign Entities.</p>
             <p class="mb-2">The following persons must provide Form W-9 to the payor for purposes of establishing its non-foreign status.</p>
             <ul class="list-disc pl-4 mb-2 space-y-0.5">
                 <li>In the case of a disregarded entity with a U.S. owner, the U.S. owner of the disregarded entity and not the disregarded entity.</li>
@@ -3881,7 +3881,7 @@ export function w9Html(data: Record<string, string>): string {
             <p class="mb-2">If you are a nonresident alien or a foreign entity, give the requester the appropriate completed Form W-8 or Form 8233.</p>
 
             <h2 class="font-bold text-[16px] mb-1 mt-4">Backup Withholding</h2>
-            <p class="mb-2"><span class="font-bold">What is backup withholding?</span> Persons making certain payments to you must under certain conditions withhold and pay to the IRS 24% of such payments. This is called “backup withholding.” Payments that may be subject to backup withholding include, but are not limited to, interest, tax-exempt interest, dividends, broker and barter exchange transactions, rents, royalties, nonemployee pay, payments made in settlement of payment card and third-party network transactions, and certain payments from fishing boat operators. Real estate transactions are not subject to backup withholding.</p>
+            <p class="mb-2"><span class="font-bold">What is backup withholding?</span> Persons making certain payments to you must under certain conditions withhold and pay to the IRS 24% of such payments. This is called â€œbackup withholding.â€ Payments that may be subject to backup withholding include, but are not limited to, interest, tax-exempt interest, dividends, broker and barter exchange transactions, rents, royalties, nonemployee pay, payments made in settlement of payment card and third-party network transactions, and certain payments from fishing boat operators. Real estate transactions are not subject to backup withholding.</p>
             <p class="mb-2">You will not be subject to backup withholding on payments you receive if you give the requester your correct TIN, make the proper certifications, and report all your taxable interest and dividends on your tax return.</p>
             <p class="font-bold mb-1">Payments you receive will be subject to backup withholding if:</p>
             <ol class="list-decimal pl-4 mb-2 space-y-0.5">
@@ -3889,7 +3889,7 @@ export function w9Html(data: Record<string, string>): string {
                 <li>You do not certify your TIN when required (see the instructions for Part II for details);</li>
                 <li>The IRS tells the requester that you furnished an incorrect TIN;</li>
                 <li>The IRS tells you that you are subject to backup withholding because you did not report all your interest and dividends on your tax return (for reportable interest and dividends only); or</li>
-                <li>You do not certify to the requester that you are not subject to backup withholding, as described in item 4 under “By signing the filled-out form” above (for reportable interest and dividend accounts opened after 1983 only).</li>
+                <li>You do not certify to the requester that you are not subject to backup withholding, as described in item 4 under â€œBy signing the filled-out formâ€ above (for reportable interest and dividend accounts opened after 1983 only).</li>
             </ol>
         </div>
     </div>
@@ -3923,10 +3923,10 @@ export function w9Html(data: Record<string, string>): string {
             <p class="mb-2">If this Form W-9 is for a joint account (other than an account maintained by a foreign financial institution (FFI)), list first, and then circle, the name of the person or entity whose number you entered in Part I of Form W-9. If you are providing Form W-9 to an FFI to document a joint account, each holder of the account that is a U.S. person must provide a Form W-9.</p>
             <p class="mb-2"><span class="font-bold">&bull; Individual.</span> Generally, enter the name shown on your tax return. If you have changed your last name without informing the Social Security Administration (SSA) of the name change, enter your first name, the last name as shown on your social security card, and your new last name.</p>
             <p class="mb-2"><span class="font-bold">Note for ITIN applicant:</span> Enter your individual name as it was entered on your Form W-7 application, line 1a. This should also be the same as the name you entered on the Form 1040 you filed with your application.</p>
-            <p class="mb-2"><span class="font-bold">&bull; Sole proprietor.</span> Enter your individual name as shown on your Form 1040 on line 1. Enter your business, trade, or “doing business as” (DBA) name on line 2.</p>
-            <p class="mb-2"><span class="font-bold">&bull; Partnership, C corporation, S corporation, or LLC, other than a disregarded entity.</span> Enter the entity’s name as shown on the entity’s tax return on line 1 and any business, trade, or DBA name on line 2.</p>
+            <p class="mb-2"><span class="font-bold">&bull; Sole proprietor.</span> Enter your individual name as shown on your Form 1040 on line 1. Enter your business, trade, or â€œdoing business asâ€ (DBA) name on line 2.</p>
+            <p class="mb-2"><span class="font-bold">&bull; Partnership, C corporation, S corporation, or LLC, other than a disregarded entity.</span> Enter the entityâ€™s name as shown on the entityâ€™s tax return on line 1 and any business, trade, or DBA name on line 2.</p>
             <p class="mb-2"><span class="font-bold">&bull; Other entities.</span> Enter your name as shown on required U.S. federal tax documents on line 1. This name should match the name shown on the charter or other legal document creating the entity. Enter any business, trade, or DBA name on line 2.</p>
-            <p class="mb-2"><span class="font-bold">&bull; Disregarded entity.</span> In general, a business entity that has a single owner, including an LLC, and is not a corporation, is disregarded as an entity separate from its owner (a disregarded entity). See Regulations section 301.7701-2(c)(2). A disregarded entity should check the appropriate box for the tax classification of its owner. Enter the owner’s name on line 1. The name of the owner entered on line 1 should never be a disregarded entity. The name on line 1 should be the name shown on the income tax return on which the income should be reported. For example, if a foreign LLC that is treated as a disregarded entity for U.S. federal tax purposes has a single owner that is a U.S. person, the U.S. owner’s name is required to be provided on line 1. If the direct owner of the entity is also a disregarded entity, enter the first owner that is not disregarded for federal tax purposes. Enter the disregarded entity’s name on line 2. If the owner of the disregarded entity is a foreign person, the owner must complete an appropriate Form W-8 instead of a Form W-9. This is the case even if the foreign person has a U.S. TIN.</p>
+            <p class="mb-2"><span class="font-bold">&bull; Disregarded entity.</span> In general, a business entity that has a single owner, including an LLC, and is not a corporation, is disregarded as an entity separate from its owner (a disregarded entity). See Regulations section 301.7701-2(c)(2). A disregarded entity should check the appropriate box for the tax classification of its owner. Enter the ownerâ€™s name on line 1. The name of the owner entered on line 1 should never be a disregarded entity. The name on line 1 should be the name shown on the income tax return on which the income should be reported. For example, if a foreign LLC that is treated as a disregarded entity for U.S. federal tax purposes has a single owner that is a U.S. person, the U.S. ownerâ€™s name is required to be provided on line 1. If the direct owner of the entity is also a disregarded entity, enter the first owner that is not disregarded for federal tax purposes. Enter the disregarded entityâ€™s name on line 2. If the owner of the disregarded entity is a foreign person, the owner must complete an appropriate Form W-8 instead of a Form W-9. This is the case even if the foreign person has a U.S. TIN.</p>
 
             <h3 class="font-bold text-[14px] mb-1">Line 2</h3>
             <p class="mb-2">If you have a business name, trade name, DBA name, or disregarded entity name, enter it on line 2.</p>
@@ -3973,10 +3973,10 @@ export function w9Html(data: Record<string, string>): string {
                 <li>Generally, individuals (including sole proprietors) are not exempt from backup withholding.</li>
                 <li>Except as provided below, corporations are exempt from backup withholding for certain payments, including interest and dividends.</li>
                 <li>Corporations are not exempt from backup withholding for payments made in settlement of payment card or third-party network transactions.</li>
-                <li>Corporations are not exempt from backup withholding with respect to attorneys’ fees or gross proceeds paid to attorneys, and corporations that provide medical or health care services are not exempt with respect to payments reportable on Form 1099-MISC.</li>
+                <li>Corporations are not exempt from backup withholding with respect to attorneysâ€™ fees or gross proceeds paid to attorneys, and corporations that provide medical or health care services are not exempt with respect to payments reportable on Form 1099-MISC.</li>
             </ul>
             <p class="mb-2">The following codes identify payees that are exempt from backup withholding. Enter the appropriate code in the space on line 4.</p>
-            <p class="mb-2">1—An organization exempt from tax under section 501(a), any IRA, or a custodial account under section 403(b)(7) if the account satisfies the requirements of section 401(f)(2).</p>
+            <p class="mb-2">1â€”An organization exempt from tax under section 501(a), any IRA, or a custodial account under section 403(b)(7) if the account satisfies the requirements of section 401(f)(2).</p>
         </div>
     </div>
     
@@ -3987,18 +3987,18 @@ export function w9Html(data: Record<string, string>): string {
             <div>Page <span class="text-[16px]">4</span></div>
         </div>
         <div class="columns-2 gap-8 text-[10.5px] leading-snug">
-            <p class="mb-1">2—The United States or any of its agencies or instrumentalities.</p>
-            <p class="mb-1">3—A state, the District of Columbia, a U.S. commonwealth or territory, or any of their political subdivisions or instrumentalities.</p>
-            <p class="mb-1">4—A foreign government or any of its political subdivisions, agencies, or instrumentalities.</p>
-            <p class="mb-1">5—A corporation.</p>
-            <p class="mb-1">6—A dealer in securities or commodities required to register in the United States, the District of Columbia, or a U.S. commonwealth or territory.</p>
-            <p class="mb-1">7—A futures commission merchant registered with the Commodity Futures Trading Commission.</p>
-            <p class="mb-1">8—A real estate investment trust.</p>
-            <p class="mb-1">9—An entity registered at all times during the tax year under the Investment Company Act of 1940.</p>
-            <p class="mb-1">10—A common trust fund operated by a bank under section 584(a).</p>
-            <p class="mb-1">11—A financial institution as defined under section 581.</p>
-            <p class="mb-1">12—A middleman known in the investment community as a nominee or custodian.</p>
-            <p class="mb-2">13—A trust exempt from tax under section 664 or described in section 4947.</p>
+            <p class="mb-1">2â€”The United States or any of its agencies or instrumentalities.</p>
+            <p class="mb-1">3â€”A state, the District of Columbia, a U.S. commonwealth or territory, or any of their political subdivisions or instrumentalities.</p>
+            <p class="mb-1">4â€”A foreign government or any of its political subdivisions, agencies, or instrumentalities.</p>
+            <p class="mb-1">5â€”A corporation.</p>
+            <p class="mb-1">6â€”A dealer in securities or commodities required to register in the United States, the District of Columbia, or a U.S. commonwealth or territory.</p>
+            <p class="mb-1">7â€”A futures commission merchant registered with the Commodity Futures Trading Commission.</p>
+            <p class="mb-1">8â€”A real estate investment trust.</p>
+            <p class="mb-1">9â€”An entity registered at all times during the tax year under the Investment Company Act of 1940.</p>
+            <p class="mb-1">10â€”A common trust fund operated by a bank under section 584(a).</p>
+            <p class="mb-1">11â€”A financial institution as defined under section 581.</p>
+            <p class="mb-1">12â€”A middleman known in the investment community as a nominee or custodian.</p>
+            <p class="mb-2">13â€”A trust exempt from tax under section 664 or described in section 4947.</p>
             
             <p class="mb-2">The following chart shows types of payments that may be exempt from backup withholding. The chart applies to the exempt payees listed above, 1 through 13.</p>
             
@@ -4038,26 +4038,26 @@ export function w9Html(data: Record<string, string>): string {
                 <p class="mb-2"><span class="font-bold">Exemption from FATCA reporting code.</span> The following codes identify payees that are exempt from reporting under FATCA. These codes apply to persons submitting this form for accounts maintained outside of the United States by certain foreign financial institutions. Therefore, if you are only submitting this form for an account you hold in the United States, you may leave this field blank. Consult with the person requesting this form if you are uncertain if the financial institution is subject to these requirements. A requester may indicate that a code is not required by providing you with a Form W-9 with "Not Applicable" (or any similar indication) entered on the line for a FATCA exemption code.</p>
 
                 <div class="pl-2 mb-2 space-y-1">
-                    <p>A—An organization exempt from tax under section 501(a) or any individual retirement plan as defined in section 7701(a)(37).</p>
-                    <p>B—The United States or any of its agencies or instrumentalities.</p>
-                    <p>C—A state, the District of Columbia, a U.S. commonwealth or territory, or any of their political subdivisions or instrumentalities.</p>
-                    <p>D—A corporation the stock of which is regularly traded on one or more established securities markets, as described in Regulations section 1.1472-1(c)(1)(i).</p>
-                    <p>E—A corporation that is a member of the same expanded affiliated group as a corporation described in Regulations section 1.1472-1(c)(1)(i).</p>
-                    <p>F—A dealer in securities, commodities, or derivative financial instruments (including notional principal contracts, futures, forwards, and options) that is registered as such under the laws of the United States or any state.</p>
-                    <p>G—A real estate investment trust.</p>
-                    <p>H—A regulated investment company as defined in section 851 or an entity registered at all times during the tax year under the Investment Company Act of 1940.</p>
-                    <p>I—A common trust fund as defined in section 584(a).</p>
-                    <p>J—A bank as defined in section 581.</p>
-                    <p>K—A broker.</p>
-                    <p>L—A trust exempt from tax under section 664 or described in section 4947(a)(1).</p>
-                    <p>M—A tax-exempt trust under a section 403(b) plan or section 457(g) plan.</p>
+                    <p>Aâ€”An organization exempt from tax under section 501(a) or any individual retirement plan as defined in section 7701(a)(37).</p>
+                    <p>Bâ€”The United States or any of its agencies or instrumentalities.</p>
+                    <p>Câ€”A state, the District of Columbia, a U.S. commonwealth or territory, or any of their political subdivisions or instrumentalities.</p>
+                    <p>Dâ€”A corporation the stock of which is regularly traded on one or more established securities markets, as described in Regulations section 1.1472-1(c)(1)(i).</p>
+                    <p>Eâ€”A corporation that is a member of the same expanded affiliated group as a corporation described in Regulations section 1.1472-1(c)(1)(i).</p>
+                    <p>Fâ€”A dealer in securities, commodities, or derivative financial instruments (including notional principal contracts, futures, forwards, and options) that is registered as such under the laws of the United States or any state.</p>
+                    <p>Gâ€”A real estate investment trust.</p>
+                    <p>Hâ€”A regulated investment company as defined in section 851 or an entity registered at all times during the tax year under the Investment Company Act of 1940.</p>
+                    <p>Iâ€”A common trust fund as defined in section 584(a).</p>
+                    <p>Jâ€”A bank as defined in section 581.</p>
+                    <p>Kâ€”A broker.</p>
+                    <p>Lâ€”A trust exempt from tax under section 664 or described in section 4947(a)(1).</p>
+                    <p>Mâ€”A tax-exempt trust under a section 403(b) plan or section 457(g) plan.</p>
                 </div>
 
                 <p class="mb-2"><span class="font-bold">Note:</span> You may wish to consult with the financial institution requesting this form to determine whether the FATCA code and/or exempt payee code should be completed.</p>
             </div>
 
             <h3 class="font-bold text-[14px] mb-1">Line 5</h3>
-            <p class="mb-2">Enter your address (number, street, and apartment or suite number). This is where the requester of this Form W-9 will mail your information returns. If this address differs from the one the requester already has on file, enter “NEW” at the top.</p>
+            <p class="mb-2">Enter your address (number, street, and apartment or suite number). This is where the requester of this Form W-9 will mail your information returns. If this address differs from the one the requester already has on file, enter â€œNEWâ€ at the top.</p>
 
             <h3 class="font-bold text-[14px] mb-1">Line 6</h3>
             <p class="mb-2">Enter your city, state, and ZIP code.</p>
@@ -4067,9 +4067,9 @@ export function w9Html(data: Record<string, string>): string {
             <p class="mb-2">If you are a sole proprietor and you have an EIN, you may enter either your SSN or EIN.</p>
             
             <p class="mb-2"><span class="font-bold">How to get a TIN.</span> If you do not have a TIN, apply for one immediately. To apply for an SSN, get Form SS-5, Application for a Social Security Card, from your local SSA office or get this form online at www.SSA.gov. You may also get this form by calling 800-772-1213. Use Form W-7, Application for IRS Individual Taxpayer Identification Number, to apply for an ITIN, or Form SS-4, Application for Employer Identification Number, to apply for an EIN. You can apply for an EIN online by accessing the IRS website at www.irs.gov/EIN.Go to <em>www.irs.gov/Forms</em> to view, download, or print Form W-7 and/or Form SS-4. Or, you can go to <em>www.irs.gov/OrderForms</em> to place an order and have Form W-7 and/or Form SS-4 mailed to you within 15 business days.</p>
-            <p class="mb-2">If you are asked to complete Form W-9 but do not have a TIN, apply for a TIN and enter “Applied For” in the space for the TIN, sign and date the form, and give it to the requester. For interest and dividend payments, and certain payments made with respect to readily tradable instruments, you will generally have 60 days to get a TIN and give it to the requester before you are subject to backup withholding on payments. The 60-day rule does not apply to other types of payments. You will be subject to backup withholding on all such payments until you provide your TIN to the requester.</p>
+            <p class="mb-2">If you are asked to complete Form W-9 but do not have a TIN, apply for a TIN and enter â€œApplied Forâ€ in the space for the TIN, sign and date the form, and give it to the requester. For interest and dividend payments, and certain payments made with respect to readily tradable instruments, you will generally have 60 days to get a TIN and give it to the requester before you are subject to backup withholding on payments. The 60-day rule does not apply to other types of payments. You will be subject to backup withholding on all such payments until you provide your TIN to the requester.</p>
 
-            <p class="mb-2"><span class="font-bold">Note:</span> Entering “Applied For” means that you have already applied for a TIN or that you intend to apply for one soon. See also <i class="italic">Establishing U.S. status for purposes of chapter 3 and chapter 4 withholding</i>, earlier, for when you may instead be subject to withholding under chapter 3 or 4 of the Code.</p>
+            <p class="mb-2"><span class="font-bold">Note:</span> Entering â€œApplied Forâ€ means that you have already applied for a TIN or that you intend to apply for one soon. See also <i class="italic">Establishing U.S. status for purposes of chapter 3 and chapter 4 withholding</i>, earlier, for when you may instead be subject to withholding under chapter 3 or 4 of the Code.</p>
 
             <p class="mb-2"><span class="font-bold">Caution:</span> A disregarded U.S. entity that has a foreign owner must use the appropriate Form W-8.</p>
         </div>
@@ -4088,7 +4088,7 @@ export function w9Html(data: Record<string, string>): string {
             <p class="mb-2"><span class="font-bold">1. Interest, dividend, and barter exchange accounts opened before 1984 and broker accounts considered active during 1983.</span> You must give your correct TIN, but you do not have to sign the certification.</p>
             <p class="mb-2"><span class="font-bold">2. Interest, dividend, broker, and barter exchange accounts opened after 1983 and broker accounts considered inactive during 1983.</span> You must sign the certification or backup withholding will apply. If you are subject to backup withholding and you are merely providing your correct TIN to the requester, you must cross out item 2 in the certification before signing the form.</p>
             <p class="mb-2"><span class="font-bold">3. Real estate transactions.</span> You must sign the certification. You may cross out item 2 of the certification.</p>
-            <p class="mb-2"><span class="font-bold">4. Other payments.</span> You must give your correct TIN, but you do not have to sign the certification unless you have been notified that you have previously given an incorrect TIN. “Other payments” include payments made in the course of the requester’s trade or business for rents, royalties, goods (other than bills for merchandise), medical and health care services (including payments to corporations), payments to a nonemployee for services, payments made in settlement of payment card and third-party network transactions, payments to certain fishing boat crew members and fishermen, and gross proceeds paid to attorneys (including payments to corporations).</p>
+            <p class="mb-2"><span class="font-bold">4. Other payments.</span> You must give your correct TIN, but you do not have to sign the certification unless you have been notified that you have previously given an incorrect TIN. â€œOther paymentsâ€ include payments made in the course of the requesterâ€™s trade or business for rents, royalties, goods (other than bills for merchandise), medical and health care services (including payments to corporations), payments to a nonemployee for services, payments made in settlement of payment card and third-party network transactions, payments to certain fishing boat crew members and fishermen, and gross proceeds paid to attorneys (including payments to corporations).</p>
             <p class="mb-2"><span class="font-bold">5. Mortgage interest paid by you, acquisition or abandonment of secured property, cancellation of debt, qualified tuition program payments (under section 529), ABLE accounts (under section 529A), IRA, Coverdell ESA, Archer MSA or HSA contributions or distributions, and pension distributions.</span> You must give your correct TIN, but you do not have to sign the certification.</p>
             
             <h2 class="font-bold text-[18px] mb-2 mt-4 border-t-[2px] border-black pt-1">What Name and Number To Give the Requester</h2>
@@ -4122,8 +4122,8 @@ export function w9Html(data: Record<string, string>): string {
                 <tr><td class="border border-black p-1">15. Grantor trust filing Form 1041 or under the Optional Filing Method 2</td><td class="border border-black p-1">The trust</td></tr>
             </table>
             
-            <p class="mb-1 mt-2 text-[9.5px]"><sup>1</sup> List first and circle the name of the person whose number you furnish. If only one person on a joint account has an SSN, that person’s number must be furnished.</p>
-            <p class="mb-1 text-[9.5px]"><sup>2</sup> Circle the minor’s name and furnish the minor’s SSN.</p>
+            <p class="mb-1 mt-2 text-[9.5px]"><sup>1</sup> List first and circle the name of the person whose number you furnish. If only one person on a joint account has an SSN, that personâ€™s number must be furnished.</p>
+            <p class="mb-1 text-[9.5px]"><sup>2</sup> Circle the minorâ€™s name and furnish the minorâ€™s SSN.</p>
             <p class="mb-1 text-[9.5px]"><sup>3</sup> You must show your individual name on line 1, and enter your business or DBA name, if any, on line 2. You may use either your SSN or EIN (if you have one), but the IRS encourages you to use your SSN.</p>
             <p class="mb-1 text-[9.5px]"><sup>4</sup> List first and circle the name of the trust, estate, or pension trust. (Do not furnish the TIN of the personal representative or trustee unless the legal entity itself is not designated in the account title.)</p>
             <p class="mb-1 text-[9.5px]">* <span class="font-bold">Note:</span> The grantor must also provide a Form W-9 to the trustee of the trust.</p>
@@ -4170,7 +4170,7 @@ export function w9Html(data: Record<string, string>): string {
 export const fenceFields: ContractField[] = [
   { key: "clientAddress", label: "Location", type: "text" },
   { key: "clientPhone", label: "Phone", type: "text" },
-  { key: "serviceType", label: "Service", type: "text" },
+  { key: "clientEmail", label: "Email", type: "text" },
   { key: "paymentTerms", label: "Payments", type: "text" },
   { key: "clientName", label: "Customer Name", type: "text" },
   { key: "clientBillingAddress", label: "Customer Address", type: "text" },
@@ -4637,8 +4637,8 @@ export function fenceHtml(data: Record<string, string>): string {
             </div>
             <div class="contact-row">
                 <div class="icon-circle">&#9993;</div>
-                <div class="contact-label">Service:</div>
-                <div class="contact-value">${d("serviceType")}</div>
+                <div class="contact-label">Email:</div>
+                <div class="contact-value">${d("clientEmail")}</div>
             </div>
             <div class="contact-row">
                 <div class="icon-circle">&#36;</div>
@@ -4736,3 +4736,4 @@ const templates: ContractTemplate[] = [
 export function getTemplatesByProjectTypes(projectTypeNames: string[]): ContractTemplate[] {
     return templates;
 }
+
