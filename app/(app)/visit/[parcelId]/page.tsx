@@ -158,10 +158,15 @@ export default function VisitPage() {
   }
 
   function makeBillData(billImageUrl: string, idDocUrl: string) {
+    // Always preserve existing URLs if no new file was uploaded
+    const existingUrl = billPreview || "";
+    const existingId = idPreview || "";
     return {
       phone: phone.trim(), clientName: clientName.trim() || null, clientEmail: clientEmail.trim() || null,
-      imageUrl: billImageUrl || null, notes: notes.trim() || null,
-      additionalFileUrl: idDocUrl || null, additionalFileName: idFile?.name || null,
+      imageUrl: billFile ? billImageUrl : (existingUrl || null),
+      notes: notes.trim() || null,
+      additionalFileUrl: idFile ? idDocUrl : (existingId || null),
+      additionalFileName: idFile?.name || null,
     };
   }
 
@@ -182,6 +187,7 @@ export default function VisitPage() {
     if (mode === 'potential') {
       if (!selectedScheduleDate || !selectedScheduleTime) { toast.error("Debes seleccionar fecha y hora para agendar"); return; }
       if (showCloserDropdown && !selectedCloserId) { toast.error("Debes seleccionar un Closer"); return; }
+      if (selectedProjectTypes.length === 0) { toast.error("Debes seleccionar al menos un tipo de proyecto"); return; }
     }
     setSaving(true);
     try {

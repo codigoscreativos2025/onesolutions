@@ -114,6 +114,11 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
       setLoading(false);
       return;
     }
+    if (selectedProjects.length === 0) {
+      toast.error("Selecciona al menos un tipo de proyecto");
+      setLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch('/api/leads/create-manual', {
