@@ -58,6 +58,7 @@ export async function POST(request: Request) {
       "roofCostPrice", "roofSalePrice", "roofCommission",
       "waterCostPrice", "waterSalePrice", "waterCommission",
       "otherCostPrice", "otherSalePrice", "otherCommission",
+      "generalCostPrice", "generalSalePrice",
     ];
     for (const key of numericFields) {
       if (processedDetails[key] !== undefined && processedDetails[key] !== "" && processedDetails[key] !== null) {
@@ -79,6 +80,7 @@ export async function POST(request: Request) {
       "nocUrl", "materialsOrderUrl", "roofReportUrl", "exteriorScopeUrl", "propertyPhotosJson",
       "waterSystemType", "waterCostPrice", "waterSalePrice", "waterCommission",
       "otherCostPrice", "otherSalePrice", "otherCommission", "clientIncentive",
+      "generalCostPrice", "generalSalePrice",
     ];
     const filteredDetails: Record<string, unknown> = {};
     for (const key of validFields) {
@@ -142,6 +144,7 @@ export async function PATCH(request: Request) {
       "roofCostPrice", "roofSalePrice", "roofCommission",
       "waterCostPrice", "waterSalePrice", "waterCommission",
       "otherCostPrice", "otherSalePrice", "otherCommission",
+      "generalCostPrice", "generalSalePrice",
     ];
     for (const key of numericFields) {
       if (processedDetails[key] !== undefined && processedDetails[key] !== "" && processedDetails[key] !== null) {

@@ -74,13 +74,16 @@ const FIELD_LABEL_MAP: Record<string, string> = {
   roofReportUrl: "Reporte de Techo",
   exteriorScopeUrl: "Exterior Scope",
   propertyPhotosJson: "Fotos de Propiedad",
-  waterSystemType: "Tipo de Sistema de Agua",
+  waterSystemType: "Tipo de Tratamiento",
   waterCostPrice: "Precio Costo Agua",
   waterSalePrice: "Precio Venta Agua",
   waterCommission: "Comisión Agua",
   otherCostPrice: "Precio Costo Otro",
   otherSalePrice: "Precio Venta Otro",
   otherCommission: "Comisión Otro",
+  generalCostPrice: "Costo",
+  generalSalePrice: "Precio Venta",
+  waterSystemType: "Tipo de Tratamiento",
 };
 
 const STAGE_LABELS: Record<string, string> = {
@@ -108,6 +111,8 @@ const COMMON_FIELDS = [
   "secondaryRepCommPct",
   "tertiaryRep",
   "tertiaryRepCommPct",
+  "generalCostPrice",
+  "generalSalePrice",
 ];
 
 const FIELD_TYPES: Record<string, string> = {
@@ -129,6 +134,9 @@ const FIELD_TYPES: Record<string, string> = {
   waterCostPrice: "number",
   waterSalePrice: "number",
   siteSurveyDate: "date",
+  waterSystemType: "select",
+  generalCostPrice: "number",
+  generalSalePrice: "number",
 };
 
 const FIELD_GROUPS: Record<string, { label: string; prefix: string }> = {
@@ -1232,13 +1240,8 @@ function FieldRow({
     return (
       <div className="space-y-1.5">
         <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">{label}</label>
-        <select
-          value={value}
-          onChange={(e) => onChange?.(field, e.target.value)}
-          onBlur={onBlur}
-          disabled={readOnly}
-          className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface transition-colors"
-        >
+        <select value={value} onChange={(e) => onChange?.(field, e.target.value)} onBlur={onBlur} disabled={readOnly}
+          className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface transition-colors">
           <option value="">Seleccionar...</option>
           <option value="Cash">Cash</option>
           <option value="Transferencia">Transferencia</option>
@@ -1249,6 +1252,22 @@ function FieldRow({
           <option value="Sunrise Capital">Sunrise Capital</option>
           <option value="Foundations Finance">Foundations Finance</option>
           <option value="Otro">Otro</option>
+        </select>
+      </div>
+    );
+  }
+
+  if (field === "waterSystemType") {
+    return (
+      <div className="space-y-1.5">
+        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">{label}</label>
+        <select value={value} onChange={(e) => onChange?.(field, e.target.value)} onBlur={onBlur} disabled={readOnly}
+          className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface transition-colors">
+          <option value="">Seleccionar...</option>
+          <option value="Sistema completo">Sistema completo</option>
+          <option value="Softener">Softener</option>
+          <option value="R.O">R.O</option>
+          <option value="Sistema de pozo">Sistema de pozo</option>
         </select>
       </div>
     );
