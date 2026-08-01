@@ -31,13 +31,30 @@ interface Parcel {
 
 const defaultCenter: [number, number] = [32.7767, -96.7970];
 
-export default function MapView({ center }: { center?: [number, number] | null }) {
+export default function MapView({ center, autoOpenId }: { center?: [number, number] | null; autoOpenId?: string | null }) {
   const { data: session } = useSession();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const mapTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const autoOpenedRef = useRef(false);
+
+  // Auto-open parcel sheet when coming from lead details
+  useEffect(() => {
+    if (autoOpenId && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      fetch(`/api/regrid/parcels?lat=${defaultCenter[0]}&lng=${defaultCenter[1]}`)
+        .then(r => r.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            const found = data.find((p: Parcel) => p.id === autoOpenId);
+            if (found) setSelectedParcel(found);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [autoOpenId]);
   const initializedRef = useRef(false);
   const centerRef = useRef(center);
   const selectedGeometryRef = useRef<GeoJSON.Geometry | null>(null);

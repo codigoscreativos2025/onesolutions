@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Search, MapPin, Loader2 } from "lucide-react";
 
@@ -24,11 +25,24 @@ interface SearchResult {
 }
 
 export default function MapPage() {
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get("highlight");
+  const autoOpen = searchParams.get("autoOpen") === "true";
+  const [autoOpenParcel, setAutoOpenParcel] = useState<{ id: string; address: string } | null>(null);
+
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
+
+  // Auto-open parcel sheet from lead details
+  useEffect(() => {
+    if (autoOpen && highlightId) {
+      fetch(`/api/regrid/parcels?lat=${32.7767}&lng=${-96.7970}`).catch(() => {});
+      setAutoOpenParcel({ id: highlightId, address: "" });
+    }
+  }, [autoOpen, highlightId]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,7 +147,7 @@ export default function MapPage() {
       )}
 
       <div className="w-full h-[60vh] rounded-2xl bg-surface-container border border-outline-variant flex items-center justify-center overflow-hidden relative">
-        <DynamicMap center={mapCenter} />
+        <DynamicMap center={mapCenter} autoOpenId={autoOpenParcel?.id} />
       </div>
     </div>
   );
