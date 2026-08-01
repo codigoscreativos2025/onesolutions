@@ -316,6 +316,8 @@ export default function LeadDetailPage() {
 
   const [editFields, setEditFields] = useState<Record<string, string>>({});
   const hasChangesRef = useRef(false);
+  const [pendingBillFile, setPendingBillFile] = useState<File | null>(null);
+  const [pendingIdFile, setPendingIdFile] = useState<File | null>(null);
 
   // Warn on navigate away
   useEffect(() => {
@@ -977,7 +979,7 @@ export default function LeadDetailPage() {
         {activeTab === "datos" && (
           <TabContent key="datos">
             {visit.stage === "IN_PROGRESS" && (
-              <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={handleFieldChange} onUpload={handleUpload} onRefresh={fetchVisitDetails} leadTags={leadTags} notAvailTags={notAvailTags} onAddTag={handleAddLeadTag} onRemoveTag={handleRemoveLeadTag} />
+              <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={handleFieldChange} onUpload={handleUpload} onRefresh={fetchVisitDetails} leadTags={leadTags} notAvailTags={notAvailTags} onAddTag={handleAddLeadTag} onRemoveTag={handleRemoveLeadTag} onBillFileChange={setPendingBillFile} onIdFileChange={setPendingIdFile} />
             )}
 
             {visit.stage === "IN_PROGRESS" && !visit.scheduledAt && (
@@ -1180,12 +1182,25 @@ export default function LeadDetailPage() {
         <Button onClick={async () => {
           setSaving(true);
           try {
-            // Save project details
-            const payload: Record<string, unknown> = {};
-            for (const [key, value] of Object.entries(editFields)) {
-              if (key.startsWith("_bill")) continue;
-              if (value !== undefined && value !== "") payload[key] = value;
+            // Upload any pending files first
+            let billUrl = editFields.electricBillUrl || visit?.bill?.imageUrl || "";
+            let idUrl = editFields.idDocumentUrl || visit?.bill?.additionalFileUrl || "";
+            if (pendingBillFile) {
+              billUrl = await handleUpload(pendingBillFile);
+              setEditFields(prev => ({ ...prev, electricBillUrl: billUrl }));
+              setPendingBillFile(null);
             }
+            if (pendingIdFile) {
+              idUrl = await handleUpload(pendingIdFile);
+              setEditFields(prev => ({ ...prev, idDocumentUrl: idUrl }));
+              setPendingIdFile(null);
+            }
+            // Save project details
+            const payload: Record<string, unknown> = { ...editFields };
+            if (visit?.bill?.imageUrl) payload.electricBillUrl = payload.electricBillUrl || visit.bill.imageUrl;
+            if (visit?.bill?.additionalFileUrl) payload.idDocumentUrl = payload.idDocumentUrl || visit.bill.additionalFileUrl;
+            // Filter out _bill* fields
+            Object.keys(payload).forEach(k => { if (k.startsWith("_bill")) delete payload[k]; });
             if (payload.closingDate && typeof payload.closingDate === "string")
               payload.closingDate = new Date(payload.closingDate).toISOString();
             if (payload.siteSurveyDate && typeof payload.siteSurveyDate === "string")
@@ -1196,12 +1211,14 @@ export default function LeadDetailPage() {
                 body: JSON.stringify({ visitId, ...payload }),
               });
             }
-            // Save bill data (notes, phone, etc.)
+            // Save bill data (notes, phone, file URLs, etc.)
             const billData: Record<string, string | null> = {
               phone: editFields._billPhone?.trim() || visit?.bill?.phone || "",
               clientName: editFields._billClientName?.trim() || visit?.bill?.clientName || null,
               clientEmail: editFields._billClientEmail?.trim() || visit?.bill?.clientEmail || null,
               notes: editFields._billNotes?.trim() || visit?.bill?.notes || null,
+              imageUrl: billUrl || visit?.bill?.imageUrl || null,
+              additionalFileUrl: idUrl || visit?.bill?.additionalFileUrl || null,
             };
             await fetch(`/api/visits/${visit?.id}`, {
               method: "PATCH", headers: { "Content-Type": "application/json" },
@@ -1378,6 +1395,8 @@ function DatosLeadPanel({
   notAvailTags,
   onAddTag,
   onRemoveTag,
+  onBillFileChange,
+  onIdFileChange,
 }: {
   visit: VisitDetails;
   editFields: Record<string, string>;
@@ -1388,6 +1407,8 @@ function DatosLeadPanel({
   notAvailTags: { id: number; name: string; color: string }[];
   onAddTag: (tag: { name: string; color: string }) => void;
   onRemoveTag: (tagName: string) => void;
+  onBillFileChange?: (f: File | null) => void;
+  onIdFileChange?: (f: File | null) => void;
 }) {
   const [idFile, setIdFile] = useState<File | null>(null);
   const [idPreview, setIdPreview] = useState(visit.bill?.additionalFileUrl || "");
@@ -1519,18 +1540,18 @@ function DatosLeadPanel({
             preview={idPreview}
             onChange={(e) => {
               const f = e.target.files?.[0];
-              if (f) { setIdFile(f); setIdPreview(URL.createObjectURL(f)); }
+              if (f) { setIdFile(f); setIdPreview(URL.createObjectURL(f)); onIdFileChange?.(f); }
             }}
-            onClear={() => { setIdFile(null); setIdPreview(""); }}
+            onClear={() => { setIdFile(null); setIdPreview(""); onIdFileChange?.(null); }}
           />
           <UploadField
             label="Recibo de Luz"
             preview={billPreview}
             onChange={(e) => {
               const f = e.target.files?.[0];
-              if (f) { setBillFile(f); setBillPreview(URL.createObjectURL(f)); }
+              if (f) { setBillFile(f); setBillPreview(URL.createObjectURL(f)); onBillFileChange?.(f); }
             }}
-            onClear={() => { setBillFile(null); setBillPreview(""); }}
+            onClear={() => { setBillFile(null); setBillPreview(""); onBillFileChange?.(null); }}
           />
         </div>
       </Panel>
