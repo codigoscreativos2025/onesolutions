@@ -3,6 +3,53 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 export const dynamic = 'force-dynamic';
 
+const COMMON_FIELDS = [
+  "closingDate", "paymentMethod", "primaryRep", "primaryRepCommPct",
+  "secondaryRep", "secondaryRepCommPct", "tertiaryRep", "tertiaryRepCommPct",
+  "generalCostPrice", "generalSalePrice",
+];
+
+const OPTIONAL_FIELDS = ["secondaryRep", "secondaryRepCommPct", "tertiaryRep", "tertiaryRepCommPct"];
+
+const FILE_FIELD_KEYS = new Set([
+  "electricBillUrl", "closingFormUrl", "homeInsuranceUrl", "homeTitleUrl",
+  "idDocumentUrl", "nocUrl", "materialsOrderUrl", "roofReportUrl",
+  "exteriorScopeUrl", "panelsPhotoUrl", "propertyPhotosJson",
+]);
+
+function computeProgress(
+  projectDetails: Record<string, unknown> | null,
+  fieldMetasByType: Record<number, { fieldName: string }[]>,
+  projectTypeIds: number[]
+): number {
+  if (!projectDetails) return 0;
+  const requiredCommonFields = COMMON_FIELDS.filter((f) => !OPTIONAL_FIELDS.includes(f));
+  let totalFields = requiredCommonFields.length;
+  let completedFields = requiredCommonFields.filter(
+    (f) => projectDetails[f] !== undefined && projectDetails[f] !== "" && projectDetails[f] !== null
+  ).length;
+
+  for (const field of OPTIONAL_FIELDS) {
+    const val = projectDetails[field];
+    if (val !== undefined && val !== "" && val !== null) {
+      totalFields++;
+      completedFields++;
+    }
+  }
+
+  for (const ptId of projectTypeIds) {
+    const metas = fieldMetasByType[ptId] || [];
+    for (const meta of metas) {
+      if (COMMON_FIELDS.includes(meta.fieldName) || FILE_FIELD_KEYS.has(meta.fieldName)) continue;
+      totalFields++;
+      const val = projectDetails[meta.fieldName];
+      if (val !== undefined && val !== "" && val !== null) completedFields++;
+    }
+  }
+
+  return totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
+}
+
 export async function GET() {
   const session = await auth();
   if (!session?.user) {
@@ -27,8 +74,6 @@ export async function GET() {
         { closerId: currentUserId },
         { setterId: { in: [currentUserId, ...ids] } },
       ];
-    } else if (role === 'PARTNER') {
-      whereClause.parcel = { partnerId: currentUserId };
     } else if (role === 'PARTNER') {
       whereClause.parcel = { partnerId: currentUserId };
     }
@@ -62,7 +107,39 @@ export async function GET() {
       },
     });
 
-    const grouped: Record<string, typeof visits> = {
+    const allProjectTypeIds = new Set<number>();
+    for (const v of visits) {
+      for (const p of v.projects) {
+        allProjectTypeIds.add(p.projectType.id);
+      }
+    }
+
+    const fieldMetasByType: Record<number, { fieldName: string }[]> = {};
+    for (const ptId of Array.from(allProjectTypeIds)) {
+      const fields = await prisma.projectTypeField.findMany({
+        where: { projectTypeId: ptId },
+        select: { fieldName: true },
+      });
+      fieldMetasByType[ptId] = fields;
+    }
+
+    const enriched = visits.map((v) => ({
+      id: v.id,
+      stage: v.stage,
+      createdAt: v.createdAt,
+      parcel: v.parcel,
+      setter: v.setter,
+      closer: v.closer,
+      projects: v.projects,
+      projectDetails: v.projectDetails,
+      progress: computeProgress(
+        v.projectDetails as Record<string, unknown> | null,
+        fieldMetasByType,
+        v.projects.map((p) => p.projectType.id)
+      ),
+    }));
+
+    const grouped: Record<string, typeof enriched> = {
       IN_PROGRESS: [],
       PROPOSAL_ACCEPTED: [],
       PROJECT: [],
@@ -70,7 +147,7 @@ export async function GET() {
       CANCELLED: [],
     };
 
-    for (const v of visits) {
+    for (const v of enriched) {
       if (v.stage in grouped) {
         grouped[v.stage].push(v);
       }
