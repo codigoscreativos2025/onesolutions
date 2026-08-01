@@ -83,7 +83,6 @@ const FIELD_LABEL_MAP: Record<string, string> = {
   otherCommission: "Comisión Otro",
   generalCostPrice: "Costo",
   generalSalePrice: "Precio Venta",
-  waterSystemType: "Tipo de Tratamiento",
 };
 
 const STAGE_LABELS: Record<string, string> = {
