@@ -317,7 +317,13 @@ export function ParcelSheet({
         }
       }
       onVisitStarted();
-      router.push(`/visit/${navigateId}`);
+      // If lead already has visits beyond IN_PROGRESS, go to lead details
+      const latestVisit = parcel.visits?.[0];
+      if (latestVisit && latestVisit.stage && latestVisit.stage !== 'IN_PROGRESS') {
+        router.push(`/lead/${latestVisit.id}`);
+      } else {
+        router.push(`/visit/${navigateId}`);
+      }
     } catch (e) {
       setClaimError(e instanceof Error ? e.message : "Error al reclamar parcela");
     } finally {
