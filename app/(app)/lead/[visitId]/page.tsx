@@ -2217,7 +2217,6 @@ function ArchivosPanel({ visit }: { visit: VisitDetails }) {
 
   addFile(bill?.additionalFileName || "ID del Cliente", bill?.additionalFileUrl, "additionalFileUrl");
   addFile("Recibo de Luz", bill?.imageUrl, "imageUrl");
-  addFile("ID del Cliente (Proyecto)", pd.idDocumentUrl ? String(pd.idDocumentUrl) : undefined, "idDocumentUrl");
   addFile("Recibo de Luz (Proyecto)", pd.electricBillUrl ? String(pd.electricBillUrl) : undefined, "electricBillUrl");
   addFile("Seguro de Hogar", pd.homeInsuranceUrl ? String(pd.homeInsuranceUrl) : undefined, "homeInsuranceUrl");
   addFile("Título de Propiedad", pd.homeTitleUrl ? String(pd.homeTitleUrl) : undefined, "homeTitleUrl");
