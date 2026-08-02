@@ -214,10 +214,15 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
   }, [showEditModal]);
 
   const handleOpenEditModal = () => {
-    if (projectDetails) {
-      setEditForm(projectDetails);
-      setShowEditModal(true);
-    }
+    const pd = projectDetails || {};
+    const address = pd.address || selectedRoom?.visit.parcel?.address || "";
+    setEditForm({
+      ...pd,
+      address,
+      clientName: (pd.clientName || bill?.clientName || "") as string,
+      clientEmail: (pd.clientEmail || bill?.clientEmail || "") as string,
+    });
+    setShowEditModal(true);
   };
 
   const handleSaveProjectDetails = async () => {
@@ -795,6 +800,13 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
             onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
           />
 
+          <Input
+            label="Teléfono del Cliente"
+            type="tel"
+            value={(editForm.phone as string) || bill?.phone || ""}
+            onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+          />
+
           <div className="grid grid-cols-2 gap-4">
             <Input
               label="Fecha de Cierre"
@@ -860,11 +872,19 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
             </div>
           </div>
 
-          {commonFields.length > 0 && (
+          {commonFields.length > 0 && (() => {
+            const alreadyShown = new Set([
+              "clientName", "clientEmail", "address", "phone",
+              "closingDate", "paymentMethod",
+              "primaryRep", "primaryRepCommPct",
+            ]);
+            const filtered = commonFields.filter((f) => !alreadyShown.has(f.fieldName));
+            if (filtered.length === 0) return null;
+            return (
             <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-3">
               <p className="text-sm font-semibold text-on-surface">Campos Comunes</p>
               <div className="grid grid-cols-2 gap-3">
-                {commonFields.map((field) => (
+                {filtered.map((field) => (
                   <div key={field.id}>
                     {field.fieldType === "select" ? (
                       <div>
@@ -907,7 +927,8 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                 ))}
               </div>
             </div>
-          )}
+            );
+          })()}
 
           <div className="flex gap-3 pt-4">
             <Button
