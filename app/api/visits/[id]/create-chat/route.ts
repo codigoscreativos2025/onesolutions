@@ -77,7 +77,7 @@ export async function POST(
         messages: {
           create: {
             userId: userId,
-            body: `Chat creado para el proyecto en ${visit.parcel.address}. Todos los campos del proyecto están completos.`,
+            body: "Chat de proyecto creado con Exito",
           },
         },
       },
