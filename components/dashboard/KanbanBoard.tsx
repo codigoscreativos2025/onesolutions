@@ -742,7 +742,7 @@ function KanbanCard({
         );
       })()}
 
-      {visit.parcel?.parcelTags && (() => {
+      {visit.stage === "IN_PROGRESS" && visit.parcel?.parcelTags && (() => {
         try {
           const tags = JSON.parse(visit.parcel.parcelTags);
           if (Array.isArray(tags) && tags.length > 0) {
