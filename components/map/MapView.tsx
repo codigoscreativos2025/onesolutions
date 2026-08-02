@@ -90,16 +90,19 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
     }
   }, [autoOpenId]);
   const initializedRef = useRef(false);
-  const centerRef = useRef(center);
+  const centerRef = useRef<[number, number] | null | undefined>(center);
   const selectedGeometryRef = useRef<GeoJSON.Geometry | null>(null);
+
+  useEffect(() => {
+    centerRef.current = center;
+  }, [center]);
 
   const initMap = useCallback(() => {
     if (!mapContainer.current || initializedRef.current) return;
     initializedRef.current = true;
 
-    const initialCenter = center || defaultCenter;
-    centerRef.current = center;
-    const zoom = center ? 18 : 15;
+    const initialCenter = centerRef.current || defaultCenter;
+    const zoom = centerRef.current ? 18 : 15;
 
     const m = new maplibregl.Map({
       container: mapContainer.current,
@@ -316,18 +319,72 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
         }
       });
 
+      m.addSource("parcel-status-points", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+
+      m.addLayer({
+        id: "parcel-status-circles",
+        type: "circle",
+        source: "parcel-status-points",
+        minzoom: 12,
+        paint: {
+          "circle-radius": 6,
+          "circle-color": ["get", "color"],
+          "circle-opacity": 0.85,
+          "circle-stroke-color": "#ffffff",
+          "circle-stroke-width": 1.5,
+        },
+      });
+
+      const fetchStatusMarkers = async () => {
+        if (!map.current) return;
+        const bounds = map.current.getBounds();
+        const sw = bounds.getSouthWest();
+        const ne = bounds.getNorthEast();
+        try {
+          const res = await fetch(
+            `/api/parcels/in-viewport?swlat=${sw.lat}&swlng=${sw.lng}&nelat=${ne.lat}&nelng=${ne.lng}`
+          );
+          const parcels: { id: string; status: string; coordinates: [number, number] }[] = await res.json();
+          const features = parcels.map((p) => ({
+            type: "Feature" as const,
+            geometry: { type: "Point" as const, coordinates: p.coordinates },
+            properties: {
+              id: p.id,
+              color: p.status === "CUSTOMER" ? "#8b5cf6" : "#f59e0b",
+            },
+          }));
+          (map.current?.getSource("parcel-status-points") as maplibregl.GeoJSONSource)?.setData({
+            type: "FeatureCollection",
+            features,
+          });
+        } catch { /* */ }
+      };
+
+      m.on("moveend", () => {
+        fetchStatusMarkers();
+      });
+
+      fetchStatusMarkers();
+
       map.current = m;
       setMapReady(true);
     });
-  }, [center, mapReady]);
+  }, [mapReady]);
 
   useEffect(() => {
-    if (center && centerRef.current && center[0] === centerRef.current[0] && center[1] === centerRef.current[1]) {
-      return;
-    }
-    if (center && map.current) {
+    if (!center || !map.current) return;
+    const doFly = () => {
+      if (!center || !map.current) return;
       map.current.flyTo({ center: [center[1], center[0]], zoom: 18 });
       centerRef.current = center;
+    };
+    if (map.current.isStyleLoaded()) {
+      doFly();
+    } else {
+      map.current.once('style.load', doFly);
     }
   }, [center]);
 
