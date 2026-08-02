@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { X, MapPin, User, Phone, FileText, Loader2 } from 'lucide-react';
+import { X, MapPin, User, Phone, FileText, Mail, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { SlotPicker } from '@/components/calendar/SlotPicker';
@@ -35,6 +35,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
     address: '',
     ownerName: '',
     phone: '',
+    clientEmail: '',
     notes: '',
   });
 
@@ -60,6 +61,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
         address: initialAddress || "",
         ownerName: initialOwnerName || "",
         phone: "",
+        clientEmail: "",
         notes: "",
       });
       setSelectedScheduleDate("");
@@ -71,7 +73,10 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
     try {
       const res = await fetch('/api/project-types');
       const data = await res.json();
-      setProjectTypes(data);
+      const filtered = Array.isArray(data)
+        ? data.filter((p: ProjectType) => p.name !== "Campos Comunes")
+        : data;
+      setProjectTypes(filtered);
     } catch (error) {
       console.error('Error fetching project types:', error);
     }
@@ -138,7 +143,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
         toast.success('Lead creado correctamente');
         onSuccess();
         onClose();
-        setFormData({ address: '', ownerName: '', phone: '', notes: '' });
+        setFormData({ address: '', ownerName: '', phone: '', clientEmail: '', notes: '' });
         setSelectedProjects([]);
         setSelectedCloserId('');
         setSelectedScheduleDate('');
@@ -221,6 +226,19 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
               type="tel"
               inputMode="tel"
               pattern="[0-9\-\+\(\) ]*"
+            />
+          </div>
+
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <Mail className="w-4 h-4" />
+              Email
+            </label>
+            <Input
+              value={formData.clientEmail}
+              onChange={(e) => setFormData({ ...formData, clientEmail: e.target.value })}
+              placeholder="cliente@ejemplo.com"
+              type="email"
             />
           </div>
 

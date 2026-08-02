@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { address, ownerName, phone, notes, projectTypeIds, setterId, closerId, scheduledDate } = body;
+    const { address, ownerName, phone, notes, clientEmail, projectTypeIds, setterId, closerId, scheduledDate } = body;
 
     if (!address) {
       return NextResponse.json({ error: 'Address is required' }, { status: 400 });
@@ -66,6 +66,24 @@ export async function POST(request: Request) {
         scheduledAt: scheduledDate ? new Date(scheduledDate) : null,
       },
     });
+
+    // Crear los projectDetails
+    await prisma.projectDetails.create({
+      data: {
+        visitId: visit.id,
+        clientName: ownerName || null,
+        clientEmail: clientEmail || null,
+        address: address || null,
+      },
+    });
+
+    if (phone) {
+      await prisma.bill.upsert({
+        where: { visitId: visit.id },
+        update: { phone },
+        create: { visitId: visit.id, phone },
+      });
+    }
 
     // Crear los proyectos seleccionados
     if (projectTypeIds && projectTypeIds.length > 0) {
