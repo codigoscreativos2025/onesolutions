@@ -382,9 +382,14 @@ export default function LeadDetailPage() {
     }
     if (visit.bill) {
       if (visit.bill.clientName) fields._billClientName = visit.bill.clientName;
+      else if (pd.clientName) fields._billClientName = String(pd.clientName);
       if (visit.bill.clientEmail) fields._billClientEmail = visit.bill.clientEmail;
+      else if (pd.clientEmail) fields._billClientEmail = String(pd.clientEmail);
       if (visit.bill.phone) fields._billPhone = visit.bill.phone;
       if (visit.bill.notes) fields._billNotes = visit.bill.notes;
+    } else {
+      if (pd.clientName) fields._billClientName = String(pd.clientName);
+      if (pd.clientEmail) fields._billClientEmail = String(pd.clientEmail);
     }
     setEditFields(fields);
   }, [visit]);
@@ -407,6 +412,26 @@ export default function LeadDetailPage() {
         }
       } catch { /* skip */ }
     }
+
+    try {
+      const typesRes = await fetch("/api/project-types");
+      const types = await typesRes.json();
+      const commons = Array.isArray(types)
+        ? types.find((t: { id: number; name: string }) => t.name === "Campos Comunes")
+        : null;
+      if (commons) {
+        const res = await fetch(`/api/admin/project-type-fields?projectTypeId=${commons.id}`);
+        const fields = await res.json();
+        if (Array.isArray(fields)) {
+          for (const f of fields) {
+            if (!allMetas.some((m) => m.fieldName === f.fieldName)) {
+              allMetas.push(f);
+            }
+          }
+        }
+      }
+    } catch { /* skip */ }
+
     setFieldMetas(allMetas);
     setFieldMetasByProject(byProject);
   }, [visit?.projects]);

@@ -77,11 +77,20 @@ export async function POST(request: Request) {
       },
     });
 
-    if (phone) {
+    if (phone || ownerName || clientEmail) {
       await prisma.bill.upsert({
         where: { visitId: visit.id },
-        update: { phone },
-        create: { visitId: visit.id, phone },
+        update: {
+          phone: phone || "",
+          clientName: ownerName || null,
+          clientEmail: clientEmail || null,
+        },
+        create: {
+          visitId: visit.id,
+          phone: phone || "",
+          clientName: ownerName || null,
+          clientEmail: clientEmail || null,
+        },
       });
     }
 
