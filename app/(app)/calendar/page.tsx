@@ -475,6 +475,10 @@ export default function CalendarPage() {
   };
 
   const handleAppointmentNavigate = (visit: CalendarVisit) => {
+    if ((isSetter || isSetterJr) && visit.stage !== "IN_PROGRESS") {
+      toast.error("Este lead ya no está disponible para visitar");
+      return;
+    }
     setIsDayModalOpen(false);
     router.push(`/lead/${visit.id}`);
   };

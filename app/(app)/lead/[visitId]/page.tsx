@@ -317,13 +317,25 @@ export default function LeadDetailPage() {
 
   const [editFields, setEditFields] = useState<Record<string, string>>({});
   const hasChangesRef = useRef(false);
+  const editFieldsRef = useRef<Record<string, string>>({});
+
   const [pendingBillFile, setPendingBillFile] = useState<File | null>(null);
   const [pendingIdFile, setPendingIdFile] = useState<File | null>(null);
 
-  // Warn on navigate away
+  const handleFieldChange = (key: string, value: string) => {
+    hasChangesRef.current = true;
+    setEditFields((prev) => {
+      const next = { ...prev, [key]: value };
+      editFieldsRef.current = next;
+      return next;
+    });
+  };
+
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
-      if (hasChangesRef.current) { e.preventDefault(); e.returnValue = ""; }
+      if (hasChangesRef.current) {
+        e.preventDefault();
+      }
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
@@ -392,6 +404,7 @@ export default function LeadDetailPage() {
       if (pd.clientEmail) fields._billClientEmail = String(pd.clientEmail);
     }
     setEditFields(fields);
+    editFieldsRef.current = fields;
   }, [visit]);
 
   const fetchFieldMetas = useCallback(async () => {
@@ -504,11 +517,6 @@ export default function LeadDetailPage() {
       .catch(() => {});
   }, []);
 
-  const handleFieldChange = (key: string, value: string) => {
-    hasChangesRef.current = true;
-    setEditFields((prev) => ({ ...prev, [key]: value }));
-  };
-
   const fetchScheduleClosers = async () => {
     try {
       const res = await fetch("/api/closers");
@@ -573,11 +581,9 @@ export default function LeadDetailPage() {
     setSaving(true);
     try {
       const payload: Record<string, unknown> = {};
-      // Sync bill file URLs into payload
       if (visit?.bill?.imageUrl) payload.electricBillUrl = visit.bill.imageUrl;
       if (visit?.bill?.additionalFileUrl) payload.idDocumentUrl = visit.bill.additionalFileUrl;
-      // Save ALL edited fields (both common and specific), exclude _bill* internal fields
-      for (const [key, value] of Object.entries(editFields)) {
+      for (const [key, value] of Object.entries(editFieldsRef.current)) {
         if (key.startsWith("_bill")) continue;
         if (value !== undefined && value !== "") {
           payload[key] = value;
