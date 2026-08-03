@@ -425,7 +425,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
       "generalSalePrice",
     ];
 
-    const OPTIONAL_FIELDS_CHAT = ["secondaryRep", "secondaryRepCommPct", "tertiaryRep", "tertiaryRepCommPct"];
+    const OPTIONAL_FIELDS_CHAT = ["secondaryRep", "secondaryRepCommPct", "tertiaryRep", "tertiaryRepCommPct", "generalCostPrice", "generalSalePrice"];
 
     const FILE_FIELD_KEYS_CHAT = new Set([
       "electricBillUrl",

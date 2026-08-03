@@ -219,6 +219,21 @@ model ProjectDetails {
   otherSalePrice    Float?
   otherCommission   Float?
 
+  // Cercas / Vallas
+  fenceCostPrice    Float?
+  fenceSalePrice    Float?
+  fenceCommission   Float?
+
+  // Canaletas
+  gutterCostPrice   Float?
+  gutterSalePrice   Float?
+  gutterCommission  Float?
+
+  // Remodelaciones
+  remodelacionCostPrice  Float?
+  remodelacionSalePrice  Float?
+  remodelacionCommission Float?
+
   // Campos generales para todos los proyectos
   generalCostPrice  Float?
   generalSalePrice  Float?

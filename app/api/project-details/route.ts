@@ -58,6 +58,9 @@ export async function POST(request: Request) {
       "roofCostPrice", "roofSalePrice", "roofCommission",
       "waterCostPrice", "waterSalePrice", "waterCommission",
       "otherCostPrice", "otherSalePrice", "otherCommission",
+      "fenceCostPrice", "fenceSalePrice", "fenceCommission",
+      "gutterCostPrice", "gutterSalePrice", "gutterCommission",
+      "remodelacionCostPrice", "remodelacionSalePrice", "remodelacionCommission",
       "generalCostPrice", "generalSalePrice",
     ];
     for (const key of numericFields) {
@@ -80,6 +83,9 @@ export async function POST(request: Request) {
       "nocUrl", "materialsOrderUrl", "roofReportUrl", "exteriorScopeUrl", "propertyPhotosJson",
       "waterSystemType", "waterCostPrice", "waterSalePrice", "waterCommission",
       "otherCostPrice", "otherSalePrice", "otherCommission", "clientIncentive",
+      "fenceCostPrice", "fenceSalePrice", "fenceCommission",
+      "gutterCostPrice", "gutterSalePrice", "gutterCommission",
+      "remodelacionCostPrice", "remodelacionSalePrice", "remodelacionCommission",
       "generalCostPrice", "generalSalePrice",
     ];
     const filteredDetails: Record<string, unknown> = {};
@@ -144,6 +150,9 @@ export async function PATCH(request: Request) {
       "roofCostPrice", "roofSalePrice", "roofCommission",
       "waterCostPrice", "waterSalePrice", "waterCommission",
       "otherCostPrice", "otherSalePrice", "otherCommission",
+      "fenceCostPrice", "fenceSalePrice", "fenceCommission",
+      "gutterCostPrice", "gutterSalePrice", "gutterCommission",
+      "remodelacionCostPrice", "remodelacionSalePrice", "remodelacionCommission",
       "generalCostPrice", "generalSalePrice",
     ];
     for (const key of numericFields) {

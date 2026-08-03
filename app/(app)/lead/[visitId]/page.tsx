@@ -207,7 +207,7 @@ function getTimelineColor(action: string): string {
   return "#6b7280";
 }
 
-const OPTIONAL_FIELDS = ["secondaryRep", "secondaryRepCommPct", "tertiaryRep", "tertiaryRepCommPct"];
+const OPTIONAL_FIELDS = ["secondaryRep", "secondaryRepCommPct", "tertiaryRep", "tertiaryRepCommPct", "generalCostPrice", "generalSalePrice"];
 
 function calculateProjectCompletion(
   projectDetails: Record<string, unknown> | null | undefined,

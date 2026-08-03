@@ -6,12 +6,12 @@ const PREFIX_MAP: Record<string, string> = {
   "Panel Solar": "solar",
   "Techo": "roof",
   "Purificacion de agua": "water",
-  "Fence": "other",
-  "Gutters": "other",
-  "Remodelacion": "other",
+  "Fence": "fence",
+  "Gutters": "gutter",
+  "Remodelacion": "remodelacion",
 };
 
-const VALID_PREFIXES = ["solar", "roof", "water", "other", "general"];
+const VALID_PREFIXES = ["solar", "roof", "water", "other", "general", "fence", "gutter", "remodelacion"];
 
 function isValidFieldName(fieldName: string): boolean {
   return VALID_PREFIXES.some((p) =>
@@ -43,15 +43,13 @@ async function main() {
         console.log(`Removed invalid field ${f.fieldName} from ${pt.name}`);
         cleaned++;
       }
-    }
-
-    if (prefix === "other") {
-      for (const f of existingCostFields) {
-        if (f.fieldName.toLowerCase() === "generalcostprice") {
-          await prisma.projectTypeField.delete({ where: { id: f.id } });
-          console.log(`Replaced generalCostPrice with otherCostPrice in ${pt.name}`);
-          cleaned++;
-        }
+      if (
+        prefix !== "other" &&
+        f.fieldName.toLowerCase() === "othercostprice"
+      ) {
+        await prisma.projectTypeField.delete({ where: { id: f.id } });
+        console.log(`Removed otherCostPrice from ${pt.name} (has own prefix now)`);
+        cleaned++;
       }
     }
 
@@ -92,6 +90,14 @@ async function main() {
       if (!isValidFieldName(f.fieldName)) {
         await prisma.projectTypeField.delete({ where: { id: f.id } });
         console.log(`Removed invalid field ${f.fieldName} from ${pt.name}`);
+        cleaned++;
+      }
+      if (
+        prefix !== "other" &&
+        f.fieldName.toLowerCase() === "othersalePrice"
+      ) {
+        await prisma.projectTypeField.delete({ where: { id: f.id } });
+        console.log(`Removed otherSalePrice from ${pt.name} (has own prefix now)`);
         cleaned++;
       }
     }

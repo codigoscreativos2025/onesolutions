@@ -9,7 +9,7 @@ const COMMON_FIELDS = [
   "generalCostPrice", "generalSalePrice",
 ];
 
-const OPTIONAL_FIELDS = ["secondaryRep", "secondaryRepCommPct", "tertiaryRep", "tertiaryRepCommPct"];
+const OPTIONAL_FIELDS = ["secondaryRep", "secondaryRepCommPct", "tertiaryRep", "tertiaryRepCommPct", "generalCostPrice", "generalSalePrice"];
 
 const FILE_FIELD_KEYS = new Set([
   "electricBillUrl", "closingFormUrl", "homeInsuranceUrl", "homeTitleUrl",
