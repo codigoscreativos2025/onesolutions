@@ -145,6 +145,26 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
             if (Array.isArray(fields)) allMetas.push(...fields);
           } catch { /* */ }
         }
+
+        try {
+          const typesRes = await fetch("/api/project-types");
+          const types = await typesRes.json();
+          const commons = Array.isArray(types)
+            ? types.find((t: { id: number; name: string }) => t.name === "Campos Comunes")
+            : null;
+          if (commons) {
+            const res = await fetch(`/api/admin/project-type-fields?projectTypeId=${commons.id}`);
+            const fields = await res.json();
+            if (Array.isArray(fields)) {
+              for (const f of fields) {
+                if (!allMetas.some((m) => m.fieldName === f.fieldName)) {
+                  allMetas.push(f);
+                }
+              }
+            }
+          }
+        } catch { /* */ }
+
         setFieldMetas(allMetas);
       };
       fetchFieldMetas();
