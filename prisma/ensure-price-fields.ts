@@ -8,27 +8,45 @@ const PREFIX_MAP: Record<string, string> = {
   "Purificacion de agua": "water",
 };
 
+const VALID_PREFIXES = ["solar", "roof", "water", "other", "general"];
+
+function isValidFieldName(fieldName: string): boolean {
+  return VALID_PREFIXES.some((p) =>
+    fieldName.toLowerCase().startsWith(p.toLowerCase())
+  );
+}
+
 async function main() {
   const projectTypes = await prisma.projectType.findMany({
     where: { name: { not: "Campos Comunes" } },
   });
 
   let added = 0;
+  let cleaned = 0;
 
   for (const pt of projectTypes) {
-    const prefix = PREFIX_MAP[pt.name] || pt.name.toLowerCase().replace(/\s+/g, "").slice(0, 15);
+    const prefix = PREFIX_MAP[pt.name] || "general";
 
-    const existingFields = await prisma.projectTypeField.findMany({
+    const existingCostFields = await prisma.projectTypeField.findMany({
       where: {
         projectTypeId: pt.id,
         fieldName: { contains: "CostPrice" },
       },
     });
 
-    const hasCost = existingFields.some((f) =>
-      f.fieldName.toLowerCase().endsWith("costprice")
+    for (const f of existingCostFields) {
+      if (!isValidFieldName(f.fieldName)) {
+        await prisma.projectTypeField.delete({ where: { id: f.id } });
+        console.log(`Removed invalid field ${f.fieldName} from ${pt.name}`);
+        cleaned++;
+      }
+    }
+
+    const hasValidCost = existingCostFields.some(
+      (f) => f.fieldName.toLowerCase() === `${prefix.toLowerCase()}costprice`
     );
-    if (!hasCost) {
+
+    if (!hasValidCost) {
       await prisma.projectTypeField.upsert({
         where: {
           projectTypeId_fieldName: {
@@ -50,17 +68,26 @@ async function main() {
       added++;
     }
 
-    const existingSale = await prisma.projectTypeField.findMany({
+    const existingSaleFields = await prisma.projectTypeField.findMany({
       where: {
         projectTypeId: pt.id,
         fieldName: { contains: "SalePrice" },
       },
     });
 
-    const hasSale = existingSale.some((f) =>
-      f.fieldName.toLowerCase().endsWith("saleprice")
+    for (const f of existingSaleFields) {
+      if (!isValidFieldName(f.fieldName)) {
+        await prisma.projectTypeField.delete({ where: { id: f.id } });
+        console.log(`Removed invalid field ${f.fieldName} from ${pt.name}`);
+        cleaned++;
+      }
+    }
+
+    const hasValidSale = existingSaleFields.some(
+      (f) => f.fieldName.toLowerCase() === `${prefix.toLowerCase()}saleprice`
     );
-    if (!hasSale) {
+
+    if (!hasValidSale) {
       await prisma.projectTypeField.upsert({
         where: {
           projectTypeId_fieldName: {
@@ -83,7 +110,7 @@ async function main() {
     }
   }
 
-  console.log(`Done. ${added} fields added.`);
+  console.log(`Done. ${added} fields added, ${cleaned} invalid fields removed.`);
   await prisma.$disconnect();
 }
 
