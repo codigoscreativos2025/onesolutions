@@ -6,6 +6,9 @@ const PREFIX_MAP: Record<string, string> = {
   "Panel Solar": "solar",
   "Techo": "roof",
   "Purificacion de agua": "water",
+  "Fence": "other",
+  "Gutters": "other",
+  "Remodelacion": "other",
 };
 
 const VALID_PREFIXES = ["solar", "roof", "water", "other", "general"];
@@ -39,6 +42,16 @@ async function main() {
         await prisma.projectTypeField.delete({ where: { id: f.id } });
         console.log(`Removed invalid field ${f.fieldName} from ${pt.name}`);
         cleaned++;
+      }
+    }
+
+    if (prefix === "other") {
+      for (const f of existingCostFields) {
+        if (f.fieldName.toLowerCase() === "generalcostprice") {
+          await prisma.projectTypeField.delete({ where: { id: f.id } });
+          console.log(`Replaced generalCostPrice with otherCostPrice in ${pt.name}`);
+          cleaned++;
+        }
       }
     }
 
@@ -80,6 +93,16 @@ async function main() {
         await prisma.projectTypeField.delete({ where: { id: f.id } });
         console.log(`Removed invalid field ${f.fieldName} from ${pt.name}`);
         cleaned++;
+      }
+    }
+
+    if (prefix === "other") {
+      for (const f of existingSaleFields) {
+        if (f.fieldName.toLowerCase() === "generalsaleprice") {
+          await prisma.projectTypeField.delete({ where: { id: f.id } });
+          console.log(`Replaced generalSalePrice with otherSalePrice in ${pt.name}`);
+          cleaned++;
+        }
       }
     }
 
