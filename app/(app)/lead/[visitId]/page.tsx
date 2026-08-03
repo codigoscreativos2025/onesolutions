@@ -1672,7 +1672,7 @@ function DatosProjectFieldsPanel({
     if (editFields[key] !== undefined) return editFields[key];
     const val = pd[key];
     if (val === undefined || val === null) return "";
-    if (key === "closingDate" && typeof val === "string") return val.split("T")[0];
+    if ((key === "closingDate" || key === "siteSurveyDate") && typeof val === "string") return val.split("T")[0];
     return String(val);
   };
 
@@ -1799,7 +1799,7 @@ function DatosProjectPanel({
     if (editFields[key] !== undefined) return editFields[key];
     const val = pd[key];
     if (val === undefined || val === null) return "";
-    if (key === "closingDate" && typeof val === "string") return val.split("T")[0];
+    if ((key === "closingDate" || key === "siteSurveyDate") && typeof val === "string") return val.split("T")[0];
     return String(val);
   };
 

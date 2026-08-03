@@ -115,6 +115,13 @@ export async function GET() {
       }
     }
 
+    const commonsId = (await prisma.projectType.findFirst({
+      where: { name: "Campos Comunes" },
+      select: { id: true },
+    }))?.id;
+
+    if (commonsId) allProjectTypeIds.add(commonsId);
+
     const fieldMetasByType: Record<number, { fieldName: string }[]> = {};
     for (const ptId of Array.from(allProjectTypeIds)) {
       const fields = await prisma.projectTypeField.findMany({
@@ -123,6 +130,10 @@ export async function GET() {
       });
       fieldMetasByType[ptId] = fields;
     }
+
+    const commonsFieldNames = commonsId
+      ? (fieldMetasByType[commonsId] || []).map((f) => f.fieldName)
+      : [];
 
     const enriched = visits.map((v) => ({
       id: v.id,
@@ -136,11 +147,9 @@ export async function GET() {
       progress: computeProgress(
         v.projectDetails as Record<string, unknown> | null,
         fieldMetasByType,
-        v.projects.map((p) => p.projectType.id)
+        [...v.projects.map((p) => p.projectType.id), ...(commonsId ? [commonsId] : [])]
       ),
-    }));
-
-    const grouped: Record<string, typeof enriched> = {
+    }));    const grouped: Record<string, typeof enriched> = {
       IN_PROGRESS: [],
       PROPOSAL_ACCEPTED: [],
       PROJECT: [],
