@@ -85,10 +85,42 @@ export async function GET(request: Request) {
       visit.parcel.ownerName ||
       "";
 
-    const fmtDate = (d: Date | string | null | undefined): string => {
+    const rawDate = (d: Date | string | null | undefined): string => {
       if (!d) return "";
       try {
         const date = new Date(d);
+        if (isNaN(date.getTime())) return "";
+        if (date.toISOString().endsWith("T00:00:00.000Z")) {
+           return date.toISOString().split('T')[0];
+        }
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      } catch {
+        return "";
+      }
+    };
+
+    const fmtDate = (d: Date | string | null | undefined): string => {
+      if (!d) return "";
+      try {
+        let date: Date;
+        if (typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
+          const [year, month, day] = d.split('-').map(Number);
+          date = new Date(year, month - 1, day);
+        } else {
+          date = new Date(d);
+          if (isNaN(date.getTime())) return "";
+          if (date.toISOString().endsWith("T00:00:00.000Z")) {
+             return date.toLocaleDateString("en-GB", {
+                timeZone: "UTC",
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              });
+          }
+        }
         return date.toLocaleDateString("en-GB", {
           day: "numeric",
           month: "long",
@@ -122,7 +154,7 @@ export async function GET(request: Request) {
       const data: Record<string, string> = {};
       data.clientName = clientName;
       data.clientEmail = visit.bill?.clientEmail || details?.clientEmail || "";
-      data.date = fmtDate(details?.closingDate) || fmtDate(new Date());
+      data.date = rawDate(details?.closingDate) || rawDate(new Date());
 
       if (template.projectType === "Techo" || template.projectType === "Flat Roofing") {
         data.roofColor = "";
@@ -156,7 +188,7 @@ export async function GET(request: Request) {
       if (template.projectType === "Fence") {
         data.clientName = clientName;
         data.clientAddress = visit.parcel.address || "";
-        data.date = fmtDate(details?.closingDate) || fmtDate(new Date());
+        data.date = rawDate(details?.closingDate) || rawDate(new Date());
         data.clientPhone = visit.bill?.phone || "";
         data.serviceType = "";
         data.paymentTerms = "";
@@ -178,16 +210,17 @@ export async function GET(request: Request) {
         Object.assign(data, typeFields);
       }
 
+      const htmlData = { ...data };
       template.fields.forEach(f => {
-        if (f.type === "date" && data[f.key] && /^\d{4}-\d{2}-\d{2}$/.test(data[f.key])) {
-          data[f.key] = fmtDate(data[f.key]);
+        if (f.type === "date" && htmlData[f.key]) {
+          htmlData[f.key] = fmtDate(htmlData[f.key]);
         }
       });
 
       return {
         type: template.projectType,
         name: template.name,
-        html: template.html(data),
+        html: template.html(htmlData),
         fields: template.fields,
         data,
         allowSigning: visit.stage !== "PROPOSAL_ACCEPTED" && visit.stage !== "IN_PROGRESS",
@@ -277,10 +310,42 @@ export async function POST(request: Request) {
       visit.parcel.ownerName ||
       "";
 
-    const fmtDate = (d: Date | string | null | undefined): string => {
+    const rawDate = (d: Date | string | null | undefined): string => {
       if (!d) return "";
       try {
         const date = new Date(d);
+        if (isNaN(date.getTime())) return "";
+        if (date.toISOString().endsWith("T00:00:00.000Z")) {
+           return date.toISOString().split('T')[0];
+        }
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      } catch {
+        return "";
+      }
+    };
+
+    const fmtDate = (d: Date | string | null | undefined): string => {
+      if (!d) return "";
+      try {
+        let date: Date;
+        if (typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
+          const [year, month, day] = d.split('-').map(Number);
+          date = new Date(year, month - 1, day);
+        } else {
+          date = new Date(d);
+          if (isNaN(date.getTime())) return "";
+          if (date.toISOString().endsWith("T00:00:00.000Z")) {
+             return date.toLocaleDateString("en-GB", {
+                timeZone: "UTC",
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              });
+          }
+        }
         return date.toLocaleDateString("en-GB", {
           day: "numeric",
           month: "long",
@@ -314,7 +379,7 @@ export async function POST(request: Request) {
       const data: Record<string, string> = {};
       data.clientName = clientName;
       data.clientEmail = visit.bill?.clientEmail || details?.clientEmail || "";
-      data.date = fmtDate(details?.closingDate) || fmtDate(new Date());
+      data.date = rawDate(details?.closingDate) || rawDate(new Date());
 
       if (template.projectType === "Techo" || template.projectType === "Flat Roofing") {
         data.roofColor = "";
@@ -348,7 +413,7 @@ export async function POST(request: Request) {
       if (template.projectType === "Fence") {
         data.clientName = clientName;
         data.clientAddress = visit.parcel.address || "";
-        data.date = fmtDate(details?.closingDate) || fmtDate(new Date());
+        data.date = rawDate(details?.closingDate) || rawDate(new Date());
         data.clientPhone = visit.bill?.phone || "";
         data.serviceType = "";
         data.paymentTerms = "";
@@ -374,16 +439,17 @@ export async function POST(request: Request) {
         Object.assign(data, fieldValues);
       }
 
+      const htmlData = { ...data };
       template.fields.forEach(f => {
-        if (f.type === "date" && data[f.key] && /^\d{4}-\d{2}-\d{2}$/.test(data[f.key])) {
-          data[f.key] = fmtDate(data[f.key]);
+        if (f.type === "date" && htmlData[f.key]) {
+          htmlData[f.key] = fmtDate(htmlData[f.key]);
         }
       });
 
       return {
         type: template.projectType,
         name: template.name,
-        html: template.html(data),
+        html: template.html(htmlData),
         fields: template.fields,
         data,
         allowSigning: visit.stage !== "PROPOSAL_ACCEPTED" && visit.stage !== "IN_PROGRESS",

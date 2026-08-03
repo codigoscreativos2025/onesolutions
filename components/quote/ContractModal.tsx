@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, FileText, X, Download, PenLine, Check, ChevronDown, ChevronUp, Pencil, Send } from "lucide-react";
+import { Loader2, FileText, X, Download, PenLine, Check, ChevronDown, ChevronUp, Pencil, Send, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SignatureCanvas } from "./SignatureCanvas";
 import { toast } from "sonner";
@@ -51,6 +51,7 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
   const [showSendEmail, setShowSendEmail] = useState(false);
   const [sendToEmail, setSendToEmail] = useState("");
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [showEmailWarning, setShowEmailWarning] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const contractContentRef = useRef<HTMLDivElement>(null);
 
@@ -225,6 +226,21 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
   };
 
   const handleSaveFields = async () => {
+    const invalidEmails: string[] = [];
+    nonSignatureFields.forEach(f => {
+      const isEmail = f.type === "email" || f.key.toLowerCase().includes("email") || f.label.toLowerCase().includes("email");
+      if (isEmail && fieldValues[f.key]) {
+        if (!fieldValues[f.key].toLowerCase().endsWith("@gmail.com")) {
+          invalidEmails.push(f.label);
+        }
+      }
+    });
+
+    if (invalidEmails.length > 0) {
+      setShowEmailWarning(true);
+      return;
+    }
+
     setSavingFields(true);
     try {
       const res = await fetch(`/api/visits/${visitId}`, {
@@ -286,8 +302,18 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
       styleEl.innerHTML = `
         .contract-html {
           color: #000000 !important;
+          padding-bottom: 40px !important;
         }
-        h2, h3, p, li, table, tr, .signature-block, .highlight-box, .cancellation-box, .client-info, .customer-info, .signatures-container, .mini-col, .section-row, .flex.gap-\\[1px\\] {
+        .w9-container {
+          padding: 0 !important;
+        }
+        .signature-box {
+          margin-top: 20px !important;
+        }
+        .sig-line {
+          margin-bottom: 20px !important;
+        }
+        h2, h3, p, li, table, tr, .signature-block, .highlight-box, .cancellation-box, .client-info, .customer-info, .signatures-container, .mini-col, .section-row, .flex.gap-\\[1px\\], .fence-container, .footer-bar, .orange-bar, .details-total-container {
           page-break-inside: avoid !important;
           break-inside: avoid !important;
         }
@@ -359,8 +385,18 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
       styleEl.innerHTML = `
         .contract-html {
           color: #000000 !important;
+          padding-bottom: 40px !important;
         }
-        h2, h3, p, li, table, tr, .signature-block, .highlight-box, .cancellation-box, .client-info, .customer-info, .signatures-container, .mini-col, .section-row, .flex.gap-\\[1px\\] {
+        .w9-container {
+          padding: 0 !important;
+        }
+        .signature-box {
+          margin-top: 10px !important;
+        }
+        .sig-line {
+          margin-bottom: 20px !important;
+        }
+        h2, h3, p, li, table, tr, .signature-block, .highlight-box, .cancellation-box, .client-info, .customer-info, .signatures-container, .mini-col, .section-row, .flex.gap-\\[1px\\], .fence-container, .footer-bar, .orange-bar, .details-total-container {
           page-break-inside: avoid !important;
           break-inside: avoid !important;
         }
@@ -409,10 +445,37 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
     }
   };
 
-  const renderFieldInput = (field: { key: string; label: string; type: string }) => {
+  const renderFieldInput = (field: { key: string; label: string; type: string; options?: {label: string, value: string}[] }) => {
     const value = fieldValues[field.key] ?? "";
     const baseClass = "w-full px-3 py-2 rounded-lg bg-white border border-outline-variant focus:border-primary outline-none text-on-surface text-sm";
 
+    if (field.type === "select") {
+      return (
+        <select
+          value={value}
+          onChange={(e) => handleFieldChange(field.key, e.target.value)}
+          className={baseClass}
+        >
+          <option value="">Seleccionar...</option>
+          {field.options?.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      );
+    }
+    if (field.type === "checkbox") {
+      return (
+        <div className="flex items-center gap-2 mt-2">
+          <input
+            type="checkbox"
+            checked={value === "true"}
+            onChange={(e) => handleFieldChange(field.key, e.target.checked ? "true" : "")}
+            className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary"
+          />
+          <span className="text-sm text-on-surface">Sí</span>
+        </div>
+      );
+    }
     if (field.type === "date") {
       return (
         <input
@@ -752,6 +815,24 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
             )}
 
           </motion.div>
+
+          {/* Email Warning Modal */}
+          {showEmailWarning && (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+              <div className="bg-white rounded-xl max-w-sm w-full p-6 text-center shadow-2xl relative">
+                <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertTriangle className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold mb-2 text-gray-900">Dominio Inválido</h3>
+                <p className="text-gray-600 mb-6 text-sm">
+                  Los campos de correo electrónico deben terminar obligatoriamente en <strong>@gmail.com</strong> para poder guardarse.
+                </p>
+                <Button onClick={() => setShowEmailWarning(false)} className="w-full">
+                  Entendido
+                </Button>
+              </div>
+            </div>
+          )}
         </motion.div>
       )}
     </AnimatePresence>

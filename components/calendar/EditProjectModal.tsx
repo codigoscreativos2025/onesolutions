@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, Save } from 'lucide-react';
+import { X, Save, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 
@@ -31,6 +31,7 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [projectFields, setProjectFields] = useState<{ typeName: string; fields: ProjectTypeField[] }[]>([]);
+  const [showEmailWarning, setShowEmailWarning] = useState(false);
 
   useEffect(() => {
     if (isOpen && visitId) {
@@ -113,6 +114,29 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
 
   const handleSave = async () => {
     if (!visitId) return;
+
+    const invalidEmails: string[] = [];
+    if (projectDetails.clientEmail && typeof projectDetails.clientEmail === "string") {
+      if (!projectDetails.clientEmail.toLowerCase().endsWith("@gmail.com")) {
+        invalidEmails.push("Email del Cliente");
+      }
+    }
+
+    projectFields.forEach(group => {
+      group.fields.forEach(f => {
+        if (f.fieldType === "email" || f.fieldName.toLowerCase().includes("email") || f.fieldLabel.toLowerCase().includes("email")) {
+          const val = projectDetails[f.fieldName];
+          if (val && typeof val === "string" && !val.toLowerCase().endsWith("@gmail.com")) {
+            invalidEmails.push(f.fieldLabel);
+          }
+        }
+      });
+    });
+
+    if (invalidEmails.length > 0) {
+      setShowEmailWarning(true);
+      return;
+    }
     
     setSaving(true);
     try {
@@ -336,6 +360,24 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
             )}
           </Button>
         </div>
+        </div>
+        {/* Email Warning Modal */}
+        {showEmailWarning && (
+          <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-xl max-w-sm w-full p-6 text-center shadow-2xl">
+              <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">Dominio Inválido</h3>
+              <p className="text-gray-600 dark:text-gray-300 mb-6 text-sm">
+                Los campos de correo electrónico deben terminar obligatoriamente en <strong>@gmail.com</strong> para poder guardarse.
+              </p>
+              <Button onClick={() => setShowEmailWarning(false)} className="w-full">
+                Entendido
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

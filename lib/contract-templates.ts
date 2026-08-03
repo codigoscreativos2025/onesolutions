@@ -1,8 +1,9 @@
 export interface ContractField {
   key: string;
   label: string;
-  type: "text" | "number" | "date" | "money" | "signature";
+  type: "text" | "number" | "date" | "money" | "signature" | "select" | "checkbox";
   defaultValue?: string;
+  options?: { label: string; value: string }[];
 }
 
 export interface ContractTemplate {
@@ -3341,40 +3342,48 @@ export function representantesHtml(data: Record<string, string>): string {
 export const w9Fields: ContractField[] = [
   { key: "name", label: "Name", type: "text" },
   { key: "businessName", label: "Business Name", type: "text" },
-  { key: "taxClassification", label: "Tax Classification", type: "text" },
-  { key: "llcTaxClassification", label: "LLC Tax Classification", type: "text" },
+  { 
+    key: "taxClassification", 
+    label: "Tax Classification", 
+    type: "select",
+    options: [
+      { label: "Individual/sole proprietor", value: "Individual/sole proprietor" },
+      { label: "C corporation", value: "C corporation" },
+      { label: "S corporation", value: "S corporation" },
+      { label: "Partnership", value: "Partnership" },
+      { label: "Trust/estate", value: "Trust/estate" },
+      { label: "LLC", value: "LLC" },
+      { label: "Other", value: "Other" }
+    ]
+  },
+  { 
+    key: "llcTaxClassification", 
+    label: "LLC Tax Classification (C, S, or P)", 
+    type: "select",
+    options: [
+      { label: "C = C corporation", value: "C" },
+      { label: "S = S corporation", value: "S" },
+      { label: "P = Partnership", value: "P" }
+    ]
+  },
   { key: "otherTaxClassification", label: "Other Tax Classification", type: "text" },
-  { key: "hasForeignPartners", label: "Has Foreign Partners", type: "text" },
+  { key: "hasForeignPartners", label: "Has Foreign Partners", type: "checkbox" },
   { key: "exemptPayeeCode", label: "Exempt Payee Code", type: "text" },
   { key: "fatcaExemptionCode", label: "FATCA Exemption Code", type: "text" },
   { key: "address", label: "Address", type: "text" },
   { key: "cityStateZip", label: "City, State, Zip", type: "text" },
   { key: "requesterNameAddress", label: "Requester Name/Address", type: "text" },
   { key: "accountNumbers", label: "Account Numbers", type: "text" },
-  { key: "ssn1", label: "SSN 1", type: "text" },
-  { key: "ssn2", label: "SSN 2", type: "text" },
-  { key: "ssn3", label: "SSN 3", type: "text" },
-  { key: "ssn4", label: "SSN 4", type: "text" },
-  { key: "ssn5", label: "SSN 5", type: "text" },
-  { key: "ssn6", label: "SSN 6", type: "text" },
-  { key: "ssn7", label: "SSN 7", type: "text" },
-  { key: "ssn8", label: "SSN 8", type: "text" },
-  { key: "ssn9", label: "SSN 9", type: "text" },
-  { key: "ein1", label: "EIN 1", type: "text" },
-  { key: "ein2", label: "EIN 2", type: "text" },
-  { key: "ein3", label: "EIN 3", type: "text" },
-  { key: "ein4", label: "EIN 4", type: "text" },
-  { key: "ein5", label: "EIN 5", type: "text" },
-  { key: "ein6", label: "EIN 6", type: "text" },
-  { key: "ein7", label: "EIN 7", type: "text" },
-  { key: "ein8", label: "EIN 8", type: "text" },
-  { key: "ein9", label: "EIN 9", type: "text" },
+  { key: "ssn", label: "Social Security Number (SSN)", type: "text" },
+  { key: "ein", label: "Employer Identification Number (EIN)", type: "text" },
   { key: "signatureField", label: "Signature", type: "signature" },
   { key: "date", label: "Date", type: "date" }
 ];
 
 export function w9Html(data: Record<string, string>): string {
   const d = (k: string) => data[k] || "";
+  const ssnDigits = (d("ssn").replace(/\D/g, "") || "").padEnd(9, " ");
+  const einDigits = (d("ein").replace(/\D/g, "") || "").padEnd(9, " ");
   const imgTag = (url: string) => `<img src="${url}" class="h-8 object-contain" />`;
   
   return `<!DOCTYPE html>
@@ -3419,7 +3428,7 @@ export function w9Html(data: Record<string, string>): string {
 
         .header-title {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            font-size: 52px;
+            font-size: 46px;
             font-weight: 800;
             line-height: 0.9;
             letter-spacing: -1px;
@@ -3428,7 +3437,7 @@ export function w9Html(data: Record<string, string>): string {
         .req-box {
             border: 1px solid black;
             padding: 5px;
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 700;
         }
 
@@ -3443,7 +3452,7 @@ export function w9Html(data: Record<string, string>): string {
             top: -1px;
             background: transparent;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 12px;
             padding: 2px 4px;
         }
 
@@ -3452,7 +3461,7 @@ export function w9Html(data: Record<string, string>): string {
             padding-left: 20px;
             padding-top: 2px;
             padding-bottom: 2px;
-            font-size: 11px;
+            font-size: 9px;
         }
 
         .vertical-text-container {
@@ -3470,7 +3479,7 @@ export function w9Html(data: Record<string, string>): string {
         .vertical-text {
             transform: rotate(-90deg);
             white-space: nowrap;
-            font-size: 10px;
+            font-size: 8px;
             font-weight: bold;
         }
         
@@ -3478,7 +3487,7 @@ export function w9Html(data: Record<string, string>): string {
             background-color: black;
             color: white;
             padding: 2px 8px;
-            font-size: 15px;
+            font-size: 13px;
             font-weight: bold;
             display: inline-block;
         }
@@ -3494,7 +3503,7 @@ export function w9Html(data: Record<string, string>): string {
             border-right: 1px solid black;
             text-align: center;
             line-height: 35px;
-            font-size: 14px;
+            font-size: 12px;
         }
         .tin-digit:last-child {
             border-right: none;
@@ -3510,10 +3519,16 @@ export function w9Html(data: Record<string, string>): string {
             font-size: 10px;
             font-weight: bold;
             vertical-align: middle;
+            padding-top: 1px; /* Nudge X down to visually center it */
+        }
+        
+        .avoid-break {
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
 
         .sub-text {
-            font-size: 9px;
+            font-size: 7px;
             line-height: 1.1;
         }
     </style>
@@ -3522,24 +3537,24 @@ export function w9Html(data: Record<string, string>): string {
 
     <div class="w9-container relative">
         <!-- Header -->
-        <div class="form-header-grid">
+        <div class="form-header-grid avoid-break">
             <div class="border-r-[2px] border-black pr-2" style="width: 22%; border-right: 2px solid black; padding-right: 8px;">
                 <div class="flex items-start gap-1" style="display: flex; align-items: flex-start; gap: 4px;">
-                    <span class="text-[13px] font-bold mt-1" style="font-size: 13px; font-weight: bold; margin-top: 4px;">Form</span>
+                    <span class="text-[11px] font-bold mt-1" style="font-size: 11px; font-weight: bold; margin-top: 4px;">Form</span>
                     <span class="header-title">W-9</span>
                 </div>
-                <div class="text-[10px] mt-1" style="font-size: 10px; margin-top: 4px;">(Rev. March 2024)</div>
-                <div class="text-[9px] mt-3 leading-tight" style="font-size: 9px; margin-top: 12px; line-height: 1.25;">
+                <div class="text-[8px] mt-1" style="font-size: 8px; margin-top: 4px;">(Rev. March 2024)</div>
+                <div class="text-[7px] mt-3 leading-tight" style="font-size: 7px; margin-top: 12px; line-height: 1.25;">
                     Department of the Treasury<br>
                     Internal Revenue Service
                 </div>
             </div>
             <div class="text-center px-4 pt-1 flex flex-col justify-between" style="width: 56%; text-align: center; padding: 4px 16px; display: flex; flex-direction: column; justify-content: space-between;">
-                <div class="text-[20px] font-bold leading-tight mt-1" style="font-size: 20px; font-weight: bold; line-height: 1.25; margin-top: 4px;">
+                <div class="text-[18px] font-bold leading-tight mt-1" style="font-size: 18px; font-weight: bold; line-height: 1.25; margin-top: 4px;">
                     Request for Taxpayer<br>
                     Identification Number and Certification
                 </div>
-                <div class="text-[11px] font-bold mb-1" style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">
+                <div class="text-[9px] font-bold mb-1" style="font-size: 9px; font-weight: bold; margin-bottom: 4px;">
                     Go to <i class="font-normal" style="font-weight: normal;">www.irs.gov/FormW9</i> for instructions and the latest information.
                 </div>
             </div>
@@ -3552,7 +3567,7 @@ export function w9Html(data: Record<string, string>): string {
             </div>
         </div>
 
-        <div class="text-[12px] py-1 border-b-[2px] border-black font-bold">
+        <div class="text-[10px] py-1 border-b-[2px] border-black font-bold">
             Before you begin. <span class="font-normal">For guidance related to the purpose of Form W-9, see <i>Purpose of Form</i>, below.</span>
         </div>
 
@@ -3561,12 +3576,12 @@ export function w9Html(data: Record<string, string>): string {
             
             <div class="vertical-text-container">
                 <div class="vertical-text">
-                    <span class="font-bold text-[11px]">Print or type.</span> <span class="font-normal">See <i>Specific Instructions</i> on page 3.</span>
+                    <span class="font-bold text-[9px]">Print or type.</span> <span class="font-normal">See <i>Specific Instructions</i> on page 3.</span>
                 </div>
             </div>
 
             <!-- Line 1 -->
-            <div class="input-line border-t-0 min-h-[45px]">
+            <div class="input-line avoid-break border-t-0 min-h-[45px]">
                 <div class="number-box">1</div>
                 <div class="form-content border-b-0">
                     <span class="font-bold">Name of entity/individual.</span> An entry is required. (For a sole proprietor or disregarded entity, enter the owner's name on line 1, and enter the business/disregarded entity's name on line 2.)<br>
@@ -3575,7 +3590,7 @@ export function w9Html(data: Record<string, string>): string {
             </div>
 
             <!-- Line 2 -->
-            <div class="input-line min-h-[30px]">
+            <div class="input-line avoid-break min-h-[30px]">
                 <div class="number-box">2</div>
                 <div class="form-content border-b-0 h-full flex flex-col pb-1">
                     <span>Business name/disregarded entity name, if different from above.</span>
@@ -3584,11 +3599,11 @@ export function w9Html(data: Record<string, string>): string {
             </div>
 
             <!-- Line 3 & 4 Container -->
-            <div class="flex">
+            <div class="flex avoid-break">
                 <!-- Line 3 -->
                 <div class="w-[75%] border-r-[1px] border-black">
                     <!-- 3a -->
-                    <div class="input-line min-h-[85px] border-r-0">
+                    <div class="input-line avoid-break min-h-[85px] border-r-0">
                         <div class="number-box">3a</div>
                         <div class="form-content border-b-0 h-full">
                             Check the appropriate box for federal tax classification of the entity/individual whose name is entered on line 1. Check<br>
@@ -3616,7 +3631,7 @@ export function w9Html(data: Record<string, string>): string {
                         </div>
                     </div>
                     <!-- 3b -->
-                    <div class="input-line min-h-[40px] border-r-0">
+                    <div class="input-line avoid-break min-h-[40px] border-r-0">
                         <div class="number-box">3b</div>
                         <div class="form-content border-b-0 h-full pr-2 flex gap-2">
                             <div class="flex-grow sub-text pt-1">
@@ -3649,7 +3664,7 @@ export function w9Html(data: Record<string, string>): string {
                             <div class="border-b-[1px] border-black w-full border-solid text-center">${d("fatcaExemptionCode")}</div>
                         </div>
                         
-                        <div class="italic text-[10px] text-center mt-2 mb-1">
+                        <div class="italic text-[8px] text-center mt-2 mb-1">
                             (Applies to accounts maintained<br>outside the United States.)
                         </div>
                     </div>
@@ -3657,10 +3672,10 @@ export function w9Html(data: Record<string, string>): string {
             </div>
 
             <!-- Line 5 & 6 & Requester -->
-            <div class="flex">
+            <div class="flex avoid-break">
                 <div class="w-[65%] border-r-[1px] border-black">
                     <!-- Line 5 -->
-                    <div class="input-line min-h-[35px]">
+                    <div class="input-line avoid-break min-h-[35px]">
                         <div class="number-box">5</div>
                         <div class="form-content border-b-0 h-full flex flex-col pt-1">
                             <span>Address (number, street, and apt. or suite no.). See instructions.</span>
@@ -3668,7 +3683,7 @@ export function w9Html(data: Record<string, string>): string {
                         </div>
                     </div>
                     <!-- Line 6 -->
-                    <div class="input-line min-h-[35px]">
+                    <div class="input-line avoid-break min-h-[35px]">
                         <div class="number-box">6</div>
                         <div class="form-content border-b-0 h-full flex flex-col pt-1">
                             <span>City, state, and ZIP code</span>
@@ -3677,7 +3692,7 @@ export function w9Html(data: Record<string, string>): string {
                     </div>
                 </div>
                 <div class="w-[35%] input-line">
-                    <div class="form-content border-b-0 h-full pt-1 pl-2 text-[10px] flex flex-col">
+                    <div class="form-content border-b-0 h-full pt-1 pl-2 text-[8px] flex flex-col">
                         <span>Requesterâ€™s name and address (optional)</span>
                         <span class="mt-1 text-base">${d("requesterNameAddress")}</span>
                     </div>
@@ -3685,7 +3700,7 @@ export function w9Html(data: Record<string, string>): string {
             </div>
 
             <!-- Line 7 -->
-            <div class="input-line min-h-[35px]">
+            <div class="input-line avoid-break min-h-[35px]">
                 <div class="number-box">7</div>
                 <div class="form-content border-b-0 h-full flex flex-col pt-1">
                     <span>List account number(s) here (optional)</span>
@@ -3697,11 +3712,11 @@ export function w9Html(data: Record<string, string>): string {
         <!-- Part I -->
         <div class="mt-2 flex">
             <div class="part-header mr-2">Part I</div>
-            <div class="font-bold text-[18px]">Taxpayer Identification Number (TIN)</div>
+            <div class="font-bold text-[16px]">Taxpayer Identification Number (TIN)</div>
         </div>
         
-        <div class="flex gap-4 mt-2">
-            <div class="w-[65%] text-[11px] leading-tight">
+        <div class="flex gap-4 mt-2 avoid-break">
+            <div class="w-[65%] text-[9px] leading-tight">
                 Enter your TIN in the appropriate box. The TIN provided must match the name given on line 1 to avoid<br>
                 backup withholding. For individuals, this is generally your social security number (SSN). However, for a<br>
                 resident alien, sole proprietor, or disregarded entity, see the instructions for Part I, later. For other<br>
@@ -3712,43 +3727,43 @@ export function w9Html(data: Record<string, string>): string {
             </div>
             
             <div class="w-[35%]">
-                <div class="border-[1px] border-black border-b-0 px-2 py-1 font-bold text-[11px]">Social security number</div>
+                <div class="border-[1px] border-black border-b-0 px-2 py-1 font-bold text-[9px]">Social security number</div>
                 <div class="flex items-center pl-1 gap-2 border-[1px] border-black border-t-0 pb-1 border-r-0">
                     <div class="tin-box">
-                        <div class="tin-digit">${d("ssn1")}</div><div class="tin-digit">${d("ssn2")}</div><div class="tin-digit">${d("ssn3")}</div>
+                        <div class="tin-digit">${ssnDigits[0].trim()}</div><div class="tin-digit">${ssnDigits[1].trim()}</div><div class="tin-digit">${ssnDigits[2].trim()}</div>
                     </div>
-                    <span class="font-bold text-[14px]">-</span>
+                    <span class="font-bold text-[12px]">-</span>
                     <div class="tin-box">
-                        <div class="tin-digit">${d("ssn4")}</div><div class="tin-digit">${d("ssn5")}</div>
+                        <div class="tin-digit">${ssnDigits[3].trim()}</div><div class="tin-digit">${ssnDigits[4].trim()}</div>
                     </div>
-                    <span class="font-bold text-[14px]">-</span>
+                    <span class="font-bold text-[12px]">-</span>
                     <div class="tin-box">
-                        <div class="tin-digit">${d("ssn6")}</div><div class="tin-digit">${d("ssn7")}</div><div class="tin-digit">${d("ssn8")}</div><div class="tin-digit">${d("ssn9")}</div>
+                        <div class="tin-digit">${ssnDigits[5].trim()}</div><div class="tin-digit">${ssnDigits[6].trim()}</div><div class="tin-digit">${ssnDigits[7].trim()}</div><div class="tin-digit">${ssnDigits[8].trim()}</div>
                     </div>
                 </div>
 
-                <div class="font-bold text-[13px] my-1 ml-1">or</div>
+                <div class="font-bold text-[11px] my-1 ml-1">or</div>
 
-                <div class="border-[1px] border-black border-b-0 px-2 py-1 font-bold text-[11px] bg-[#e5e5e5]">Employer identification number</div>
+                <div class="border-[1px] border-black border-b-0 px-2 py-1 font-bold text-[9px] bg-[#e5e5e5]">Employer identification number</div>
                 <div class="flex items-center pl-1 gap-2 border-[1px] border-black border-t-0 pb-1 border-r-0">
                     <div class="tin-box">
-                        <div class="tin-digit">${d("ein1")}</div><div class="tin-digit">${d("ein2")}</div>
+                        <div class="tin-digit">${einDigits[0].trim()}</div><div class="tin-digit">${einDigits[1].trim()}</div>
                     </div>
-                    <span class="font-bold text-[14px]">-</span>
+                    <span class="font-bold text-[12px]">-</span>
                     <div class="tin-box">
-                        <div class="tin-digit">${d("ein3")}</div><div class="tin-digit">${d("ein4")}</div><div class="tin-digit">${d("ein5")}</div><div class="tin-digit">${d("ein6")}</div><div class="tin-digit">${d("ein7")}</div><div class="tin-digit">${d("ein8")}</div><div class="tin-digit">${d("ein9")}</div>
+                        <div class="tin-digit">${einDigits[2].trim()}</div><div class="tin-digit">${einDigits[3].trim()}</div><div class="tin-digit">${einDigits[4].trim()}</div><div class="tin-digit">${einDigits[5].trim()}</div><div class="tin-digit">${einDigits[6].trim()}</div><div class="tin-digit">${einDigits[7].trim()}</div><div class="tin-digit">${einDigits[8].trim()}</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Part II -->
-        <div class="mt-4 border-t-[2px] border-black pt-2 flex">
+        <div class="mt-4 border-t-[2px] border-black pt-2 flex avoid-break">
             <div class="part-header mr-2">Part II</div>
-            <div class="font-bold text-[18px]">Certification</div>
+            <div class="font-bold text-[16px]">Certification</div>
         </div>
         
-        <div class="text-[11px] leading-[1.3] mt-2">
+        <div class="text-[9px] leading-[1.3] mt-2">
             Under penalties of perjury, I certify that:<br>
             1. The number shown on this form is my correct taxpayer identification number (or I am waiting for a number to be issued to me); and<br>
             2. I am not subject to backup withholding because (a) I am exempt from backup withholding, or (b) I have not been notified by the Internal Revenue<br>
@@ -3766,19 +3781,19 @@ export function w9Html(data: Record<string, string>): string {
 
         <!-- Sign Here -->
         <div class="border-t-[1px] border-b-[2px] border-black mt-3 flex min-h-[45px] relative">
-            <div class="font-bold text-[16px] w-[50px] pt-1 pl-1 leading-tight">
+            <div class="font-bold text-[14px] w-[50px] pt-1 pl-1 leading-tight">
                 Sign<br>Here
             </div>
             <div class="flex-grow flex items-end pb-1 pl-2 signature-block">
-                <div class="font-bold text-[11px] mr-2 signature-label">Signature of<br>U.S. person</div>
-                <i class="fa-solid fa-play text-[10px] mr-2 mb-1"></i>
+                <div class="font-bold text-[9px] mr-2 signature-label">Signature of<br>U.S. person</div>
+                <i class="fa-solid fa-play text-[8px] mr-2 mb-1"></i>
                 <div class="border-b-[1px] border-black w-[400px]">
                     ${d("signatureField") ? imgTag(d("signatureField")) : '<div class="signature-line w-full min-h-[35px]"></div>'}
                 </div>
             </div>
             <div class="w-[200px] flex items-end pb-1">
-                <div class="font-bold text-[11px] mr-2">Date</div>
-                <i class="fa-solid fa-play text-[10px] mr-2 mb-1"></i>
+                <div class="font-bold text-[9px] mr-2">Date</div>
+                <i class="fa-solid fa-play text-[8px] mr-2 mb-1"></i>
                 <div class="border-b-[1px] border-black w-full mr-2 text-center">${d("date")}</div>
             </div>
         </div>
@@ -3787,14 +3802,14 @@ export function w9Html(data: Record<string, string>): string {
         <!-- Instructions footer -->
         <div class="flex mt-3 gap-6">
             <div class="w-1/2">
-                <h2 class="text-[20px] font-bold mb-2">General Instructions</h2>
-                <p class="text-[11px] mb-2 leading-tight">Section references are to the Internal Revenue Code unless otherwise<br>noted.</p>
-                <p class="text-[11px] mb-2 leading-tight"><span class="font-bold">Future developments.</span> For the latest information about developments<br>related to Form W-9 and its instructions, such as legislation enacted<br>after they were published, go to <i>www.irs.gov/FormW9</i>.</p>
-                <h3 class="text-[16px] font-bold mb-2 mt-4">What's New</h3>
-                <p class="text-[11px] leading-tight">Line 3a has been modified to clarify how a disregarded entity completes<br>this line. An LLC that is a disregarded entity should check the<br>appropriate box for the tax classification of its owner. Otherwise, it<br>should check the â€œLLCâ€ box and enter its appropriate tax classification.</p>
+                <h2 class="text-[18px] font-bold mb-2">General Instructions</h2>
+                <p class="text-[9px] mb-2 leading-tight">Section references are to the Internal Revenue Code unless otherwise<br>noted.</p>
+                <p class="text-[9px] mb-2 leading-tight"><span class="font-bold">Future developments.</span> For the latest information about developments<br>related to Form W-9 and its instructions, such as legislation enacted<br>after they were published, go to <i>www.irs.gov/FormW9</i>.</p>
+                <h3 class="text-[14px] font-bold mb-2 mt-4">What's New</h3>
+                <p class="text-[9px] leading-tight">Line 3a has been modified to clarify how a disregarded entity completes<br>this line. An LLC that is a disregarded entity should check the<br>appropriate box for the tax classification of its owner. Otherwise, it<br>should check the â€œLLCâ€ box and enter its appropriate tax classification.</p>
             </div>
             <div class="w-1/2">
-                <p class="text-[11px] leading-tight mb-2">
+                <p class="text-[9px] leading-tight mb-2">
                     New line 3b has been added to this form. A flow-through entity is<br>
                     required to complete this line to indicate that it has direct or indirect<br>
                     foreign partners, owners, or beneficiaries when it provides the Form W-9<br>
@@ -3806,27 +3821,28 @@ export function w9Html(data: Record<string, string>): string {
                     partners may be required to complete Schedules K-2 and K-3. See the<br>
                     Partnership Instructions for Schedules K-2 and K-3 (Form 1065).
                 </p>
-                <h3 class="text-[16px] font-bold mb-2 mt-4">Purpose of Form</h3>
-                <p class="text-[11px] leading-tight">
+                <h3 class="text-[14px] font-bold mb-2 mt-4">Purpose of Form</h3>
+                <p class="text-[9px] leading-tight">
                     An individual or entity (Form W-9 requester) who is required to file an<br>
                     information return with the IRS is giving you this form because they
                 </p>
             </div>
         </div>
         
-        <div class="flex justify-between border-t-[1px] border-black mt-2 pt-1 text-[10px]">
+        <div class="flex justify-between border-t-[1px] border-black mt-2 pt-1 text-[8px]">
             <div>Cat. No. 10231X</div>
             <div>Form <span class="font-bold">W-9</span> (Rev. 3-2024)</div>
         </div>
 
     </div>
+    <div class="html2pdf__page-break"></div>
     <!-- Page 2 -->
     <div class="w9-container relative mt-12">
-        <div class="flex justify-between border-b-[2px] border-black pb-1 mb-3 font-bold text-[12px]">
+        <div class="flex justify-between border-b-[2px] border-black pb-1 mb-3 font-bold text-[10px]">
             <div>Form W-9 (Rev. 3-2024)</div>
-            <div>Page <span class="text-[16px]">2</span></div>
+            <div>Page <span class="text-[14px]">2</span></div>
         </div>
-        <div class="columns-2 gap-8 text-[10.5px] leading-snug">
+        <div class="columns-2 gap-8 text-[8px] leading-snug">
             <p class="mb-2">must obtain your correct taxpayer identification number (TIN), which may be your social security number (SSN), individual taxpayer identification number (ITIN), adoption taxpayer identification number (ATIN), or employer identification number (EIN), to report on an information return the amount paid to you, or other amount reportable on an information return. Examples of information returns include, but are not limited to, the following.</p>
             <ul class="list-disc pl-4 mb-2 space-y-0.5">
                 <li>Form 1099-INT (interest earned or paid).</li>
@@ -3880,7 +3896,7 @@ export function w9Html(data: Record<string, string>): string {
             <p class="mb-2"><i>Example.</i> Article 20 of the U.S.-China income tax treaty allows an exemption from tax for scholarship income received by a Chinese student temporarily present in the United States. Under U.S. law, this student will become a resident alien for tax purposes if their stay in the United States exceeds 5 calendar years. However, paragraph 2 of the first Protocol to the U.S.-China treaty (dated April 30, 1984) allows the provisions of Article 20 to continue to apply even after the Chinese student becomes a resident alien of the United States. A Chinese student who qualifies for this exception (under paragraph 2 of the first Protocol) and is relying on this exception to claim an exemption from tax on their scholarship or fellowship income would attach to Form W-9 a statement that includes the information described above to support that exemption.</p>
             <p class="mb-2">If you are a nonresident alien or a foreign entity, give the requester the appropriate completed Form W-8 or Form 8233.</p>
 
-            <h2 class="font-bold text-[16px] mb-1 mt-4">Backup Withholding</h2>
+            <h2 class="font-bold text-[14px] mb-1 mt-4">Backup Withholding</h2>
             <p class="mb-2"><span class="font-bold">What is backup withholding?</span> Persons making certain payments to you must under certain conditions withhold and pay to the IRS 24% of such payments. This is called â€œbackup withholding.â€ Payments that may be subject to backup withholding include, but are not limited to, interest, tax-exempt interest, dividends, broker and barter exchange transactions, rents, royalties, nonemployee pay, payments made in settlement of payment card and third-party network transactions, and certain payments from fishing boat operators. Real estate transactions are not subject to backup withholding.</p>
             <p class="mb-2">You will not be subject to backup withholding on payments you receive if you give the requester your correct TIN, make the proper certifications, and report all your taxable interest and dividends on your tax return.</p>
             <p class="font-bold mb-1">Payments you receive will be subject to backup withholding if:</p>
@@ -3894,31 +3910,32 @@ export function w9Html(data: Record<string, string>): string {
         </div>
     </div>
 
+    <div class="html2pdf__page-break"></div>
     <!-- Page 3 -->
     <div class="w9-container relative mt-12">
-        <div class="flex justify-between border-b-[2px] border-black pb-1 mb-3 font-bold text-[12px]">
+        <div class="flex justify-between border-b-[2px] border-black pb-1 mb-3 font-bold text-[10px]">
             <div>Form W-9 (Rev. 3-2024)</div>
-            <div>Page <span class="text-[16px]">3</span></div>
+            <div>Page <span class="text-[14px]">3</span></div>
         </div>
-        <div class="columns-2 gap-8 text-[10.5px] leading-snug">
+        <div class="columns-2 gap-8 text-[8px] leading-snug">
             <p class="mb-2">Certain payees and payments are exempt from backup withholding. See <i>Exempt payee code</i>, later, and the separate Instructions for the Requester of Form W-9 for more information.</p>
             <p class="mb-2">See also <i>Establishing U.S. status for purposes of chapter 3 and chapter 4 withholding</i>, earlier.</p>
             
-            <h2 class="font-bold text-[16px] mb-1">What Is FATCA Reporting?</h2>
+            <h2 class="font-bold text-[14px] mb-1">What Is FATCA Reporting?</h2>
             <p class="mb-2">The Foreign Account Tax Compliance Act (FATCA) requires a participating foreign financial institution to report all U.S. account holders that are specified U.S. persons. Certain payees are exempt from FATCA reporting. See <i>Exemption from FATCA reporting code</i>, later, and the Instructions for the Requester of Form W-9 for more information.</p>
 
-            <h2 class="font-bold text-[16px] mb-1">Updating Your Information</h2>
+            <h2 class="font-bold text-[14px] mb-1">Updating Your Information</h2>
             <p class="mb-2">You must provide updated information to any person to whom you claimed to be an exempt payee if you are no longer an exempt payee and anticipate receiving reportable payments in the future from this person. For example, you may need to provide updated information if you are a C corporation that elects to be an S corporation, or if you are no longer tax exempt. In addition, you must furnish a new Form W-9 if the name or TIN changes for the account, for example, if the grantor of a grantor trust dies.</p>
 
-            <h2 class="font-bold text-[16px] mb-1">Penalties</h2>
+            <h2 class="font-bold text-[14px] mb-1">Penalties</h2>
             <p class="mb-2"><span class="font-bold">Failure to furnish TIN.</span> If you fail to furnish your correct TIN to a requester, you are subject to a penalty of $50 for each such failure unless your failure is due to reasonable cause and not to willful neglect.</p>
             <p class="mb-2"><span class="font-bold">Civil penalty for false information with respect to withholding.</span> If you make a false statement with no reasonable basis that results in no backup withholding, you are subject to a $500 penalty.</p>
             <p class="mb-2"><span class="font-bold">Criminal penalty for falsifying information.</span> Willfully falsifying certifications or affirmations may subject you to criminal penalties including fines and/or imprisonment.</p>
             <p class="mb-2"><span class="font-bold">Misuse of TINs.</span> If the requester discloses or uses TINs in violation of federal law, the requester may be subject to civil and criminal penalties.</p>
 
-            <h2 class="font-bold text-[22px] mb-2 mt-4">Specific Instructions</h2>
+            <h2 class="font-bold text-[20px] mb-2 mt-4">Specific Instructions</h2>
             
-            <h3 class="font-bold text-[14px] mb-1">Line 1</h3>
+            <h3 class="font-bold text-[12px] mb-1">Line 1</h3>
             <p class="mb-2">You must enter one of the following on this line; <span class="font-bold">do not</span> leave this line blank. The name should match the name on your tax return.</p>
             <p class="mb-2">If this Form W-9 is for a joint account (other than an account maintained by a foreign financial institution (FFI)), list first, and then circle, the name of the person or entity whose number you entered in Part I of Form W-9. If you are providing Form W-9 to an FFI to document a joint account, each holder of the account that is a U.S. person must provide a Form W-9.</p>
             <p class="mb-2"><span class="font-bold">&bull; Individual.</span> Generally, enter the name shown on your tax return. If you have changed your last name without informing the Social Security Administration (SSA) of the name change, enter your first name, the last name as shown on your social security card, and your new last name.</p>
@@ -3928,10 +3945,10 @@ export function w9Html(data: Record<string, string>): string {
             <p class="mb-2"><span class="font-bold">&bull; Other entities.</span> Enter your name as shown on required U.S. federal tax documents on line 1. This name should match the name shown on the charter or other legal document creating the entity. Enter any business, trade, or DBA name on line 2.</p>
             <p class="mb-2"><span class="font-bold">&bull; Disregarded entity.</span> In general, a business entity that has a single owner, including an LLC, and is not a corporation, is disregarded as an entity separate from its owner (a disregarded entity). See Regulations section 301.7701-2(c)(2). A disregarded entity should check the appropriate box for the tax classification of its owner. Enter the ownerâ€™s name on line 1. The name of the owner entered on line 1 should never be a disregarded entity. The name on line 1 should be the name shown on the income tax return on which the income should be reported. For example, if a foreign LLC that is treated as a disregarded entity for U.S. federal tax purposes has a single owner that is a U.S. person, the U.S. ownerâ€™s name is required to be provided on line 1. If the direct owner of the entity is also a disregarded entity, enter the first owner that is not disregarded for federal tax purposes. Enter the disregarded entityâ€™s name on line 2. If the owner of the disregarded entity is a foreign person, the owner must complete an appropriate Form W-8 instead of a Form W-9. This is the case even if the foreign person has a U.S. TIN.</p>
 
-            <h3 class="font-bold text-[14px] mb-1">Line 2</h3>
+            <h3 class="font-bold text-[12px] mb-1">Line 2</h3>
             <p class="mb-2">If you have a business name, trade name, DBA name, or disregarded entity name, enter it on line 2.</p>
 
-            <h3 class="font-bold text-[14px] mb-1">Line 3a</h3>
+            <h3 class="font-bold text-[12px] mb-1">Line 3a</h3>
             <p class="mb-2">Check the appropriate box on line 3a for the U.S. federal tax classification of the person whose name is entered on line 1. Check only one box on line 3a.</p>
             
             <table class="w-full border-collapse border border-black mb-4">
@@ -3961,12 +3978,12 @@ export function w9Html(data: Record<string, string>): string {
                 </tr>
             </table>
 
-            <h3 class="font-bold text-[14px] mb-1">Line 3b</h3>
+            <h3 class="font-bold text-[12px] mb-1">Line 3b</h3>
             <p class="mb-2">Check this box if you are a partnership (including an LLC classified as a partnership for U.S. federal tax purposes), trust, or estate that has any foreign partners, owners, or beneficiaries, and you are providing this form to a partnership, trust, or estate, in which you have an ownership interest. You must check the box on line 3b if you receive a Form W-8 (or documentary evidence) from any partner, owner, or beneficiary establishing foreign status or if you receive a Form W-9 from any partner, owner, or beneficiary that has checked the box on line 3b.</p>
             <p class="mb-2"><span class="font-bold">Note:</span> A partnership that provides a Form W-9 and checks box 3b may be required to complete Schedules K-2 and K-3 (Form 1065). For more information, see the Partnership Instructions for Schedules K-2 and K-3 (Form 1065).</p>
             <p class="mb-2">If you are required to complete line 3b but fail to do so, you may not receive the information necessary to file a correct information return with the IRS or furnish a correct payee statement to your partners or beneficiaries. See, for example, sections 6698, 6722, and 6724 for penalties that may apply.</p>
 
-            <h3 class="font-bold text-[14px] mb-1">Line 4 Exemptions</h3>
+            <h3 class="font-bold text-[12px] mb-1">Line 4 Exemptions</h3>
             <p class="mb-2">If you are exempt from backup withholding and/or FATCA reporting, enter in the appropriate space on line 4 any code(s) that may apply to you.</p>
             <p class="font-bold mb-1">Exempt payee code.</p>
             <ul class="list-disc pl-4 mb-2 space-y-0.5">
@@ -3980,13 +3997,14 @@ export function w9Html(data: Record<string, string>): string {
         </div>
     </div>
     
+    <div class="html2pdf__page-break"></div>
     <!-- Page 4 -->
     <div class="w9-container relative mt-12">
-        <div class="flex justify-between border-b-[2px] border-black pb-1 mb-3 font-bold text-[12px]">
+        <div class="flex justify-between border-b-[2px] border-black pb-1 mb-3 font-bold text-[10px]">
             <div>Form W-9 (Rev. 3-2024)</div>
-            <div>Page <span class="text-[16px]">4</span></div>
+            <div>Page <span class="text-[14px]">4</span></div>
         </div>
-        <div class="columns-2 gap-8 text-[10.5px] leading-snug">
+        <div class="columns-2 gap-8 text-[8px] leading-snug">
             <p class="mb-1">2â€”The United States or any of its agencies or instrumentalities.</p>
             <p class="mb-1">3â€”A state, the District of Columbia, a U.S. commonwealth or territory, or any of their political subdivisions or instrumentalities.</p>
             <p class="mb-1">4â€”A foreign government or any of its political subdivisions, agencies, or instrumentalities.</p>
@@ -4030,7 +4048,7 @@ export function w9Html(data: Record<string, string>): string {
             </table>
 
             <div class="mb-4">
-                <div class="text-[10px] mb-2 leading-tight">
+                <div class="text-[8px] mb-2 leading-tight">
                     <p><sup>1</sup> See Form 1099-MISC, Miscellaneous Information, and its instructions.</p>
                     <p><sup>2</sup> However, the following payments made to a corporation and reportable on Form 1099-MISC are not exempt from backup withholding: medical and health care payments, attorneys' fees, gross proceeds paid to an attorney reportable under section 6045(f), and payments for services paid by a federal executive agency.</p>
                 </div>
@@ -4056,13 +4074,13 @@ export function w9Html(data: Record<string, string>): string {
                 <p class="mb-2"><span class="font-bold">Note:</span> You may wish to consult with the financial institution requesting this form to determine whether the FATCA code and/or exempt payee code should be completed.</p>
             </div>
 
-            <h3 class="font-bold text-[14px] mb-1">Line 5</h3>
+            <h3 class="font-bold text-[12px] mb-1">Line 5</h3>
             <p class="mb-2">Enter your address (number, street, and apartment or suite number). This is where the requester of this Form W-9 will mail your information returns. If this address differs from the one the requester already has on file, enter â€œNEWâ€ at the top.</p>
 
-            <h3 class="font-bold text-[14px] mb-1">Line 6</h3>
+            <h3 class="font-bold text-[12px] mb-1">Line 6</h3>
             <p class="mb-2">Enter your city, state, and ZIP code.</p>
 
-            <h2 class="font-bold text-[18px] mb-2 mt-4">Part I. Taxpayer Identification Number (TIN)</h2>
+            <h2 class="font-bold text-[16px] mb-2 mt-4">Part I. Taxpayer Identification Number (TIN)</h2>
             <p class="mb-2"><span class="font-bold">Enter your TIN in the appropriate box.</span> If you are a resident alien and you do not have, and are not eligible to get, an SSN, your TIN is your IRS ITIN. Enter it in the entry space for the Social security number.</p>
             <p class="mb-2">If you are a sole proprietor and you have an EIN, you may enter either your SSN or EIN.</p>
             
@@ -4074,14 +4092,15 @@ export function w9Html(data: Record<string, string>): string {
             <p class="mb-2"><span class="font-bold">Caution:</span> A disregarded U.S. entity that has a foreign owner must use the appropriate Form W-8.</p>
         </div>
     </div>
+    <div class="html2pdf__page-break"></div>
     <!-- Page 5 -->
     <div class="w9-container relative mt-12">
-        <div class="flex justify-between border-b-[2px] border-black pb-1 mb-3 font-bold text-[12px]">
+        <div class="flex justify-between border-b-[2px] border-black pb-1 mb-3 font-bold text-[10px]">
             <div>Form W-9 (Rev. 3-2024)</div>
-            <div>Page <span class="text-[16px]">5</span></div>
+            <div>Page <span class="text-[14px]">5</span></div>
         </div>
-        <div class="columns-2 gap-8 text-[10.5px] leading-snug">
-            <h2 class="font-bold text-[18px] mb-2 mt-2 border-t-[2px] border-black pt-1">Part II. Certification</h2>
+        <div class="columns-2 gap-8 text-[8px] leading-snug">
+            <h2 class="font-bold text-[16px] mb-2 mt-2 border-t-[2px] border-black pt-1">Part II. Certification</h2>
             <p class="mb-2">To establish to the withholding agent that you are a U.S. person, or resident alien, sign Form W-9. You may be requested to sign by the withholding agent even if item 1, 4, or 5 below indicates otherwise.</p>
             <p class="mb-2">For a joint account, only the person whose TIN is shown in Part I should sign (when required). In the case of a disregarded entity, the person identified on line 1 must sign. Exempt payees, see <i>Exempt payee code</i>, earlier.</p>
             <p class="mb-2"><span class="font-bold">Signature requirements.</span> Complete the certification as indicated in items 1 through 5 below.</p>
@@ -4091,9 +4110,9 @@ export function w9Html(data: Record<string, string>): string {
             <p class="mb-2"><span class="font-bold">4. Other payments.</span> You must give your correct TIN, but you do not have to sign the certification unless you have been notified that you have previously given an incorrect TIN. â€œOther paymentsâ€ include payments made in the course of the requesterâ€™s trade or business for rents, royalties, goods (other than bills for merchandise), medical and health care services (including payments to corporations), payments to a nonemployee for services, payments made in settlement of payment card and third-party network transactions, payments to certain fishing boat crew members and fishermen, and gross proceeds paid to attorneys (including payments to corporations).</p>
             <p class="mb-2"><span class="font-bold">5. Mortgage interest paid by you, acquisition or abandonment of secured property, cancellation of debt, qualified tuition program payments (under section 529), ABLE accounts (under section 529A), IRA, Coverdell ESA, Archer MSA or HSA contributions or distributions, and pension distributions.</span> You must give your correct TIN, but you do not have to sign the certification.</p>
             
-            <h2 class="font-bold text-[18px] mb-2 mt-4 border-t-[2px] border-black pt-1">What Name and Number To Give the Requester</h2>
+            <h2 class="font-bold text-[16px] mb-2 mt-4 border-t-[2px] border-black pt-1">What Name and Number To Give the Requester</h2>
             
-            <table class="w-full border-collapse border border-black mb-4 mt-2 text-[9.5px]">
+            <table class="w-full border-collapse border border-black mb-4 mt-2 text-[7px]">
                 <tr class="bg-gray-100">
                     <th class="border border-black p-1 text-left font-bold w-1/2">For this type of account:</th>
                     <th class="border border-black p-1 text-left font-bold w-1/2">Give name and SSN of:</th>
@@ -4107,7 +4126,7 @@ export function w9Html(data: Record<string, string>): string {
                 <tr><td class="border border-black p-1">7. Grantor trust filing under Optional Filing Method 1</td><td class="border border-black p-1">The grantor*</td></tr>
             </table>
 
-            <table class="w-full border-collapse border border-black mb-2 text-[9.5px]">
+            <table class="w-full border-collapse border border-black mb-2 text-[7px]">
                 <tr class="bg-gray-100">
                     <th class="border border-black p-1 text-left font-bold w-1/2">For this type of account:</th>
                     <th class="border border-black p-1 text-left font-bold w-1/2">Give name and EIN of:</th>
@@ -4122,14 +4141,14 @@ export function w9Html(data: Record<string, string>): string {
                 <tr><td class="border border-black p-1">15. Grantor trust filing Form 1041 or under the Optional Filing Method 2</td><td class="border border-black p-1">The trust</td></tr>
             </table>
             
-            <p class="mb-1 mt-2 text-[9.5px]"><sup>1</sup> List first and circle the name of the person whose number you furnish. If only one person on a joint account has an SSN, that personâ€™s number must be furnished.</p>
-            <p class="mb-1 text-[9.5px]"><sup>2</sup> Circle the minorâ€™s name and furnish the minorâ€™s SSN.</p>
-            <p class="mb-1 text-[9.5px]"><sup>3</sup> You must show your individual name on line 1, and enter your business or DBA name, if any, on line 2. You may use either your SSN or EIN (if you have one), but the IRS encourages you to use your SSN.</p>
-            <p class="mb-1 text-[9.5px]"><sup>4</sup> List first and circle the name of the trust, estate, or pension trust. (Do not furnish the TIN of the personal representative or trustee unless the legal entity itself is not designated in the account title.)</p>
-            <p class="mb-1 text-[9.5px]">* <span class="font-bold">Note:</span> The grantor must also provide a Form W-9 to the trustee of the trust.</p>
-            <p class="mb-2 text-[9.5px]"><span class="font-bold">Note:</span> If no name is circled when more than one name is listed, the number will be considered to be that of the first name listed.</p>
+            <p class="mb-1 mt-2 text-[7px]"><sup>1</sup> List first and circle the name of the person whose number you furnish. If only one person on a joint account has an SSN, that personâ€™s number must be furnished.</p>
+            <p class="mb-1 text-[7px]"><sup>2</sup> Circle the minorâ€™s name and furnish the minorâ€™s SSN.</p>
+            <p class="mb-1 text-[7px]"><sup>3</sup> You must show your individual name on line 1, and enter your business or DBA name, if any, on line 2. You may use either your SSN or EIN (if you have one), but the IRS encourages you to use your SSN.</p>
+            <p class="mb-1 text-[7px]"><sup>4</sup> List first and circle the name of the trust, estate, or pension trust. (Do not furnish the TIN of the personal representative or trustee unless the legal entity itself is not designated in the account title.)</p>
+            <p class="mb-1 text-[7px]">* <span class="font-bold">Note:</span> The grantor must also provide a Form W-9 to the trustee of the trust.</p>
+            <p class="mb-2 text-[7px]"><span class="font-bold">Note:</span> If no name is circled when more than one name is listed, the number will be considered to be that of the first name listed.</p>
 
-            <h2 class="font-bold text-[18px] mb-2 mt-4 border-t-[2px] border-black pt-1">Secure Your Tax Records From Identity Theft</h2>
+            <h2 class="font-bold text-[16px] mb-2 mt-4 border-t-[2px] border-black pt-1">Secure Your Tax Records From Identity Theft</h2>
             <p class="mb-2">Identity theft occurs when someone uses your personal information, such as your name, SSN, or other identifying information, without your permission to commit fraud or other crimes. An identity thief may use your SSN to get a job or may file a tax return using your SSN to receive a refund.</p>
             <p class="mb-1">To reduce your risk:</p>
             <ul class="list-disc pl-4 mb-2 space-y-0.5">
@@ -4143,20 +4162,21 @@ export function w9Html(data: Record<string, string>): string {
         </div>
     </div>
 
+    <div class="html2pdf__page-break"></div>
     <!-- Page 6 -->
     <div class="w9-container relative mt-12 mb-12">
-        <div class="flex justify-between border-b-[2px] border-black pb-1 mb-3 font-bold text-[12px]">
+        <div class="flex justify-between border-b-[2px] border-black pb-1 mb-3 font-bold text-[10px]">
             <div>Form W-9 (Rev. 3-2024)</div>
-            <div>Page <span class="text-[16px]">6</span></div>
+            <div>Page <span class="text-[14px]">6</span></div>
         </div>
-        <div class="columns-2 gap-8 text-[10.5px] leading-snug">
+        <div class="columns-2 gap-8 text-[8px] leading-snug">
             <p class="mb-2">Victims of identity theft who are experiencing economic harm or a systemic problem, or are seeking help in resolving tax problems that have not been resolved through normal channels, may be eligible for Taxpayer Advocate Service (TAS) assistance. You can reach TAS by calling the TAS toll-free case intake line at 877-777-4778 or TTY/TDD 800-829-4059.</p>
             <p class="mb-2"><span class="font-bold">Protect yourself from suspicious emails or phishing schemes.</span> Phishing is the creation and use of email and websites designed to mimic legitimate business emails and websites. The most common act is sending an email to a user falsely claiming to be an established legitimate enterprise in an attempt to scam the user into surrendering private information that will be used for identity theft.</p>
             <p class="mb-2">The IRS does not initiate contacts with taxpayers via emails. Also, the IRS does not request personal detailed information through email or ask taxpayers for the PIN numbers, passwords, or similar secret access information for their credit card, bank, or other financial accounts.</p>
             <p class="mb-2">If you receive an unsolicited email claiming to be from the IRS, forward this message to <i>phishing@irs.gov</i>. You may also report misuse of the IRS name, logo, or other IRS property to the Treasury Inspector General for Tax Administration (TIGTA) at 800-366-4484. You can forward suspicious emails to the Federal Trade Commission at <i>spam@uce.gov</i> or report them at <i>www.ftc.gov/complaint</i>. You can contact the FTC at <i>www.ftc.gov/idtheft</i> or 877-IDTHEFT (877-438-4338). If you have been the victim of identity theft, see <i>www.IdentityTheft.gov</i> and Pub. 5027.</p>
             <p class="mb-4">Go to <i>www.irs.gov/IdentityTheft</i> to learn more about identity theft and how to reduce your risk.</p>
 
-            <h2 class="font-bold text-[18px] mb-2 mt-4 border-t-[2px] border-black pt-1">Privacy Act Notice</h2>
+            <h2 class="font-bold text-[16px] mb-2 mt-4 border-t-[2px] border-black pt-1">Privacy Act Notice</h2>
             <p class="mb-2">Section 6109 of the Internal Revenue Code requires you to provide your correct TIN to persons (including federal agencies) who are required to file information returns with the IRS to report interest, dividends, or certain other income paid to you; mortgage interest you paid; the acquisition or abandonment of secured property; the cancellation of debt; or contributions you made to an IRA, Archer MSA, or HSA. The person collecting this form uses the information on the form to file information returns with the IRS, reporting the above information. Routine uses of this information include giving it to the Department of Justice for civil and criminal litigation and to cities, states, the District of Columbia, and U.S. commonwealths and territories for use in administering their laws. The information may also be disclosed to other countries under a treaty, to federal and state agencies to enforce civil and criminal laws, or to federal law enforcement and intelligence agencies to combat terrorism. You must provide your TIN whether or not you are required to file a tax return. Under section 3406, payors must generally withhold a percentage of taxable interest, dividends, and certain other payments to a payee who does not give a TIN to the payor. Certain penalties may also apply for providing false or fraudulent information.</p>
         </div>
     </div>
@@ -4216,6 +4236,7 @@ export function fenceHtml(data: Record<string, string>): string {
         max-width: 800px;
         margin: 0 auto;
         position: relative;
+        padding-bottom: 60px;
     }
 
     /* Header */
@@ -4355,7 +4376,7 @@ export function fenceHtml(data: Record<string, string>): string {
     .customer-box {
         background-color: var(--brand-dark);
         color: white;
-        padding: 30px;
+        padding: 35px;
         display: flex;
         margin-bottom: 30px;
     }
@@ -4418,7 +4439,7 @@ export function fenceHtml(data: Record<string, string>): string {
         width: 60%;
         border: 2px solid var(--brand-dark);
         border-radius: 15px;
-        padding: 20px;
+        padding: 25px;
         display: flex;
         flex-direction: column;
         justify-content: space-around;
@@ -4434,7 +4455,7 @@ export function fenceHtml(data: Record<string, string>): string {
         width: 40%;
         background-color: var(--brand-dark);
         border-radius: 15px;
-        padding: 20px;
+        padding: 25px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -4495,7 +4516,7 @@ export function fenceHtml(data: Record<string, string>): string {
     .signature-box {
         border: 2px solid var(--brand-dark);
         border-radius: 15px;
-        padding: 20px 30px;
+        padding: 25px 35px;
         margin-bottom: 40px;
     }
 
@@ -4551,6 +4572,8 @@ export function fenceHtml(data: Record<string, string>): string {
         height: 120px;
         overflow: hidden;
         margin-top: 40px;
+        page-break-inside: avoid;
+        break-inside: avoid;
     }
 
     .fence-picket {
