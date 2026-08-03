@@ -728,20 +728,30 @@ export default function LeadDetailPage() {
   const handleStartProject = async () => {
     if (!visit) return;
     try {
+      if (pendingBillFile) {
+        const url = await handleUpload(pendingBillFile);
+        setEditFields(prev => ({ ...prev, electricBillUrl: url }));
+        setPendingBillFile(null);
+      }
+      if (pendingIdFile) {
+        const url = await handleUpload(pendingIdFile);
+        setEditFields(prev => ({ ...prev, idDocumentUrl: url }));
+        setPendingIdFile(null);
+      }
       await saveProjectDetailsAction(true);
-      // Also save bill data before changing stage
       const billData: Record<string, string | null> = {
         phone: editFields._billPhone?.trim() || visit.bill?.phone || "",
         clientName: editFields._billClientName?.trim() || visit.bill?.clientName || null,
         clientEmail: editFields._billClientEmail?.trim() || visit.bill?.clientEmail || null,
         notes: editFields._billNotes?.trim() || visit.bill?.notes || null,
+        imageUrl: visit.bill?.imageUrl || null,
+        additionalFileUrl: visit.bill?.additionalFileUrl || null,
+        additionalFileName: visit.bill?.additionalFileName || null,
       };
-      if (Object.values(billData).some(v => v)) {
-        await fetch(`/api/visits/${visit.id}`, {
-          method: "PATCH", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ bill: { upsert: { create: billData, update: billData } } }),
-        });
-      }
+      await fetch(`/api/visits/${visit.id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bill: { upsert: { create: billData, update: billData } } }),
+      });
 
       const res = await fetch(`/api/visits/${visit.id}`, {
         method: "PATCH",
