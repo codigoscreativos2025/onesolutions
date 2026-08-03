@@ -1750,26 +1750,6 @@ function DatosProjectFieldsPanel({
           </div>
         );
       })}
-
-      {nonCommonFields.filter((m) => {
-        const inAnyProject = fieldMetasByProject.some((p) => p.fields.some((f) => f.fieldName === m.fieldName));
-        return !inAnyProject;
-      }).length > 0 && (
-        <Panel title="Otros Campos" icon={Pencil}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {nonCommonFields.filter((m) => {
-              const inAnyProject = fieldMetasByProject.some((p) => p.fields.some((f) => f.fieldName === m.fieldName));
-              return !inAnyProject;
-            }).map((meta) => (
-              <FieldRow key={meta.fieldName} label={meta.fieldLabel || meta.fieldName}
-                value={getValue(meta.fieldName)} field={meta.fieldName}
-                type={meta.fieldType || "text"} onChange={(_, v) => onFieldChange(meta.fieldName, v)}
-                onBlur={onSave} isFile={meta.fieldType === "file" || meta.fieldType === "photos"}
-                onFileUpload={onFileFieldUpload} fileUrl={pd[meta.fieldName] ? String(pd[meta.fieldName]) : undefined} />
-            ))}
-          </div>
-        </Panel>
-      )}
     </div>
   );
 }
@@ -1839,11 +1819,6 @@ function DatosProjectPanel({
 
   const isTraineeOrCloser = role === "SETTER" || role === "SETTER_JR" || role === "CLOSER";
   const isAdmin = role === "ADMIN";
-
-  const ungroupedFields = nonCommonFields.filter((m) => {
-    const inAnyProject = fieldMetasByProject.some((p) => p.fields.some((f) => f.fieldName === m.fieldName));
-    return !inAnyProject;
-  });
 
   return (
     <div className="space-y-6">
@@ -1964,27 +1939,6 @@ function DatosProjectPanel({
         );
       })}
 
-      {ungroupedFields.length > 0 && (
-        <Panel title="Otros Campos" icon={Pencil}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {ungroupedFields.map((meta) => (
-              <FieldRow
-                key={meta.fieldName}
-                label={meta.fieldLabel}
-                value={getValue(meta.fieldName)}
-                field={meta.fieldName}
-                type={meta.fieldType}
-                onChange={(_, v) => onFieldChange(meta.fieldName, v)}
-                onBlur={onSave}
-                isFile={meta.fieldType === "file" || meta.fieldType === "photos"}
-                onFileUpload={onFileFieldUpload}
-                fileUrl={pd[meta.fieldName] ? String(pd[meta.fieldName]) : undefined}
-              />
-            ))}
-          </div>
-        </Panel>
-      )}
-
       <div className="flex gap-3">
         <Button onClick={onCancelProject} variant="danger" disabled={saving} className="flex-1">
           <X className="w-4 h-4" />
@@ -2026,11 +1980,6 @@ function DatosClosedPanel({
       return next;
     });
   };
-
-  const ungroupedFields = nonCommonFields.filter((m) => {
-    const inAnyProject = fieldMetasByProject.some((p) => p.fields.some((f) => f.fieldName === m.fieldName));
-    return !inAnyProject;
-  });
 
   return (
     <div className="space-y-6">
@@ -2137,31 +2086,6 @@ function DatosClosedPanel({
           </div>
         );
       })}
-
-      {ungroupedFields.filter((meta) => pd[meta.fieldName] !== undefined && pd[meta.fieldName] !== null && pd[meta.fieldName] !== "").length > 0 && (
-        <Panel title="Otros Campos" icon={Package}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {ungroupedFields
-              .filter((meta) => pd[meta.fieldName] !== undefined && pd[meta.fieldName] !== null && pd[meta.fieldName] !== "")
-              .map((meta) => (
-                <ReadOnlyField
-                  key={meta.fieldName}
-                  label={meta.fieldLabel || meta.fieldName}
-                  value={
-                    meta.fieldType === "file" || meta.fieldType === "photos"
-                      ? ""
-                      : String(pd[meta.fieldName])
-                  }
-                  linkUrl={
-                    meta.fieldType === "file" || meta.fieldType === "photos"
-                      ? String(pd[meta.fieldName])
-                      : undefined
-                  }
-                />
-              ))}
-          </div>
-        </Panel>
-      )}
 
       {visit.bill?.notes && (
         <Panel title="Notas" icon={Pencil}>
