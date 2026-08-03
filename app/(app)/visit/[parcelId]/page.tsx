@@ -231,7 +231,7 @@ export default function VisitPage() {
       }
 
       toast.success(mode === 'potential' ? "Lead Potencial creado" : "Lead guardado");
-      router.push(`/dashboard?highlight=${visit.id}`);
+      window.location.href = `/dashboard?highlight=${visit.id}`;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Error al guardar");
     } finally { setSaving(false); }

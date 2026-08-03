@@ -111,7 +111,7 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
   const fetchData = useCallback(async () => {
     setError(null);
     try {
-      const res = await fetch("/api/visits/kanban");
+      const res = await fetch(`/api/visits/kanban?_t=${Date.now()}`);
       if (!res.ok) throw new Error("Failed to fetch");
       const json = await res.json();
       setData(json);
