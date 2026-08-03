@@ -324,11 +324,8 @@ export default function LeadDetailPage() {
 
   const handleFieldChange = (key: string, value: string) => {
     hasChangesRef.current = true;
-    setEditFields((prev) => {
-      const next = { ...prev, [key]: value };
-      editFieldsRef.current = next;
-      return next;
-    });
+    editFieldsRef.current = { ...editFieldsRef.current, [key]: value };
+    setEditFields((prev) => ({ ...prev, [key]: value }));
   };
 
   useEffect(() => {
