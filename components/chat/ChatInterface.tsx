@@ -67,6 +67,8 @@ interface Room {
     scheduledAt?: string;
   };
   messages: {
+    userId: number;
+    isRead: boolean;
     body: string;
     user: { name: string };
     createdAt: string;
@@ -552,29 +554,38 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                 onClick={() => handleSelectRoom(room)}
                 className={`w-full text-left p-4 border-b border-outline-variant/20 last:border-0 transition-colors ${
                   selectedRoomId === room.id
-                    ? "bg-primary/10"
-                    : "hover:bg-surface-container-low"
+                    ? "bg-primary/10 text-on-surface"
+                    : (room.messages && room.messages.length > 0 && !room.messages[0].isRead && room.messages[0].userId !== parseInt(session?.user?.id || "0"))
+                    ? "bg-primary text-on-primary"
+                    : "hover:bg-surface-container-low text-on-surface"
                 }`}
               >
-                <p className="font-semibold text-on-surface text-sm truncate">
-                  {room.visit.bill?.clientName || room.visit.projectDetails?.clientName || room.visit.parcel.ownerName || "Sin Nombre"}
+                <div className="flex justify-between items-start mb-1 gap-2">
+                  <p className="font-semibold text-sm truncate">
+                    {room.visit.bill?.clientName || room.visit.projectDetails?.clientName || room.visit.parcel.ownerName || "Sin Nombre"}
+                  </p>
+                  <span className="text-[10px] opacity-70 whitespace-nowrap flex-shrink-0 mt-0.5">
+                    {room.messages && room.messages.length > 0
+                      ? new Date(room.messages[0].createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      : (room.visit.createdAt ? new Date(room.visit.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "")}
+                  </span>
+                </div>
+                <p className="text-xs opacity-80 mt-0.5 truncate">
+                  <span className="font-medium opacity-100">Dirección:</span> {room.visit.parcel.address}
                 </p>
-                <p className="text-xs text-on-surface-variant mt-0.5 truncate">
-                  <span className="font-medium text-on-surface">Dirección:</span> {room.visit.parcel.address}
-                </p>
-                <p className="text-xs text-on-surface-variant mt-0.5 truncate">
-                  <span className="font-medium text-on-surface">Status:</span>{" "}
+                <p className="text-xs opacity-80 mt-0.5 truncate">
+                  <span className="font-medium opacity-100">Status:</span>{" "}
                   {room.visit.stage === "POTENTIAL_LEAD" ? "Lead Potencial" :
                    room.visit.stage === "IN_PROGRESS" ? "Agendado" :
                    room.visit.stage === "PROJECT" ? "En Proyecto" :
                    room.visit.stage === "CLOSED" ? "Proyecto Cerrado" :
                    room.visit.stage === "CANCELLED" ? "Proyecto Cancelado" : room.visit.stage || "Desconocido"}
                 </p>
-                <p className="text-xs text-on-surface-variant mt-0.5 truncate">
-                  <span className="font-medium text-on-surface">Fecha:</span> {room.visit.createdAt ? new Date(room.visit.createdAt).toLocaleDateString() : "N/A"}
+                <p className="text-xs opacity-80 mt-0.5 truncate">
+                  <span className="font-medium opacity-100">Fecha:</span> {room.visit.createdAt ? new Date(room.visit.createdAt).toLocaleDateString() : "N/A"}
                 </p>
-                <p className="text-xs text-on-surface-variant mt-0.5 truncate">
-                  <span className="font-medium text-on-surface">Registrado por:</span> {room.visit.setter?.name || "Desconocido"}
+                <p className="text-xs opacity-80 mt-0.5 truncate">
+                  <span className="font-medium opacity-100">Registrado por:</span> {room.visit.setter?.name || "Desconocido"}
                 </p>
               </button>
             ))}
@@ -661,7 +672,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                           </Link>
                         </>
                       )}
-                      {selectedRoom.visit.stage === 'CLOSED' && !selectedRoom.visit.finalizedAt && (session?.user?.role === 'ADMIN' || (session?.user?.role === 'CLOSER' && selectedRoom.visit.closerId === parseInt(session?.user?.id || '0'))) && (
+                      {(session?.user?.role === "ADMIN" || session?.user?.role === "CLOSER") && selectedRoom.visit.stage === 'CLOSED' && !selectedRoom.visit.finalizedAt && (
                         <button
                           onClick={handleFinalize}
                           className="px-3 py-1 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-full hover:bg-emerald-200 transition-colors"
@@ -711,34 +722,40 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                         }`}
                       >
                         <div
-                          className={`max-w-[80%] p-3 rounded-2xl ${
+                          className={`max-w-[80%] p-3 rounded-2xl flex flex-col ${
                             isMe
-                              ? "bg-primary text-on-primary rounded-br-md"
-                              : "bg-surface-container-high text-on-surface rounded-bl-md"
+                              ? "bg-primary text-on-primary rounded-br-sm"
+                              : "bg-surface-container-high text-on-surface rounded-bl-sm"
                           }`}
                         >
-                          <p className="text-xs opacity-70 mb-1">
-                            {session?.user?.role === "PARTNER" && !isMe
-                              ? "OneSolutions"
-                              : msg.user.name}
-                          </p>
-                          <p className="text-sm">{renderMessageWithMentions(msg.body)}</p>
-                          {msg.fileUrl && (
-                            <a
-                              href={msg.fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs underline mt-1 block"
-                            >
-                              {msg.fileName || "Ver archivo"}
-                            </a>
+                          {!isMe && (
+                            <p className="text-xs opacity-70 mb-1 font-semibold">
+                              {session?.user?.role === "PARTNER"
+                                ? "OneSolutions"
+                                : msg.user.name}
+                            </p>
                           )}
-                          <p className="text-[10px] opacity-50 mt-1">
-                            {new Date(msg.createdAt).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
+                          <div className="flex items-end justify-between gap-3">
+                            <div className="text-sm break-words whitespace-pre-wrap">
+                              {renderMessageWithMentions(msg.body)}
+                              {msg.fileUrl && (
+                                <a
+                                  href={msg.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs underline mt-1 block"
+                                >
+                                  {msg.fileName || "Ver archivo"}
+                                </a>
+                              )}
+                            </div>
+                            <span className="text-[10px] opacity-60 whitespace-nowrap mb-[-2px] text-right">
+                              {new Date(msg.createdAt).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     );
