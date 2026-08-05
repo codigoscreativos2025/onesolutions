@@ -1148,26 +1148,20 @@ export default function LeadDetailPage() {
 
         {activeTab === "archivos" && (
           <TabContent key="archivos">
-            <ArchivosPanel visit={visit} />
+            <ArchivosPanel visit={visit} onUpdate={async () => {
+              try {
+                const res = await fetch(`/api/visits/${visitId}/details`);
+                if (res.ok) setVisit(await res.json());
+              } catch {}
+            }} />
           </TabContent>
         )}
 
         {activeTab === "contratos" && (
           <TabContent key="contratos">
-            {showContractModal ? (
-              <div className="relative rounded-xl overflow-hidden border border-outline-variant/30" style={{ height: "70vh" }}>
-                <ContractModal isOpen={true} onClose={() => setShowContractModal(false)} visitId={visitId} />
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 glass-panel rounded-xl">
-                <FileText className="w-16 h-16 mb-4 opacity-30" />
-                <p className="text-lg font-medium text-on-surface mb-4">Documentos del proyecto</p>
-                <Button onClick={() => setShowContractModal(true)}>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Ver Documentos
-                </Button>
-              </div>
-            )}
+            <div className="w-full">
+              <ContractModal isOpen={true} onClose={() => {}} visitId={visitId} inline={true} />
+            </div>
           </TabContent>
         )}
 
@@ -1297,7 +1291,7 @@ function FieldRow({
               <Eye className="w-4 h-4" /> Ver
             </a>
           )}
-          {!readOnly && (
+          {!readOnly && !fileUrl && (
             <label className="cursor-pointer text-xs text-on-surface-variant hover:text-primary flex items-center gap-1">
               <Upload className="w-3 h-3" />
               Subir
@@ -2158,14 +2152,31 @@ function DatosCancelledPanel({
   );
 }
 
-function ArchivosPanel({ visit }: { visit: VisitDetails }) {
+function ArchivosPanel({ visit, onUpdate }: { visit: VisitDetails; onUpdate?: () => void }) {
+  const router = useRouter();
   const pd = visit.projectDetails || {};
   const bill = visit.bill;
 
   const [docName, setDocName] = useState("");
+  const [customName, setCustomName] = useState("");
   const [docFile, setDocFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [customDocs, setCustomDocs] = useState<{ name: string; url: string }[]>([]);
+  const [fileToDelete, setFileToDelete] = useState<FileEntry | null>(null);
+
+  const DOCUMENT_OPTIONS = [
+    "ID del Cliente",
+    "Recibo de Luz",
+    "Seguro de Hogar",
+    "Título de Propiedad",
+    "NOC",
+    "Exterior Scope",
+    "Reporte de Techo",
+    "Fotos de Paneles",
+    "Formulario de Cierre",
+    "Orden de Materiales",
+    "Fotos de Propiedad"
+  ];
 
   useEffect(() => {
     try {
@@ -2189,9 +2200,10 @@ function ArchivosPanel({ visit }: { visit: VisitDetails }) {
     allFilesFlat.push({ name, url, fieldKey });
   };
 
-  addFile(bill?.additionalFileName || "ID del Cliente", bill?.additionalFileUrl, "additionalFileUrl");
-  addFile("Recibo de Luz", bill?.imageUrl, "imageUrl");
-  addFile("Recibo de Luz (Proyecto)", pd.electricBillUrl ? String(pd.electricBillUrl) : undefined, "electricBillUrl");
+  addFile(bill?.additionalFileName || "ID del Cliente (Facturación)", bill?.additionalFileUrl, "additionalFileUrl");
+  addFile("Recibo de Luz (Facturación)", bill?.imageUrl, "imageUrl");
+  addFile("ID del Cliente", pd.idDocumentUrl ? String(pd.idDocumentUrl) : undefined, "idDocumentUrl");
+  addFile("Recibo de Luz", pd.electricBillUrl ? String(pd.electricBillUrl) : undefined, "electricBillUrl");
   addFile("Seguro de Hogar", pd.homeInsuranceUrl ? String(pd.homeInsuranceUrl) : undefined, "homeInsuranceUrl");
   addFile("Título de Propiedad", pd.homeTitleUrl ? String(pd.homeTitleUrl) : undefined, "homeTitleUrl");
   addFile("NOC", pd.nocUrl ? String(pd.nocUrl) : undefined, "nocUrl");
@@ -2243,6 +2255,8 @@ function ArchivosPanel({ visit }: { visit: VisitDetails }) {
         });
       }
       toast.success("Archivo eliminado");
+      if (onUpdate) onUpdate();
+      else router.refresh();
     } catch { toast.error("Error al eliminar"); }
   };
 
@@ -2251,8 +2265,12 @@ function ArchivosPanel({ visit }: { visit: VisitDetails }) {
     if (f) setDocFile(f);
   };
 
+  const finalDocName = docName === "Otro" ? customName : docName;
+  const isOptUploaded = (opt: string) => allFilesFlat.some(f => f.name === opt || (opt === "Fotos de Propiedad" && f.name.startsWith("Foto de Propiedad")));
+  const isAlreadyUploaded = docName !== "Otro" && docName !== "" && isOptUploaded(docName);
+
   const uploadDocument = async () => {
-    if (!docName.trim() || !docFile) return;
+    if (!finalDocName.trim() || !docFile || isAlreadyUploaded) return;
     setUploading(true);
     try {
       const fd = new FormData();
@@ -2262,7 +2280,7 @@ function ArchivosPanel({ visit }: { visit: VisitDetails }) {
       const data = await uploadRes.json();
       const url = data.url;
 
-      const updatedDocs = [...customDocs, { name: docName.trim(), url }];
+      const updatedDocs = [...customDocs, { name: finalDocName.trim(), url }];
       setCustomDocs(updatedDocs);
 
       await fetch("/api/project-details", {
@@ -2272,8 +2290,11 @@ function ArchivosPanel({ visit }: { visit: VisitDetails }) {
       });
 
       setDocName("");
+      setCustomName("");
       setDocFile(null);
       toast.success("Documento subido");
+      if (onUpdate) onUpdate();
+      else router.refresh();
     } catch {
       toast.error("Error al subir documento");
     } finally {
@@ -2288,22 +2309,45 @@ function ArchivosPanel({ visit }: { visit: VisitDetails }) {
       <div className="space-y-6">
         <div className="mb-6 p-4 glass-panel rounded-xl">
           <h4 className="text-sm font-semibold mb-3">Agregar Documento</h4>
-          <div className="flex gap-2 flex-wrap">
-            <input
-              type="text"
-              placeholder="Nombre del documento"
-              value={docName}
-              onChange={(e) => setDocName(e.target.value)}
-              className="flex-1 h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm"
-            />
-            <input
-              type="file"
-              onChange={handleDocUpload}
-              className="text-sm text-on-surface file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-on-primary file:text-xs"
-            />
-            <Button onClick={uploadDocument} disabled={uploading || !docName.trim() || !docFile}>
-              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Subir"}
-            </Button>
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <select
+                value={docName}
+                onChange={(e) => setDocName(e.target.value)}
+                className="flex-1 min-w-[200px] h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm"
+              >
+                <option value="">Selecciona un documento</option>
+                {DOCUMENT_OPTIONS.map(opt => {
+                  const uploaded = isOptUploaded(opt);
+                  return (
+                    <option key={opt} value={opt} disabled={uploaded}>
+                      {opt}{uploaded ? " (Ya subido)" : ""}
+                    </option>
+                  );
+                })}
+                <option value="Otro">Otro (Especificar)</option>
+              </select>
+              {docName === "Otro" && (
+                <input
+                  type="text"
+                  placeholder="Nombre del documento"
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  className="flex-1 min-w-[200px] h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm"
+                />
+              )}
+              <input
+                type="file"
+                onChange={handleDocUpload}
+                className="text-sm text-on-surface file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-on-primary file:text-xs"
+              />
+              <Button onClick={uploadDocument} disabled={uploading || !finalDocName.trim() || !docFile || isAlreadyUploaded}>
+                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Subir"}
+              </Button>
+            </div>
+            {isAlreadyUploaded && (
+              <p className="text-xs text-red-500 font-medium">ya se encuentra el archivo no se necesita otro</p>
+            )}
           </div>
         </div>
         <div className="flex flex-col items-center justify-center py-12 text-on-surface-variant">
@@ -2318,22 +2362,45 @@ function ArchivosPanel({ visit }: { visit: VisitDetails }) {
     <div className="space-y-8">
       <div className="mb-6 p-4 glass-panel rounded-xl">
         <h4 className="text-sm font-semibold mb-3">Agregar Documento</h4>
-        <div className="flex gap-2 flex-wrap">
-          <input
-            type="text"
-            placeholder="Nombre del documento"
-            value={docName}
-            onChange={(e) => setDocName(e.target.value)}
-            className="flex-1 h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm"
-          />
-          <input
-            type="file"
-            onChange={handleDocUpload}
-            className="text-sm text-on-surface file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-on-primary file:text-xs"
-          />
-          <Button onClick={uploadDocument} disabled={uploading || !docName.trim() || !docFile}>
-            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Subir"}
-          </Button>
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <select
+              value={docName}
+              onChange={(e) => setDocName(e.target.value)}
+              className="flex-1 min-w-[200px] h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm"
+            >
+              <option value="">Selecciona un documento</option>
+              {DOCUMENT_OPTIONS.map(opt => {
+                const uploaded = isOptUploaded(opt);
+                return (
+                  <option key={opt} value={opt} disabled={uploaded}>
+                    {opt}{uploaded ? " (Ya subido)" : ""}
+                  </option>
+                );
+              })}
+              <option value="Otro">Otro (Especificar)</option>
+            </select>
+            {docName === "Otro" && (
+              <input
+                type="text"
+                placeholder="Nombre del documento"
+                value={customName}
+                onChange={(e) => setCustomName(e.target.value)}
+                className="flex-1 min-w-[200px] h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm"
+              />
+            )}
+            <input
+              type="file"
+              onChange={handleDocUpload}
+              className="text-sm text-on-surface file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-on-primary file:text-xs"
+            />
+            <Button onClick={uploadDocument} disabled={uploading || !finalDocName.trim() || !docFile || isAlreadyUploaded}>
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Subir"}
+            </Button>
+          </div>
+          {isAlreadyUploaded && (
+            <p className="text-xs text-red-500 font-medium">ya se encuentra el archivo no se necesita otro</p>
+          )}
         </div>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -2348,7 +2415,7 @@ function ArchivosPanel({ visit }: { visit: VisitDetails }) {
               transition={{ delay: i * 0.03 }}
             >
               <button
-                onClick={() => handleDeleteFile(file)}
+                onClick={() => setFileToDelete(file)}
                 className="absolute top-1 left-1 z-10 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
                 title="Eliminar archivo"
               >
@@ -2376,6 +2443,47 @@ function ArchivosPanel({ visit }: { visit: VisitDetails }) {
           );
         })}
       </div>
+
+      <AnimatePresence>
+        {fileToDelete && (
+          <motion.div
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-deep-black/60 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-surface rounded-2xl shadow-2xl p-6 max-w-sm w-full text-center border border-outline-variant/30 relative"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+            >
+              <h3 className="text-xl font-bold text-on-surface mb-2">Eliminar Documento</h3>
+              <p className="text-on-surface-variant mb-6 text-sm">
+                ¿Quieres eliminar este documento?
+              </p>
+              <div className="flex gap-3 justify-center">
+                <Button
+                  variant="outline"
+                  onClick={() => setFileToDelete(null)}
+                  className="flex-1"
+                >
+                  No
+                </Button>
+                <Button
+                  onClick={async () => {
+                    await handleDeleteFile(fileToDelete);
+                    setFileToDelete(null);
+                  }}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white border-0"
+                >
+                  Sí
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -26,6 +26,7 @@ interface ContractModalProps {
   isOpen: boolean;
   onClose: () => void;
   visitId: number;
+  inline?: boolean;
 }
 
 interface SignatureField {
@@ -34,7 +35,7 @@ interface SignatureField {
   element?: HTMLElement;
 }
 
-export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) {
+export function ContractModal({ isOpen, onClose, visitId, inline }: ContractModalProps) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<ContractData | null>(null);
   const [activeTab, setActiveTab] = useState("");
@@ -507,42 +508,28 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
     );
   };
 
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-2 md:p-4 pb-20"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <div
-            className="absolute inset-0 bg-deep-black/60 backdrop-blur-sm"
+  const innerContent = (
+    <>
+      <div
+        ref={contentRef}
+        className={`relative w-full ${inline ? "h-[70vh] min-h-[500px]" : "max-w-4xl h-[80vh] max-h-[80vh] mb-16"} glass-panel rounded-2xl shadow-2xl flex flex-col overflow-hidden`}
+        style={{ borderColor: "#f48221" }}
+        onClick={(e) => !inline && e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-4 border-b bg-surface-container-low shrink-0" style={{ borderColor: "#f4822130" }}>
+          <h2 className="font-headline text-xl font-bold text-on-surface flex items-center gap-2">
+            <FileText className="w-5 h-5" style={{ color: "#f48221" }} />
+            Documentos
+          </h2>
+        {!inline && (
+          <button
             onClick={onClose}
-          />
-
-          <motion.div
-            ref={contentRef}
-            className="relative w-full max-w-4xl h-[80vh] max-h-[80vh] mb-16 glass-panel rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-            style={{ borderColor: "#f48221" }}
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            onClick={(e) => e.stopPropagation()}
+            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-highest transition-colors"
           >
-            <div className="flex items-center justify-between p-4 border-b bg-surface-container-low shrink-0" style={{ borderColor: "#f4822130" }}>
-              <h2 className="font-headline text-xl font-bold text-on-surface flex items-center gap-2">
-                <FileText className="w-5 h-5" style={{ color: "#f48221" }} />
-                Documentos
-              </h2>
-              <button
-                onClick={onClose}
-                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-highest transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+            <X className="w-5 h-5" />
+          </button>
+        )}
+      </div>
 
             {loading ? (
               <div className="flex-1 flex items-center justify-center">
@@ -814,7 +801,7 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
               </>
             )}
 
-          </motion.div>
+          </div>
 
           {/* Email Warning Modal */}
           {showEmailWarning && (
@@ -833,6 +820,37 @@ export function ContractModal({ isOpen, onClose, visitId }: ContractModalProps) 
               </div>
             </div>
           )}
+    </>
+  );
+
+  if (inline) {
+    if (!isOpen) return null;
+    return innerContent;
+  }
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-2 md:p-4 pb-20"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <div
+            className="absolute inset-0 bg-deep-black/60 backdrop-blur-sm"
+            onClick={onClose}
+          />
+          <motion.div
+            className="w-full max-w-4xl"
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {innerContent}
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
