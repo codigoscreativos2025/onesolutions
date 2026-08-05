@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -82,8 +82,8 @@ const FIELD_LABEL_MAP: Record<string, string> = {
   otherCostPrice: "Precio Costo Otro",
   otherSalePrice: "Precio Venta Otro",
   otherCommission: "Comisión Otro",
-  generalCostPrice: "Costo",
-  generalSalePrice: "Precio Venta",
+  generalCostPrice: "Costo Total",
+  generalSalePrice: "Precio Venta Total",
 };
 
 const STAGE_LABELS: Record<string, string> = {
@@ -211,19 +211,23 @@ const OPTIONAL_FIELDS = ["secondaryRep", "secondaryRepCommPct", "tertiaryRep", "
 
 function calculateProjectCompletion(
   projectDetails: Record<string, unknown> | null | undefined,
-  fieldMetas: { fieldName: string }[]
+  fieldMetas: { fieldName: string }[],
+  stage?: string
 ): number {
   if (!projectDetails) return 0;
 
+  const isValid = (val: unknown) => {
+    if (val === undefined || val === null) return false;
+    if (typeof val === 'string' && val.trim() === "") return false;
+    return true;
+  };
+
   const requiredCommonFields = COMMON_FIELDS.filter((f) => !OPTIONAL_FIELDS.includes(f));
   let totalFields = requiredCommonFields.length;
-  let completedFields = requiredCommonFields.filter(
-    (f) => projectDetails[f] !== undefined && projectDetails[f] !== "" && projectDetails[f] !== null
-  ).length;
+  let completedFields = requiredCommonFields.filter((f) => isValid(projectDetails[f])).length;
 
   for (const field of OPTIONAL_FIELDS) {
-    const val = projectDetails[field];
-    if (val !== undefined && val !== "" && val !== null) {
+    if (isValid(projectDetails[field])) {
       totalFields++;
       completedFields++;
     }
@@ -232,8 +236,13 @@ function calculateProjectCompletion(
   for (const meta of fieldMetas) {
     if (COMMON_FIELDS.includes(meta.fieldName) || FILE_FIELD_KEYS.has(meta.fieldName)) continue;
     totalFields++;
-    const val = projectDetails[meta.fieldName];
-    if (val !== undefined && val !== "" && val !== null) completedFields++;
+    if (isValid(projectDetails[meta.fieldName])) completedFields++;
+  }
+
+  if (stage === "PROJECT" || stage === "CLOSED") {
+    totalFields += 2;
+    if (isValid(projectDetails["idDocumentUrl"])) completedFields++;
+    if (isValid(projectDetails["electricBillUrl"])) completedFields++;
   }
 
   return totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
@@ -313,7 +322,8 @@ export default function LeadDetailPage() {
   const [visit, setVisit] = useState<VisitDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState("datos");
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "datos");
 
   const [editFields, setEditFields] = useState<Record<string, string>>({});
   const hasChangesRef = useRef(false);
@@ -582,8 +592,9 @@ export default function LeadDetailPage() {
       if (visit?.bill?.additionalFileUrl) payload.idDocumentUrl = visit.bill.additionalFileUrl;
       for (const [key, value] of Object.entries(editFieldsRef.current)) {
         if (key.startsWith("_bill")) continue;
-        if (value !== undefined && value !== "") {
-          payload[key] = value;
+        if (value !== undefined) {
+          const trimmed = typeof value === 'string' ? value.trim() : value;
+          payload[key] = trimmed === "" ? null : trimmed;
         }
       }
       if (payload.closingDate && typeof payload.closingDate === "string") {
@@ -914,7 +925,8 @@ export default function LeadDetailPage() {
     }
   };
 
-  const progress = calculateProjectCompletion(visit?.projectDetails, fieldMetas);
+  const mergedDetails = { ...(visit?.projectDetails || {}), ...editFields };
+  const progress = calculateProjectCompletion(mergedDetails as Record<string, unknown>, fieldMetas, visit?.stage);
   const selectedProjectNames = visit?.projects?.map((p) => p.projectType.name) || [];
   const isAdmin = role === "ADMIN";
 
@@ -1703,7 +1715,7 @@ function DatosProjectFieldsPanel({
         <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={onFieldChange} onUpload={onUpload} onRefresh={onRefresh} leadTags={leadTags} notAvailTags={notAvailTags} onAddTag={onAddTag} onRemoveTag={onRemoveTag} onBillFileChange={onBillFileChange} onIdFileChange={onIdFileChange} />
       )}
 
-      <Panel title="Campos Comunes" icon={Pencil}>
+      <Panel title="Campos Generales" icon={Pencil}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {COMMON_FIELDS.map((key) => (
             <FieldRow
@@ -1884,7 +1896,7 @@ function DatosProjectPanel({
         </div>
       </Panel>
 
-      <Panel title="Campos Comunes" icon={Pencil}>
+      <Panel title="Campos Generales" icon={Pencil}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {COMMON_FIELDS.map((key) => (
             <FieldRow
@@ -2021,7 +2033,7 @@ function DatosClosedPanel({
         </Panel>
       )}
 
-      <Panel title="Campos Comunes" icon={Pencil}>
+      <Panel title="Campos Generales" icon={Pencil}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {COMMON_FIELDS.map((key) => (
             <ReadOnlyField

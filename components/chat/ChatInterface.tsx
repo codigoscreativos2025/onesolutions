@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Send, Paperclip, Loader2, MessageSquare, Package, FileText, Pencil, CheckCheck, Search, ArrowLeft, Info, List, X, MapPin, User, PlusCircle, Phone } from "lucide-react";
+import { Send, Paperclip, Loader2, MessageSquare, Package, FileText, Pencil, CheckCheck, Search, ArrowLeft, Info, List, X, MapPin, User, PlusCircle, Phone, Folder } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { ContractModal } from "@/components/quote/ContractModal";
 
@@ -51,7 +51,7 @@ interface Room {
     stage?: string;
     createdAt?: string;
     finalizedAt?: string;
-    parcel: { id: string; address: string };
+    parcel: { id: string; address: string; ownerName?: string };
     setter: { id: number; name: string };
     closer?: { id: number; name: string };
     bill?: { imageUrl: string; phone: string; clientName: string; clientEmail: string; additionalFileUrl?: string; additionalFileName?: string };
@@ -412,6 +412,12 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
   const calculateCompletion = (): number => {
     if (!projectDetails) return 0;
 
+    const isValid = (val: unknown) => {
+      if (val === undefined || val === null) return false;
+      if (typeof val === 'string' && val.trim() === "") return false;
+      return true;
+    };
+
     const COMMON_FIELDS_CHAT = [
       "closingDate",
       "paymentMethod",
@@ -443,13 +449,10 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
 
     const requiredCommonFields = COMMON_FIELDS_CHAT.filter((f) => !OPTIONAL_FIELDS_CHAT.includes(f));
     let totalFields = requiredCommonFields.length;
-    let completedFields = requiredCommonFields.filter(
-      (f) => projectDetails[f] !== undefined && projectDetails[f] !== "" && projectDetails[f] !== null
-    ).length;
+    let completedFields = requiredCommonFields.filter((f) => isValid(projectDetails[f])).length;
 
     for (const field of OPTIONAL_FIELDS_CHAT) {
-      const val = projectDetails[field];
-      if (val !== undefined && val !== "" && val !== null) {
+      if (isValid(projectDetails[field])) {
         totalFields++;
         completedFields++;
       }
@@ -458,8 +461,13 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
     for (const meta of fieldMetas) {
       if (COMMON_FIELDS_CHAT.includes(meta.fieldName) || FILE_FIELD_KEYS_CHAT.has(meta.fieldName)) continue;
       totalFields++;
-      const val = projectDetails[meta.fieldName];
-      if (val !== undefined && val !== "" && val !== null) completedFields++;
+      if (isValid(projectDetails[meta.fieldName])) completedFields++;
+    }
+
+    if (selectedRoom?.visit?.stage === "PROJECT" || selectedRoom?.visit?.stage === "CLOSED") {
+      totalFields += 2;
+      if (isValid(projectDetails["idDocumentUrl"])) completedFields++;
+      if (isValid(projectDetails["electricBillUrl"])) completedFields++;
     }
 
     return totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
@@ -548,14 +556,25 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                     : "hover:bg-surface-container-low"
                 }`}
               >
-                <p className="font-semibold text-on-surface text-sm">
-                  {room.visit.bill?.clientName || room.visit.parcel.address}
+                <p className="font-semibold text-on-surface text-sm truncate">
+                  {room.visit.bill?.clientName || room.visit.projectDetails?.clientName || room.visit.parcel.ownerName || "Sin Nombre"}
                 </p>
                 <p className="text-xs text-on-surface-variant mt-0.5 truncate">
-                  {room.visit.parcel.address}
+                  <span className="font-medium text-on-surface">Dirección:</span> {room.visit.parcel.address}
                 </p>
-                <p className="text-xs text-on-surface-variant/70 mt-1 truncate">
-                  {room.messages[0]?.body || "Sin mensajes"}
+                <p className="text-xs text-on-surface-variant mt-0.5 truncate">
+                  <span className="font-medium text-on-surface">Status:</span>{" "}
+                  {room.visit.stage === "POTENTIAL_LEAD" ? "Lead Potencial" :
+                   room.visit.stage === "IN_PROGRESS" ? "Agendado" :
+                   room.visit.stage === "PROJECT" ? "En Proyecto" :
+                   room.visit.stage === "CLOSED" ? "Proyecto Cerrado" :
+                   room.visit.stage === "CANCELLED" ? "Proyecto Cancelado" : room.visit.stage || "Desconocido"}
+                </p>
+                <p className="text-xs text-on-surface-variant mt-0.5 truncate">
+                  <span className="font-medium text-on-surface">Fecha:</span> {room.visit.createdAt ? new Date(room.visit.createdAt).toLocaleDateString() : "N/A"}
+                </p>
+                <p className="text-xs text-on-surface-variant mt-0.5 truncate">
+                  <span className="font-medium text-on-surface">Registrado por:</span> {room.visit.setter?.name || "Desconocido"}
                 </p>
               </button>
             ))}
@@ -584,7 +603,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                           <ArrowLeft className="w-4 h-4" />
                         </button>
                         <p className="font-semibold text-on-surface">
-                          {selectedRoom.visit.bill?.clientName || selectedRoom.visit.parcel.address}
+                          {selectedRoom.visit.bill?.clientName || selectedRoom.visit.projectDetails?.clientName || selectedRoom.visit.parcel.ownerName || "Sin Nombre"}
                         </p>
                       </div>
                       <p className="text-xs text-on-surface-variant ml-0 lg:ml-0 mt-1">
@@ -616,19 +635,31 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                       </button>
                       <button
                         onClick={() => setShowContractModal(true)}
-                        className="px-3 py-1 text-xs font-medium rounded-full transition-colors"
+                        className="px-3 py-1 text-xs font-medium rounded-full transition-colors flex items-center gap-1"
                         style={{ backgroundColor: "#f4822120", color: "#f48221" }}
                       >
                         <FileText className="w-3 h-3" />
                         Contratos
                       </button>
                       {(session?.user?.role === "ADMIN" || session?.user?.role === "CLOSER") && (
-                        <button
-                          onClick={handleOpenEditModal}
-                          className="px-3 py-1 text-xs font-medium bg-secondary/10 text-secondary rounded-full hover:bg-secondary/20 transition-colors"
-                        >
-                          <Pencil className="w-3 h-3" />
-                        </button>
+                        <>
+                          <Link
+                            href={`/lead/${selectedRoom.visit.id}?tab=archivos`}
+                            className="px-3 py-1 text-xs font-medium rounded-full transition-colors flex items-center gap-1 hover:bg-[#f4822130]"
+                            style={{ backgroundColor: "#f4822120", color: "#f48221" }}
+                          >
+                            <Folder className="w-3 h-3" />
+                            Archivos
+                          </Link>
+                          <Link
+                            href={`/lead/${selectedRoom.visit.id}?tab=datos`}
+                            className="px-3 py-1 text-xs font-medium rounded-full transition-colors flex items-center gap-1 hover:bg-[#f4822130]"
+                            style={{ backgroundColor: "#f4822120", color: "#f48221" }}
+                          >
+                            <Pencil className="w-3 h-3" />
+                            Editar
+                          </Link>
+                        </>
                       )}
                       {selectedRoom.visit.stage === 'CLOSED' && !selectedRoom.visit.finalizedAt && (session?.user?.role === 'ADMIN' || (session?.user?.role === 'CLOSER' && selectedRoom.visit.closerId === parseInt(session?.user?.id || '0'))) && (
                         <button
@@ -992,244 +1023,109 @@ function InfoPanelContent({
   stageLabels: Record<string, string>;
 }) {
   const { visit } = room;
-  const projectDetails = visit.projectDetails;
+  const [projectDetails, setProjectDetails] = useState<any>(visit.projectDetails);
+  useEffect(() => {
+    // Initial fetch
+    fetch(`/api/project-details?visitId=${visit.id}&t=${Date.now()}`, { cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => {
+        if (data && !data.error) setProjectDetails(data);
+      })
+      .catch(() => {});
+
+    // Polling every 2 seconds to adapt instantly
+    const interval = setInterval(() => {
+      fetch(`/api/project-details?visitId=${visit.id}&t=${Date.now()}`, { cache: 'no-store' })
+        .then(res => res.json())
+        .then(data => {
+          if (data && !data.error) setProjectDetails(data);
+        })
+        .catch(() => {});
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [visit.id]);
 
   return (
-    <div className="p-4 space-y-4">
-      {/* Stage */}
-      {visit.stage && (
-        <div className="flex flex-wrap gap-2">
-          <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
-            visit.stage === 'CLOSED' ? 'bg-primary/10 text-primary' :
-            visit.stage === 'CANCELLED' ? 'bg-error/10 text-error' :
-            'bg-secondary/10 text-secondary'
-          }`}>
-            {stageLabels[visit.stage] || visit.stage}
-          </span>
-          {projects.length > 0 && projects.map((p) => (
-            <span
-              key={p.projectType.id}
-              className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full"
-            >
-              {p.projectType.name}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Client Info */}
-      <div className="space-y-2">
-        <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center gap-1">
-          <User className="w-3 h-3" /> Cliente
-        </h4>
-        <div className="space-y-1 text-sm">
-          {bill?.clientName && (
-            <div className="flex justify-between">
-              <span className="text-on-surface-variant">Nombre:</span>
-              <span className="font-medium text-on-surface">{bill.clientName}</span>
-            </div>
-          )}
-          {bill?.clientEmail && (
-            <div className="flex justify-between">
-              <span className="text-on-surface-variant">Email:</span>
-              <span className="font-medium text-on-surface truncate max-w-[140px]">{bill.clientEmail}</span>
-            </div>
-          )}
-          {bill?.phone && (
-            <div className="flex justify-between">
-              <span className="text-on-surface-variant">Teléfono:</span>
-              <span className="font-medium text-on-surface">{bill.phone}</span>
-            </div>
-          )}
-        </div>
+    <div className="flex flex-col h-full">
+      <div className="p-4 border-b border-outline-variant/30">
+        <h3 className="font-headline text-lg font-bold text-on-surface">Resumen del Proyecto</h3>
       </div>
 
-      {/* Address */}
-      <div className="space-y-2">
-        <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center gap-1">
-          <MapPin className="w-3 h-3" /> Dirección
-        </h4>
-        <p className="text-sm text-on-surface">{visit.parcel.address}</p>
-      </div>
-
-      {/* Project Details */}
-      {projectDetails && (
-        <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center gap-1">
-            <Package className="w-3 h-3" /> Detalles
-          </h4>
-          <div className="space-y-1 text-sm">
-            {projectDetails.closingDate && (
-              <div className="flex justify-between">
-                <span className="text-on-surface-variant">Fecha de Cierre:</span>
-                <span className="font-medium text-on-surface">
-                  {new Date(projectDetails.closingDate).toLocaleDateString()}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="space-y-3 text-sm">
+            {visit.stage && (
+              <div className="flex flex-col">
+                <span className={`self-start px-3 py-1 rounded-full text-xs font-bold uppercase mb-2 ${
+                  visit.stage === 'CLOSED' ? 'bg-primary/10 text-primary' :
+                  visit.stage === 'CANCELLED' ? 'bg-error/10 text-error' :
+                  'bg-secondary/10 text-secondary'
+                }`}>
+                  {stageLabels[visit.stage] || visit.stage}
                 </span>
               </div>
             )}
-            {projectDetails.paymentMethod && (
-              <div className="flex justify-between">
-                <span className="text-on-surface-variant">Método de Pago:</span>
-                <span className="font-medium text-on-surface capitalize">{projectDetails.paymentMethod}</span>
-              </div>
-            )}
-            {projectDetails.solarFinancier && (
-              <div className="flex justify-between">
-                <span className="text-on-surface-variant">Financiadora:</span>
-                <span className="font-medium text-on-surface">{projectDetails.solarFinancier}</span>
-              </div>
-            )}
-            {projectDetails.systemSize && (
-              <div className="flex justify-between">
-                <span className="text-on-surface-variant">Tamaño Sistema:</span>
-                <span className="font-medium text-on-surface">{projectDetails.systemSize}</span>
-              </div>
-            )}
-            {projectDetails.otherSalePrice !== undefined && (
-              <div className="flex justify-between">
-                <span className="text-on-surface-variant">Precio Venta:</span>
-                <span className="font-medium text-on-surface">${projectDetails.otherSalePrice?.toLocaleString()}</span>
-              </div>
-            )}
-            {projectDetails.primaryRep && (
-              <div className="flex justify-between">
-                <span className="text-on-surface-variant">Rep. Principal:</span>
-                <span className="font-medium text-on-surface">
-                  {projectDetails.primaryRep}
-                  {projectDetails.primaryRepCommPct !== undefined && ` (${projectDetails.primaryRepCommPct}%)`}
-                </span>
-              </div>
-            )}
+            
+            <div className="flex flex-col">
+              <span className="text-on-surface-variant font-medium">Tipos de Proyectos:</span>
+              <span className="text-on-surface">{projects.length > 0 ? projects.map(p => p.projectType.name).join(", ") : "Ninguno"}</span>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-on-surface-variant font-medium">Nombre:</span>
+              <span className="text-on-surface">{bill?.clientName || projectDetails?.clientName || visit.parcel.ownerName || "Sin Nombre"}</span>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-on-surface-variant font-medium">Email:</span>
+              <span className="text-on-surface">{bill?.clientEmail || projectDetails?.clientEmail || "N/A"}</span>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-on-surface-variant font-medium">Teléfono:</span>
+              <span className="text-on-surface">{bill?.phone || projectDetails?.phone || "N/A"}</span>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-on-surface-variant font-medium">Dirección:</span>
+              <span className="text-on-surface">{visit.parcel.address}</span>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-on-surface-variant font-medium">Creación del lead:</span>
+              <span className="text-on-surface">{visit.createdAt ? new Date(visit.createdAt).toLocaleDateString() : "N/A"}</span>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-on-surface-variant font-medium">Creador del lead:</span>
+              <span className="text-on-surface">{visit.setter?.name || "Desconocido"}</span>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-on-surface-variant font-medium">Fecha de Cierre:</span>
+              <span className="text-on-surface">{projectDetails?.closingDate ? new Date(String(projectDetails.closingDate)).toLocaleDateString() : "En proceso"}</span>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-on-surface-variant font-medium">Representante principal:</span>
+              <span className="text-on-surface">{projectDetails?.primaryRep || "N/A"}</span>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-on-surface-variant font-medium">% Comisión Principal:</span>
+              <span className="text-on-surface">{projectDetails?.primaryRepCommPct != null ? `${projectDetails.primaryRepCommPct}%` : "N/A"}</span>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-on-surface-variant font-medium">Costo Total:</span>
+              <span className="text-on-surface">{projectDetails?.generalCostPrice != null ? `$${Number(projectDetails.generalCostPrice).toLocaleString()}` : "N/A"}</span>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-on-surface-variant font-medium">Precio Venta Total:</span>
+              <span className="text-on-surface">{projectDetails?.generalSalePrice != null ? `$${Number(projectDetails.generalSalePrice).toLocaleString()}` : "N/A"}</span>
+            </div>
           </div>
         </div>
-      )}
-
-      {/* Objections */}
-      {visit.objections && visit.objections.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Objeciones (Trainee)</h4>
-          <div className="flex flex-wrap gap-1">
-            {visit.objections.map((o, i) => (
-              <span
-                key={i}
-                className="px-2 py-0.5 rounded-full text-xs font-medium"
-                style={{
-                  backgroundColor: o.objection?.color ? `${o.objection.color}20` : undefined,
-                  color: o.objection?.color || undefined,
-                  border: o.objection?.color ? `1px solid ${o.objection.color}40` : undefined,
-                }}
-              >
-                {o.objection?.name}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {visit.closerObjections && visit.closerObjections.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Objeciones (Closer)</h4>
-          <div className="flex flex-wrap gap-1">
-            {visit.closerObjections.map((o, i) => (
-              <span
-                key={i}
-                className="px-2 py-0.5 rounded-full text-xs font-medium"
-                style={{
-                  backgroundColor: o.closerObjection?.color ? `${o.closerObjection.color}20` : undefined,
-                  color: o.closerObjection?.color || undefined,
-                  border: o.closerObjection?.color ? `1px solid ${o.closerObjection.color}40` : undefined,
-                }}
-              >
-                {o.closerObjection?.name}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Commissions */}
-      {visit.commissions && visit.commissions.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Comisiones</h4>
-          <div className="space-y-1 text-sm">
-            {visit.commissions.map((c) => (
-              <div key={c.id} className="flex justify-between">
-                <span className="text-on-surface-variant">
-                  {c.user.name}
-                  <span className="text-xs ml-1">({c.role === "CLOSER" ? "Closer" : "Trainee"})</span>
-                </span>
-                <span className="font-bold text-primary">{c.percentage}%</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Notes */}
-      {visit.notes && (
-        <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Notas</h4>
-          <p className="text-sm text-on-surface whitespace-pre-wrap">{visit.notes}</p>
-        </div>
-      )}
-
-      {/* Dates */}
-      <div className="space-y-1 text-xs text-on-surface-variant">
-        {visit.scheduledAt && (
-          <div className="flex justify-between">
-            <span>Cita Programada:</span>
-            <span>{new Date(visit.scheduledAt).toLocaleDateString()}</span>
-          </div>
-        )}
-        {visit.completedAt && (
-          <div className="flex justify-between">
-            <span>Completado:</span>
-            <span>{new Date(visit.completedAt).toLocaleDateString()}</span>
-          </div>
-        )}
-        {visit.cancelledAt && (
-          <div>
-            <span className="text-error">Cancelado:</span>
-            <span> {new Date(visit.cancelledAt).toLocaleDateString()}</span>
-            {visit.cancellationReason && <p>— {visit.cancellationReason}</p>}
-          </div>
-        )}
-        {visit.createdAt && (
-          <div className="flex justify-between">
-            <span>Creado:</span>
-            <span>{new Date(visit.createdAt).toLocaleDateString()}</span>
-          </div>
-        )}
       </div>
-
-      {/* Bill file */}
-      {bill && (
-        <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center gap-1">
-            <FileText className="w-3 h-3" /> Recibo de Luz
-          </h4>
-          <div className="flex flex-wrap gap-2">
-            <a
-              href={bill.imageUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline text-xs flex items-center gap-1"
-            >
-              <FileText className="w-3 h-3" /> Ver recibo
-            </a>
-            {bill.additionalFileUrl && (
-              <a
-                href={bill.additionalFileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline text-xs flex items-center gap-1"
-              >
-                <FileText className="w-3 h-3" /> {bill.additionalFileName || "Archivo adicional"}
-              </a>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
   );
 }

@@ -20,18 +20,22 @@ const FILE_FIELD_KEYS = new Set([
 function computeProgress(
   projectDetails: Record<string, unknown> | null,
   fieldMetasByType: Record<number, { fieldName: string }[]>,
-  projectTypeIds: number[]
+  projectTypeIds: number[],
+  stage?: string
 ): number {
   if (!projectDetails) return 0;
+  const isValid = (val: unknown) => {
+    if (val === undefined || val === null) return false;
+    if (typeof val === 'string' && val.trim() === "") return false;
+    return true;
+  };
+
   const requiredCommonFields = COMMON_FIELDS.filter((f) => !OPTIONAL_FIELDS.includes(f));
   let totalFields = requiredCommonFields.length;
-  let completedFields = requiredCommonFields.filter(
-    (f) => projectDetails[f] !== undefined && projectDetails[f] !== "" && projectDetails[f] !== null
-  ).length;
+  let completedFields = requiredCommonFields.filter((f) => isValid(projectDetails[f])).length;
 
   for (const field of OPTIONAL_FIELDS) {
-    const val = projectDetails[field];
-    if (val !== undefined && val !== "" && val !== null) {
+    if (isValid(projectDetails[field])) {
       totalFields++;
       completedFields++;
     }
@@ -42,9 +46,14 @@ function computeProgress(
     for (const meta of metas) {
       if (COMMON_FIELDS.includes(meta.fieldName) || FILE_FIELD_KEYS.has(meta.fieldName)) continue;
       totalFields++;
-      const val = projectDetails[meta.fieldName];
-      if (val !== undefined && val !== "" && val !== null) completedFields++;
+      if (isValid(projectDetails[meta.fieldName])) completedFields++;
     }
+  }
+
+  if (stage === "PROJECT" || stage === "CLOSED") {
+    totalFields += 2;
+    if (isValid(projectDetails["idDocumentUrl"])) completedFields++;
+    if (isValid(projectDetails["electricBillUrl"])) completedFields++;
   }
 
   return totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
@@ -147,7 +156,8 @@ export async function GET() {
       progress: computeProgress(
         v.projectDetails as Record<string, unknown> | null,
         fieldMetasByType,
-        [...v.projects.map((p) => p.projectType.id), ...(commonsId ? [commonsId] : [])]
+        [...v.projects.map((p) => p.projectType.id), ...(commonsId ? [commonsId] : [])],
+        v.stage
       ),
     }));    const grouped: Record<string, typeof enriched> = {
       IN_PROGRESS: [],
