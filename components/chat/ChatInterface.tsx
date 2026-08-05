@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Send, Paperclip, Loader2, MessageSquare, Package, FileText, Pencil, CheckCheck, Search, ArrowLeft, Info, List, X, MapPin, User, PlusCircle, Phone, Folder } from "lucide-react";
+import { Send, Paperclip, Loader2, MessageSquare, Package, FileText, Pencil, CheckCheck, Search, ArrowLeft, Info, List, X, MapPin, User, PlusCircle, Phone, Folder, Calendar, Activity } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { ContractModal } from "@/components/quote/ContractModal";
 
@@ -570,22 +570,27 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                       : (room.visit.createdAt ? new Date(room.visit.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "")}
                   </span>
                 </div>
-                <p className="text-xs opacity-80 mt-0.5 truncate">
-                  <span className="font-medium opacity-100">Dirección:</span> {room.visit.parcel.address}
+                <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Dirección">
+                  <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>{room.visit.parcel.address}</span>
                 </p>
-                <p className="text-xs opacity-80 mt-0.5 truncate">
-                  <span className="font-medium opacity-100">Status:</span>{" "}
-                  {room.visit.stage === "POTENTIAL_LEAD" ? "Lead Potencial" :
-                   room.visit.stage === "IN_PROGRESS" ? "Agendado" :
-                   room.visit.stage === "PROJECT" ? "En Proyecto" :
-                   room.visit.stage === "CLOSED" ? "Proyecto Cerrado" :
-                   room.visit.stage === "CANCELLED" ? "Proyecto Cancelado" : room.visit.stage || "Desconocido"}
+                <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Status">
+                  <Activity className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>
+                    {room.visit.stage === "POTENTIAL_LEAD" ? "Lead Potencial" :
+                     room.visit.stage === "IN_PROGRESS" ? "Agendado" :
+                     room.visit.stage === "PROJECT" ? "En Proyecto" :
+                     room.visit.stage === "CLOSED" ? "Proyecto Cerrado" :
+                     room.visit.stage === "CANCELLED" ? "Proyecto Cancelado" : room.visit.stage || "Desconocido"}
+                  </span>
                 </p>
-                <p className="text-xs opacity-80 mt-0.5 truncate">
-                  <span className="font-medium opacity-100">Fecha:</span> {room.visit.createdAt ? new Date(room.visit.createdAt).toLocaleDateString() : "N/A"}
+                <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Fecha">
+                  <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>{room.visit.createdAt ? new Date(room.visit.createdAt).toLocaleDateString() : "N/A"}</span>
                 </p>
-                <p className="text-xs opacity-80 mt-0.5 truncate">
-                  <span className="font-medium opacity-100">Registrado por:</span> {room.visit.setter?.name || "Desconocido"}
+                <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Registrado por">
+                  <User className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>{room.visit.setter?.name || "Desconocido"}</span>
                 </p>
               </button>
             ))}
@@ -1133,12 +1138,12 @@ function InfoPanelContent({
             </div>
 
             <div className="flex flex-col">
-              <span className="text-on-surface-variant font-medium">Costo Total:</span>
+              <span className="text-on-surface-variant font-medium">Total:</span>
               <span className="text-on-surface">{projectDetails?.generalCostPrice != null ? `$${Number(projectDetails.generalCostPrice).toLocaleString()}` : "N/A"}</span>
             </div>
 
             <div className="flex flex-col">
-              <span className="text-on-surface-variant font-medium">Precio Venta Total:</span>
+              <span className="text-on-surface-variant font-medium">Precio de Venta:</span>
               <span className="text-on-surface">{projectDetails?.generalSalePrice != null ? `$${Number(projectDetails.generalSalePrice).toLocaleString()}` : "N/A"}</span>
             </div>
           </div>

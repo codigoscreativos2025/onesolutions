@@ -636,6 +636,28 @@ export default function LeadDetailPage() {
     return data.url;
   };
 
+  const handleBillFileUpload = async (type: "imageUrl" | "additionalFileUrl", file: File) => {
+    try {
+      const url = await handleUpload(file);
+      const billData = { [type]: url };
+      await fetch(`/api/visits/${visit?.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bill: { upsert: { create: billData, update: billData } } }),
+      });
+      setVisit((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          bill: prev.bill ? { ...prev.bill, ...billData } : { ...billData } as any
+        };
+      });
+      toast.success("Archivo subido");
+    } catch {
+      toast.error("Error al subir archivo");
+    }
+  };
+
   const handleFileUploadField = async (fieldName: string, file: File) => {
     try {
       const url = await handleUpload(file);
@@ -739,16 +761,12 @@ export default function LeadDetailPage() {
   const handleStartProject = async () => {
     if (!visit) return;
     try {
-      if (pendingBillFile) {
-        const url = await handleUpload(pendingBillFile);
-        setEditFields(prev => ({ ...prev, electricBillUrl: url }));
-        setPendingBillFile(null);
-      }
-      if (pendingIdFile) {
-        const url = await handleUpload(pendingIdFile);
-        setEditFields(prev => ({ ...prev, idDocumentUrl: url }));
-        setPendingIdFile(null);
-      }
+      let uploadedBillUrl = visit.bill?.imageUrl || null;
+      let uploadedIdUrl = visit.bill?.additionalFileUrl || null;
+
+      editFieldsRef.current.electricBillUrl = uploadedBillUrl || "";
+      editFieldsRef.current.idDocumentUrl = uploadedIdUrl || "";
+
       await saveProjectDetailsAction(true);
       const billData: Record<string, string | null> = {
         phone: editFields._billPhone?.trim() || visit.bill?.phone || "",
@@ -1032,8 +1050,8 @@ export default function LeadDetailPage() {
       <AnimatePresence mode="wait">
         {activeTab === "datos" && (
           <TabContent key="datos">
-            {visit.stage === "IN_PROGRESS" && (
-              <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={handleFieldChange} onUpload={handleUpload} onRefresh={fetchVisitDetails} leadTags={leadTags} notAvailTags={notAvailTags} onAddTag={handleAddLeadTag} onRemoveTag={handleRemoveLeadTag} onBillFileChange={setPendingBillFile} onIdFileChange={setPendingIdFile} />
+            {visit.stage !== "PROJECT" && visit.stage !== "CLOSED" && visit.stage !== "PROPOSAL_ACCEPTED" && (
+              <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={handleFieldChange} onUpload={handleUpload} onRefresh={fetchVisitDetails} leadTags={leadTags} notAvailTags={notAvailTags} onAddTag={handleAddLeadTag} onRemoveTag={handleRemoveLeadTag} onBillFileUpload={handleBillFileUpload} />
             )}
 
             {visit.stage === "IN_PROGRESS" && !visit.scheduledAt && (
@@ -1093,8 +1111,7 @@ export default function LeadDetailPage() {
                 notAvailTags={notAvailTags}
                 onAddTag={handleAddLeadTag}
                 onRemoveTag={handleRemoveLeadTag}
-                onBillFileChange={setPendingBillFile}
-                onIdFileChange={setPendingIdFile}
+                onBillFileUpload={handleBillFileUpload}
               />
             )}
 
@@ -1402,8 +1419,7 @@ function DatosLeadPanel({
   notAvailTags,
   onAddTag,
   onRemoveTag,
-  onBillFileChange,
-  onIdFileChange,
+  onBillFileUpload,
 }: {
   visit: VisitDetails;
   editFields: Record<string, string>;
@@ -1414,13 +1430,8 @@ function DatosLeadPanel({
   notAvailTags: { id: number; name: string; color: string }[];
   onAddTag: (tag: { name: string; color: string }) => void;
   onRemoveTag: (tagName: string) => void;
-  onBillFileChange?: (f: File | null) => void;
-  onIdFileChange?: (f: File | null) => void;
+  onBillFileUpload?: (type: "imageUrl" | "additionalFileUrl", file: File) => Promise<void>;
 }) {
-  const [idFile, setIdFile] = useState<File | null>(null);
-  const [idPreview, setIdPreview] = useState(visit.bill?.additionalFileUrl || "");
-  const [billFile, setBillFile] = useState<File | null>(null);
-  const [billPreview, setBillPreview] = useState(visit.bill?.imageUrl || "");
   const [saving, setSaving] = useState(false);
   const [editProjectTypes, setEditProjectTypes] = useState<{ id: number; name: string }[]>([]);
   const [selectedPTIds, setSelectedPTIds] = useState<number[]>([]);
@@ -1450,19 +1461,14 @@ function DatosLeadPanel({
     if (!visit) return;
     setSaving(true);
     try {
-      let billUrl = billPreview;
-      let idUrl = idPreview;
-      if (billFile) { billUrl = await onUpload(billFile); onFieldChange("electricBillUrl", billUrl); }
-      if (idFile) { idUrl = await onUpload(idFile); onFieldChange("idDocumentUrl", idUrl); }
-
       const billData: Record<string, string | null> = {
         phone: editFields._billPhone?.trim() || visit.bill?.phone || "",
         clientName: editFields._billClientName?.trim() || visit.bill?.clientName || null,
         clientEmail: editFields._billClientEmail?.trim() || visit.bill?.clientEmail || null,
-        imageUrl: billUrl || visit.bill?.imageUrl || null,
+        imageUrl: visit.bill?.imageUrl || null,
         notes: editFields._billNotes?.trim() || visit.bill?.notes || null,
-        additionalFileUrl: idUrl || visit.bill?.additionalFileUrl || null,
-        additionalFileName: idFile?.name || visit.bill?.additionalFileName || null,
+        additionalFileUrl: visit.bill?.additionalFileUrl || null,
+        additionalFileName: visit.bill?.additionalFileName || null,
       };
 
       await fetch(`/api/visits/${visit.id}`, {
@@ -1480,8 +1486,6 @@ function DatosLeadPanel({
       }
 
       toast.success("Datos guardados");
-      setIdFile(null);
-      setBillFile(null);
       onRefresh();
     } catch {
       toast.error("Error al guardar");
@@ -1544,21 +1548,21 @@ function DatosLeadPanel({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <UploadField
             label="ID del Cliente"
-            preview={idPreview}
-            onChange={(e) => {
+            preview={visit.bill?.additionalFileUrl || ""}
+            onChange={async (e) => {
               const f = e.target.files?.[0];
-              if (f) { setIdFile(f); setIdPreview(URL.createObjectURL(f)); onIdFileChange?.(f); }
+              if (f && onBillFileUpload) await onBillFileUpload("additionalFileUrl", f);
             }}
-            onClear={() => { setIdFile(null); setIdPreview(""); onIdFileChange?.(null); }}
+            onClear={() => {}}
           />
           <UploadField
             label="Recibo de Luz"
-            preview={billPreview}
-            onChange={(e) => {
+            preview={visit.bill?.imageUrl || ""}
+            onChange={async (e) => {
               const f = e.target.files?.[0];
-              if (f) { setBillFile(f); setBillPreview(URL.createObjectURL(f)); onBillFileChange?.(f); }
+              if (f && onBillFileUpload) await onBillFileUpload("imageUrl", f);
             }}
-            onClear={() => { setBillFile(null); setBillPreview(""); onBillFileChange?.(null); }}
+            onClear={() => {}}
           />
         </div>
       </Panel>
@@ -1611,8 +1615,7 @@ function DatosProjectFieldsPanel({
   notAvailTags,
   onAddTag,
   onRemoveTag,
-  onBillFileChange,
-  onIdFileChange,
+  onBillFileUpload,
 }: {
   visit: VisitDetails;
   editFields: Record<string, string>;
@@ -1630,8 +1633,7 @@ function DatosProjectFieldsPanel({
   notAvailTags: { id: number; name: string; color: string }[];
   onAddTag: (tag: { name: string; color: string }) => void;
   onRemoveTag: (tagName: string) => void;
-  onBillFileChange?: (f: File | null) => void;
-  onIdFileChange?: (f: File | null) => void;
+  onBillFileUpload?: (type: "imageUrl" | "additionalFileUrl", file: File) => Promise<void>;
 }) {
   const pd = visit.projectDetails || {};
   const nonCommonFields = fieldMetas.filter((m) => !COMMON_FIELDS.includes(m.fieldName));
@@ -1706,7 +1708,7 @@ function DatosProjectFieldsPanel({
   return (
     <div className="space-y-6">
       {showBillSection && (
-        <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={onFieldChange} onUpload={onUpload} onRefresh={onRefresh} leadTags={leadTags} notAvailTags={notAvailTags} onAddTag={onAddTag} onRemoveTag={onRemoveTag} onBillFileChange={onBillFileChange} onIdFileChange={onIdFileChange} />
+        <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={onFieldChange} onUpload={onUpload} onRefresh={onRefresh} leadTags={leadTags} notAvailTags={notAvailTags} onAddTag={onAddTag} onRemoveTag={onRemoveTag} onBillFileUpload={onBillFileUpload} />
       )}
 
       <Panel title="Campos Generales" icon={Pencil}>
@@ -2200,10 +2202,11 @@ function ArchivosPanel({ visit, onUpdate }: { visit: VisitDetails; onUpdate?: ()
     allFilesFlat.push({ name, url, fieldKey });
   };
 
-  addFile(bill?.additionalFileName || "ID del Cliente (Facturación)", bill?.additionalFileUrl, "additionalFileUrl");
-  addFile("Recibo de Luz (Facturación)", bill?.imageUrl, "imageUrl");
-  addFile("ID del Cliente", pd.idDocumentUrl ? String(pd.idDocumentUrl) : undefined, "idDocumentUrl");
-  addFile("Recibo de Luz", pd.electricBillUrl ? String(pd.electricBillUrl) : undefined, "electricBillUrl");
+  const hasIdUrl = pd.idDocumentUrl || bill?.additionalFileUrl;
+  const hasBillUrl = pd.electricBillUrl || bill?.imageUrl;
+
+  if (hasIdUrl) addFile("ID del Cliente", String(hasIdUrl), "idDocumentUrl");
+  if (hasBillUrl) addFile("Recibo de Luz", String(hasBillUrl), "electricBillUrl");
   addFile("Seguro de Hogar", pd.homeInsuranceUrl ? String(pd.homeInsuranceUrl) : undefined, "homeInsuranceUrl");
   addFile("Título de Propiedad", pd.homeTitleUrl ? String(pd.homeTitleUrl) : undefined, "homeTitleUrl");
   addFile("NOC", pd.nocUrl ? String(pd.nocUrl) : undefined, "nocUrl");
@@ -2234,10 +2237,23 @@ function ArchivosPanel({ visit, onUpdate }: { visit: VisitDetails; onUpdate?: ()
     try {
       if (file.fieldKey) {
         // Project/Bill required file — clear the field
-        if (file.fieldKey === "additionalFileUrl" || file.fieldKey === "imageUrl") {
+        if (file.fieldKey === "idDocumentUrl" || file.fieldKey === "additionalFileUrl") {
+          await fetch("/api/project-details", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ visitId: visit.id, idDocumentUrl: null }),
+          });
           await fetch(`/api/visits/${visit.id}`, {
             method: "PATCH", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ bill: { upsert: { create: { [file.fieldKey]: null }, update: { [file.fieldKey]: null } } } }),
+            body: JSON.stringify({ bill: { upsert: { create: { additionalFileUrl: null }, update: { additionalFileUrl: null } } } }),
+          });
+        } else if (file.fieldKey === "electricBillUrl" || file.fieldKey === "imageUrl") {
+          await fetch("/api/project-details", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ visitId: visit.id, electricBillUrl: null }),
+          });
+          await fetch(`/api/visits/${visit.id}`, {
+            method: "PATCH", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ bill: { upsert: { create: { imageUrl: null }, update: { imageUrl: null } } } }),
           });
         } else {
           await fetch("/api/project-details", {

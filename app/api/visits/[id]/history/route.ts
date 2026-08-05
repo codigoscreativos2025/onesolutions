@@ -80,7 +80,9 @@ export async function GET(
         : '',
     });
 
-    if (visit.bill) {
+    const projectStarted = ["PROJECT", "CLOSED", "CANCELLED"].includes(visit.stage);
+
+    if (visit.bill && projectStarted) {
       const projectNames = visit.projects.map((p) => p.projectType.name).join(', ');
       history.push({
         date: visit.createdAt.toISOString(),
@@ -90,7 +92,7 @@ export async function GET(
       });
     }
 
-    if (visit.projectDetails) {
+    if (visit.projectDetails && projectStarted) {
       history.push({
         date: visit.projectDetails.createdAt.toISOString(),
         action: 'Proyecto iniciado',
