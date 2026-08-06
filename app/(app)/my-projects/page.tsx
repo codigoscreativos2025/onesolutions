@@ -69,10 +69,10 @@ export default function MyProjectsPage() {
   const [addressFilter, setAddressFilter] = useState<string>('');
   const [projectTypes, setProjectTypes] = useState<{ id: number; name: string }[]>([]);
 
-  const calculateCompletion = (projectDetails: ProjectDetails | null): number => {
-    if (!projectDetails) return 0;
-    const staticFields = ['clientName', 'clientEmail', 'address', 'closingDate', 'paymentMethod', 'primaryRep', 'primaryRepCommPct'];
-    const optionalFields = ['secondaryRep', 'secondaryRepCommPct', 'tertiaryRep', 'tertiaryRepCommPct'];
+  const calculateCompletion = (visit: any): number => {
+    const projectDetails = { ...(visit.projectDetails || {}), clientName: visit.bill?.clientName, clientEmail: visit.bill?.clientEmail, phone: visit.bill?.phone };
+    const staticFields = ['clientName', 'clientEmail', 'phone', 'closingDate', 'paymentMethod', 'primaryRep', 'primaryRepCommPct'];
+    const optionalFields: string[] = [];
     const allKeys = [...staticFields, ...Object.keys(projectDetails)].filter((v, i, a) => a.indexOf(v) === i);
     let completed = 0;
     allKeys.forEach(field => {
@@ -287,7 +287,7 @@ export default function MyProjectsPage() {
       ) : (
         <div className="space-y-4">
           {filteredVisits.map((visit) => {
-            const completion = calculateCompletion(visit.projectDetails);
+            const completion = calculateCompletion(visit);
             const hasChat = visit.chatRoom || visit.chatCreatedAt;
             return (
               <div key={visit.id} id={`project-${visit.id}`} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border-l-4"

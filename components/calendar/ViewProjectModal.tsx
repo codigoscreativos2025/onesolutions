@@ -179,10 +179,6 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
         const hardcodedLabels: Record<string, { label: string; type: string; group: string }> = {
           primaryRep: { label: "Representante Principal", type: "text", group: "common" },
           primaryRepCommPct: { label: "% Comision Principal", type: "number", group: "common" },
-          secondaryRep: { label: "Representante Secundario", type: "text", group: "common" },
-          secondaryRepCommPct: { label: "% Comision Secundario", type: "number", group: "common" },
-          tertiaryRep: { label: "Representante Terciario", type: "text", group: "common" },
-          tertiaryRepCommPct: { label: "% Comision Terciario", type: "number", group: "common" },
         };
         for (const [key, val] of Object.entries(hardcodedLabels)) {
           if (!labels[key]) labels[key] = val;

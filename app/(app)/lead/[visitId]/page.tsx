@@ -43,10 +43,6 @@ const FIELD_LABEL_MAP: Record<string, string> = {
   paymentMethod: "Método de Pago",
   primaryRep: "Representante Principal",
   primaryRepCommPct: "% Comisión Principal",
-  secondaryRep: "Representante Secundario",
-  secondaryRepCommPct: "% Comisión Secundario",
-  tertiaryRep: "Representante Terciario",
-  tertiaryRepCommPct: "% Comisión Terciario",
   solarFinancier: "Financiadora Solar",
   systemSize: "Tamaño del Sistema",
   hoaInfo: "Información HOA",
@@ -107,10 +103,6 @@ const COMMON_FIELDS = [
   "paymentMethod",
   "primaryRep",
   "primaryRepCommPct",
-  "secondaryRep",
-  "secondaryRepCommPct",
-  "tertiaryRep",
-  "tertiaryRepCommPct",
   "generalCostPrice",
   "generalSalePrice",
 ];
@@ -119,8 +111,6 @@ const FIELD_TYPES: Record<string, string> = {
   closingDate: "date",
   paymentMethod: "select",
   primaryRepCommPct: "number",
-  secondaryRepCommPct: "number",
-  tertiaryRepCommPct: "number",
   umbrella: "select",
   solarCommission: "number",
   roofCommission: "number",
@@ -207,7 +197,7 @@ function getTimelineColor(action: string): string {
   return "#6b7280";
 }
 
-const OPTIONAL_FIELDS = ["secondaryRep", "secondaryRepCommPct", "tertiaryRep", "tertiaryRepCommPct", "generalCostPrice", "generalSalePrice"];
+const OPTIONAL_FIELDS = ["generalCostPrice", "generalSalePrice"];
 
 function calculateProjectCompletion(
   projectDetails: Record<string, unknown> | null | undefined,
@@ -225,6 +215,14 @@ function calculateProjectCompletion(
   const requiredCommonFields = COMMON_FIELDS.filter((f) => !OPTIONAL_FIELDS.includes(f));
   let totalFields = requiredCommonFields.length;
   let completedFields = requiredCommonFields.filter((f) => isValid(projectDetails[f])).length;
+
+  const billFields = ['_billClientName', '_billClientEmail', '_billPhone'];
+  for (const field of billFields) {
+    totalFields++;
+    if (isValid(projectDetails[field])) {
+      completedFields++;
+    }
+  }
 
   for (const field of OPTIONAL_FIELDS) {
     if (isValid(projectDetails[field])) {
@@ -1409,6 +1407,41 @@ function FieldRow({
   );
 }
 
+function ClientInfoPanel({
+  editFields,
+  onFieldChange,
+  onSave,
+  isReadOnly,
+  visit,
+}: {
+  editFields?: Record<string, string>;
+  onFieldChange?: (key: string, v: string) => void;
+  onSave?: () => void;
+  isReadOnly?: boolean;
+  visit?: VisitDetails;
+}) {
+  if (isReadOnly && visit) {
+    return (
+      <Panel title="Información del Cliente" icon={User}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ReadOnlyField label="Nombre" value={visit.bill?.clientName || "-"} />
+          <ReadOnlyField label="Correo" value={visit.bill?.clientEmail || "-"} />
+          <ReadOnlyField label="Teléfono" value={visit.bill?.phone || "-"} />
+        </div>
+      </Panel>
+    );
+  }
+  return (
+    <Panel title="Información del Cliente" icon={User}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Input label="Nombre" value={editFields?._billClientName || ""} onChange={(e) => onFieldChange?.("_billClientName", (e.target as HTMLInputElement).value)} onBlur={onSave} placeholder="Nombre del cliente" />
+        <Input label="Correo" type="email" value={editFields?._billClientEmail || ""} onChange={(e) => onFieldChange?.("_billClientEmail", (e.target as HTMLInputElement).value)} onBlur={onSave} placeholder="Correo electrónico" />
+        <Input label="Teléfono" type="tel" value={editFields?._billPhone || ""} onChange={(e) => onFieldChange?.("_billPhone", (e.target as HTMLInputElement).value)} onBlur={onSave} placeholder="Número de teléfono" />
+      </div>
+    </Panel>
+  );
+}
+
 function DatosLeadPanel({
   visit,
   editFields,
@@ -1496,13 +1529,7 @@ function DatosLeadPanel({
 
   return (
     <div className="space-y-6">
-      <Panel title="Información del Cliente" icon={User}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input label="Nombre" value={editFields._billClientName || ""} onChange={(e) => onFieldChange("_billClientName", (e.target as HTMLInputElement).value)} placeholder="Nombre del cliente" />
-          <Input label="Correo" type="email" value={editFields._billClientEmail || ""} onChange={(e) => onFieldChange("_billClientEmail", (e.target as HTMLInputElement).value)} placeholder="Correo electrónico" />
-          <Input label="Teléfono" type="tel" value={editFields._billPhone || ""} onChange={(e) => onFieldChange("_billPhone", (e.target as HTMLInputElement).value)} placeholder="Número de teléfono" />
-        </div>
-      </Panel>
+      <ClientInfoPanel editFields={editFields} onFieldChange={onFieldChange} />
 
       <Panel title="Etiquetas" icon={Tag}>
         {leadTags.length > 0 && (
@@ -1837,6 +1864,7 @@ function DatosProjectPanel({
 
   return (
     <div className="space-y-6">
+      <ClientInfoPanel editFields={editFields} onFieldChange={onFieldChange} onSave={onSave} />
 
       <Panel title="Progreso del Proyecto" icon={BadgeCheck}>
         <div className="space-y-2">
@@ -1998,6 +2026,7 @@ function DatosClosedPanel({
 
   return (
     <div className="space-y-6">
+      <ClientInfoPanel isReadOnly visit={visit} />
       {isAdmin && (
         <Panel title="Estado Post-Cierre" icon={BadgeCheck}>
           <div className="flex flex-wrap gap-2">
@@ -2124,6 +2153,7 @@ function DatosCancelledPanel({
 }) {
   return (
     <div className="space-y-6">
+      <ClientInfoPanel isReadOnly visit={visit} />
       <div className="glass-panel rounded-xl p-6 border border-error/30 bg-error/5">
         <div className="flex items-center gap-3 mb-4">
           <ShieldAlert className="w-6 h-6 text-error" />

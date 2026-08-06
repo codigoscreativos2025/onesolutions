@@ -425,15 +425,11 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
       "paymentMethod",
       "primaryRep",
       "primaryRepCommPct",
-      "secondaryRep",
-      "secondaryRepCommPct",
-      "tertiaryRep",
-      "tertiaryRepCommPct",
       "generalCostPrice",
       "generalSalePrice",
     ];
 
-    const OPTIONAL_FIELDS_CHAT = ["secondaryRep", "secondaryRepCommPct", "tertiaryRep", "tertiaryRepCommPct", "generalCostPrice", "generalSalePrice"];
+    const OPTIONAL_FIELDS_CHAT = ["generalCostPrice", "generalSalePrice"];
 
     const FILE_FIELD_KEYS_CHAT = new Set([
       "electricBillUrl",

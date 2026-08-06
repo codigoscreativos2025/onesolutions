@@ -5,11 +5,10 @@ export const dynamic = 'force-dynamic';
 
 const COMMON_FIELDS = [
   "closingDate", "paymentMethod", "primaryRep", "primaryRepCommPct",
-  "secondaryRep", "secondaryRepCommPct", "tertiaryRep", "tertiaryRepCommPct",
   "generalCostPrice", "generalSalePrice",
 ];
 
-const OPTIONAL_FIELDS = ["secondaryRep", "secondaryRepCommPct", "tertiaryRep", "tertiaryRepCommPct", "generalCostPrice", "generalSalePrice"];
+const OPTIONAL_FIELDS = ["generalCostPrice", "generalSalePrice"];
 
 const FILE_FIELD_KEYS = new Set([
   "electricBillUrl", "closingFormUrl", "homeInsuranceUrl", "homeTitleUrl",
@@ -33,6 +32,14 @@ function computeProgress(
   const requiredCommonFields = COMMON_FIELDS.filter((f) => !OPTIONAL_FIELDS.includes(f));
   let totalFields = requiredCommonFields.length;
   let completedFields = requiredCommonFields.filter((f) => isValid(projectDetails[f])).length;
+
+  const billFields = ['_billClientName', '_billClientEmail', '_billPhone'];
+  for (const field of billFields) {
+    totalFields++;
+    if (isValid(projectDetails[field])) {
+      completedFields++;
+    }
+  }
 
   for (const field of OPTIONAL_FIELDS) {
     if (isValid(projectDetails[field])) {
@@ -114,6 +121,9 @@ export async function GET() {
           },
         },
         projectDetails: true,
+        bill: {
+          select: { clientName: true, clientEmail: true, phone: true }
+        }
       },
     });
 
@@ -154,7 +164,7 @@ export async function GET() {
       projects: v.projects,
       projectDetails: v.projectDetails,
       progress: computeProgress(
-        v.projectDetails as Record<string, unknown> | null,
+        { ...(v.projectDetails || {}), _billClientName: v.bill?.clientName, _billClientEmail: v.bill?.clientEmail, _billPhone: v.bill?.phone } as Record<string, unknown>,
         fieldMetasByType,
         [...v.projects.map((p) => p.projectType.id), ...(commonsId ? [commonsId] : [])],
         v.stage
