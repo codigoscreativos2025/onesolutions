@@ -1075,72 +1075,70 @@ function InfoPanelContent({
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0 p-4">
-        <div className="grid grid-cols-2 gap-x-3 gap-y-4 text-xs">
+        <div className="flex flex-col space-y-3 text-xs">
             {visit.stage && (
-              <div className="col-span-2 flex flex-col">
-                <span className={`self-start px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
-                  visit.stage === 'CLOSED' ? 'bg-primary/10 text-primary' :
-                  visit.stage === 'CANCELLED' ? 'bg-error/10 text-error' :
-                  'bg-secondary/10 text-secondary'
-                }`}>
-                  {stageLabels[visit.stage] || visit.stage}
-                </span>
-              </div>
+              <span className={`self-start px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
+                visit.stage === 'CLOSED' ? 'bg-primary/10 text-primary' :
+                visit.stage === 'CANCELLED' ? 'bg-error/10 text-error' :
+                'bg-secondary/10 text-secondary'
+              }`}>
+                {stageLabels[visit.stage] || visit.stage}
+              </span>
             )}
             
-            <div className="flex flex-col col-span-2">
-              <span className="text-on-surface-variant font-medium">Tipos de Proyectos:</span>
-              <span className="text-on-surface">{projects.length > 0 ? projects.map(p => p.projectType.name).join(", ") : "Ninguno"}</span>
+            <div className="flex justify-between items-start gap-4">
+              <span className="text-on-surface-variant font-medium flex-shrink-0">Tipos de Proyectos:</span>
+              <span className="text-on-surface text-right break-words">{projects.length > 0 ? projects.map(p => p.projectType.name).join(", ") : "Ninguno"}</span>
             </div>
 
-            <div className="flex flex-col col-span-2">
-              <span className="text-on-surface-variant font-medium">Nombre:</span>
-              <span className="text-on-surface truncate">{bill?.clientName || projectDetails?.clientName || visit.parcel.ownerName || "Sin Nombre"}</span>
+            <div className="flex justify-between items-start gap-4">
+              <span className="text-on-surface-variant font-medium flex-shrink-0">Nombre:</span>
+              <span className="text-on-surface text-right break-words">{bill?.clientName || projectDetails?.clientName || visit.parcel.ownerName || "Sin Nombre"}</span>
             </div>
 
-            <div className="flex flex-col">
-              <span className="text-on-surface-variant font-medium">Teléfono:</span>
-              <span className="text-on-surface truncate">{bill?.phone || projectDetails?.phone || "N/A"}</span>
+            <div className="flex justify-between items-start gap-4">
+              <span className="text-on-surface-variant font-medium flex-shrink-0">Teléfono:</span>
+              <span className="text-on-surface text-right break-words">{bill?.phone || projectDetails?.phone || "N/A"}</span>
             </div>
 
-            <div className="flex flex-col">
-              <span className="text-on-surface-variant font-medium">Email:</span>
-              <span className="text-on-surface truncate">{bill?.clientEmail || projectDetails?.clientEmail || "N/A"}</span>
+            <div className="flex justify-between items-start gap-4">
+              <span className="text-on-surface-variant font-medium flex-shrink-0">Email:</span>
+              <span className="text-on-surface text-right break-words">{bill?.clientEmail || projectDetails?.clientEmail || "N/A"}</span>
             </div>
 
-            <div className="flex flex-col col-span-2">
-              <span className="text-on-surface-variant font-medium">Dirección:</span>
-              <span className="text-on-surface truncate">{visit.parcel.address}</span>
+            <div className="flex justify-between items-start gap-4">
+              <span className="text-on-surface-variant font-medium flex-shrink-0">Dirección:</span>
+              <span className="text-on-surface text-right break-words">{visit.parcel.address}</span>
             </div>
 
-            <div className="flex flex-col">
-              <span className="text-on-surface-variant font-medium">Fecha de Cierre:</span>
-              <span className="text-on-surface truncate">{projectDetails?.closingDate ? new Date(String(projectDetails.closingDate)).toLocaleDateString() : "En proceso"}</span>
+            <div className="flex justify-between items-start gap-4">
+              <span className="text-on-surface-variant font-medium flex-shrink-0">Fecha de Cierre:</span>
+              <span className="text-on-surface text-right break-words">{projectDetails?.closingDate ? new Date(String(projectDetails.closingDate)).toLocaleDateString() : "En proceso"}</span>
             </div>
 
-            <div className="flex flex-col">
-              <span className="text-on-surface-variant font-medium">Creación del lead:</span>
-              <span className="text-on-surface truncate">{visit.createdAt ? new Date(visit.createdAt).toLocaleDateString() : "N/A"}</span>
+            <div className="flex justify-between items-start gap-4">
+              <span className="text-on-surface-variant font-medium flex-shrink-0">Creación del lead:</span>
+              <span className="text-on-surface text-right break-words">{visit.createdAt ? new Date(visit.createdAt).toLocaleDateString() : "N/A"}</span>
             </div>
 
-            <div className="flex flex-col">
-              <span className="text-on-surface-variant font-medium">Rep. principal:</span>
-              <span className="text-on-surface truncate">{projectDetails?.primaryRep || "N/A"}</span>
+            <div className="flex justify-between items-start gap-4">
+              <span className="text-on-surface-variant font-medium flex-shrink-0">Rep. principal:</span>
+              <span className="text-on-surface text-right break-words">{projectDetails?.primaryRep || "N/A"}</span>
             </div>
 
-            <div className="flex flex-col">
-              <span className="text-on-surface-variant font-medium">Comisión (%):</span>
-              <span className="text-on-surface truncate">{projectDetails?.primaryRepCommPct != null ? `${projectDetails.primaryRepCommPct}%` : "N/A"}</span>
+            <div className="flex justify-between items-start gap-4">
+              <span className="text-on-surface-variant font-medium flex-shrink-0">Comisión (%):</span>
+              <span className="text-on-surface text-right break-words">{projectDetails?.primaryRepCommPct != null ? `${projectDetails.primaryRepCommPct}%` : "N/A"}</span>
             </div>
 
-            <div className="flex flex-col">
-              <span className="text-on-surface-variant font-medium">Costo Total:</span>
-              <span className="text-on-surface font-semibold truncate">{projectDetails?.generalCostPrice != null ? `$${Number(projectDetails.generalCostPrice).toLocaleString()}` : "N/A"}</span>
+            <div className="flex justify-between items-start gap-4">
+              <span className="text-on-surface-variant font-medium flex-shrink-0">Costo Total:</span>
+              <span className="text-on-surface font-semibold text-right break-words">{projectDetails?.generalCostPrice != null ? `$${Number(projectDetails.generalCostPrice).toLocaleString()}` : "N/A"}</span>
             </div>
 
-            <div className="flex flex-col">
-              <span className="text-on-surface-variant font-medium">Precio Total:</span>
-              <span className="text-on-surface font-semibold truncate">{projectDetails?.generalSalePrice != null ? `$${Number(projectDetails.generalSalePrice).toLocaleString()}` : "N/A"}</span>
+            <div className="flex justify-between items-start gap-4">
+              <span className="text-on-surface-variant font-medium flex-shrink-0">Precio Total:</span>
+              <span className="text-on-surface font-semibold text-right break-words">{projectDetails?.generalSalePrice != null ? `$${Number(projectDetails.generalSalePrice).toLocaleString()}` : "N/A"}</span>
             </div>
           </div>
         </div>
