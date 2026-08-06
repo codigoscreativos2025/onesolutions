@@ -253,7 +253,15 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
           if (res.ok) {
             const data = await res.json();
             if (Array.isArray(data) && data.length > 0) {
-              const fullParcel = data[0];
+              const llUuid = props.ll_uuid;
+              const fullParcel = data.find((p: { id: string; metadata?: string }) => {
+                if (p.id === llUuid) return true;
+                try {
+                  const meta = p.metadata ? JSON.parse(p.metadata) : null;
+                  if (meta?.regrid_id === llUuid) return true;
+                } catch { /* */ }
+                return false;
+              }) || data[0];
               const fullMeta = fullParcel.metadata ? JSON.parse(fullParcel.metadata) : {};
               const updatedParcel: Parcel = {
                 ...fullParcel,
