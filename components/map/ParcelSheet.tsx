@@ -180,7 +180,6 @@ export function ParcelSheet({
   const canVisit = userRole === "SETTER" || userRole === "SETTER_JR" || userRole === "CLOSER";
   const isTakenByMe = parcel.setter?.id === parseInt(userId);
   const isAvailable = parcel.status === "AVAILABLE";
-  const isClaimedByMySetter = userRole === "CLOSER" && parcel.status === "LEAD" && parcel.setter;
 
   const tags: TagObject[] = (() => {
     try {
@@ -442,7 +441,7 @@ export function ParcelSheet({
             </p>
           )}
 
-          {canVisit && (isAvailable || isTakenByMe || isClaimedByMySetter) && parcel.status !== "CUSTOMER" && (
+          {canVisit && (isAvailable || isTakenByMe) && parcel.status !== "CUSTOMER" && (
             <>
               <div className="flex gap-2">
                 {isAvailable ? (
@@ -453,7 +452,7 @@ export function ParcelSheet({
                     <DoorOpen className="w-4 h-4" />
                     Tocar Puerta
                   </Button>
-                ) : (isTakenByMe || isClaimedByMySetter) ? (
+                ) : isTakenByMe ? (
                   <Button
                     onClick={handleKnockDoor}
                     disabled={claiming}
@@ -471,7 +470,7 @@ export function ParcelSheet({
             </>
           )}
 
-          {canVisit && !isAvailable && !isTakenByMe && !isClaimedByMySetter && parcel.status !== "CUSTOMER" && (
+          {canVisit && !isAvailable && !isTakenByMe && parcel.status !== "CUSTOMER" && (
             <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-surface-container-low border border-outline-variant/30">
               <span className="w-3 h-3 rounded-full bg-red-500 inline-block shrink-0" />
               <span className="text-sm text-on-surface-variant">Parcela tomada</span>
