@@ -233,8 +233,16 @@ function calculateProjectCompletion(
 
   for (const meta of fieldMetas) {
     if (COMMON_FIELDS.includes(meta.fieldName) || FILE_FIELD_KEYS.has(meta.fieldName)) continue;
-    totalFields++;
-    if (isValid(projectDetails[meta.fieldName])) completedFields++;
+    
+    if (meta.isRequired === false) {
+      if (isValid(projectDetails[meta.fieldName])) {
+        totalFields++;
+        completedFields++;
+      }
+    } else {
+      totalFields++;
+      if (isValid(projectDetails[meta.fieldName])) completedFields++;
+    }
   }
 
   if (stage === "PROJECT" || stage === "CLOSED") {
@@ -300,6 +308,7 @@ interface FieldMeta {
   fieldLabel: string;
   fieldType: string;
   options?: string;
+  isRequired?: boolean;
 }
 
 interface HistoryEntry {
@@ -320,6 +329,7 @@ export default function LeadDetailPage() {
   const [visit, setVisit] = useState<VisitDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [startingProject, setStartingProject] = useState(false);
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "datos");
 
@@ -787,7 +797,8 @@ export default function LeadDetailPage() {
   };
 
   const handleStartProject = async () => {
-    if (!visit) return;
+    if (!visit || startingProject) return;
+    setStartingProject(true);
     try {
       let uploadedBillUrl = visit.bill?.imageUrl || null;
       let uploadedIdUrl = visit.bill?.additionalFileUrl || null;
@@ -1073,10 +1084,11 @@ export default function LeadDetailPage() {
         {visit.stage === "PROPOSAL_ACCEPTED" && (
           <button
             onClick={handleStartProject}
-            className="ml-auto flex items-center gap-1.5 px-4 py-3 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-all whitespace-nowrap shrink-0"
+            disabled={startingProject}
+            className="ml-auto flex items-center gap-1.5 px-4 py-3 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-all whitespace-nowrap shrink-0"
           >
-            <Play className="w-4 h-4" />
-            Comenzar Proyecto
+            {startingProject ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Play className="w-4 h-4" />}
+            {startingProject ? "Iniciando..." : "Comenzar Proyecto"}
           </button>
         )}
       </div>

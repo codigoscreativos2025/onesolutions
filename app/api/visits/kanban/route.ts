@@ -18,7 +18,7 @@ const FILE_FIELD_KEYS = new Set([
 
 function computeProgress(
   projectDetails: Record<string, unknown> | null,
-  fieldMetasByType: Record<number, { fieldName: string }[]>,
+  fieldMetasByType: Record<number, { fieldName: string; isRequired?: boolean }[]>,
   projectTypeIds: number[],
   stage?: string
 ): number {
@@ -52,8 +52,16 @@ function computeProgress(
     const metas = fieldMetasByType[ptId] || [];
     for (const meta of metas) {
       if (COMMON_FIELDS.includes(meta.fieldName) || FILE_FIELD_KEYS.has(meta.fieldName)) continue;
-      totalFields++;
-      if (isValid(projectDetails[meta.fieldName])) completedFields++;
+      
+      if (meta.isRequired === false) {
+        if (isValid(projectDetails[meta.fieldName])) {
+          totalFields++;
+          completedFields++;
+        }
+      } else {
+        totalFields++;
+        if (isValid(projectDetails[meta.fieldName])) completedFields++;
+      }
     }
   }
 
@@ -141,11 +149,11 @@ export async function GET() {
 
     if (commonsId) allProjectTypeIds.add(commonsId);
 
-    const fieldMetasByType: Record<number, { fieldName: string }[]> = {};
+    const fieldMetasByType: Record<number, { fieldName: string; isRequired?: boolean }[]> = {};
     for (const ptId of Array.from(allProjectTypeIds)) {
       const fields = await prisma.projectTypeField.findMany({
         where: { projectTypeId: ptId },
-        select: { fieldName: true },
+        select: { fieldName: true, isRequired: true },
       });
       fieldMetasByType[ptId] = fields;
     }
