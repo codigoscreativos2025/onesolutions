@@ -107,7 +107,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
   const [searchQuery, setSearchQuery] = useState("");
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [mobileColumn, setMobileColumn] = useState<ColumnView>("list");
-  const [fieldMetas, setFieldMetas] = useState<{ fieldName: string }[]>([]);
+  const [fieldMetas, setFieldMetas] = useState<{ fieldName: string; isRequired?: boolean }[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -138,7 +138,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
   useEffect(() => {
     if (selectedRoom?.visit?.projects && selectedRoom.visit.projects.length > 0) {
       const fetchFieldMetas = async () => {
-        const allMetas: { fieldName: string }[] = [];
+        const allMetas: { fieldName: string; isRequired?: boolean }[] = [];
         const uniqueIds = Array.from(new Set(selectedRoom.visit.projects!.map((p) => p.projectType.id)));
         for (const typeId of uniqueIds) {
           try {
@@ -407,12 +407,20 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
     );
   }
 
-  const projectDetails = selectedRoom?.visit.projectDetails;
+  const projectDetails = selectedRoom?.visit.projectDetails || {};
   const projects = selectedRoom?.visit.projects || [];
   const bill = selectedRoom?.visit.bill;
+  const mergedProjectDetails: Record<string, unknown> = {
+    ...projectDetails,
+    _billClientName: bill?.clientName || (projectDetails as Record<string, unknown>).clientName,
+    _billClientEmail: bill?.clientEmail || (projectDetails as Record<string, unknown>).clientEmail,
+    _billPhone: bill?.phone || "",
+    electricBillUrl: (projectDetails as Record<string, unknown>).electricBillUrl || bill?.imageUrl,
+    idDocumentUrl: (projectDetails as Record<string, unknown>).idDocumentUrl || bill?.additionalFileUrl,
+  };
 
   const calculateCompletion = (): number => {
-    if (!projectDetails) return 0;
+    if (!mergedProjectDetails || Object.keys(mergedProjectDetails).length === 0) return 0;
 
     const isValid = (val: unknown) => {
       if (val === undefined || val === null) return false;
@@ -447,10 +455,18 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
 
     const requiredCommonFields = COMMON_FIELDS_CHAT.filter((f) => !OPTIONAL_FIELDS_CHAT.includes(f));
     let totalFields = requiredCommonFields.length;
-    let completedFields = requiredCommonFields.filter((f) => isValid(projectDetails[f])).length;
+    let completedFields = requiredCommonFields.filter((f) => isValid(mergedProjectDetails[f])).length;
+
+    const billFields = ['_billClientName', '_billClientEmail', '_billPhone'];
+    for (const field of billFields) {
+      totalFields++;
+      if (isValid(mergedProjectDetails[field])) {
+        completedFields++;
+      }
+    }
 
     for (const field of OPTIONAL_FIELDS_CHAT) {
-      if (isValid(projectDetails[field])) {
+      if (isValid(mergedProjectDetails[field])) {
         totalFields++;
         completedFields++;
       }
@@ -458,14 +474,22 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
 
     for (const meta of fieldMetas) {
       if (COMMON_FIELDS_CHAT.includes(meta.fieldName) || FILE_FIELD_KEYS_CHAT.has(meta.fieldName)) continue;
-      totalFields++;
-      if (isValid(projectDetails[meta.fieldName])) completedFields++;
+
+      if (meta.isRequired === false) {
+        if (isValid(mergedProjectDetails[meta.fieldName])) {
+          totalFields++;
+          completedFields++;
+        }
+      } else {
+        totalFields++;
+        if (isValid(mergedProjectDetails[meta.fieldName])) completedFields++;
+      }
     }
 
     if (selectedRoom?.visit?.stage === "PROJECT" || selectedRoom?.visit?.stage === "CLOSED") {
       totalFields += 2;
-      if (isValid(projectDetails["idDocumentUrl"])) completedFields++;
-      if (isValid(projectDetails["electricBillUrl"])) completedFields++;
+      if (isValid(mergedProjectDetails["idDocumentUrl"])) completedFields++;
+      if (isValid(mergedProjectDetails["electricBillUrl"])) completedFields++;
     }
 
     return totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;

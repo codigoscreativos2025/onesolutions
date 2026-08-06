@@ -28,9 +28,11 @@ interface Visit {
   completedAt: string | null;
   chatCreatedAt: string | null;
   finalizedAt: string | null;
+  progress?: number;
   parcel: { id: string; address: string; ownerName: string | null };
   setter: { id: number; name: string };
   closer?: { id: number; name: string };
+  projectType?: { name: string };
   projects: { projectType: { id: number; name: string } }[];
   projectDetails: ProjectDetails | null;
   objections: ObjectionData[];
@@ -68,22 +70,6 @@ export default function MyProjectsPage() {
   const [ownerNameFilter, setOwnerNameFilter] = useState<string>('');
   const [addressFilter, setAddressFilter] = useState<string>('');
   const [projectTypes, setProjectTypes] = useState<{ id: number; name: string }[]>([]);
-
-  const calculateCompletion = (visit: any): number => {
-    const projectDetails = { ...(visit.projectDetails || {}), clientName: visit.bill?.clientName, clientEmail: visit.bill?.clientEmail, phone: visit.bill?.phone };
-    const staticFields = ['clientName', 'clientEmail', 'phone', 'closingDate', 'paymentMethod', 'primaryRep', 'primaryRepCommPct'];
-    const optionalFields: string[] = [];
-    const allKeys = [...staticFields, ...Object.keys(projectDetails)].filter((v, i, a) => a.indexOf(v) === i);
-    let completed = 0;
-    allKeys.forEach(field => {
-      if (projectDetails[field] && projectDetails[field] !== '') completed++;
-    });
-    // Optional fields only increase total if they have values
-    const optionalFilled = optionalFields.filter(f => projectDetails[f] && projectDetails[f] !== '');
-    const total = allKeys.length + optionalFilled.length;
-    const filled = completed + optionalFilled.length;
-    return total === 0 ? 0 : Math.min(100, Math.round((filled / total) * 100));
-  };
 
   useEffect(() => {
     fetchProjects();
@@ -287,7 +273,7 @@ export default function MyProjectsPage() {
       ) : (
         <div className="space-y-4">
           {filteredVisits.map((visit) => {
-            const completion = calculateCompletion(visit);
+            const completion = visit.progress ?? 0;
             const hasChat = visit.chatRoom || visit.chatCreatedAt;
             return (
               <div key={visit.id} id={`project-${visit.id}`} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border-l-4"

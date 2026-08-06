@@ -201,7 +201,7 @@ const OPTIONAL_FIELDS = ["generalCostPrice", "generalSalePrice"];
 
 function calculateProjectCompletion(
   projectDetails: Record<string, unknown> | null | undefined,
-  fieldMetas: { fieldName: string }[],
+  fieldMetas: FieldMeta[],
   stage?: string
 ): number {
   if (!projectDetails) return 0;
@@ -605,10 +605,14 @@ export default function LeadDetailPage() {
       const payload: Record<string, unknown> = {};
       if (visit?.bill?.imageUrl) payload.electricBillUrl = visit.bill.imageUrl;
       if (visit?.bill?.additionalFileUrl) payload.idDocumentUrl = visit.bill.additionalFileUrl;
+      if (visit?.bill?.clientName) payload.clientName = visit.bill.clientName;
+      if (visit?.bill?.clientEmail) payload.clientEmail = visit.bill.clientEmail;
+      if (visit?.parcel?.address) payload.address = visit.parcel.address;
       for (const [key, value] of Object.entries(editFieldsRef.current)) {
         if (key.startsWith("_bill")) continue;
         if (value !== undefined) {
           const trimmed = typeof value === 'string' ? value.trim() : value;
+          if ((key === "electricBillUrl" || key === "idDocumentUrl") && trimmed === "" && payload[key]) continue;
           payload[key] = trimmed === "" ? null : trimmed;
         }
       }
@@ -805,6 +809,9 @@ export default function LeadDetailPage() {
 
       editFieldsRef.current.electricBillUrl = uploadedBillUrl || "";
       editFieldsRef.current.idDocumentUrl = uploadedIdUrl || "";
+      editFieldsRef.current.clientName = visit.bill?.clientName || editFieldsRef.current.clientName || "";
+      editFieldsRef.current.clientEmail = visit.bill?.clientEmail || editFieldsRef.current.clientEmail || "";
+      editFieldsRef.current.address = visit.parcel?.address || editFieldsRef.current.address || "";
 
       await saveProjectDetailsAction(true);
       const billData: Record<string, string | null> = {
@@ -1268,6 +1275,9 @@ export default function LeadDetailPage() {
               const payload: Record<string, unknown> = { ...editFields };
               if (visit?.bill?.imageUrl) payload.electricBillUrl = payload.electricBillUrl || visit.bill.imageUrl;
               if (visit?.bill?.additionalFileUrl) payload.idDocumentUrl = payload.idDocumentUrl || visit.bill.additionalFileUrl;
+              if (!payload.clientName || payload.clientName === "") payload.clientName = visit?.bill?.clientName || "";
+              if (!payload.clientEmail || payload.clientEmail === "") payload.clientEmail = visit?.bill?.clientEmail || "";
+              if (!payload.address || payload.address === "") payload.address = visit?.parcel?.address || "";
               Object.keys(payload).forEach(k => {
                 if (k.startsWith("_bill") || payload[k] === "" || payload[k] === null) delete payload[k];
               });

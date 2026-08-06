@@ -23,6 +23,21 @@ async function seedProjectFields() {
     update: {},
     create: { name: "Purificacion de agua", description: "Sistema de purificacion para agua" },
   });
+  const fence = await prisma.projectType.upsert({
+    where: { name: "Fence" },
+    update: {},
+    create: { name: "Fence", description: "Cercas y vallas" },
+  });
+  const gutters = await prisma.projectType.upsert({
+    where: { name: "Gutters" },
+    update: {},
+    create: { name: "Gutters", description: "Canaletas y desagues" },
+  });
+  const remodelacion = await prisma.projectType.upsert({
+    where: { name: "Remodelacion" },
+    update: {},
+    create: { name: "Remodelacion", description: "Remodelacion general" },
+  });
 
   const fields = [
     { projectTypeId: commons.id, fieldName: "clientName", fieldLabel: "Nombre y Apellido", fieldType: "text", isRequired: true, order: 1 },
@@ -66,6 +81,12 @@ async function seedProjectFields() {
     { projectTypeId: purificador.id, fieldName: "waterCostPrice", fieldLabel: "Costo", fieldType: "number", isRequired: false, order: 2 },
     { projectTypeId: purificador.id, fieldName: "waterSalePrice", fieldLabel: "Precio de Venta", fieldType: "number", isRequired: false, order: 3 },
     { projectTypeId: purificador.id, fieldName: "waterCommission", fieldLabel: "Comisión", fieldType: "number", isRequired: false, order: 4 },
+    { projectTypeId: fence.id, fieldName: "fenceCostPrice", fieldLabel: "Precio Costo", fieldType: "number", isRequired: false, order: 1 },
+    { projectTypeId: fence.id, fieldName: "fenceSalePrice", fieldLabel: "Precio de Venta", fieldType: "number", isRequired: false, order: 2 },
+    { projectTypeId: gutters.id, fieldName: "gutterCostPrice", fieldLabel: "Precio Costo", fieldType: "number", isRequired: false, order: 1 },
+    { projectTypeId: gutters.id, fieldName: "gutterSalePrice", fieldLabel: "Precio de Venta", fieldType: "number", isRequired: false, order: 2 },
+    { projectTypeId: remodelacion.id, fieldName: "remodelacionCostPrice", fieldLabel: "Precio Costo", fieldType: "number", isRequired: false, order: 1 },
+    { projectTypeId: remodelacion.id, fieldName: "remodelacionSalePrice", fieldLabel: "Precio de Venta", fieldType: "number", isRequired: false, order: 2 },
   ];
 
   let count = 0;

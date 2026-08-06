@@ -130,14 +130,51 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
     }
   };
 
-  const getCompletionPercentage = (details: Record<string, unknown> | null | undefined): number => {
+  const getCompletionPercentage = (visit: Visit): number => {
+    const details = visit.projectDetails;
     if (!details) return 0;
-    const fields = Object.entries(details).filter(
-      ([key]) => !['id', 'visitId', 'createdAt', 'updatedAt', 'panelsUpCount', 'panelsDownCount'].includes(key)
-    );
-    if (fields.length === 0) return 0;
-    const filled = fields.filter(([, val]) => val !== null && val !== undefined && val !== '' && val !== false);
-    return Math.round((filled.length / fields.length) * 100);
+
+    const isValid = (val: unknown) => {
+      if (val === undefined || val === null) return false;
+      if (typeof val === 'string' && val.trim() === "") return false;
+      return true;
+    };
+
+    const COMMON_FIELDS = [
+      "closingDate", "paymentMethod", "primaryRep", "primaryRepCommPct",
+      "generalCostPrice", "generalSalePrice",
+    ];
+    const OPTIONAL_FIELDS = ["generalCostPrice", "generalSalePrice"];
+
+    const requiredCommonFields = COMMON_FIELDS.filter((f) => !OPTIONAL_FIELDS.includes(f));
+    let totalFields = requiredCommonFields.length;
+    let completedFields = requiredCommonFields.filter((f) => isValid(details[f])).length;
+
+    const billFields = ['_billClientName', '_billClientEmail', '_billPhone'];
+    const billValues: Record<string, unknown> = {
+      _billClientName: visit.bill?.clientName,
+      _billClientEmail: visit.bill?.clientEmail,
+      _billPhone: visit.bill?.phone,
+    };
+    for (const field of billFields) {
+      totalFields++;
+      if (isValid(billValues[field])) completedFields++;
+    }
+
+    for (const field of OPTIONAL_FIELDS) {
+      if (isValid(details[field])) {
+        totalFields++;
+        completedFields++;
+      }
+    }
+
+    if (visit.stage === "PROJECT" || visit.stage === "CLOSED") {
+      totalFields += 2;
+      if (isValid(details["electricBillUrl"])) completedFields++;
+      if (isValid(details["idDocumentUrl"])) completedFields++;
+    }
+
+    return totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
   };
 
   const getStageLabel = (stage: string) => {
@@ -453,11 +490,11 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
                           <div className="w-full bg-yellow-200 dark:bg-yellow-700 rounded-full h-2">
                             <div
                               className="bg-yellow-500 h-2 rounded-full transition-all"
-                              style={{ width: `${getCompletionPercentage(visit.projectDetails)}%` }}
+                              style={{ width: `${getCompletionPercentage(visit)}%` }}
                             />
                           </div>
                           <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
-                            {getCompletionPercentage(visit.projectDetails)}% completado
+                            {getCompletionPercentage(visit)}% completado
                           </p>
                         </div>
                       )}
