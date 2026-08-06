@@ -232,8 +232,6 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
             parcelnumb: props.parcelnumb,
           }),
         };
-        setSelectedParcel(basicParcel);
-
         const geom = (e.features[0] as unknown as { geometry: GeoJSON.Geometry }).geometry || e.features[0].geometry;
         selectedGeometryRef.current = geom;
         const tagColor = getTagColor(basicParcel.parcelTags);
@@ -291,9 +289,20 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
                   },
                 }],
               });
+            } else {
+              setSelectedParcel(basicParcel);
             }
+          } else {
+            setSelectedParcel(basicParcel);
           }
-        } catch { /* keep basic data */ }
+          } catch {
+            setSelectedParcel(null);
+            selectedGeometryRef.current = null;
+            (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
+              type: "FeatureCollection",
+              features: [],
+            });
+          }
       });
 
       m.on("mousemove", "parcel-fills", (e) => {
