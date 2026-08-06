@@ -1074,11 +1074,11 @@ function InfoPanelContent({
         <h3 className="font-headline text-lg font-bold text-on-surface">Resumen del Proyecto</h3>
       </div>
 
-      <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4">
-        <div className="space-y-3 text-sm">
+      <div className="flex-1 overflow-y-auto min-h-0 p-4">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-4 text-xs">
             {visit.stage && (
-              <div className="flex flex-col">
-                <span className={`self-start px-3 py-1 rounded-full text-xs font-bold uppercase mb-2 ${
+              <div className="col-span-2 flex flex-col">
+                <span className={`self-start px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
                   visit.stage === 'CLOSED' ? 'bg-primary/10 text-primary' :
                   visit.stage === 'CANCELLED' ? 'bg-error/10 text-error' :
                   'bg-secondary/10 text-secondary'
@@ -1088,64 +1088,59 @@ function InfoPanelContent({
               </div>
             )}
             
-            <div className="flex flex-col">
+            <div className="flex flex-col col-span-2">
               <span className="text-on-surface-variant font-medium">Tipos de Proyectos:</span>
               <span className="text-on-surface">{projects.length > 0 ? projects.map(p => p.projectType.name).join(", ") : "Ninguno"}</span>
             </div>
 
-            <div className="flex flex-col">
+            <div className="flex flex-col col-span-2">
               <span className="text-on-surface-variant font-medium">Nombre:</span>
-              <span className="text-on-surface">{bill?.clientName || projectDetails?.clientName || visit.parcel.ownerName || "Sin Nombre"}</span>
-            </div>
-
-            <div className="flex flex-col">
-              <span className="text-on-surface-variant font-medium">Email:</span>
-              <span className="text-on-surface">{bill?.clientEmail || projectDetails?.clientEmail || "N/A"}</span>
+              <span className="text-on-surface truncate">{bill?.clientName || projectDetails?.clientName || visit.parcel.ownerName || "Sin Nombre"}</span>
             </div>
 
             <div className="flex flex-col">
               <span className="text-on-surface-variant font-medium">Teléfono:</span>
-              <span className="text-on-surface">{bill?.phone || projectDetails?.phone || "N/A"}</span>
+              <span className="text-on-surface truncate">{bill?.phone || projectDetails?.phone || "N/A"}</span>
             </div>
 
             <div className="flex flex-col">
+              <span className="text-on-surface-variant font-medium">Email:</span>
+              <span className="text-on-surface truncate">{bill?.clientEmail || projectDetails?.clientEmail || "N/A"}</span>
+            </div>
+
+            <div className="flex flex-col col-span-2">
               <span className="text-on-surface-variant font-medium">Dirección:</span>
-              <span className="text-on-surface">{visit.parcel.address}</span>
-            </div>
-
-            <div className="flex flex-col">
-              <span className="text-on-surface-variant font-medium">Creación del lead:</span>
-              <span className="text-on-surface">{visit.createdAt ? new Date(visit.createdAt).toLocaleDateString() : "N/A"}</span>
-            </div>
-
-            <div className="flex flex-col">
-              <span className="text-on-surface-variant font-medium">Creador del lead:</span>
-              <span className="text-on-surface">{visit.setter?.name || "Desconocido"}</span>
+              <span className="text-on-surface truncate">{visit.parcel.address}</span>
             </div>
 
             <div className="flex flex-col">
               <span className="text-on-surface-variant font-medium">Fecha de Cierre:</span>
-              <span className="text-on-surface">{projectDetails?.closingDate ? new Date(String(projectDetails.closingDate)).toLocaleDateString() : "En proceso"}</span>
+              <span className="text-on-surface truncate">{projectDetails?.closingDate ? new Date(String(projectDetails.closingDate)).toLocaleDateString() : "En proceso"}</span>
             </div>
 
             <div className="flex flex-col">
-              <span className="text-on-surface-variant font-medium">Representante principal:</span>
-              <span className="text-on-surface">{projectDetails?.primaryRep || "N/A"}</span>
+              <span className="text-on-surface-variant font-medium">Creación del lead:</span>
+              <span className="text-on-surface truncate">{visit.createdAt ? new Date(visit.createdAt).toLocaleDateString() : "N/A"}</span>
             </div>
 
             <div className="flex flex-col">
-              <span className="text-on-surface-variant font-medium">% Comisión Principal:</span>
-              <span className="text-on-surface">{projectDetails?.primaryRepCommPct != null ? `${projectDetails.primaryRepCommPct}%` : "N/A"}</span>
+              <span className="text-on-surface-variant font-medium">Rep. principal:</span>
+              <span className="text-on-surface truncate">{projectDetails?.primaryRep || "N/A"}</span>
             </div>
 
             <div className="flex flex-col">
-              <span className="text-on-surface-variant font-medium">Total:</span>
-              <span className="text-on-surface">{projectDetails?.generalCostPrice != null ? `$${Number(projectDetails.generalCostPrice).toLocaleString()}` : "N/A"}</span>
+              <span className="text-on-surface-variant font-medium">Comisión (%):</span>
+              <span className="text-on-surface truncate">{projectDetails?.primaryRepCommPct != null ? `${projectDetails.primaryRepCommPct}%` : "N/A"}</span>
             </div>
 
             <div className="flex flex-col">
-              <span className="text-on-surface-variant font-medium">Precio de Venta:</span>
-              <span className="text-on-surface">{projectDetails?.generalSalePrice != null ? `$${Number(projectDetails.generalSalePrice).toLocaleString()}` : "N/A"}</span>
+              <span className="text-on-surface-variant font-medium">Costo Total:</span>
+              <span className="text-on-surface font-semibold truncate">{projectDetails?.generalCostPrice != null ? `$${Number(projectDetails.generalCostPrice).toLocaleString()}` : "N/A"}</span>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-on-surface-variant font-medium">Precio Total:</span>
+              <span className="text-on-surface font-semibold truncate">{projectDetails?.generalSalePrice != null ? `$${Number(projectDetails.generalSalePrice).toLocaleString()}` : "N/A"}</span>
             </div>
           </div>
         </div>
