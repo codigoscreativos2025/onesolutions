@@ -471,6 +471,13 @@ export function ParcelSheet({
             </>
           )}
 
+          {canVisit && !isAvailable && !isTakenByMe && !isClaimedByMySetter && parcel.status !== "CUSTOMER" && (
+            <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-surface-container-low border border-outline-variant/30">
+              <span className="w-3 h-3 rounded-full bg-red-500 inline-block shrink-0" />
+              <span className="text-sm text-on-surface-variant">Parcela tomada</span>
+            </div>
+          )}
+
           {canVisit && parcel.status === "CUSTOMER" && (
             <Button variant="outline" onClick={onClose} className="w-full">
               Cerrar
