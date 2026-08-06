@@ -528,11 +528,11 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
         <div className="glass-panel rounded-2xl overflow-hidden flex h-full">
           {/* LEFT COLUMN: Chat list */}
           {!hideRoomList && (
-          <div className={`w-full lg:w-72 border-r border-outline-variant/30 overflow-y-auto flex-shrink-0
+          <div className={`w-full lg:w-72 border-r border-outline-variant/30 flex-shrink-0 min-h-0
             ${mobileColumn !== "list" ? "hidden lg:flex lg:flex-col" : "flex flex-col"}
           `}>
             {/* Search input */}
-            <div className="p-3 border-b border-outline-variant/20">
+            <div className="p-3 border-b border-outline-variant/20 flex-shrink-0">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
                 <input
@@ -544,57 +544,60 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                 />
               </div>
             </div>
-            {filteredRooms.map((room) => (
-              <button
-                key={room.id}
-                onClick={() => handleSelectRoom(room)}
-                className={`w-full text-left p-4 border-b border-outline-variant/20 last:border-0 transition-colors ${
-                  selectedRoomId === room.id
-                    ? "bg-primary/10 text-on-surface"
-                    : (room.messages && room.messages.length > 0 && !room.messages[0].isRead && room.messages[0].userId !== parseInt(session?.user?.id || "0"))
-                    ? "bg-primary text-on-primary"
-                    : "hover:bg-surface-container-low text-on-surface"
-                }`}
-              >
-                <div className="flex justify-between items-start mb-1 gap-2">
-                  <p className="font-semibold text-sm truncate">
-                    {room.visit.bill?.clientName || room.visit.projectDetails?.clientName || room.visit.parcel.ownerName || "Sin Nombre"}
+            
+            <div className="flex-1 overflow-y-auto min-h-0">
+              {filteredRooms.map((room) => (
+                <button
+                  key={room.id}
+                  onClick={() => handleSelectRoom(room)}
+                  className={`w-full text-left p-4 border-b border-outline-variant/20 last:border-0 transition-colors ${
+                    selectedRoomId === room.id
+                      ? "bg-primary/10 text-on-surface"
+                      : (room.messages && room.messages.length > 0 && !room.messages[0].isRead && room.messages[0].userId !== parseInt(session?.user?.id || "0"))
+                      ? "bg-primary text-on-primary"
+                      : "hover:bg-surface-container-low text-on-surface"
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-1 gap-2">
+                    <p className="font-semibold text-sm truncate">
+                      {room.visit.bill?.clientName || room.visit.projectDetails?.clientName || room.visit.parcel.ownerName || "Sin Nombre"}
+                    </p>
+                    <span className="text-[10px] opacity-70 whitespace-nowrap flex-shrink-0 mt-0.5">
+                      {room.messages && room.messages.length > 0
+                        ? new Date(room.messages[0].createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        : (room.visit.createdAt ? new Date(room.visit.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "")}
+                    </span>
+                  </div>
+                  <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Dirección">
+                    <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>{room.visit.parcel.address}</span>
                   </p>
-                  <span className="text-[10px] opacity-70 whitespace-nowrap flex-shrink-0 mt-0.5">
-                    {room.messages && room.messages.length > 0
-                      ? new Date(room.messages[0].createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                      : (room.visit.createdAt ? new Date(room.visit.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "")}
-                  </span>
+                  <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Status">
+                    <Activity className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>
+                      {room.visit.stage === "POTENTIAL_LEAD" ? "Lead Potencial" :
+                       room.visit.stage === "IN_PROGRESS" ? "Agendado" :
+                       room.visit.stage === "PROJECT" ? "En Proyecto" :
+                       room.visit.stage === "CLOSED" ? "Proyecto Cerrado" :
+                       room.visit.stage === "CANCELLED" ? "Proyecto Cancelado" : room.visit.stage || "Desconocido"}
+                    </span>
+                  </p>
+                  <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Fecha">
+                    <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>{room.visit.createdAt ? new Date(room.visit.createdAt).toLocaleDateString() : "N/A"}</span>
+                  </p>
+                  <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Registrado por">
+                    <User className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>{room.visit.setter?.name || "Desconocido"}</span>
+                  </p>
+                </button>
+              ))}
+              {filteredRooms.length === 0 && (
+                <div className="p-4 text-center text-sm text-on-surface-variant">
+                  Sin resultados
                 </div>
-                <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Dirección">
-                  <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span>{room.visit.parcel.address}</span>
-                </p>
-                <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Status">
-                  <Activity className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span>
-                    {room.visit.stage === "POTENTIAL_LEAD" ? "Lead Potencial" :
-                     room.visit.stage === "IN_PROGRESS" ? "Agendado" :
-                     room.visit.stage === "PROJECT" ? "En Proyecto" :
-                     room.visit.stage === "CLOSED" ? "Proyecto Cerrado" :
-                     room.visit.stage === "CANCELLED" ? "Proyecto Cancelado" : room.visit.stage || "Desconocido"}
-                  </span>
-                </p>
-                <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Fecha">
-                  <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span>{room.visit.createdAt ? new Date(room.visit.createdAt).toLocaleDateString() : "N/A"}</span>
-                </p>
-                <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Registrado por">
-                  <User className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span>{room.visit.setter?.name || "Desconocido"}</span>
-                </p>
-              </button>
-            ))}
-            {filteredRooms.length === 0 && (
-              <div className="p-4 text-center text-sm text-on-surface-variant">
-                Sin resultados
-              </div>
-            )}
+              )}
+            </div>
           </div>
           )}
 
@@ -819,10 +822,10 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
 
           {/* RIGHT COLUMN: Info Panel */}
           {selectedRoom && (
-            <div className={`w-full lg:w-80 border-l border-outline-variant/30 overflow-y-auto bg-surface-container-low/30 flex-shrink-0
-              ${(!showInfoPanel && mobileColumn !== "info") ? "hidden lg:block" : "block"}
+            <div className={`w-full lg:w-80 border-l border-outline-variant/30 bg-surface-container-low/30 flex-shrink-0 min-h-0 flex flex-col
+              ${(!showInfoPanel && mobileColumn !== "info") ? "hidden lg:flex" : "flex"}
             `}>
-              <div className="p-4 border-b border-outline-variant/20 flex items-center justify-between">
+              <div className="p-4 border-b border-outline-variant/20 flex items-center justify-between flex-shrink-0">
                 <h3 className="font-semibold text-on-surface text-sm">Detalles del Proyecto</h3>
                 <button
                   onClick={() => { setShowInfoPanel(false); setMobileColumn("conversation"); }}
@@ -831,12 +834,14 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <InfoPanelContent
-                room={selectedRoom}
-                projects={projects}
-                bill={bill}
-                stageLabels={stageLabels}
-              />
+              <div className="flex-1 min-h-0 flex flex-col">
+                <InfoPanelContent
+                  room={selectedRoom}
+                  projects={projects}
+                  bill={bill}
+                  stageLabels={stageLabels}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -1064,12 +1069,12 @@ function InfoPanelContent({
   }, [visit.id]);
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-outline-variant/30">
+    <div className="flex flex-col h-full min-h-0">
+      <div className="p-4 border-b border-outline-variant/30 flex-shrink-0">
         <h3 className="font-headline text-lg font-bold text-on-surface">Resumen del Proyecto</h3>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4">
         <div className="space-y-3 text-sm">
             {visit.stage && (
               <div className="flex flex-col">
