@@ -122,7 +122,7 @@ export async function GET() {
         },
         projectDetails: true,
         bill: {
-          select: { clientName: true, clientEmail: true, phone: true }
+          select: { clientName: true, clientEmail: true, phone: true, imageUrl: true, additionalFileUrl: true }
         }
       },
     });
@@ -164,7 +164,14 @@ export async function GET() {
       projects: v.projects,
       projectDetails: v.projectDetails,
       progress: computeProgress(
-        { ...(v.projectDetails || {}), _billClientName: v.bill?.clientName, _billClientEmail: v.bill?.clientEmail, _billPhone: v.bill?.phone } as Record<string, unknown>,
+        { 
+          ...(v.projectDetails as Record<string, unknown> || {}), 
+          _billClientName: v.bill?.clientName, 
+          _billClientEmail: v.bill?.clientEmail, 
+          _billPhone: v.bill?.phone,
+          electricBillUrl: (v.projectDetails as Record<string, unknown>)?.electricBillUrl || v.bill?.imageUrl,
+          idDocumentUrl: (v.projectDetails as Record<string, unknown>)?.idDocumentUrl || v.bill?.additionalFileUrl,
+        },
         fieldMetasByType,
         [...v.projects.map((p) => p.projectType.id), ...(commonsId ? [commonsId] : [])],
         v.stage

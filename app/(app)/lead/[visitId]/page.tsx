@@ -949,7 +949,12 @@ export default function LeadDetailPage() {
     }
   };
 
-  const mergedDetails = { ...(visit?.projectDetails || {}), ...editFields };
+  const mergedDetails = { 
+    ...(visit?.projectDetails as Record<string, unknown> || {}), 
+    ...editFields,
+    electricBillUrl: editFields.electricBillUrl || (visit?.projectDetails as Record<string, unknown>)?.electricBillUrl || visit?.bill?.imageUrl,
+    idDocumentUrl: editFields.idDocumentUrl || (visit?.projectDetails as Record<string, unknown>)?.idDocumentUrl || visit?.bill?.additionalFileUrl,
+  };
   const progress = calculateProjectCompletion(mergedDetails as Record<string, unknown>, fieldMetas, visit?.stage);
   const selectedProjectNames = visit?.projects?.map((p) => p.projectType.name) || [];
   const isAdmin = role === "ADMIN";
