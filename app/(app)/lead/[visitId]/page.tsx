@@ -1872,7 +1872,11 @@ function DatosProjectPanel({
 
   return (
     <div className="space-y-6">
-      <Panel title="Progreso del Proyecto" icon={BadgeCheck}>
+      <Panel
+        title="Progreso del Proyecto"
+        icon={BadgeCheck}
+        className="sticky top-4 z-10 shadow-lg border-2 border-primary/20 backdrop-blur-xl bg-surface/80"
+      >
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-on-surface-variant">Completitud</span>
@@ -2604,13 +2608,15 @@ function Panel({
   title,
   icon: Icon,
   children,
+  className = "",
 }: {
   title: string;
   icon: React.ComponentType<{ className?: string }>;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="glass-panel rounded-xl p-6">
+    <div className={`glass-panel rounded-xl p-6 ${className}`}>
       <h3 className="font-semibold text-lg mb-4 flex items-center gap-2 text-on-surface">
         <Icon className="w-5 h-5 text-primary" />
         {title}
