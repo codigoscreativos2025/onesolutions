@@ -943,6 +943,7 @@ export default function LeadDetailPage() {
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
+    router.replace(`?tab=${tab}`, { scroll: false });
     if (tab === "chat" && visit && !visit.chatRoom?.id && (visit.stage === "PROJECT" || visit.stage === "CLOSED")) {
       createChatIfNeeded();
     }
