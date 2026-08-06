@@ -14,8 +14,8 @@ export async function GET(
 
   const { id } = await params;
 
-  const parcel = await prisma.parcel.findUnique({
-    where: { id },
+  const parcel = await prisma.parcel.findFirst({
+    where: { OR: [{ id }, { externalId: id }] },
     include: {
       setter: {
         select: { id: true, name: true },

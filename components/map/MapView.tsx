@@ -249,42 +249,24 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
         });
 
         try {
-          const res = await fetch(`/api/regrid/parcels?lat=${lat}&lng=${lng}`);
+          const res = await fetch(`/api/parcels/${props.ll_uuid}`);
           if (res.ok) {
-            const data = await res.json();
-            if (Array.isArray(data) && data.length > 0) {
-              const llUuid = props.ll_uuid;
-              const fullParcel = data.find((p: { id: string; metadata?: string }) => {
-                if (p.id === llUuid) return true;
-                try {
-                  const meta = p.metadata ? JSON.parse(p.metadata) : null;
-                  if (meta?.regrid_id === llUuid) return true;
-                } catch { /* */ }
-                return false;
-              }) || data[0];
-              const fullMeta = fullParcel.metadata ? JSON.parse(fullParcel.metadata) : {};
+            const fullParcel = await res.json();
+            if (fullParcel && fullParcel.id) {
+              const meta = fullParcel.metadata ? JSON.parse(fullParcel.metadata) : {};
               const updatedParcel: Parcel = {
                 ...fullParcel,
-                id: props.ll_uuid || fullParcel.id,
-                address: fullParcel.address || basicParcel.address,
-                ownerName: fullParcel.ownerName || basicParcel.ownerName,
-                city: fullParcel.city || fullMeta.city,
-                state: fullParcel.state || fullMeta.state,
-                zipCode: fullParcel.zipCode || fullMeta.zipCode,
-                ownerOccupied: fullParcel.ownerOccupied ?? fullMeta.ownerOccupied,
-                parcelTags: fullParcel.parcelTags || null,
-                parcelNotes: fullParcel.parcelNotes || null,
                 geometry: basicParcel.geometry,
                 metadata: JSON.stringify({
-                  ...fullMeta,
+                  ...(typeof fullParcel.metadata === 'string' ? meta : (fullParcel.metadata || {})),
                   regrid_id: props.ll_uuid,
                   path: props.path,
                 }),
               };
               setSelectedParcel(updatedParcel);
 
-              const updatedTagColor = getTagColor(fullParcel.parcelTags);
-              const selColor = updatedTagColor || (fullParcel.status === "LEAD" ? "#f59e0b" : fullParcel.status === "CUSTOMER" ? "#10b981" : "#ef4444");
+              const updatedTagColor = getTagColor(updatedParcel.parcelTags);
+              const selColor = updatedTagColor || (updatedParcel.status === "LEAD" ? "#f59e0b" : updatedParcel.status === "CUSTOMER" ? "#10b981" : "#ef4444");
               selectedGeometryRef.current = geom;
               (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
                 type: "FeatureCollection",
@@ -303,14 +285,14 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
           } else {
             setSelectedParcel(basicParcel);
           }
-          } catch {
-            setSelectedParcel(null);
-            selectedGeometryRef.current = null;
-            (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
-              type: "FeatureCollection",
-              features: [],
-            });
-          }
+        } catch {
+          setSelectedParcel(null);
+          selectedGeometryRef.current = null;
+          (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
+            type: "FeatureCollection",
+            features: [],
+          });
+        }
       });
 
       m.on("mousemove", "parcel-fills", (e) => {
