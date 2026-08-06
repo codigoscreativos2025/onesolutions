@@ -1864,8 +1864,6 @@ function DatosProjectPanel({
 
   return (
     <div className="space-y-6">
-      <ClientInfoPanel editFields={editFields} onFieldChange={onFieldChange} onSave={onSave} />
-
       <Panel title="Progreso del Proyecto" icon={BadgeCheck}>
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
@@ -1898,6 +1896,8 @@ function DatosProjectPanel({
           </div>
         )}
       </Panel>
+
+      <ClientInfoPanel editFields={editFields} onFieldChange={onFieldChange} onSave={onSave} />
 
       <Panel title="Documentos" icon={FileText}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
