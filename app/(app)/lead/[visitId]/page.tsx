@@ -323,6 +323,13 @@ export default function LeadDetailPage() {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "datos");
 
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams, activeTab]);
+
   const [editFields, setEditFields] = useState<Record<string, string>>({});
   const hasChangesRef = useRef(false);
   const editFieldsRef = useRef<Record<string, string>>({});
