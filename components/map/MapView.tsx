@@ -248,6 +248,8 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
           }],
         });
 
+        setSelectedParcel(basicParcel);
+
         try {
           const res = await fetch(`/api/parcels/${props.ll_uuid}`);
           if (res.ok) {
@@ -279,11 +281,7 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
                   },
                 }],
               });
-            } else {
-              setSelectedParcel(basicParcel);
             }
-          } else {
-            setSelectedParcel(basicParcel);
           }
         } catch {
           setSelectedParcel(null);
