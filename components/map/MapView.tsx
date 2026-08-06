@@ -325,7 +325,7 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
         id: "parcel-status-circles",
         type: "circle",
         source: "parcel-status-points",
-        minzoom: 12,
+        minzoom: 8,
         paint: {
           "circle-radius": 8,
           "circle-color": "#EF4444",

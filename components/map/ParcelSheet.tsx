@@ -441,27 +441,16 @@ export function ParcelSheet({
             </p>
           )}
 
-          {canVisit && (isAvailable || isTakenByMe) && parcel.status !== "CUSTOMER" && (
+          {canVisit && isAvailable && parcel.status !== "CUSTOMER" && (
             <>
               <div className="flex gap-2">
-                {isAvailable ? (
-                  <Button
-                    onClick={handleKnockDoor}
-                    disabled={claiming}
-                  >
-                    <DoorOpen className="w-4 h-4" />
-                    Tocar Puerta
-                  </Button>
-                ) : isTakenByMe ? (
-                  <Button
-                    onClick={handleKnockDoor}
-                    disabled={claiming}
-                    className="flex-1 h-12 text-sm uppercase tracking-widest"
-                  >
-                    <DoorOpen className="w-4 h-4" />
-                    {claiming ? "..." : "Continuar Visita"}
-                  </Button>
-                ) : null}
+                <Button
+                  onClick={handleKnockDoor}
+                  disabled={claiming}
+                >
+                  <DoorOpen className="w-4 h-4" />
+                  Tocar Puerta
+                </Button>
               </div>
 
               <Button variant="outline" onClick={onClose} className="w-full">
@@ -470,11 +459,17 @@ export function ParcelSheet({
             </>
           )}
 
-          {canVisit && !isAvailable && !isTakenByMe && parcel.status !== "CUSTOMER" && (
-            <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-surface-container-low border border-outline-variant/30">
-              <span className="w-3 h-3 rounded-full bg-red-500 inline-block shrink-0" />
-              <span className="text-sm text-on-surface-variant">Parcela tomada</span>
-            </div>
+          {canVisit && !isAvailable && parcel.status !== "CUSTOMER" && (
+            <>
+              <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-surface-container-low border border-outline-variant/30">
+                <span className="w-3 h-3 rounded-full bg-red-500 inline-block shrink-0" />
+                <span className="text-sm text-on-surface-variant">Parcela tomada</span>
+              </div>
+              
+              <Button variant="outline" onClick={onClose} className="w-full mt-3">
+                Cerrar
+              </Button>
+            </>
           )}
 
           {canVisit && parcel.status === "CUSTOMER" && (
