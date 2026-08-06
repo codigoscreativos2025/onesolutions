@@ -78,8 +78,8 @@ const FIELD_LABEL_MAP: Record<string, string> = {
   otherCostPrice: "Precio Costo Otro",
   otherSalePrice: "Precio Venta Otro",
   otherCommission: "Comisión Otro",
-  generalCostPrice: "Costo Total",
-  generalSalePrice: "Precio Venta Total",
+  generalCostPrice: "Costo",
+  generalSalePrice: "Precio Total",
 };
 
 const STAGE_LABELS: Record<string, string> = {
