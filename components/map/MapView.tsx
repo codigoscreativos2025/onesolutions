@@ -330,11 +330,11 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
         source: "parcel-status-points",
         minzoom: 12,
         paint: {
-          "circle-radius": 6,
-          "circle-color": ["get", "color"],
-          "circle-opacity": 0.85,
+          "circle-radius": 8,
+          "circle-color": "#EF4444",
+          "circle-opacity": 0.9,
           "circle-stroke-color": "#ffffff",
-          "circle-stroke-width": 1.5,
+          "circle-stroke-width": 2,
         },
       });
 
@@ -353,7 +353,7 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
             geometry: { type: "Point" as const, coordinates: p.coordinates },
             properties: {
               id: p.id,
-              color: p.status === "CUSTOMER" ? "#8b5cf6" : "#f59e0b",
+              color: "#EF4444",
             },
           }));
           (map.current?.getSource("parcel-status-points") as maplibregl.GeoJSONSource)?.setData({

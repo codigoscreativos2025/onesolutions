@@ -114,6 +114,11 @@ export default function MapPage() {
     <div className="space-y-4">
       <h1 className="font-headline text-2xl font-bold text-on-surface">Mapa</h1>
 
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-container-low border border-outline-variant/30 text-sm">
+        <span className="w-3 h-3 rounded-full bg-red-500 inline-block" />
+        <span className="text-on-surface-variant">Parcela tomada</span>
+      </div>
+
       <form onSubmit={handleSearch} className="relative">
         <div className="glass-panel rounded-full px-4 py-3 shadow-lg flex items-center gap-3">
           <Search className="w-5 h-5 text-primary" />
