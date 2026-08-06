@@ -608,23 +608,46 @@ export default function LeadDetailPage() {
       if (payload.siteSurveyDate && typeof payload.siteSurveyDate === "string") {
         payload.siteSurveyDate = new Date(payload.siteSurveyDate).toISOString();
       }
-      if (Object.keys(payload).length === 0) { setSaving(false); return; }
+      if (Object.keys(payload).length === 0 && !Object.keys(editFieldsRef.current).some(k => k.startsWith('_bill'))) {
+        setSaving(false);
+        return;
+      }
 
-      const res = await fetch("/api/project-details", {
-        method: "POST",
+      // Save Bill data
+      const billData: Record<string, string | null> = {
+        phone: editFieldsRef.current._billPhone?.trim() || visit.bill?.phone || "",
+        clientName: editFieldsRef.current._billClientName?.trim() || visit.bill?.clientName || null,
+        clientEmail: editFieldsRef.current._billClientEmail?.trim() || visit.bill?.clientEmail || null,
+        notes: editFieldsRef.current._billNotes?.trim() || visit.bill?.notes || null,
+        imageUrl: visit.bill?.imageUrl || null,
+        additionalFileUrl: visit.bill?.additionalFileUrl || null,
+        additionalFileName: visit.bill?.additionalFileName || null,
+      };
+
+      await fetch(`/api/visits/${visit.id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ visitId, ...payload }),
+        body: JSON.stringify({ bill: { upsert: { create: billData, update: billData } } }),
       });
 
-      if (res.ok) {
-        const updated = await res.json();
-        setVisit((prev) =>
-          prev ? { ...prev, projectDetails: { ...prev.projectDetails, ...updated } } : prev
-        );
-        if (!silent) toast.success("Datos guardados");
-      } else {
-        if (!silent) toast.error("Error al guardar");
+      if (Object.keys(payload).length > 0) {
+        const res = await fetch("/api/project-details", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ visitId, ...payload }),
+        });
+
+        if (res.ok) {
+          const updated = await res.json();
+          setVisit((prev) =>
+            prev ? { ...prev, projectDetails: { ...prev.projectDetails, ...updated } } : prev
+          );
+        } else {
+          if (!silent) toast.error("Error al guardar detalles");
+        }
       }
+      
+      if (!silent) toast.success("Datos guardados");
     } catch {
       if (!silent) toast.error("Error al guardar");
     } finally {
