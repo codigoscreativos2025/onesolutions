@@ -1702,15 +1702,6 @@ function DatosLeadPanel({
         </div>
       </Panel>
 
-      <Panel title="Notas" icon={Pencil}>
-        <textarea
-          value={editFields._billNotes || ""}
-          onChange={(e) => onFieldChange("_billNotes", e.target.value)}
-          placeholder="Notas adicionales..."
-          className="w-full min-h-[100px] bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none rounded-xl p-4 resize-none text-on-surface"
-        />
-      </Panel>
-
     </div>
   );
 }
