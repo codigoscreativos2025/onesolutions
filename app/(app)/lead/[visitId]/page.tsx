@@ -1361,7 +1361,7 @@ export default function LeadDetailPage() {
                       const billData: Record<string, string | null> = { phone: editFields._billPhone?.trim() || visit?.bill?.phone || "", clientName: editFields._billClientName?.trim() || visit?.bill?.clientName || null, clientEmail: editFields._billClientEmail?.trim() || visit?.bill?.clientEmail || null, notes: editFields._billNotes?.trim() || visit?.bill?.notes || null, imageUrl: billUrl || visit?.bill?.imageUrl || null, additionalFileUrl: idUrl || visit?.bill?.additionalFileUrl || null };
                       await fetch(`/api/visits/${visit?.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bill: { upsert: { create: billData, update: billData } } }) });
                       toast.success("Cambios guardados");
-                      window.location.reload();
+                      fetchVisitDetails(true);
                     } catch { toast.error("Error al guardar"); }
                     finally { setSaving(false); }
                   }}
