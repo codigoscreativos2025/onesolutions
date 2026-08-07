@@ -14,8 +14,8 @@ export async function POST(
   const userId = parseInt(session.user.id);
   const role = session.user.role;
 
-  // Solo closers y admins pueden crear chats
-  if (role !== 'CLOSER' && role !== 'ADMIN') {
+  // Closers, Trainees (SETTER) y admins pueden crear chats
+  if (role !== 'CLOSER' && role !== 'SETTER' && role !== 'ADMIN') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -45,8 +45,11 @@ export async function POST(
       );
     }
 
-    // Verificar que el closer tiene permisos sobre esta visita
+    // Verificar que el closer o setter tiene permisos sobre esta visita
     if (role === 'CLOSER' && visit.closerId !== userId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    if (role === 'SETTER' && visit.setterId !== userId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

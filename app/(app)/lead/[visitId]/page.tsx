@@ -211,6 +211,17 @@ function getTimelineColor(action: string): string {
 
 const OPTIONAL_FIELDS = ["generalCostPrice", "generalSalePrice"];
 
+// Campos obligatorios para llegar al 100%
+const REQUIRED_COMMON_FIELDS = new Set([
+  "closingDate",
+  "paymentMethod",
+  "primaryRep",
+  "primaryRepCommPct",
+]);
+// Campos secundarios opcionales de COMMON_FIELDS
+// (secondaryRep, tertiaryRep, generalCostPrice, generalSalePrice son opcionales)
+
+
 function calculateProjectCompletion(
   projectDetails: Record<string, unknown> | null | undefined,
   fieldMetas: FieldMeta[],
@@ -737,7 +748,19 @@ export default function LeadDetailPage() {
     try {
       const res = await fetch(`/api/visits/${visitId}/request-close`, { method: "POST" });
       if (res.ok) {
+        // Persistir timestamp en contractFields para saber que fue solicitado
+        let existing: Record<string, unknown> = {};
+        if (visit?.contractFields) {
+          try { existing = JSON.parse(visit.contractFields); } catch { /* */ }
+        }
+        existing.closeRequestedAt = new Date().toISOString();
+        await fetch(`/api/visits/${visitId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contractFields: JSON.stringify(existing) }),
+        });
         toast.success("Solicitud de cierre enviada a los administradores");
+        fetchVisitDetails();
       } else {
         toast.error("Error al solicitar cierre");
       }
@@ -1021,6 +1044,12 @@ export default function LeadDetailPage() {
   const selectedProjectNames = visit?.projects?.map((p) => p.projectType.name) || [];
   const isAdmin = role === "ADMIN";
 
+  // Detectar si ya se solicitó el cierre
+  const closeRequested = (() => {
+    if (!visit?.contractFields) return false;
+    try { return !!(JSON.parse(visit.contractFields)?.closeRequestedAt); } catch { return false; }
+  })();
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -1212,6 +1241,7 @@ export default function LeadDetailPage() {
                   selectedProjectNames={selectedProjectNames}
                   progress={progress}
                   role={role}
+                  closeRequested={closeRequested}
                   onRequestClose={handleRequestClose}
                   onCloseProject={handleCloseProject}
                   onCancelProject={handleCancelProjectAction}
@@ -1361,6 +1391,22 @@ function TabContent({ children }: { children: React.ReactNode }) {
   );
 }
 
+function RequiredBadge({ required }: { required?: boolean }) {
+  if (required === undefined) return null;
+  if (required) {
+    return (
+      <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
+        Obligatorio
+      </span>
+    );
+  }
+  return (
+    <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-surface-container-high text-on-surface-variant border border-outline-variant/50">
+      Opcional
+    </span>
+  );
+}
+
 function FieldRow({
   label,
   value,
@@ -1372,6 +1418,7 @@ function FieldRow({
   isFile,
   onFileUpload,
   fileUrl,
+  required,
 }: {
   label: string;
   value: string;
@@ -1383,12 +1430,13 @@ function FieldRow({
   isFile?: boolean;
   onFileUpload?: (fieldName: string, file: File) => void;
   fileUrl?: string;
+  required?: boolean;
 }) {
   if (isFile) {
     return (
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-          {label}
+        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">
+          {label}<RequiredBadge required={required} />
         </label>
         <div className="flex items-center gap-3">
           {fileUrl && (
@@ -1419,7 +1467,7 @@ function FieldRow({
   if (type === "date") {
     return (
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">{label}</label>
+        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">{label}<RequiredBadge required={required} /></label>
         <input
           type="date"
           value={value}
@@ -1435,7 +1483,7 @@ function FieldRow({
   if (field === "paymentMethod") {
     return (
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">{label}</label>
+        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">{label}<RequiredBadge required={required} /></label>
         <select value={value} onChange={(e) => onChange?.(field, e.target.value)} onBlur={onBlur} disabled={readOnly}
           className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface transition-colors">
           <option value="">Seleccionar...</option>
@@ -1456,7 +1504,7 @@ function FieldRow({
   if (field === "waterSystemType") {
     return (
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">{label}</label>
+        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">{label}<RequiredBadge required={required} /></label>
         <select value={value} onChange={(e) => onChange?.(field, e.target.value)} onBlur={onBlur} disabled={readOnly}
           className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface transition-colors">
           <option value="">Seleccionar...</option>
@@ -1472,7 +1520,7 @@ function FieldRow({
   if (type === "number" || field.includes("CommPct") || field.includes("Price") || field.includes("Commission")) {
     return (
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">{label}</label>
+        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">{label}<RequiredBadge required={required} /></label>
         <input
           type="number"
           step={field.includes("Price") || field.includes("Commission") ? "0.01" : "1"}
@@ -1487,13 +1535,17 @@ function FieldRow({
   }
 
   return (
-    <Input
-      label={label}
-      value={value}
-      onChange={(e) => onChange?.(field, (e.target as HTMLInputElement).value)}
-      onBlur={onBlur}
-      readOnly={readOnly}
-    />
+    <div className="space-y-1.5">
+      <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">
+        {label}<RequiredBadge required={required} />
+      </label>
+      <Input
+        value={value}
+        onChange={(e) => onChange?.(field, (e.target as HTMLInputElement).value)}
+        onBlur={onBlur}
+        readOnly={readOnly}
+      />
+    </div>
   );
 }
 
@@ -1524,9 +1576,18 @@ function ClientInfoPanel({
   return (
     <Panel title="Información del Cliente" icon={User}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input label="Nombre" value={editFields?._billClientName || ""} onChange={(e) => onFieldChange?.("_billClientName", (e.target as HTMLInputElement).value)} onBlur={onSave} placeholder="Nombre del cliente" />
-        <Input label="Correo" type="email" value={editFields?._billClientEmail || ""} onChange={(e) => onFieldChange?.("_billClientEmail", (e.target as HTMLInputElement).value)} onBlur={onSave} placeholder="Correo electrónico" />
-        <Input label="Teléfono" type="tel" value={editFields?._billPhone || ""} onChange={(e) => onFieldChange?.("_billPhone", (e.target as HTMLInputElement).value)} onBlur={onSave} placeholder="Número de teléfono" />
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">Nombre<RequiredBadge required={true} /></label>
+          <Input value={editFields?._billClientName || ""} onChange={(e) => onFieldChange?.("_billClientName", (e.target as HTMLInputElement).value)} onBlur={onSave} placeholder="Nombre del cliente" />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">Correo<RequiredBadge required={true} /></label>
+          <Input type="email" value={editFields?._billClientEmail || ""} onChange={(e) => onFieldChange?.("_billClientEmail", (e.target as HTMLInputElement).value)} onBlur={onSave} placeholder="Correo electrónico" />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">Teléfono<RequiredBadge required={true} /></label>
+          <Input type="tel" value={editFields?._billPhone || ""} onChange={(e) => onFieldChange?.("_billPhone", (e.target as HTMLInputElement).value)} onBlur={onSave} placeholder="Número de teléfono" />
+        </div>
       </div>
     </Panel>
   );
@@ -1577,6 +1638,7 @@ function DatosLeadPanel({
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectTypeIds: next }),
       });
+      onRefresh();
     } catch { /* */ }
   };
 
@@ -1833,6 +1895,7 @@ function DatosProjectFieldsPanel({
               isFile={isFieldFile(key)}
               onFileUpload={onFileFieldUpload}
               fileUrl={pd[key] ? String(pd[key]) : undefined}
+              required={OPTIONAL_FIELDS.includes(key) ? false : REQUIRED_COMMON_FIELDS.has(key) ? true : false}
             />
           ))}
         </div>
@@ -1862,7 +1925,8 @@ function DatosProjectFieldsPanel({
                         value={getValue(meta.fieldName)} field={meta.fieldName}
                         type={meta.fieldType || "text"} onChange={(_, v) => onFieldChange(meta.fieldName, v)}
                         onBlur={onSave} isFile={meta.fieldType === "file" || meta.fieldType === "photos"}
-                        onFileUpload={onFileFieldUpload} fileUrl={pd[meta.fieldName] ? String(pd[meta.fieldName]) : undefined} />
+                        onFileUpload={onFileFieldUpload} fileUrl={pd[meta.fieldName] ? String(pd[meta.fieldName]) : undefined}
+                        required={meta.isRequired === false ? false : meta.isRequired === true ? true : undefined} />
                     ))}
                   </div>
                 ) : (
@@ -1888,6 +1952,7 @@ function DatosProjectPanel({
   selectedProjectNames,
   progress,
   role,
+  closeRequested,
   onRequestClose,
   onCloseProject,
   onCancelProject,
@@ -1903,6 +1968,7 @@ function DatosProjectPanel({
   selectedProjectNames: string[];
   progress: number;
   role: string;
+  closeRequested: boolean;
   onRequestClose: () => void;
   onCloseProject: () => void;
   onCancelProject: () => void;
@@ -1965,12 +2031,19 @@ function DatosProjectPanel({
           </div>
         </div>
         {progress === 100 && (
-          <div className="mt-4 flex gap-3 flex-wrap">
+          <div className="mt-4 flex gap-3 flex-wrap items-center">
             {isTraineeOrCloser && (
-              <Button onClick={onRequestClose} variant="outline">
-                <BadgeCheck className="w-4 h-4" />
-                Solicitar Cierre
-              </Button>
+              closeRequested ? (
+                <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/40 text-amber-600 dark:text-amber-400">
+                  <BadgeCheck className="w-4 h-4 shrink-0" />
+                  <span className="text-sm font-semibold">Cierre Solicitado</span>
+                </div>
+              ) : (
+                <Button onClick={onRequestClose} variant="outline">
+                  <BadgeCheck className="w-4 h-4" />
+                  Solicitar Cierre
+                </Button>
+              )
             )}
             {isAdmin && (
               <Button onClick={onCloseProject}>
@@ -1991,6 +2064,7 @@ function DatosProjectPanel({
             value={getValue("idDocumentUrl")}
             field="idDocumentUrl"
             isFile
+            required={true}
             onFileUpload={onFileFieldUpload}
             fileUrl={pd["idDocumentUrl"] ? String(pd["idDocumentUrl"]) : undefined}
           />
@@ -1999,6 +2073,7 @@ function DatosProjectPanel({
             value={getValue("electricBillUrl")}
             field="electricBillUrl"
             isFile
+            required={true}
             onFileUpload={onFileFieldUpload}
             fileUrl={pd["electricBillUrl"] ? String(pd["electricBillUrl"]) : undefined}
           />
@@ -2019,6 +2094,7 @@ function DatosProjectPanel({
               isFile={isFieldFile(key)}
               onFileUpload={onFileFieldUpload}
               fileUrl={pd[key] ? String(pd[key]) : undefined}
+              required={OPTIONAL_FIELDS.includes(key) ? false : REQUIRED_COMMON_FIELDS.has(key) ? true : false}
             />
           ))}
         </div>
@@ -2055,6 +2131,7 @@ function DatosProjectPanel({
                         isFile={meta.fieldType === "file" || meta.fieldType === "photos"}
                         onFileUpload={onFileFieldUpload}
                         fileUrl={pd[meta.fieldName] ? String(pd[meta.fieldName]) : undefined}
+                        required={meta.isRequired === false ? false : meta.isRequired === true ? true : undefined}
                       />
                     ))}
                   </div>

@@ -141,7 +141,7 @@ export async function PATCH(
       }
     }
     if (closerId !== undefined) transferData.closerId = closerId;
-    if (updateData.scheduledAt !== undefined) transferData.scheduledAt = new Date(updateData.scheduledAt);
+    if (updateData.scheduledAt !== undefined) transferData.scheduledAt = new Date(updateData.scheduledAt as string);
 
     await prisma.visit.update({
       where: { id: visitId },
@@ -220,6 +220,10 @@ export async function PATCH(
       if (projectCount === 0) {
         return NextResponse.json({ error: "Debes seleccionar al menos un tipo de proyecto" }, { status: 400 });
       }
+    }
+
+    if (updateData.scheduledAt !== undefined && typeof updateData.scheduledAt === 'string') {
+      updateData.scheduledAt = new Date(updateData.scheduledAt);
     }
 
     await prisma.visit.update({

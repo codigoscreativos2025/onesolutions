@@ -100,8 +100,10 @@ export default function VisitPage() {
   const isSetterJr = role === "SETTER_JR";
   const isCloser = role === "CLOSER";
   const hasPanelSolar = projectTypes.some((pt) => selectedProjectTypes.includes(pt.id) && pt.name.toLowerCase().includes("panel solar"));
-  const showCloserDropdown = isSetterJr || (isSetter && hasPanelSolar);
-  const isSelfAssigned = isCloser || (isSetter && !hasPanelSolar);
+  // Solo Setter (SETTER_JR) o ADMIN eligen closer
+  const showCloserDropdown = isSetterJr || role === "ADMIN";
+  // Trainee (SETTER) y Closer siempre se autoasignan
+  const isSelfAssigned = isCloser || isSetter;
   const scheduleSelected = selectedScheduleDate && selectedScheduleTime;
 
   useEffect(() => { fetchData(); }, [parcelId]); // eslint-disable-line
@@ -216,10 +218,15 @@ export default function VisitPage() {
         patchBody.stage = "PROPOSAL_ACCEPTED";
       }
 
-      await fetch(`/api/visits/${visit.id}`, {
+      const patchRes = await fetch(`/api/visits/${visit.id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(patchBody),
       });
+
+      if (!patchRes.ok) {
+        const errorData = await patchRes.json().catch(() => ({}));
+        throw new Error(errorData.error || "Error al actualizar el lead en el servidor");
+      }
 
       if (mode !== 'potential') {
         if (parcelId) {

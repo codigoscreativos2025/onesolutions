@@ -111,7 +111,7 @@ export default function CalendarPage() {
   const isAdmin = session?.user?.role === "ADMIN";
   const isSetter = session?.user?.role === "SETTER";
   const isSetterJr = session?.user?.role === "SETTER_JR";
-  const isCloser = session?.user?.role === "CLOSER";
+  const isCloser = session?.user?.role === "CLOSER" || session?.user?.role === "SETTER"; // Trainee tiene capacidades de Closer
   const canSetSchedule = isSetter || isSetterJr || isCloser;
 
   const fetchAvailability = async (targetMonth?: Date) => {
@@ -453,7 +453,7 @@ export default function CalendarPage() {
   };
 
   const handleAppointmentNavigate = (visit: CalendarVisit) => {
-    if ((isSetter || isSetterJr) && visit.stage !== "IN_PROGRESS") {
+    if (isSetterJr && visit.stage !== "IN_PROGRESS") {
       toast.error("Este lead ya no está disponible para visitar");
       return;
     }
