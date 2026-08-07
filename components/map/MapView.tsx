@@ -95,6 +95,7 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
   const initializedRef = useRef(false);
   const centerRef = useRef<[number, number] | null | undefined>(center);
   const selectedGeometryRef = useRef<GeoJSON.Geometry | null>(null);
+  const quickTagActiveRef = useRef(false);
 
   useEffect(() => {
     centerRef.current = center;
@@ -208,6 +209,7 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
 
       m.on("click", "parcel-fills", async (e) => {
         if (!e.features?.[0]) return;
+        quickTagActiveRef.current = false;
         const props = e.features[0].properties;
         const llUuid = props.ll_uuid || "";
         const { lng, lat } = e.lngLat;
@@ -412,6 +414,16 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const handleQuickTagApplied = useCallback(() => {
+    quickTagActiveRef.current = true;
+    (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
+      type: "FeatureCollection",
+      features: [],
+    });
+    selectedGeometryRef.current = null;
+    fetchMarkersRef.current?.();
+  }, []);
+
   const handleClaim = async (parcelId: string) => {
     const res = await fetch(`/api/parcels/${parcelId}/claim`, {
       method: "POST",
@@ -450,6 +462,7 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
         parcel={selectedParcel}
         onClose={() => {
           setSelectedParcel(null);
+          quickTagActiveRef.current = false;
           selectedGeometryRef.current = null;
           (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
             type: "FeatureCollection",
@@ -462,6 +475,7 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
         }}
         onParcelUpdated={(updated) => {
           setSelectedParcel(updated);
+          if (quickTagActiveRef.current) return;
           try {
             const tags = updated.parcelTags ? JSON.parse(updated.parcelTags) : [];
             const tagColor = tags.length > 0 ? tags[0].color : null;
@@ -481,6 +495,7 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
             }
           } catch { /* */ }
         }}
+        onQuickTagApplied={handleQuickTagApplied}
         userRole={session?.user?.role || ""}
         userId={session?.user?.id || ""}
       />

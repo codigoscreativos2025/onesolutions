@@ -47,6 +47,7 @@ interface ParcelSheetProps {
   onClaim: (parcelId: string) => Promise<{ id: string } | void>;
   onVisitStarted: () => void;
   onParcelUpdated?: (updated: Parcel) => void;
+  onQuickTagApplied?: () => void;
   userRole: string;
   userId: string;
 }
@@ -57,6 +58,7 @@ export function ParcelSheet({
   onClaim,
   onVisitStarted,
   onParcelUpdated,
+  onQuickTagApplied,
   userRole,
   userId,
 }: ParcelSheetProps) {
@@ -76,6 +78,7 @@ export function ParcelSheet({
 
   const [showLeadModal, setShowLeadModal] = useState(false);
   const [visitNotAvailTags, setVisitNotAvailTags] = useState<NotAvailTag[]>([]);
+  const [quickTagMessage, setQuickTagMessage] = useState<{ name: string; color: string } | null>(null);
 
   const noteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSavingRef = useRef(false);
@@ -85,6 +88,7 @@ export function ParcelSheet({
   useEffect(() => {
     if (!parcel) {
       setVisitNotAvailTags([]);
+      setQuickTagMessage(null);
       return;
     }
     const pId = parcel.id;
@@ -230,10 +234,10 @@ export function ParcelSheet({
   };
 
   const handleQuickTag = (name: string, color: string) => {
-    // Replaces all tags with the new one so the color updates clearly, or you can append.
-    // The instructions implied these are primary statuses.
     const newTags = [{ name, color, date: new Date().toISOString() }];
     saveTagsAuto(newTags);
+    setQuickTagMessage({ name, color });
+    onQuickTagApplied?.();
   };
 
   const addCustomTagToParcel = () => {
@@ -376,6 +380,21 @@ export function ParcelSheet({
             )}
 
           </div>
+
+          {quickTagMessage && (
+            <div
+              className="p-4 rounded-xl border flex items-center gap-3"
+              style={{ backgroundColor: quickTagMessage.color + "15", borderColor: quickTagMessage.color + "40" }}
+            >
+              <span
+                className="w-6 h-6 rounded-full shrink-0 border-2 border-white shadow"
+                style={{ backgroundColor: quickTagMessage.color }}
+              />
+              <span className="text-sm font-semibold" style={{ color: quickTagMessage.color }}>
+                {quickTagMessage.name}
+              </span>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             {metadata.owner && <InfoCard label="Propietario" value={metadata.owner} />}
