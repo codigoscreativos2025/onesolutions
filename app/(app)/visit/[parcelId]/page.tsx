@@ -207,7 +207,7 @@ export default function VisitPage() {
       }
 
       const patchBody: Record<string, unknown> = {
-        notes: notes.trim() || null,
+        legacyNotes: notes.trim() || null,
         bill: { upsert: { create: billData, update: billData } },
         ...(showCloserDropdown && selectedCloserId ? { closerId: Number(selectedCloserId) } : {}),
         ...(isSelfAssigned ? { closerId: Number(session?.user?.id) } : {}),

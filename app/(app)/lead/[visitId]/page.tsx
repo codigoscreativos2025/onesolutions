@@ -1663,11 +1663,12 @@ function DatosLeadPanel({
       });
 
       if (editFields._billNotes !== undefined) {
-        await fetch(`/api/visits/${visit.id}`, {
+        const fetchRes = await fetch(`/api/visits/${visit.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ notes: editFields._billNotes?.trim() || null }),
+          body: JSON.stringify({ legacyNotes: editFields._billNotes?.trim() || null }),
         });
+        if (!fetchRes.ok) throw new Error("Error al guardar notas");
       }
 
       toast.success("Datos guardados");
