@@ -68,7 +68,7 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await request.json();
-  const { partnerId, parcelTags, parcelNotes, visitedStatus } = body;
+  const { partnerId, parcelTags, parcelNotes, visitedStatus, address: bodyAddress, geometry: bodyGeometry } = body;
 
   const parcel = await prisma.parcel.findUnique({ where: { id } });
 
@@ -101,8 +101,8 @@ export async function PATCH(
     create: {
       id,
       ...updateData,
-      address: (updateData.address as string) || "Sin direccion",
-      geometry: JSON.stringify({ type: "Polygon", coordinates: [] }),
+      address: bodyAddress || "Sin direccion",
+      geometry: bodyGeometry || JSON.stringify({ type: "Polygon", coordinates: [] }),
       ...(isAdmin ? { partnerId: partnerId as number } : {}),
     },
     include: {

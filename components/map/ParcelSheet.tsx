@@ -26,6 +26,7 @@ interface Parcel {
   ownerName?: string;
   status: "AVAILABLE" | "LEAD" | "CUSTOMER";
   metadata?: string;
+  geometry?: string;
   city?: string;
   state?: string;
   zipCode?: string;
@@ -86,9 +87,9 @@ export function ParcelSheet({
   const isAdmin = userRole === "ADMIN";
 
   useEffect(() => {
+    setQuickTagMessage(null);
     if (!parcel) {
       setVisitNotAvailTags([]);
-      setQuickTagMessage(null);
       return;
     }
     const pId = parcel.id;
@@ -142,7 +143,7 @@ export function ParcelSheet({
       const res = await fetch(`/api/parcels/${parcel.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ parcelTags: JSON.stringify(newTags) }),
+        body: JSON.stringify({ parcelTags: JSON.stringify(newTags), address: parcel.address, geometry: parcel.geometry }),
       });
       if (res.ok) {
         const updated = await res.json();
