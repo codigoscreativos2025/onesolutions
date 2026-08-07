@@ -1678,7 +1678,6 @@ function DatosLeadPanel({
       }
 
       toast.success("Datos guardados");
-      onRefresh();
     } catch {
       toast.error("Error al guardar");
     } finally {
