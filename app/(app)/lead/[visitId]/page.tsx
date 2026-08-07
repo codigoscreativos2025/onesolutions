@@ -408,8 +408,8 @@ export default function LeadDetailPage() {
   const [scheduleClosers, setScheduleClosers] = useState<any[]>([]);
   const [scheduleSaving, setScheduleSaving] = useState(false);
 
-  const fetchVisitDetails = async () => {
-    setLoading(true);
+  const fetchVisitDetails = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const res = await fetch(`/api/visits/${visitId}/details`);
       if (!res.ok) throw new Error("Error fetching visit");
@@ -418,7 +418,7 @@ export default function LeadDetailPage() {
     } catch {
       toast.error("Error al cargar los detalles del proyecto");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -1155,7 +1155,7 @@ export default function LeadDetailPage() {
           <TabContent key="datos">
             {visit.stage !== "PROJECT" && visit.stage !== "CLOSED" && visit.stage !== "PROPOSAL_ACCEPTED" && (
               <>
-                <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={handleFieldChange} onUpload={handleUpload} onRefresh={fetchVisitDetails} leadTags={leadTags} notAvailTags={notAvailTags} onAddTag={handleAddLeadTag} onRemoveTag={handleRemoveLeadTag} onBillFileUpload={handleBillFileUpload} />
+                <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={handleFieldChange} onUpload={handleUpload} onRefresh={() => fetchVisitDetails(true)} leadTags={leadTags} notAvailTags={notAvailTags} onAddTag={handleAddLeadTag} onRemoveTag={handleRemoveLeadTag} onBillFileUpload={handleBillFileUpload} />
                 <div className="mt-6">
                   <NotesPanel visitId={visitId} visitCreatedAt={visit?.createdAt} />
                 </div>
@@ -1214,7 +1214,7 @@ export default function LeadDetailPage() {
                   selectedProjectNames={selectedProjectNames}
                   onFileFieldUpload={handleFileUploadField}
                   onUpload={handleUpload}
-                  onRefresh={fetchVisitDetails}
+                  onRefresh={() => fetchVisitDetails(true)}
                   showBillSection
                   leadTags={leadTags}
                   notAvailTags={notAvailTags}
@@ -1256,7 +1256,7 @@ export default function LeadDetailPage() {
             {visit.stage === "CLOSED" && (
               <>
                 {isAdmin && (
-                  <AssignPartnerPanel visitId={visit.id} currentPartnerId={visit.parcel?.partnerId} onRefresh={fetchVisitDetails} />
+                  <AssignPartnerPanel visitId={visit.id} currentPartnerId={visit.parcel?.partnerId} onRefresh={() => fetchVisitDetails(true)} />
                 )}
                 <DatosClosedPanel
                 visit={visit}
