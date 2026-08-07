@@ -597,10 +597,6 @@ export default function LeadDetailPage() {
       toast.error("Selecciona fecha y hora");
       return;
     }
-    if (!visit.projects?.length) {
-      toast.error("Debes seleccionar al menos un tipo de proyecto antes de agendar");
-      return;
-    }
     if (showScheduleCloserDropdown && !scheduleCloserId) {
       toast.error("Selecciona un Closer");
       return;
@@ -1644,7 +1640,6 @@ function DatosLeadPanel({
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectTypeIds: next }),
       });
-      onRefresh();
     } catch { /* */ }
   };
 
