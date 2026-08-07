@@ -209,7 +209,14 @@ function getTimelineColor(action: string): string {
   return "#6b7280";
 }
 
-const OPTIONAL_FIELDS = ["generalCostPrice", "generalSalePrice"];
+const OPTIONAL_FIELDS = [
+  "generalCostPrice",
+  "generalSalePrice",
+  "secondaryRep",
+  "secondaryRepCommPct",
+  "tertiaryRep",
+  "tertiaryRepCommPct"
+];
 
 // Campos obligatorios para llegar al 100%
 const REQUIRED_COMMON_FIELDS = new Set([

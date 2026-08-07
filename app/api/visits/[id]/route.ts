@@ -214,6 +214,10 @@ export async function PATCH(
     return NextResponse.json({ success: true });
   }
 
+  if (contractFields && !contractType) {
+    updateData.contractFields = contractFields;
+  }
+
   if (Object.keys(updateData).length > 0) {
     if (updateData.stage === "PROJECT") {
       const projectCount = await prisma.visitProject.count({ where: { visitId } });
