@@ -1681,6 +1681,7 @@ function DatosLeadPanel({
     <div className="space-y-6">
       <ClientInfoPanel editFields={editFields} onFieldChange={onFieldChange} />
 
+      {/* 
       <Panel title="Etiquetas" icon={Tag}>
         {leadTags.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-3">
@@ -1720,6 +1721,7 @@ function DatosLeadPanel({
           })}
         </div>
       </Panel>
+      */}
 
       <Panel title="Documentos" icon={FileText}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

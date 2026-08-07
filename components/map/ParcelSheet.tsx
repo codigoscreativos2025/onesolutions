@@ -229,6 +229,13 @@ export function ParcelSheet({
     setEditingTagIdx(null);
   };
 
+  const handleQuickTag = (name: string, color: string) => {
+    // Replaces all tags with the new one so the color updates clearly, or you can append.
+    // The instructions implied these are primary statuses.
+    const newTags = [{ name, color, date: new Date().toISOString() }];
+    saveTagsAuto(newTags);
+  };
+
   const addCustomTagToParcel = () => {
     if (!customTagName.trim()) return;
     const exists = tags.some((t) => t.name === customTagName.trim());
@@ -442,35 +449,41 @@ export function ParcelSheet({
           )}
 
           {canVisit && isAvailable && parcel.status !== "CUSTOMER" && (
-            <>
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleKnockDoor}
-                  disabled={claiming}
-                >
-                  <DoorOpen className="w-4 h-4" />
-                  Tocar Puerta
-                </Button>
+            <div className="flex flex-col gap-3">
+              <Button
+                onClick={handleKnockDoor}
+                disabled={claiming}
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-6 text-lg rounded-xl shadow-md"
+              >
+                <DoorOpen className="w-5 h-5 mr-2" />
+                Crear Lead
+              </Button>
+              
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO ABRIO", "#ef4444")} className="border-red-500/30 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 bg-surface">NO ABRIO</Button>
+                <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO LE INTERESA", "#f97316")} className="border-orange-500/30 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/30 bg-surface">NO LE INTERESA</Button>
+                <Button variant="outline" size="sm" onClick={() => handleQuickTag("PASAR LUEGO", "#3b82f6")} className="border-blue-500/30 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 bg-surface">PASAR LUEGO</Button>
+                <Button variant="outline" size="sm" onClick={() => handleQuickTag("No esta el propietario", "#a855f7")} className="border-purple-500/30 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/30 bg-surface whitespace-normal h-auto py-2 text-xs leading-tight">No esta el propietario</Button>
               </div>
 
-              <Button variant="outline" onClick={onClose} className="w-full">
+              <Button variant="ghost" onClick={onClose} className="w-full mt-2">
                 Cerrar
               </Button>
-            </>
+            </div>
           )}
 
           {canVisit && !isAvailable && parcel.status !== "CUSTOMER" && (
             <>
               <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-surface-container-low border border-outline-variant/30">
-                <span className="w-3 h-3 rounded-full bg-red-500 inline-block shrink-0" />
+                <span className="w-3 h-3 rounded-full bg-green-500 inline-block shrink-0" />
                 <span className="text-sm text-on-surface-variant">Parcela tomada</span>
               </div>
               
               <Button
                 disabled
-                className="w-full bg-error/10 text-error border border-error/30"
+                className="w-full bg-surface-container-high text-on-surface-variant cursor-not-allowed"
               >
-                Puerta ya tocada
+                Lead ya creado
               </Button>
 
               <Button variant="outline" onClick={onClose} className="w-full mt-3">

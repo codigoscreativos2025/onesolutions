@@ -21,6 +21,7 @@ export async function GET(request: Request) {
         address: true,
         status: true,
         geometry: true,
+        parcelTags: true,
         setter: { select: { name: true } },
       },
     });
@@ -49,6 +50,7 @@ export async function GET(request: Request) {
             id: p.id,
             address: p.address,
             status: p.status,
+            parcelTags: p.parcelTags,
             coordinates: [lng, lat],
             setterName: p.setter?.name,
           };
