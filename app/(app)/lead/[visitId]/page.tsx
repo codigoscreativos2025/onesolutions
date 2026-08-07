@@ -247,22 +247,12 @@ function calculateProjectCompletion(
     }
   }
 
-  for (const field of OPTIONAL_FIELDS) {
-    if (isValid(projectDetails[field])) {
-      totalFields++;
-      completedFields++;
-    }
-  }
+
 
   for (const meta of fieldMetas) {
     if (COMMON_FIELDS.includes(meta.fieldName) || FILE_FIELD_KEYS.has(meta.fieldName)) continue;
     
-    if (meta.isRequired === false) {
-      if (isValid(projectDetails[meta.fieldName])) {
-        totalFields++;
-        completedFields++;
-      }
-    } else {
+    if (meta.isRequired !== false) {
       totalFields++;
       if (isValid(projectDetails[meta.fieldName])) completedFields++;
     }

@@ -41,27 +41,17 @@ function computeProgress(
     }
   }
 
-  for (const field of OPTIONAL_FIELDS) {
-    if (isValid(projectDetails[field])) {
-      totalFields++;
-      completedFields++;
-    }
-  }
+
 
   for (const ptId of projectTypeIds) {
     const metas = fieldMetasByType[ptId] || [];
     for (const meta of metas) {
       if (COMMON_FIELDS.includes(meta.fieldName) || FILE_FIELD_KEYS.has(meta.fieldName)) continue;
       
-      if (meta.isRequired === false) {
-        if (isValid(projectDetails[meta.fieldName])) {
-          totalFields++;
-          completedFields++;
-        }
-      } else {
-        totalFields++;
-        if (isValid(projectDetails[meta.fieldName])) completedFields++;
-      }
+    if (meta.isRequired !== false) {
+      totalFields++;
+      if (isValid(projectDetails[meta.fieldName])) completedFields++;
+    }
     }
   }
 
