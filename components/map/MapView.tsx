@@ -89,6 +89,9 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
         .catch(() => {});
     }
   }, [autoOpenId]);
+  const isSavingRef = useRef(false);
+  const noteTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const fetchMarkersRef = useRef<() => void>();
   const initializedRef = useRef(false);
   const centerRef = useRef<[number, number] | null | undefined>(center);
   const selectedGeometryRef = useRef<GeoJSON.Geometry | null>(null);
@@ -281,6 +284,9 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
                   },
                 }],
               });
+              
+              // Trigger a refresh of the status markers so the point appears/updates globally
+              if (fetchMarkersRef.current) fetchMarkersRef.current();
             }
           }
         } catch {
@@ -366,6 +372,8 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
           });
         } catch { /* */ }
       };
+
+      fetchMarkersRef.current = fetchStatusMarkers;
 
       m.on("moveend", () => {
         fetchStatusMarkers();

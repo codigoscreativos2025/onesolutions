@@ -392,11 +392,9 @@ export function ParcelSheet({
             <InfoCard
               label="Estado"
               value={
-                parcel.status === "AVAILABLE"
-                  ? "Disponible"
-                  : parcel.status === "LEAD"
-                  ? "Lead"
-                  : "Cliente"
+                parcel.status === "LEAD" ? "Lead" :
+                parcel.status === "CUSTOMER" ? "Cliente" :
+                (tags.length > 0 ? tags[0].name : "Disponible")
               }
             />
           </div>

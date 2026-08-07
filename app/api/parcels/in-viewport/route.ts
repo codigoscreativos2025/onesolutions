@@ -15,7 +15,12 @@ export async function GET(request: Request) {
 
   try {
     const parcels = await prisma.parcel.findMany({
-      where: { status: { not: 'AVAILABLE' } },
+      where: {
+        OR: [
+          { status: { not: 'AVAILABLE' } },
+          { parcelTags: { not: null } }
+        ]
+      },
       select: {
         id: true,
         address: true,
