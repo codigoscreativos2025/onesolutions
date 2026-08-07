@@ -183,7 +183,7 @@ export async function PATCH(
   if (hasRejection) {
     await prisma.visit.update({
       where: { id: visitId },
-      data: { scheduledAt: null, notes: rejectionReason ? `[RECHAZO] ${rejectionReason}` : visit.notes },
+      data: { scheduledAt: null, legacyNotes: rejectionReason ? `[RECHAZO] ${rejectionReason}` : (visit.legacyNotes || null) },
     });
 
     if (visit.slot?.id) {

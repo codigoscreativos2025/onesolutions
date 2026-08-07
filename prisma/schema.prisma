@@ -42,6 +42,7 @@ model User {
   parcelHistory  ParcelVisitHistory[] @relation("ParcelVisitHistory")
   auditLogs      AuditLog[] @relation("AuditLog")
   commissions    CloserCommission[]
+  visitNotes     VisitNote[]
 }
 
 model CloserSlot {
@@ -93,7 +94,7 @@ model Visit {
   outcome     String?
   scheduledAt DateTime?
   completedAt DateTime?
-  notes       String?
+  legacyNotes  String?
   cancelledAt DateTime?
   cancellationReason String?
   finalizedAt DateTime?
@@ -113,6 +114,18 @@ model Visit {
   commissions        CloserCommission[]
   projectDetails     ProjectDetails?
   location           VisitLocation?
+  notes              VisitNote[]
+}
+
+model VisitNote {
+  id        Int      @id @default(autoincrement())
+  visitId   Int
+  visit     Visit    @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // Tipos de proyectos disponibles

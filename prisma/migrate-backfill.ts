@@ -35,7 +35,7 @@ async function main() {
         data: {
           projectTypeId: pt.id,
           fieldName: costFieldName,
-          fieldLabel: "Precio Costo",
+          fieldLabel: "Costo",
           fieldType: "number",
           isRequired: false,
           order: 90,

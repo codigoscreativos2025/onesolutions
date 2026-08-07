@@ -81,11 +81,11 @@ async function seedProjectFields() {
     { projectTypeId: purificador.id, fieldName: "waterCostPrice", fieldLabel: "Costo", fieldType: "number", isRequired: false, order: 2 },
     { projectTypeId: purificador.id, fieldName: "waterSalePrice", fieldLabel: "Precio de Venta", fieldType: "number", isRequired: false, order: 3 },
     { projectTypeId: purificador.id, fieldName: "waterCommission", fieldLabel: "Comisión", fieldType: "number", isRequired: false, order: 4 },
-    { projectTypeId: fence.id, fieldName: "fenceCostPrice", fieldLabel: "Precio Costo", fieldType: "number", isRequired: false, order: 1 },
+    { projectTypeId: fence.id, fieldName: "fenceCostPrice", fieldLabel: "Costo", fieldType: "number", isRequired: false, order: 1 },
     { projectTypeId: fence.id, fieldName: "fenceSalePrice", fieldLabel: "Precio de Venta", fieldType: "number", isRequired: false, order: 2 },
-    { projectTypeId: gutters.id, fieldName: "gutterCostPrice", fieldLabel: "Precio Costo", fieldType: "number", isRequired: false, order: 1 },
+    { projectTypeId: gutters.id, fieldName: "gutterCostPrice", fieldLabel: "Costo", fieldType: "number", isRequired: false, order: 1 },
     { projectTypeId: gutters.id, fieldName: "gutterSalePrice", fieldLabel: "Precio de Venta", fieldType: "number", isRequired: false, order: 2 },
-    { projectTypeId: remodelacion.id, fieldName: "remodelacionCostPrice", fieldLabel: "Precio Costo", fieldType: "number", isRequired: false, order: 1 },
+    { projectTypeId: remodelacion.id, fieldName: "remodelacionCostPrice", fieldLabel: "Costo", fieldType: "number", isRequired: false, order: 1 },
     { projectTypeId: remodelacion.id, fieldName: "remodelacionSalePrice", fieldLabel: "Precio de Venta", fieldType: "number", isRequired: false, order: 2 },
   ];
 

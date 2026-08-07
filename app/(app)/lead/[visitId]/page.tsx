@@ -7,9 +7,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
 import { ContractModal } from "@/components/quote/ContractModal";
 import { ChatInterface } from "@/components/chat/ChatInterface";
 import { SlotPicker } from "@/components/calendar/SlotPicker";
+import { NotesPanel } from "@/components/lead/NotesPanel";
 import {
   ArrowLeft,
   Loader2,
@@ -43,6 +45,10 @@ const FIELD_LABEL_MAP: Record<string, string> = {
   paymentMethod: "Método de Pago",
   primaryRep: "Representante Principal",
   primaryRepCommPct: "% Comisión Principal",
+  secondaryRep: "Representante Secundario",
+  secondaryRepCommPct: "% Comisión Secundario",
+  tertiaryRep: "Representante Terciario",
+  tertiaryRepCommPct: "% Comisión Terciario",
   solarFinancier: "Financiadora Solar",
   systemSize: "Tamaño del Sistema",
   hoaInfo: "Información HOA",
@@ -103,6 +109,10 @@ const COMMON_FIELDS = [
   "paymentMethod",
   "primaryRep",
   "primaryRepCommPct",
+  "secondaryRep",
+  "secondaryRepCommPct",
+  "tertiaryRep",
+  "tertiaryRepCommPct",
   "generalCostPrice",
   "generalSalePrice",
 ];
@@ -111,6 +121,8 @@ const FIELD_TYPES: Record<string, string> = {
   closingDate: "date",
   paymentMethod: "select",
   primaryRepCommPct: "number",
+  secondaryRepCommPct: "number",
+  tertiaryRepCommPct: "number",
   umbrella: "select",
   solarCommission: "number",
   roofCommission: "number",
@@ -258,7 +270,7 @@ interface VisitDetails {
   id: number;
   stage: string;
   outcome: string | null;
-  notes: string | null;
+  legacyNotes: string | null;
   scheduledAt?: string | null;
   createdAt: string;
   completedAt?: string | null;
@@ -346,6 +358,7 @@ export default function LeadDetailPage() {
 
   const [pendingBillFile, setPendingBillFile] = useState<File | null>(null);
   const [pendingIdFile, setPendingIdFile] = useState<File | null>(null);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
 
   const handleFieldChange = (key: string, value: string) => {
     hasChangesRef.current = true;
@@ -1112,7 +1125,12 @@ export default function LeadDetailPage() {
         {activeTab === "datos" && (
           <TabContent key="datos">
             {visit.stage !== "PROJECT" && visit.stage !== "CLOSED" && visit.stage !== "PROPOSAL_ACCEPTED" && (
-              <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={handleFieldChange} onUpload={handleUpload} onRefresh={fetchVisitDetails} leadTags={leadTags} notAvailTags={notAvailTags} onAddTag={handleAddLeadTag} onRemoveTag={handleRemoveLeadTag} onBillFileUpload={handleBillFileUpload} />
+              <>
+                <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={handleFieldChange} onUpload={handleUpload} onRefresh={fetchVisitDetails} leadTags={leadTags} notAvailTags={notAvailTags} onAddTag={handleAddLeadTag} onRemoveTag={handleRemoveLeadTag} onBillFileUpload={handleBillFileUpload} />
+                <div className="mt-6">
+                  <NotesPanel visitId={visitId} visitCreatedAt={visit?.createdAt} />
+                </div>
+              </>
             )}
 
             {visit.stage === "IN_PROGRESS" && !visit.scheduledAt && (
@@ -1155,44 +1173,54 @@ export default function LeadDetailPage() {
             )}
 
             {visit.stage === "PROPOSAL_ACCEPTED" && (
-              <DatosProjectFieldsPanel
-                visit={visit}
-                editFields={editFields}
-                onFieldChange={handleFieldChange}
-                onSave={saveProjectDetailsAction}
-                saving={saving}
-                fieldMetas={fieldMetas}
-                fieldMetasByProject={fieldMetasByProject}
-                selectedProjectNames={selectedProjectNames}
-                onFileFieldUpload={handleFileUploadField}
-                onUpload={handleUpload}
-                onRefresh={fetchVisitDetails}
-                showBillSection
-                leadTags={leadTags}
-                notAvailTags={notAvailTags}
-                onAddTag={handleAddLeadTag}
-                onRemoveTag={handleRemoveLeadTag}
-                onBillFileUpload={handleBillFileUpload}
-              />
+              <>
+                <DatosProjectFieldsPanel
+                  visit={visit}
+                  editFields={editFields}
+                  onFieldChange={handleFieldChange}
+                  onSave={saveProjectDetailsAction}
+                  saving={saving}
+                  fieldMetas={fieldMetas}
+                  fieldMetasByProject={fieldMetasByProject}
+                  selectedProjectNames={selectedProjectNames}
+                  onFileFieldUpload={handleFileUploadField}
+                  onUpload={handleUpload}
+                  onRefresh={fetchVisitDetails}
+                  showBillSection
+                  leadTags={leadTags}
+                  notAvailTags={notAvailTags}
+                  onAddTag={handleAddLeadTag}
+                  onRemoveTag={handleRemoveLeadTag}
+                  onBillFileUpload={handleBillFileUpload}
+                />
+                <div className="mt-6">
+                  <NotesPanel visitId={visitId} visitCreatedAt={visit?.createdAt} />
+                </div>
+              </>
             )}
 
             {visit.stage === "PROJECT" && (
-              <DatosProjectPanel
-                visit={visit}
-                editFields={editFields}
-                onFieldChange={handleFieldChange}
-                onSave={saveProjectDetailsAction}
-                saving={saving}
-                fieldMetas={fieldMetas}
-                fieldMetasByProject={fieldMetasByProject}
-                selectedProjectNames={selectedProjectNames}
-                progress={progress}
-                role={role}
-                onRequestClose={handleRequestClose}
-                onCloseProject={handleCloseProject}
-                onCancelProject={handleCancelProjectAction}
-                onFileFieldUpload={handleFileUploadField}
-              />
+              <>
+                <DatosProjectPanel
+                  visit={visit}
+                  editFields={editFields}
+                  onFieldChange={handleFieldChange}
+                  onSave={saveProjectDetailsAction}
+                  saving={saving}
+                  fieldMetas={fieldMetas}
+                  fieldMetasByProject={fieldMetasByProject}
+                  selectedProjectNames={selectedProjectNames}
+                  progress={progress}
+                  role={role}
+                  onRequestClose={handleRequestClose}
+                  onCloseProject={handleCloseProject}
+                  onCancelProject={handleCancelProjectAction}
+                  onFileFieldUpload={handleFileUploadField}
+                />
+                <div className="mt-6">
+                  <NotesPanel visitId={visitId} visitCreatedAt={visit?.createdAt} />
+                </div>
+              </>
             )}
 
             {visit.stage === "CLOSED" && (
@@ -1210,6 +1238,9 @@ export default function LeadDetailPage() {
                 tagSaving={tagSaving}
                 isAdmin={isAdmin}
               />
+              <div className="mt-6">
+                <NotesPanel visitId={visitId} visitCreatedAt={visit?.createdAt} />
+              </div>
             </>
             )}
 
@@ -1264,61 +1295,54 @@ export default function LeadDetailPage() {
       </AnimatePresence>
 
       {activeTab !== "chat" && (
-        <div className="sticky bottom-0 z-10 p-3 glass-panel border-t border-outline-variant flex justify-center">
-          <Button onClick={async () => {
-            setSaving(true);
-            try {
-              let billUrl = editFields.electricBillUrl || visit?.bill?.imageUrl || "";
-              let idUrl = editFields.idDocumentUrl || visit?.bill?.additionalFileUrl || "";
-              if (pendingBillFile) {
-                billUrl = await handleUpload(pendingBillFile);
-                setEditFields(prev => ({ ...prev, electricBillUrl: billUrl }));
-                setPendingBillFile(null);
-              }
-              if (pendingIdFile) {
-                idUrl = await handleUpload(pendingIdFile);
-                setEditFields(prev => ({ ...prev, idDocumentUrl: idUrl }));
-                setPendingIdFile(null);
-              }
-              const payload: Record<string, unknown> = { ...editFields };
-              if (visit?.bill?.imageUrl) payload.electricBillUrl = payload.electricBillUrl || visit.bill.imageUrl;
-              if (visit?.bill?.additionalFileUrl) payload.idDocumentUrl = payload.idDocumentUrl || visit.bill.additionalFileUrl;
-              if (!payload.clientName || payload.clientName === "") payload.clientName = visit?.bill?.clientName || "";
-              if (!payload.clientEmail || payload.clientEmail === "") payload.clientEmail = visit?.bill?.clientEmail || "";
-              if (!payload.address || payload.address === "") payload.address = visit?.parcel?.address || "";
-              Object.keys(payload).forEach(k => {
-                if (k.startsWith("_bill") || payload[k] === "" || payload[k] === null) delete payload[k];
-              });
-              if (payload.closingDate && typeof payload.closingDate === "string")
-                payload.closingDate = new Date(payload.closingDate).toISOString();
-              if (payload.siteSurveyDate && typeof payload.siteSurveyDate === "string")
-                payload.siteSurveyDate = new Date(payload.siteSurveyDate).toISOString();
-              if (Object.keys(payload).length > 0) {
-                await fetch("/api/project-details", {
-                  method: "POST", headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ visitId, ...payload }),
-                });
-              }
-              const billData: Record<string, string | null> = {
-                phone: editFields._billPhone?.trim() || visit?.bill?.phone || "",
-                clientName: editFields._billClientName?.trim() || visit?.bill?.clientName || null,
-                clientEmail: editFields._billClientEmail?.trim() || visit?.bill?.clientEmail || null,
-                notes: editFields._billNotes?.trim() || visit?.bill?.notes || null,
-                imageUrl: billUrl || visit?.bill?.imageUrl || null,
-                additionalFileUrl: idUrl || visit?.bill?.additionalFileUrl || null,
-              };
-              await fetch(`/api/visits/${visit?.id}`, {
-                method: "PATCH", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ bill: { upsert: { create: billData, update: billData } } }),
-              });
-              toast.success("Cambios guardados");
-            } catch { toast.error("Error al guardar"); }
-            finally { setSaving(false); }
-          }} disabled={saving} className="gap-2 px-8">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Guardar Cambios
-          </Button>
-        </div>
+        <>
+          <div className="fixed bottom-24 right-6 z-[60]">
+            <Button onClick={() => setShowSaveConfirm(true)} className="shadow-xl rounded-full px-6 py-3 gap-2">
+              <Save className="w-5 h-5" />
+              Guardar Cambios
+            </Button>
+          </div>
+          <Modal isOpen={showSaveConfirm} onClose={() => setShowSaveConfirm(false)} title="Guardar Cambios">
+            <div className="space-y-4">
+              <p className="text-on-surface">Quieres guardar los cambios realizados?</p>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => setShowSaveConfirm(false)} className="flex-1">Cancelar</Button>
+                <Button
+                  onClick={async () => {
+                    setShowSaveConfirm(false);
+                    setSaving(true);
+                    try {
+                      let billUrl = editFields.electricBillUrl || visit?.bill?.imageUrl || "";
+                      let idUrl = editFields.idDocumentUrl || visit?.bill?.additionalFileUrl || "";
+                      if (pendingBillFile) { billUrl = await handleUpload(pendingBillFile); setEditFields(prev => ({ ...prev, electricBillUrl: billUrl })); setPendingBillFile(null); }
+                      if (pendingIdFile) { idUrl = await handleUpload(pendingIdFile); setEditFields(prev => ({ ...prev, idDocumentUrl: idUrl })); setPendingIdFile(null); }
+                      const payload: Record<string, unknown> = { ...editFields };
+                      if (visit?.bill?.imageUrl) payload.electricBillUrl = payload.electricBillUrl || visit.bill.imageUrl;
+                      if (visit?.bill?.additionalFileUrl) payload.idDocumentUrl = payload.idDocumentUrl || visit.bill.additionalFileUrl;
+                      if (!payload.clientName || payload.clientName === "") payload.clientName = visit?.bill?.clientName || "";
+                      if (!payload.clientEmail || payload.clientEmail === "") payload.clientEmail = visit?.bill?.clientEmail || "";
+                      if (!payload.address || payload.address === "") payload.address = visit?.parcel?.address || "";
+                      Object.keys(payload).forEach(k => { if (k.startsWith("_bill") || payload[k] === "" || payload[k] === null) delete payload[k]; });
+                      if (payload.closingDate && typeof payload.closingDate === "string") payload.closingDate = new Date(payload.closingDate).toISOString();
+                      if (payload.siteSurveyDate && typeof payload.siteSurveyDate === "string") payload.siteSurveyDate = new Date(payload.siteSurveyDate).toISOString();
+                      if (Object.keys(payload).length > 0) { await fetch("/api/project-details", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ visitId, ...payload }) }); }
+                      const billData: Record<string, string | null> = { phone: editFields._billPhone?.trim() || visit?.bill?.phone || "", clientName: editFields._billClientName?.trim() || visit?.bill?.clientName || null, clientEmail: editFields._billClientEmail?.trim() || visit?.bill?.clientEmail || null, notes: editFields._billNotes?.trim() || visit?.bill?.notes || null, imageUrl: billUrl || visit?.bill?.imageUrl || null, additionalFileUrl: idUrl || visit?.bill?.additionalFileUrl || null };
+                      await fetch(`/api/visits/${visit?.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bill: { upsert: { create: billData, update: billData } } }) });
+                      toast.success("Cambios guardados");
+                      window.location.reload();
+                    } catch { toast.error("Error al guardar"); }
+                    finally { setSaving(false); }
+                  }}
+                  disabled={saving}
+                  className="flex-1"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Si, guardar
+                </Button>
+              </div>
+            </div>
+          </Modal>
+        </>
       )}
     </div>
   );
@@ -2234,7 +2258,7 @@ function DatosCancelledPanel({
           {visit.cancelledAt && (
             <ReadOnlyField label="Fecha de Cancelación" value={new Date(visit.cancelledAt).toLocaleDateString()} />
           )}
-          {visit.notes && <ReadOnlyField label="Notas" value={visit.notes} multiline />}
+          {visit.legacyNotes && <ReadOnlyField label="Notas" value={visit.legacyNotes} multiline />}
         </div>
       </div>
 

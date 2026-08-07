@@ -31,7 +31,7 @@ interface Visit {
   createdAt: string;
   stage: string;
   outcome: string | null;
-  notes: string | null;
+  legacyNotes: string | null;
   parcel: {
     id: string;
     address: string;
@@ -502,10 +502,10 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
                   )}
 
                   {/* Notas */}
-                  {visit.notes && (
+                  {visit.legacyNotes && (
                     <div className="text-sm text-gray-600 dark:text-gray-400">
                       <FileText className="w-4 h-4 inline mr-1" />
-                      {visit.notes}
+                      {visit.legacyNotes}
                     </div>
                   )}
                 </div>
