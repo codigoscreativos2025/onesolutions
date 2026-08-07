@@ -62,7 +62,7 @@ export async function POST(request: Request) {
         closerId: assignedCloserId,
         stage: 'PROPOSAL_ACCEPTED',
         outcome: 'MANUAL_LEAD',
-        notes: notes || null,
+        legacyNotes: notes || null,
         scheduledAt: scheduledDate ? new Date(scheduledDate) : null,
       },
     });
