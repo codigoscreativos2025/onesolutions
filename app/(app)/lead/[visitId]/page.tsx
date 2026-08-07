@@ -399,6 +399,11 @@ export default function LeadDetailPage() {
   const [leadTags, setLeadTags] = useState<{ name: string; color: string }[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [notAvailTags, setNotAvailTags] = useState<any[]>([]);
+  const hasInitializedEditFields = useRef(false);
+
+  useEffect(() => {
+    hasInitializedEditFields.current = false;
+  }, [visitId]);
 
   const [scheduleDate, setScheduleDate] = useState("");
   const [scheduleTime, setScheduleTime] = useState("");
@@ -423,7 +428,7 @@ export default function LeadDetailPage() {
   };
 
   const initEditFields = useCallback(() => {
-    if (!visit) return;
+    if (!visit || hasInitializedEditFields.current) return;
     const fields: Record<string, string> = {};
     const pd = visit.projectDetails || {};
     for (const key of COMMON_FIELDS) {
@@ -451,6 +456,7 @@ export default function LeadDetailPage() {
     }
     setEditFields(fields);
     editFieldsRef.current = fields;
+    hasInitializedEditFields.current = true;
   }, [visit]);
 
   const fetchFieldMetas = useCallback(async () => {
