@@ -9,7 +9,6 @@ import Link from "next/link";
 import {
   Loader2,
   Calendar as CalendarIcon,
-  Eye,
   MapPin,
   RefreshCw,
   LayoutGrid,
@@ -17,6 +16,7 @@ import {
   ArrowRight,
   X,
   Plus,
+  Package,
 } from "lucide-react";
 import { VisualCalendar } from "@/components/calendar/VisualCalendar";
 import { ViewProjectModal } from "@/components/calendar/ViewProjectModal";
@@ -69,7 +69,6 @@ export default function CalendarPage() {
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"list" | "calendar">("calendar");
-  const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [isReassignModalOpen, setIsReassignModalOpen] = useState(false);
   const [isViewProjectModalOpen, setIsViewProjectModalOpen] = useState(false);
   const [selectedVisit, setSelectedVisit] = useState<CalendarVisit | null>(null);
@@ -254,26 +253,6 @@ export default function CalendarPage() {
     }
   };
 
-  const handleVisitClick = (visit: CalendarVisit) => {
-    setSelectedVisit(visit);
-    setSelectedVisitId(visit.id);
-    setIsActionModalOpen(true);
-  };
-
-  const handleViewProject = () => {
-    if (selectedVisit) {
-      setIsViewProjectModalOpen(true);
-      setIsActionModalOpen(false);
-    }
-  };
-
-  const handleVisit = () => {
-    if (selectedVisit) {
-      router.push(`/visit/${selectedVisit.parcel.id}`);
-    }
-    setIsActionModalOpen(false);
-  };
-
   const handleReassign = async () => {
     if (!selectedVisit || !reassignReason) return;
     setSaving(true);
@@ -293,7 +272,6 @@ export default function CalendarPage() {
     }
 
     setSaving(false);
-    setIsActionModalOpen(false);
     setIsReassignModalOpen(false);
     setReassignReason("");
     fetchData();
@@ -641,8 +619,7 @@ export default function CalendarPage() {
                 <div
                   key={apt.id}
                   id={`visit-${apt.id}`}
-                  className="p-4 rounded-xl bg-primary/5 border border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors"
-                  onClick={() => handleVisitClick(apt)}
+                  className="p-4 rounded-xl bg-primary/5 border border-primary/20"
                 >
                   <div className="flex justify-between items-start">
                     <div>
@@ -667,16 +644,17 @@ export default function CalendarPage() {
                       )}
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                      <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
-                        {stageLabels[apt.stage] || apt.stage}
+                      <span className="text-xs font-semibold text-on-surface-variant">
+                        Contratos en proceso:
                       </span>
                       {apt.projects && apt.projects.length > 0 && (
-                        <div className="flex flex-wrap gap-1 justify-end">
+                        <div className="grid grid-cols-2 gap-1">
                           {apt.projects.map((p) => (
                             <span
                               key={p.projectType.id}
-                              className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full"
+                              className="px-2 py-1 bg-surface-container-high border border-outline-variant rounded-lg text-xs text-on-surface inline-flex items-center gap-1"
                             >
+                              <Package className="w-3 h-3 text-primary shrink-0" />
                               {p.projectType.name}
                             </span>
                           ))}
@@ -690,23 +668,13 @@ export default function CalendarPage() {
                       variant="outline"
                       onClick={(e) => {
                         e.stopPropagation();
-                        router.push(`/visit/${apt.parcel.id}`);
-                      }}
-                    >
-                      <MapPin className="w-4 h-4 mr-1" />
-                      Visitar
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
                         setSelectedVisit(apt);
                         setSelectedVisitId(apt.id);
-                        setIsViewProjectModalOpen(true);
+                        setIsReassignModalOpen(true);
                       }}
                     >
-                      <Eye className="w-4 h-4 mr-1" />
-                      Ver Proyecto
+                      <RefreshCw className="w-4 h-4 mr-1" />
+                      Reasignar Cita
                     </Button>
                   </div>
                 </div>
@@ -743,8 +711,7 @@ export default function CalendarPage() {
                     <div
                       key={visit.id}
                       id={`visit-${visit.id}`}
-                      onClick={() => handleVisitClick(visit)}
-                      className="p-3 rounded-xl bg-primary/5 border border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors"
+                      className="p-3 rounded-xl bg-primary/5 border border-primary/20"
                     >
                       <div className="flex justify-between items-start">
                         <div>
@@ -782,16 +749,17 @@ export default function CalendarPage() {
                           )}
                         </div>
                         <div className="flex flex-col items-end gap-2">
-                          <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
-                            {stageLabels[visit.stage] || visit.stage}
+                          <span className="text-xs font-semibold text-on-surface-variant">
+                            Contratos en proceso:
                           </span>
                           {visit.projects && visit.projects.length > 0 && (
-                            <div className="flex flex-wrap gap-1 justify-end">
+                            <div className="grid grid-cols-2 gap-1">
                               {visit.projects.map((p) => (
                                 <span
                                   key={p.projectType.id}
-                                  className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full"
+                                  className="px-2 py-1 bg-surface-container-high border border-outline-variant rounded-lg text-xs text-on-surface inline-flex items-center gap-1"
                                 >
+                                  <Package className="w-3 h-3 text-primary shrink-0" />
                                   {p.projectType.name}
                                 </span>
                               ))}
@@ -800,28 +768,31 @@ export default function CalendarPage() {
                         </div>
                       </div>
                       <div className="mt-3 flex gap-2">
+                        {isCloser && (
+                          <Button
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/visit/${visit.parcel.id}`);
+                            }}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                          >
+                            <MapPin className="w-4 h-4 mr-1" />
+                            Visitar
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={(e) => {
                             e.stopPropagation();
-                            router.push(`/visit/${visit.parcel.id}`);
-                          }}
-                        >
-                          <MapPin className="w-4 h-4 mr-1" />
-                          Visitar
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
                             setSelectedVisit(visit);
                             setSelectedVisitId(visit.id);
-                            setIsViewProjectModalOpen(true);
+                            setIsReassignModalOpen(true);
                           }}
                         >
-                          <Eye className="w-4 h-4 mr-1" />
-                          Ver Proyecto
+                          <RefreshCw className="w-4 h-4 mr-1" />
+                          Reasignar Cita
                         </Button>
                       </div>
                     </div>
@@ -834,96 +805,7 @@ export default function CalendarPage() {
       )}
 
       <Modal
-        isOpen={isActionModalOpen}
-        onClose={() => setIsActionModalOpen(false)}
-        title="Cita Agendada"
-      >
-        {selectedVisit && (
-          <div className="space-y-4">
-            <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
-              <p className="font-semibold text-on-surface">
-                {getOwnerDisplay(selectedVisit)}
-              </p>
-              <p className="text-sm text-on-surface-variant">
-                Trainee:{" "}
-                <Link
-                  href={`/profile/${selectedVisit.setter.id}`}
-                  className="hover:underline"
-                >
-                  {selectedVisit.setter.name}
-                </Link>
-              </p>
-              {selectedVisit.closer && (
-                <p className="text-sm text-on-surface-variant">
-                  Closer:{" "}
-                  <Link
-                    href={`/profile/${selectedVisit.closer.id}`}
-                    className="hover:underline"
-                  >
-                    {selectedVisit.closer.name}
-                  </Link>
-                </p>
-              )}
-              {selectedVisit.bill?.clientName && (
-                <p className="text-sm text-on-surface-variant">
-                  Cliente: {selectedVisit.bill.clientName}
-                </p>
-              )}
-              <p className="text-sm text-on-surface-variant">
-                {new Date(selectedVisit.scheduledAt).toLocaleDateString("es-MX", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}{" "}
-                {formatTimeAMPM(selectedVisit.scheduledAt)}
-              </p>
-              <p className="text-sm mt-1">
-                <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
-                  {stageLabels[selectedVisit.stage] || selectedVisit.stage}
-                </span>
-              </p>
-              {selectedVisit.projects && selectedVisit.projects.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {selectedVisit.projects.map((p) => (
-                    <span
-                      key={p.projectType.id}
-                      className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full"
-                    >
-                      {p.projectType.name}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 gap-3">
-              <Button onClick={handleViewProject} variant="outline" className="w-full">
-                <Eye className="w-5 h-5 mr-2" />
-                Ver Proyecto
-              </Button>
-              <Button onClick={handleVisit} className="w-full">
-                <MapPin className="w-5 h-5 mr-2" />
-                Visitar
-              </Button>
-              <Button
-                onClick={() => {
-                  setIsActionModalOpen(false);
-                  setIsReassignModalOpen(true);
-                }}
-                variant="secondary"
-                className="w-full"
-              >
-                <RefreshCw className="w-5 h-5 mr-2" />
-                Reasignar Cita
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      <Modal
-        isOpen={isReassignModalOpen}
+      isOpen={isReassignModalOpen}
         onClose={() => setIsReassignModalOpen(false)}
         title="Reasignar Cita"
       >

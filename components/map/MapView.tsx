@@ -284,8 +284,6 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
             }
           }
         } catch {
-          setSelectedParcel(null);
-          selectedGeometryRef.current = null;
           (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
             type: "FeatureCollection",
             features: [],

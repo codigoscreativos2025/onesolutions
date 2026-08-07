@@ -215,6 +215,13 @@ export async function PATCH(
   }
 
   if (Object.keys(updateData).length > 0) {
+    if (updateData.stage === "PROJECT") {
+      const projectCount = await prisma.visitProject.count({ where: { visitId } });
+      if (projectCount === 0) {
+        return NextResponse.json({ error: "Debes seleccionar al menos un tipo de proyecto" }, { status: 400 });
+      }
+    }
+
     await prisma.visit.update({
       where: { id: visitId },
       data: updateData,

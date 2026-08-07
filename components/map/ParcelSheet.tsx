@@ -466,6 +466,13 @@ export function ParcelSheet({
                 <span className="text-sm text-on-surface-variant">Parcela tomada</span>
               </div>
               
+              <Button
+                disabled
+                className="w-full bg-error/10 text-error border border-error/30"
+              >
+                Puerta ya tocada
+              </Button>
+
               <Button variant="outline" onClick={onClose} className="w-full mt-3">
                 Cerrar
               </Button>

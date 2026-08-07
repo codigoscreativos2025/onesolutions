@@ -567,6 +567,10 @@ export default function LeadDetailPage() {
       toast.error("Selecciona fecha y hora");
       return;
     }
+    if (!visit.projects?.length) {
+      toast.error("Debes seleccionar al menos un tipo de proyecto antes de agendar");
+      return;
+    }
     if (showScheduleCloserDropdown && !scheduleCloserId) {
       toast.error("Selecciona un Closer");
       return;
@@ -802,6 +806,10 @@ export default function LeadDetailPage() {
 
   const handleStartProject = async () => {
     if (!visit || startingProject) return;
+    if (!visit.projects?.length) {
+      toast.error("Debes seleccionar al menos un tipo de proyecto antes de iniciar el proyecto");
+      return;
+    }
     setStartingProject(true);
     try {
       let uploadedBillUrl = visit.bill?.imageUrl || null;
