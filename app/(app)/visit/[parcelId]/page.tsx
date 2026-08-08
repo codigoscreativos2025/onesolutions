@@ -6,9 +6,9 @@ import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
-import { ArrowLeft, Upload, Phone, User, Loader2, FileText, X, CheckCircle, Tag } from "lucide-react";
-import { QuoteModal } from "@/components/quote/QuoteModal";
+import { ArrowLeft, Upload, Phone, User, Loader2, FileText, X, CheckCircle } from "lucide-react";
 import { ContractModal } from "@/components/quote/ContractModal";
+import { NotesPanel } from "@/components/lead/NotesPanel";
 import { SlotPicker } from "@/components/calendar/SlotPicker";
 
 interface Closer { id: number; name: string; email: string }
@@ -18,6 +18,7 @@ interface Visit {
   parcel: { address: string; ownerName?: string; metadata?: string };
   bill?: { phone?: string; clientName?: string; clientEmail?: string; notes?: string; imageUrl?: string; additionalFileUrl?: string; additionalFileName?: string };
   projects?: { projectType: { id: number; name: string } }[];
+  createdAt?: string;
 }
 
 function CelebrationOverlay({ onComplete }: { onComplete: () => void }) {
@@ -75,7 +76,6 @@ export default function VisitPage() {
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [notes, setNotes] = useState("");
 
   const [idFile, setIdFile] = useState<File | null>(null);
   const [idPreview, setIdPreview] = useState("");
@@ -89,11 +89,8 @@ export default function VisitPage() {
   const [selectedScheduleTime, setSelectedScheduleTime] = useState("");
   const [selectedCloserId, setSelectedCloserId] = useState("");
   const [closers, setClosers] = useState<Closer[]>([]);
-  const [leadTags, setLeadTags] = useState<{ name: string; color: string }[]>([]);
-  const [notAvailTags, setNotAvailTags] = useState<{ id: number; name: string; color: string }[]>([]);
 
   const [showCelebration, setShowCelebration] = useState(false);
-  const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [showContractModal, setShowContractModal] = useState(false);
 
   const isSetter = role === "SETTER";
@@ -124,17 +121,16 @@ export default function VisitPage() {
       let name = visitData.bill?.clientName ?? "";
       let email = visitData.bill?.clientEmail ?? "";
       let tel = visitData.bill?.phone ?? "";
-      let nts = visitData.bill?.notes ?? "";
       if (visitData.parcel?.metadata) {
         try {
           const m = JSON.parse(visitData.parcel.metadata);
           if (m.isManual) {
-            name = name || m.ownerName || ""; email = email || m.email || ""; tel = tel || m.phone || ""; nts = nts || m.notes || "";
+            name = name || m.ownerName || ""; email = email || m.email || ""; tel = tel || m.phone || "";
           }
         } catch { /* */ }
       }
       if (!name) name = visitData.parcel?.ownerName ?? "";
-      setClientName(name); setClientEmail(email); setPhone(tel); setNotes(nts);
+      setClientName(name); setClientEmail(email); setPhone(tel);
       if (visitData.bill?.imageUrl) setBillPreview(visitData.bill.imageUrl);
       if (visitData.bill?.additionalFileUrl) setIdPreview(visitData.bill.additionalFileUrl);
       if (visitData.projects) setSelectedProjectTypes(visitData.projects.map((p) => p.projectType.id));
@@ -143,11 +139,6 @@ export default function VisitPage() {
         setClosers(cData);
         if (cData.length === 1) setSelectedCloserId(String(cData[0].id));
       }
-      // Fetch available tags
-      try {
-        const tagsRes = await fetch("/api/admin/not-available-tags");
-        if (tagsRes.ok) { const t = await tagsRes.json(); setNotAvailTags(t); }
-      } catch {}
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   }
@@ -166,7 +157,7 @@ export default function VisitPage() {
     return {
       phone: phone.trim(), clientName: clientName.trim() || null, clientEmail: clientEmail.trim() || null,
       imageUrl: billFile ? billImageUrl : (existingUrl || null),
-      notes: notes.trim() || null,
+      notes: null,
       additionalFileUrl: idFile ? idDocUrl : (existingId || null),
       additionalFileName: idFile?.name || null,
     };
@@ -207,7 +198,6 @@ export default function VisitPage() {
       }
 
       const patchBody: Record<string, unknown> = {
-        legacyNotes: notes.trim() || null,
         bill: { upsert: { create: billData, update: billData } },
         ...(showCloserDropdown && selectedCloserId ? { closerId: Number(selectedCloserId) } : {}),
         ...(isSelfAssigned ? { closerId: Number(session?.user?.id) } : {}),
@@ -226,15 +216,6 @@ export default function VisitPage() {
       if (!patchRes.ok) {
         const errorData = await patchRes.json().catch(() => ({}));
         throw new Error(errorData.error || "Error al actualizar el lead en el servidor");
-      }
-
-      if (mode !== 'potential') {
-        if (parcelId) {
-          await fetch(`/api/parcels/${parcelId}`, {
-            method: "PATCH", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ parcelTags: JSON.stringify(leadTags) }),
-          });
-        }
       }
 
       toast.success(mode === 'potential' ? "Lead Potencial creado" : "Lead guardado");
@@ -262,7 +243,6 @@ export default function VisitPage() {
       <AnimatePresence>
         {showCelebration && <CelebrationOverlay onComplete={() => { setShowCelebration(false); router.push("/dashboard"); }} />}
       </AnimatePresence>
-      <QuoteModal isOpen={showQuoteModal} onClose={() => setShowQuoteModal(false)} visitId={visit.id} />
       <ContractModal isOpen={showContractModal} onClose={() => setShowContractModal(false)} visitId={visit.id} />
 
       <motion.header className="flex items-center gap-3" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
@@ -271,8 +251,7 @@ export default function VisitPage() {
         </button>
         <h1 className="font-headline text-xl font-bold text-primary">One Solutions</h1>
         <div className="flex-1" />
-        <Button variant="ghost" size="sm" onClick={() => setShowQuoteModal(true)} className="text-xs gap-1.5"><FileText className="w-4 h-4" /> Cotización</Button>
-        <Button variant="ghost" size="sm" onClick={() => setShowContractModal(true)} className="text-xs gap-1.5"><FileText className="w-4 h-4" /> Documentos</Button>
+        <Button variant="ghost" size="sm" onClick={() => setShowContractModal(true)} className="text-xs gap-1.5"><FileText className="w-4 h-4" /> Tipos de Contratos</Button>
       </motion.header>
 
       <motion.section className="glass-panel rounded-xl p-4 flex justify-between items-center" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -328,40 +307,8 @@ export default function VisitPage() {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label className={labelClass}>Notas (opcional)</label>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notas adicionales..."
-            className="w-full min-h-[80px] bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none rounded-xl p-4 resize-none text-on-surface" />
-        </div>
-
-        <div className="space-y-2">
-          <label className={labelClass}><Tag className="w-4 h-4 inline mr-1" />Etiquetas (opcional)</label>
-          <div className="flex flex-wrap gap-1.5">
-            {notAvailTags.map((t) => {
-              const isSelected = leadTags.some((lt) => lt.name === t.name);
-              return (
-                <motion.button key={t.id} type="button" whileTap={{ scale: 0.9 }}
-                  onClick={() => {
-                    if (isSelected) setLeadTags(leadTags.filter((lt) => lt.name !== t.name));
-                    else setLeadTags([...leadTags, { name: t.name, color: t.color }]);
-                  }}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${isSelected ? "text-white border-transparent" : "text-on-surface-variant border-outline-variant hover:border-primary/30"}`}
-                  style={isSelected ? { backgroundColor: t.color } : {}}
-                >
-                  {t.name}
-                </motion.button>
-              );
-            })}
-          </div>
-          {leadTags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {leadTags.map((t, i) => (
-                <span key={i} className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-white" style={{ backgroundColor: t.color }}>
-                  {t.name}
-                </span>
-              ))}
-            </div>
-          )}
+        <div className="mt-4">
+          <NotesPanel visitId={visit.id} visitCreatedAt={visit?.createdAt} />
         </div>
 
         <section className="space-y-4 border-t border-outline-variant pt-6">

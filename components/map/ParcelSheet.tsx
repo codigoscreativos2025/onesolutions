@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { CreateLeadModal } from "@/components/leads/CreateLeadModal";
-import { DoorOpen, X, User, Tag, Plus, Pencil, Trash2, DoorClosed, ThumbsDown, Clock, UserX } from "lucide-react";
+import { DoorOpen, X, User, Tag, Plus, Pencil, Trash2, DoorClosed, ThumbsDown, Clock, UserX, Home } from "lucide-react";
 import { toast } from "sonner";
 
 interface TagObject {
@@ -428,6 +428,7 @@ export function ParcelSheet({
                 <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO LE INTERESA", "#f97316")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#f97316" }}><ThumbsDown className="w-3.5 h-3.5 mr-1" />No Le Interesa</Button>
                 <Button variant="outline" size="sm" onClick={() => handleQuickTag("PASAR LUEGO", "#3b82f6")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#3b82f6" }}><Clock className="w-3.5 h-3.5 mr-1" />Pasar Luego</Button>
                 <Button variant="outline" size="sm" onClick={() => handleQuickTag("No esta el propietario", "#a855f7")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#a855f7" }}><UserX className="w-3.5 h-3.5 mr-1" />No Esta El Propietario</Button>
+                <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO VIVE EL PROPIETARIO", "#eab308")} className="text-black text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#eab308" }}><Home className="w-3.5 h-3.5 mr-1" />No Vive El Propietario</Button>
               </div>
 
               <div className="space-y-1">

@@ -32,7 +32,7 @@ interface KanbanVisit {
   id: number;
   stage: string;
   createdAt: string;
-  parcel: { id: string; address: string; ownerName: string | null; parcelTags?: string | null };
+  parcel: { id: string; address: string; ownerName: string | null };
   setter: { id: number; name: string };
   closer: { id: number; name: string } | null;
   projects: { projectType: { id: number; name: string } }[];
@@ -84,9 +84,6 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
   const [userTypeFilter, setUserTypeFilter] = useState("");
   const [specificUserFilter, setSpecificUserFilter] = useState("");
   const [allUsers, setAllUsers] = useState<TransferUser[]>([]);
-  const [tagFilter, setTagFilter] = useState("");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [allTags, setAllTags] = useState<any[]>([]);
 
   useEffect(() => {
     if (isAdmin) {
@@ -100,13 +97,6 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
         .catch(() => {});
     }
   }, [isAdmin]);
-
-  useEffect(() => {
-    fetch("/api/admin/not-available-tags")
-      .then((r) => r.json())
-      .then(setAllTags)
-      .catch(() => {});
-  }, []);
 
   const fetchData = useCallback(async () => {
     setError(null);
@@ -269,15 +259,6 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
         if (v.setter?.id !== uid && v.closer?.id !== uid) return false;
       }
 
-      if (tagFilter) {
-        try {
-          const tags = v.parcel.parcelTags ? JSON.parse(v.parcel.parcelTags) : [];
-          if (!Array.isArray(tags) || !tags.some((t: { name: string }) => t.name === tagFilter)) return false;
-        } catch {
-          return false;
-        }
-      }
-
       return true;
     });
   };
@@ -289,7 +270,6 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
     setClientFilter("");
     setUserTypeFilter("");
     setSpecificUserFilter("");
-    setTagFilter("");
   };
 
   // Compute unique project types from loaded data
@@ -356,7 +336,7 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
     );
   }
 
-  const hasActiveFilters = projectTypeFilter || addressFilter || clientFilter || activeColumn !== null || userTypeFilter || specificUserFilter || tagFilter;
+  const hasActiveFilters = projectTypeFilter || addressFilter || clientFilter || activeColumn !== null || userTypeFilter || specificUserFilter;
 
   return (
     <div className="space-y-4">
@@ -419,27 +399,6 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
             className="h-9 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface flex-1 min-w-[160px]"
           />
         </div>
-        {allTags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-3">
-            {allTags.map((tag) => (
-              <button
-                key={tag.id}
-                onClick={() => setTagFilter(tagFilter === tag.name ? "" : tag.name)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all border ${
-                  tagFilter === tag.name
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-outline-variant bg-surface-container-low text-on-surface-variant hover:border-primary/30"
-                }`}
-              >
-                <span
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: tag.color }}
-                />
-                {tag.name}
-              </button>
-            ))}
-          </div>
-        )}
         {isAdmin && (
           <div className="flex flex-wrap gap-3 mt-3">
             <select
@@ -740,23 +699,6 @@ function KanbanCard({
             </div>
           </div>
         );
-      })()}
-
-      {(visit.stage === "IN_PROGRESS" || visit.stage === "PROPOSAL_ACCEPTED") && visit.parcel?.parcelTags && (() => {
-        try {
-          const tags = JSON.parse(visit.parcel.parcelTags);
-          if (Array.isArray(tags) && tags.length > 0) {
-            return (
-              <div className="flex flex-wrap gap-1 mt-1">
-                {tags.map((t: { name: string; color: string }, i: number) => (
-                  <span key={i} className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold text-white" style={{ backgroundColor: t.color }}>
-                    {t.name}
-                  </span>
-                ))}
-              </div>
-            );
-          }
-        } catch { return null; }
       })()}
     </div>
   );
