@@ -61,12 +61,14 @@ async function main() {
 
   // Project types
   const projectTypes = [
+    { name: "Campos Comunes", description: "Campos obligatorios comunes a todos los proyectos" },
     { name: "Panel Solar", description: "Instalacion de paneles solares" },
     { name: "Techo", description: "Reparacion de techo" },
     { name: "Purificacion de agua", description: "Sistema de purificacion para agua" },
     { name: "Fence", description: "Cercas y vallas" },
     { name: "Gutters", description: "Canaletas y desagues" },
     { name: "Remodelacion", description: "Remodelacion general" },
+    { name: "Otros", description: "Otro tipo de proyecto" },
   ];
 
   for (const pt of projectTypes) {
