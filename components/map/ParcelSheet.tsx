@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { CreateLeadModal } from "@/components/leads/CreateLeadModal";
-import { DoorOpen, X, User, Tag, Plus, Pencil, Trash2 } from "lucide-react";
+import { DoorOpen, X, User, Tag, Plus, Pencil, Trash2, DoorClosed, ThumbsDown, Clock, UserX } from "lucide-react";
 import { toast } from "sonner";
 
 interface TagObject {
@@ -84,16 +84,17 @@ export function ParcelSheet({
 
   const noteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSavingRef = useRef(false);
+  const mapNotesCache = useRef<Map<string, string>>(new Map());
 
   const isAdmin = userRole === "ADMIN";
 
   useEffect(() => {
     setQuickTagMessage(null);
-    setMapNotes("");
     if (!parcel) {
       setVisitNotAvailTags([]);
       return;
     }
+    setMapNotes(mapNotesCache.current.get(parcel.id) || "");
     const pId = parcel.id;
     if (!pId) return;
     const isRegridParcel = pId.includes("-") && pId.length > 30;
@@ -424,16 +425,16 @@ export function ParcelSheet({
           {canVisit && isAvailable && parcel.status !== "CUSTOMER" && (
             <>
               <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO ABRIO", "#ef4444")} className="border-red-500/30 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 bg-surface">NO ABRIO</Button>
-                <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO LE INTERESA", "#f97316")} className="border-orange-500/30 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/30 bg-surface">NO LE INTERESA</Button>
-                <Button variant="outline" size="sm" onClick={() => handleQuickTag("PASAR LUEGO", "#3b82f6")} className="border-blue-500/30 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 bg-surface">PASAR LUEGO</Button>
-                <Button variant="outline" size="sm" onClick={() => handleQuickTag("No esta el propietario", "#a855f7")} className="border-purple-500/30 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/30 bg-surface whitespace-normal h-auto py-2 text-xs leading-tight">No esta el propietario</Button>
+                <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO ABRIO", "#ef4444")} className="border-red-500/30 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 bg-surface"><DoorClosed className="w-3.5 h-3.5 mr-1" />NO ABRIO</Button>
+                <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO LE INTERESA", "#f97316")} className="border-orange-500/30 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/30 bg-surface"><ThumbsDown className="w-3.5 h-3.5 mr-1" />NO LE INTERESA</Button>
+                <Button variant="outline" size="sm" onClick={() => handleQuickTag("PASAR LUEGO", "#3b82f6")} className="border-blue-500/30 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 bg-surface"><Clock className="w-3.5 h-3.5 mr-1" />PASAR LUEGO</Button>
+                <Button variant="outline" size="sm" onClick={() => handleQuickTag("No esta el propietario", "#a855f7")} className="border-purple-500/30 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/30 bg-surface whitespace-normal h-auto py-2 text-xs leading-tight"><UserX className="w-3.5 h-3.5 mr-1" />No esta el propietario</Button>
               </div>
 
               <div className="space-y-1">
                 <textarea
                   value={mapNotes}
-                  onChange={(e) => setMapNotes(e.target.value)}
+                  onChange={(e) => { setMapNotes(e.target.value); mapNotesCache.current.set(parcel.id, e.target.value); }}
                   placeholder="Notas (solo local)..."
                   rows={3}
                   className="w-full px-3 py-2 rounded-xl border border-glass-border bg-white/40 dark:bg-black/20 text-on-surface text-sm placeholder:text-on-surface-variant/60 resize-none outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition-colors"
