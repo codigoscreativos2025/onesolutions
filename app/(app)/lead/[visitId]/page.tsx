@@ -106,13 +106,13 @@ const STAGE_COLORS: Record<string, string> = {
 
 const COMMON_FIELDS = [
   "closingDate",
+  "hoaInfo",
   "primaryRep",
   "primaryRepCommPct",
   "secondaryRep",
   "secondaryRepCommPct",
   "tertiaryRep",
   "tertiaryRepCommPct",
-  "hoaInfo",
 ];
 
 const FIELD_TYPES: Record<string, string> = {
@@ -1973,7 +1973,6 @@ function DatosProjectPanel({
 }) {
   const pd = visit.projectDetails || {};
   const nonCommonFields = fieldMetas.filter((m) => !COMMON_FIELDS.includes(m.fieldName));
-
   const [expandedProjects, setExpandedProjects] = useState<Set<number>>(new Set());
 
   const toggleExpandProject = (ptId: number) => {
@@ -2142,10 +2141,12 @@ function DatosProjectPanel({
       })}
 
       <div className="flex gap-3">
+        {isAdmin && (
         <Button onClick={onCancelProject} variant="danger" disabled={saving} className="flex-1">
           <X className="w-4 h-4" />
           Cancelar Proyecto
         </Button>
+        )}
       </div>
     </div>
   );
