@@ -72,7 +72,7 @@ export async function POST(request: Request) {
 
     // Filtrar solo campos válidos del modelo ProjectDetails
     const validFields = [
-      "clientName", "clientEmail", "address", "closingDate", "paymentMethod",
+      "clientName", "clientEmail", "address", "closingDate",
       "primaryRep", "primaryRepCommPct", "secondaryRep", "secondaryRepCommPct",
       "tertiaryRep", "tertiaryRepCommPct",
       "solarFinancier", "systemSize", "hoaInfo", "ppwSold", "umbrella", "mpuPanels",
@@ -87,6 +87,9 @@ export async function POST(request: Request) {
       "gutterCostPrice", "gutterSalePrice", "gutterCommission",
       "remodelacionCostPrice", "remodelacionSalePrice", "remodelacionCommission",
       "generalCostPrice", "generalSalePrice",
+      "solarPaymentMethod", "roofPaymentMethod", "waterPaymentMethod",
+      "fencePaymentMethod", "gutterPaymentMethod", "remodelacionPaymentMethod",
+      "otroPaymentMethod", "otroDescripcion",
     ];
     const filteredDetails: Record<string, unknown> = {};
     for (const key of validFields) {
