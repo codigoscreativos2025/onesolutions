@@ -105,6 +105,15 @@ export default function VisitPage() {
 
   useEffect(() => { fetchData(); }, [parcelId]); // eslint-disable-line
 
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+
   async function fetchData() {
     try {
       const [visitRes, ptRes, closersRes] = await Promise.all([

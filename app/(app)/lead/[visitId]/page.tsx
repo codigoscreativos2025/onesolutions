@@ -1475,7 +1475,7 @@ function FieldRow({
     );
   }
 
-  if (field === "paymentMethod") {
+  if (field.endsWith("PaymentMethod")) {
     return (
       <div className="space-y-1.5">
         <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">{label}<RequiredBadge required={required} /></label>
