@@ -57,6 +57,16 @@ async function seedProjectFields() {
     create: { name: "Otros", description: "Otro tipo de proyecto" },
   });
 
+  // Limpiar campos obsoletos de versiones anteriores
+  await prisma.projectTypeField.deleteMany({
+    where: { fieldName: "paymentMethod" }
+  });
+  if (solar.id) {
+    await prisma.projectTypeField.deleteMany({
+      where: { projectTypeId: solar.id, fieldName: "hoaInfo" }
+    });
+  }
+
   const fields = [
     // Campos Comunes
     { projectTypeId: commons.id, fieldName: "clientName", fieldLabel: "Nombre y Apellido", fieldType: "text", isRequired: true, order: 1 },

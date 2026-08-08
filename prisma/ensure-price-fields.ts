@@ -9,9 +9,10 @@ const PREFIX_MAP: Record<string, string> = {
   "Fence": "fence",
   "Gutters": "gutter",
   "Remodelacion": "remodelacion",
+  "Otros": "otro",
 };
 
-const VALID_PREFIXES = ["solar", "roof", "water", "other", "general", "fence", "gutter", "remodelacion"];
+const VALID_PREFIXES = ["solar", "roof", "water", "other", "general", "fence", "gutter", "remodelacion", "otro"];
 
 function isValidFieldName(fieldName: string): boolean {
   return VALID_PREFIXES.some((p) =>
