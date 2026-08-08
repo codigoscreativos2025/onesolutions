@@ -219,7 +219,6 @@ const REQUIRED_COMMON_FIELDS = new Set([
   "closingDate",
   "primaryRep",
   "primaryRepCommPct",
-  "hoaInfo",
 ]);
 // Campos secundarios opcionales de COMMON_FIELDS
 // (secondaryRep, tertiaryRep, generalCostPrice, generalSalePrice son opcionales)
@@ -1309,7 +1308,7 @@ export default function LeadDetailPage() {
         )}
       </AnimatePresence>
 
-      {activeTab !== "chat" && (
+      {activeTab !== "chat" && !closeRequested && (
         <>
           <div className="fixed bottom-24 right-6 z-[60]">
             <Button onClick={() => setShowSaveConfirm(true)} className="shadow-xl rounded-full px-6 py-3 gap-2">
@@ -2077,6 +2076,7 @@ function DatosProjectPanel({
               type={getType(key)}
               onChange={(_, v) => onFieldChange(key, v)}
               onBlur={onSave}
+              readOnly={closeRequested}
               isFile={isFieldFile(key)}
               onFileUpload={onFileFieldUpload}
               fileUrl={pd[key] ? String(pd[key]) : undefined}
@@ -2114,6 +2114,7 @@ function DatosProjectPanel({
                         type={meta.fieldType}
                         onChange={(_, v) => onFieldChange(meta.fieldName, v)}
                         onBlur={onSave}
+                        readOnly={closeRequested}
                         isFile={meta.fieldType === "file" || meta.fieldType === "photos"}
                         onFileUpload={onFileFieldUpload}
                         fileUrl={pd[meta.fieldName] ? String(pd[meta.fieldName]) : undefined}

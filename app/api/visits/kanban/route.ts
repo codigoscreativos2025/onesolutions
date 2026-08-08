@@ -4,7 +4,7 @@ import { auth } from '@/auth';
 export const dynamic = 'force-dynamic';
 
 const COMMON_FIELDS = [
-  "closingDate", "primaryRep", "primaryRepCommPct", "hoaInfo",
+  "closingDate", "primaryRep", "primaryRepCommPct",
   "generalCostPrice", "generalSalePrice",
 ];
 

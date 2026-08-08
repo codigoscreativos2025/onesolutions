@@ -125,33 +125,24 @@ export default function VisitPage() {
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
 
-    const originalPushState = history.pushState.bind(history);
-    const originalReplaceState = history.replaceState.bind(history);
-
-    history.pushState = function (...args: Parameters<typeof history.pushState>) {
-      if (!navigationBlockedRef.current) {
-        navigationBlockedRef.current = true;
-        pendingUrlRef.current = (args[2] as string) || window.location.pathname;
-        setShowLeaveWarning(true);
-        return;
-      }
-      return originalPushState(...args);
+    const handleClick = (e: MouseEvent) => {
+      if (navigationBlockedRef.current) return;
+      const link = (e.target as HTMLElement).closest('a[href]');
+      if (!link) return;
+      const href = link.getAttribute('href');
+      if (!href || href.startsWith('#') || href.startsWith('http') || href === window.location.pathname) return;
+      if (link.closest('[data-no-warn]')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      navigationBlockedRef.current = true;
+      pendingUrlRef.current = href;
+      setShowLeaveWarning(true);
     };
-
-    history.replaceState = function (...args: Parameters<typeof history.replaceState>) {
-      if (!navigationBlockedRef.current) {
-        navigationBlockedRef.current = true;
-        pendingUrlRef.current = (args[2] as string) || window.location.pathname;
-        setShowLeaveWarning(true);
-        return;
-      }
-      return originalReplaceState(...args);
-    };
+    document.addEventListener('click', handleClick, true);
 
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      history.pushState = originalPushState;
-      history.replaceState = originalReplaceState;
+      document.removeEventListener('click', handleClick, true);
     };
   }, []);
 
@@ -166,7 +157,7 @@ export default function VisitPage() {
       const visitData: Visit = await visitRes.json();
       const ptData: ProjectType[] = await ptRes.json();
       setVisit(visitData);
-      setProjectTypes(ptData.filter((pt: ProjectType) => pt.name !== "Campos Comunes"));
+      setProjectTypes(ptData.filter((pt: ProjectType) => pt.name !== "Campos Comunes").sort((a, b) => a.name === "Otros" ? 1 : b.name === "Otros" ? -1 : 0));
 
       let name = visitData.bill?.clientName ?? "";
       let email = visitData.bill?.clientEmail ?? "";
@@ -388,17 +379,16 @@ export default function VisitPage() {
       </motion.div>
 
       <Button onClick={() => handleSave(scheduleSelected ? 'potential' : 'lead')} disabled={saving || !phone.trim()} className="w-full h-14">
-        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : scheduleSelected ? "Guardar como Lead Potencial" : "Guardar como Lead"}
+        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Guardar"}
       </Button>
     </div>
 
-    <Modal isOpen={showLeaveWarning} onClose={() => { navigationBlockedRef.current = false; setShowLeaveWarning(false); }} title="No pierdas los datos del lead">
+    <Modal isOpen={showLeaveWarning} onClose={() => { setShowLeaveWarning(false); }} title="No pierdas los datos del lead">
       <div className="space-y-4">
         <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
           <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
           <p className="text-sm text-on-surface">
-            Si sales ahora perderás los datos traídos del mapa (nombre, teléfono, etc.). 
-            Planifica la cita y guarda el lead para no perder nada.
+            Si sales en este momento se creará el lead pero se perderá el nombre e información del lead recién creado. Guarda o planifica.
           </p>
         </div>
         <div className="flex gap-3">

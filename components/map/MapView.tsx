@@ -273,7 +273,7 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
               setSelectedParcel(updatedParcel);
 
               const updatedTagColor = getTagColor(updatedParcel.parcelTags);
-              const selColor = updatedTagColor || (updatedParcel.status === "LEAD" ? "#22C55E" : updatedParcel.status === "CUSTOMER" ? "#10b981" : "#ef4444");
+              const selColor = updatedParcel.status === "LEAD" ? "#22C55E" : updatedParcel.status === "CUSTOMER" ? "#10b981" : (updatedTagColor || "#ef4444");
               selectedGeometryRef.current = geom;
               (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
                 type: "FeatureCollection",
@@ -353,7 +353,7 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
           const parcels: { id: string; status: string; parcelTags?: string; coordinates: [number, number] }[] = await res.json();
           const features = parcels.map((p) => {
             let dotColor = p.status === "LEAD" ? "#22C55E" : (p.status === "CUSTOMER" ? "#10b981" : "#EF4444");
-            if (p.parcelTags) {
+            if (p.status !== "LEAD" && p.status !== "CUSTOMER" && p.parcelTags) {
               try {
                 const tags = JSON.parse(p.parcelTags);
                 if (Array.isArray(tags) && tags.length > 0) dotColor = tags[0].color;
