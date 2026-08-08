@@ -430,7 +430,6 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
 
     const COMMON_FIELDS_CHAT = [
       "closingDate",
-      "paymentMethod",
       "primaryRep",
       "primaryRepCommPct",
       "generalCostPrice",
@@ -912,27 +911,6 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
               value={editForm.closingDate ? new Date(editForm.closingDate).toISOString().split("T")[0] : ""}
               onChange={(e) => setEditForm({ ...editForm, closingDate: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
             />
-            <div>
-              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                Método de Pago
-              </label>
-              <select
-                value={editForm.paymentMethod || ""}
-                onChange={(e) => setEditForm({ ...editForm, paymentMethod: e.target.value })}
-                className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface mt-1"
-              >
-                <option value="">Seleccionar...</option>
-                <option value="Cash">Cash</option>
-                <option value="Transferencia">Transferencia</option>
-                <option value="Cheques">Cheques</option>
-                <option value="LightReach">LightReach</option>
-                <option value="SkyLight">SkyLight</option>
-                <option value="SunGage">SunGage</option>
-                <option value="Sunrise Capital">Sunrise Capital</option>
-                <option value="Foundations Finance">Foundations Finance</option>
-                <option value="Otro">Otro</option>
-              </select>
-            </div>
           </div>
 
           {projects.some(p => p.projectType.name === "Panel Solar") && (
@@ -973,7 +951,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
           {commonFields.length > 0 && (() => {
             const alreadyShown = new Set([
               "clientName", "clientEmail", "address", "phone",
-              "closingDate", "paymentMethod",
+              "closingDate",
               "primaryRep", "primaryRepCommPct",
             ]);
             const filtered = commonFields.filter((f) => !alreadyShown.has(f.fieldName));

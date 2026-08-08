@@ -106,20 +106,17 @@ const STAGE_COLORS: Record<string, string> = {
 
 const COMMON_FIELDS = [
   "closingDate",
-  "paymentMethod",
   "primaryRep",
   "primaryRepCommPct",
   "secondaryRep",
   "secondaryRepCommPct",
   "tertiaryRep",
   "tertiaryRepCommPct",
-  "generalCostPrice",
-  "generalSalePrice",
+  "hoaInfo",
 ];
 
 const FIELD_TYPES: Record<string, string> = {
   closingDate: "date",
-  paymentMethod: "select",
   primaryRepCommPct: "number",
   secondaryRepCommPct: "number",
   tertiaryRepCommPct: "number",
@@ -139,6 +136,7 @@ const FIELD_TYPES: Record<string, string> = {
   waterSystemType: "select",
   generalCostPrice: "number",
   generalSalePrice: "number",
+  hoaInfo: "text",
 };
 
 const FIELD_GROUPS: Record<string, { label: string; prefix: string }> = {
@@ -210,8 +208,6 @@ function getTimelineColor(action: string): string {
 }
 
 const OPTIONAL_FIELDS = [
-  "generalCostPrice",
-  "generalSalePrice",
   "secondaryRep",
   "secondaryRepCommPct",
   "tertiaryRep",
@@ -221,9 +217,9 @@ const OPTIONAL_FIELDS = [
 // Campos obligatorios para llegar al 100%
 const REQUIRED_COMMON_FIELDS = new Set([
   "closingDate",
-  "paymentMethod",
   "primaryRep",
   "primaryRepCommPct",
+  "hoaInfo",
 ]);
 // Campos secundarios opcionales de COMMON_FIELDS
 // (secondaryRep, tertiaryRep, generalCostPrice, generalSalePrice son opcionales)
@@ -1494,6 +1490,7 @@ function FieldRow({
           <option value="SunGage">SunGage</option>
           <option value="Sunrise Capital">Sunrise Capital</option>
           <option value="Foundations Finance">Foundations Finance</option>
+          <option value="Tarjeta de Crédito TDC">Tarjeta de Crédito TDC</option>
           <option value="Otro">Otro</option>
         </select>
       </div>
