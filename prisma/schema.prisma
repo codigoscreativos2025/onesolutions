@@ -247,6 +247,16 @@ model ProjectDetails {
   remodelacionSalePrice  Float?
   remodelacionCommission Float?
 
+  // Métodos de pago por tipo de proyecto
+  solarPaymentMethod        String?
+  roofPaymentMethod         String?
+  waterPaymentMethod        String?
+  fencePaymentMethod        String?
+  gutterPaymentMethod       String?
+  remodelacionPaymentMethod String?
+  otroPaymentMethod         String?
+  otroDescripcion           String?
+
   // Campos generales para todos los proyectos
   generalCostPrice  Float?
   generalSalePrice  Float?
