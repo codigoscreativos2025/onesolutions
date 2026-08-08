@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
-import { ArrowLeft, Upload, Phone, User, Loader2, FileText, X, CheckCircle } from "lucide-react";
+import { Modal } from "@/components/ui/Modal";
+import { ArrowLeft, Upload, Phone, User, Loader2, FileText, X, CheckCircle, AlertTriangle } from "lucide-react";
 import { ContractModal } from "@/components/quote/ContractModal";
 import { NotesPanel } from "@/components/lead/NotesPanel";
 import { SlotPicker } from "@/components/calendar/SlotPicker";
@@ -92,6 +93,9 @@ export default function VisitPage() {
 
   const [showCelebration, setShowCelebration] = useState(false);
   const [showContractModal, setShowContractModal] = useState(false);
+  const [showLeaveWarning, setShowLeaveWarning] = useState(false);
+  const pendingUrlRef = useRef<string | null>(null);
+  const navigationBlockedRef = useRef(false);
 
   const isSetter = role === "SETTER";
   const isSetterJr = role === "SETTER_JR";
@@ -105,13 +109,50 @@ export default function VisitPage() {
 
   useEffect(() => { fetchData(); }, [parcelId]); // eslint-disable-line
 
+  const allowNavigation = useCallback(() => {
+    navigationBlockedRef.current = false;
+    setShowLeaveWarning(false);
+    if (pendingUrlRef.current) {
+      router.push(pendingUrlRef.current);
+      pendingUrlRef.current = null;
+    }
+  }, [router]);
+
   useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       e.returnValue = "";
     };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    const originalPushState = history.pushState.bind(history);
+    const originalReplaceState = history.replaceState.bind(history);
+
+    history.pushState = function (...args: Parameters<typeof history.pushState>) {
+      if (!navigationBlockedRef.current) {
+        navigationBlockedRef.current = true;
+        pendingUrlRef.current = (args[2] as string) || window.location.pathname;
+        setShowLeaveWarning(true);
+        return;
+      }
+      return originalPushState(...args);
+    };
+
+    history.replaceState = function (...args: Parameters<typeof history.replaceState>) {
+      if (!navigationBlockedRef.current) {
+        navigationBlockedRef.current = true;
+        pendingUrlRef.current = (args[2] as string) || window.location.pathname;
+        setShowLeaveWarning(true);
+        return;
+      }
+      return originalReplaceState(...args);
+    };
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      history.pushState = originalPushState;
+      history.replaceState = originalReplaceState;
+    };
   }, []);
 
   async function fetchData() {
@@ -248,8 +289,9 @@ export default function VisitPage() {
   }
 
   return (
-    <div className="space-y-6 pb-8">
-      <AnimatePresence>
+    <>
+      <div className="space-y-6 pb-8">
+        <AnimatePresence>
         {showCelebration && <CelebrationOverlay onComplete={() => { setShowCelebration(false); router.push("/dashboard"); }} />}
       </AnimatePresence>
       <ContractModal isOpen={showContractModal} onClose={() => setShowContractModal(false)} visitId={visit.id} />
@@ -349,6 +391,27 @@ export default function VisitPage() {
         {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : scheduleSelected ? "Guardar como Lead Potencial" : "Guardar como Lead"}
       </Button>
     </div>
+
+    <Modal isOpen={showLeaveWarning} onClose={() => { navigationBlockedRef.current = false; setShowLeaveWarning(false); }} title="No pierdas los datos del lead">
+      <div className="space-y-4">
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+          <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+          <p className="text-sm text-on-surface">
+            Si sales ahora perderás los datos traídos del mapa (nombre, teléfono, etc.). 
+            Planifica la cita y guarda el lead para no perder nada.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => { navigationBlockedRef.current = false; setShowLeaveWarning(false); }} className="flex-1">
+            Quedarme
+          </Button>
+          <Button variant="danger" onClick={allowNavigation} className="flex-1">
+            Salir sin guardar
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  </>
   );
 }
 
