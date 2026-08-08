@@ -62,6 +62,8 @@ export async function POST(
       data: {
         status: "LEAD",
         setterId: userId,
+        address: body.address || parcel.address || "Sin dirección",
+        ownerName: body.ownerName || parcel.ownerName || null,
       },
       include: {
         setter: { select: { id: true, name: true } },
