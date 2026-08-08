@@ -29,17 +29,22 @@ export async function POST(
       coordinates: [[[0, 0], [0, 0], [0, 0]]],
     });
 
-    let parcel = await prisma.parcel.upsert({
-      where: { externalId: id },
-      update: {},
-      create: {
-        externalId: id,
-        address: body.address || "Sin dirección",
-        ownerName: body.ownerName || null,
-        geometry: body.geometry || defaultGeometry,
-        metadata: body.metadata || null,
-      }
+    let parcel = await prisma.parcel.findFirst({
+      where: { OR: [{ id }, { externalId: id }] },
     });
+
+    if (!parcel) {
+      parcel = await prisma.parcel.create({
+        data: {
+          id,
+          externalId: id,
+          address: body.address || "Sin dirección",
+          ownerName: body.ownerName || null,
+          geometry: body.geometry || defaultGeometry,
+          metadata: body.metadata || null,
+        },
+      });
+    }
 
     if (parcel.status !== "AVAILABLE") {
       const existingSetter =
