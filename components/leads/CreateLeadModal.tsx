@@ -99,7 +99,11 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
     } catch (error) {
       console.error('Error fetching closers:', error);
       setClosers([]);
-      toast.error('No se pudieron cargar los closers');
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        toast.error('Tiempo de espera agotado al cargar closers');
+      } else {
+        toast.error('No se pudieron cargar los closers');
+      }
     } finally {
       setLoadingClosers(false);
     }
@@ -109,6 +113,11 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
     e.preventDefault();
     setLoading(true);
 
+    if (!formData.address.trim()) {
+      toast.error("La dirección es requerida");
+      setLoading(false);
+      return;
+    }
     if (showCloserDropdown && !selectedCloserId) {
       toast.error("Selecciona un Closer");
       setLoading(false);
@@ -225,6 +234,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
               placeholder="(407) 555-0123"
               type="tel"
               inputMode="tel"
+              required
               pattern="[0-9\-\+\(\) ]*"
             />
           </div>

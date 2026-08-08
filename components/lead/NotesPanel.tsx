@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
@@ -50,7 +50,7 @@ export function NotesPanel({ visitId, visitCreatedAt }: NotesPanelProps) {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [editContent, setEditContent] = useState("");
 
-  const fetchNotes = async () => {
+  const fetchNotes = useCallback(async () => {
     try {
       const url = filterDate
         ? `/api/visits/${visitId}/notes?date=${filterDate}`
@@ -64,11 +64,11 @@ export function NotesPanel({ visitId, visitCreatedAt }: NotesPanelProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [visitId, filterDate]);
 
   useEffect(() => {
     fetchNotes();
-  }, [visitId, filterDate]);
+  }, [fetchNotes]);
 
   const validateDate = (dateStr: string): boolean => {
     if (!dateStr) {

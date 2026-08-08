@@ -340,6 +340,9 @@ export default function LeadDetailPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const visitId = Number(params.visitId);
+  if (isNaN(visitId)) {
+    return <div className="text-center py-12"><p className="text-on-surface-variant">ID de proyecto inválido</p></div>;
+  }
   const role = session?.user?.role ?? "";
 
   const [visit, setVisit] = useState<VisitDetails | null>(null);
@@ -414,7 +417,7 @@ export default function LeadDetailPage() {
       const data = await res.json();
       setVisit(data);
     } catch {
-      toast.error("Error al cargar los detalles del proyecto");
+      if (!silent) toast.error("Error al cargar los detalles del proyecto");
     } finally {
       if (!silent) setLoading(false);
     }
@@ -853,19 +856,6 @@ export default function LeadDetailPage() {
       editFieldsRef.current.address = visit.parcel?.address || editFieldsRef.current.address || "";
 
       await saveProjectDetailsAction(true);
-      const billData: Record<string, string | null> = {
-        phone: editFields._billPhone?.trim() || visit.bill?.phone || "",
-        clientName: editFields._billClientName?.trim() || visit.bill?.clientName || null,
-        clientEmail: editFields._billClientEmail?.trim() || visit.bill?.clientEmail || null,
-        notes: editFields._billNotes?.trim() || visit.bill?.notes || null,
-        imageUrl: visit.bill?.imageUrl || null,
-        additionalFileUrl: visit.bill?.additionalFileUrl || null,
-        additionalFileName: visit.bill?.additionalFileName || null,
-      };
-      await fetch(`/api/visits/${visit.id}`, {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bill: { upsert: { create: billData, update: billData } } }),
-      });
 
       const res = await fetch(`/api/visits/${visit.id}`, {
         method: "PATCH",
@@ -2452,8 +2442,9 @@ function ArchivosPanel({ visit, onUpdate }: { visit: VisitDetails; onUpdate?: ()
           });
         }
       } else {
-        // Custom document — remove from customDocs
-        const updatedDocs = customDocs.filter(d => d.url !== file.url);
+        const idx = customDocs.findIndex(d => d.url === file.url);
+        if (idx === -1) return;
+        const updatedDocs = customDocs.filter((_, i) => i !== idx);
         setCustomDocs(updatedDocs);
         await fetch("/api/project-details", {
           method: "POST", headers: { "Content-Type": "application/json" },
@@ -2510,7 +2501,7 @@ function ArchivosPanel({ visit, onUpdate }: { visit: VisitDetails; onUpdate?: ()
 
   const noFiles = allFilesFlat.length === 0;
 
-  if (noFiles && !bill && !pd.idDocumentUrl && !pd.electricBillUrl && customDocs.length === 0) {
+  if (noFiles) {
     return (
       <div className="space-y-6">
         <div className="mb-6 p-4 glass-panel rounded-xl">

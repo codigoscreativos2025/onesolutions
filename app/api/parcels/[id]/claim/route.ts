@@ -91,7 +91,6 @@ export async function POST(
     return NextResponse.json(updated);
   } catch (error) {
     console.error("Error claiming parcel:", error);
-    console.error("Error claiming parcel:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to claim parcel" },
       { status: 500 }
