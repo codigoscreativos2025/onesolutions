@@ -139,8 +139,6 @@ async function seedProjectFields() {
     // Otros
     { projectTypeId: otros.id, fieldName: "otroPaymentMethod", fieldLabel: "Método de Pago", fieldType: "select", options: PAYMENT_OPTIONS, isRequired: true, order: 1 },
     { projectTypeId: otros.id, fieldName: "otroDescripcion", fieldLabel: "Descripción", fieldType: "text", isRequired: true, order: 2 },
-    { projectTypeId: otros.id, fieldName: "otherCostPrice", fieldLabel: "Costo", fieldType: "number", isRequired: true, order: 3 },
-    { projectTypeId: otros.id, fieldName: "otherSalePrice", fieldLabel: "Precio de Venta", fieldType: "number", isRequired: true, order: 4 },
   ];
 
   let count = 0;
