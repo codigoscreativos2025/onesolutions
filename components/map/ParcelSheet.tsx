@@ -80,6 +80,7 @@ export function ParcelSheet({
   const [showLeadModal, setShowLeadModal] = useState(false);
   const [visitNotAvailTags, setVisitNotAvailTags] = useState<NotAvailTag[]>([]);
   const [quickTagMessage, setQuickTagMessage] = useState<{ name: string; color: string } | null>(null);
+  const [mapNotes, setMapNotes] = useState("");
 
   const noteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSavingRef = useRef(false);
@@ -88,6 +89,7 @@ export function ParcelSheet({
 
   useEffect(() => {
     setQuickTagMessage(null);
+    setMapNotes("");
     if (!parcel) {
       setVisitNotAvailTags([]);
       return;
@@ -419,6 +421,27 @@ export function ParcelSheet({
             />
           </div>
 
+          {canVisit && isAvailable && parcel.status !== "CUSTOMER" && (
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO ABRIO", "#ef4444")} className="border-red-500/30 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 bg-surface">NO ABRIO</Button>
+                <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO LE INTERESA", "#f97316")} className="border-orange-500/30 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/30 bg-surface">NO LE INTERESA</Button>
+                <Button variant="outline" size="sm" onClick={() => handleQuickTag("PASAR LUEGO", "#3b82f6")} className="border-blue-500/30 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 bg-surface">PASAR LUEGO</Button>
+                <Button variant="outline" size="sm" onClick={() => handleQuickTag("No esta el propietario", "#a855f7")} className="border-purple-500/30 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/30 bg-surface whitespace-normal h-auto py-2 text-xs leading-tight">No esta el propietario</Button>
+              </div>
+
+              <div className="space-y-1">
+                <textarea
+                  value={mapNotes}
+                  onChange={(e) => setMapNotes(e.target.value)}
+                  placeholder="Notas (solo local)..."
+                  rows={3}
+                  className="w-full px-3 py-2 rounded-xl border border-glass-border bg-white/40 dark:bg-black/20 text-on-surface text-sm placeholder:text-on-surface-variant/60 resize-none outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition-colors"
+                />
+              </div>
+            </>
+          )}
+
           {!isAvailable && !isTakenByMe && parcel.setter && (
             <div className="p-4 rounded-xl bg-secondary/10 border border-secondary/20">
               <p className="text-sm text-secondary font-medium">
@@ -471,18 +494,11 @@ export function ParcelSheet({
               <Button
                 onClick={handleKnockDoor}
                 disabled={claiming}
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-6 text-lg rounded-xl shadow-md"
+                className="w-full bg-brand-green hover:bg-brand-green/90 text-white py-6 text-lg rounded-xl shadow-md"
               >
                 <DoorOpen className="w-5 h-5 mr-2" />
                 Crear Lead
               </Button>
-              
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO ABRIO", "#ef4444")} className="border-red-500/30 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 bg-surface">NO ABRIO</Button>
-                <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO LE INTERESA", "#f97316")} className="border-orange-500/30 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/30 bg-surface">NO LE INTERESA</Button>
-                <Button variant="outline" size="sm" onClick={() => handleQuickTag("PASAR LUEGO", "#3b82f6")} className="border-blue-500/30 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 bg-surface">PASAR LUEGO</Button>
-                <Button variant="outline" size="sm" onClick={() => handleQuickTag("No esta el propietario", "#a855f7")} className="border-purple-500/30 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/30 bg-surface whitespace-normal h-auto py-2 text-xs leading-tight">No esta el propietario</Button>
-              </div>
 
               <Button variant="ghost" onClick={onClose} className="w-full mt-2">
                 Cerrar
