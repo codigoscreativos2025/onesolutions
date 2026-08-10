@@ -35,6 +35,7 @@ import {
   Play,
   Tag,
   ChevronDown,
+  Undo2,
 } from "lucide-react";
 
 const FIELD_LABEL_MAP: Record<string, string> = {
@@ -789,6 +790,29 @@ export default function LeadDetailPage() {
     }
   };
 
+  const handleReturnLead = async () => {
+    try {
+      let existing: Record<string, unknown> = {};
+      if (visit?.contractFields) {
+        try { existing = JSON.parse(visit.contractFields); } catch { /* */ }
+      }
+      delete existing.closeRequestedAt;
+      const res = await fetch(`/api/visits/${visitId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contractFields: JSON.stringify(existing) }),
+      });
+      if (res.ok) {
+        toast.success("Lead devuelto para edición exitosamente");
+        fetchVisitDetails(true);
+      } else {
+        toast.error("Error al devolver lead");
+      }
+    } catch {
+      toast.error("Error al devolver lead");
+    }
+  };
+
   const handleCancelProjectAction = async () => {
     const reason = prompt("Motivo de cancelación:");
     if (!reason) return;
@@ -1240,6 +1264,7 @@ export default function LeadDetailPage() {
                   onRequestClose={handleRequestClose}
                   onCloseProject={handleCloseProject}
                   onCancelProject={handleCancelProjectAction}
+                  onReturnLead={handleReturnLead}
                   onFileFieldUpload={handleFileUploadField}
                 />
                 <div className="mt-6">
@@ -1327,7 +1352,7 @@ export default function LeadDetailPage() {
         )}
       </AnimatePresence>
 
-      {activeTab !== "chat" && !closeRequested && (
+      {activeTab !== "chat" && !closeRequested && visit?.stage !== "CANCELLED" && (
         <>
           <div className="fixed bottom-24 right-6 z-[60]">
             <Button onClick={() => setShowSaveConfirm(true)} className="shadow-xl rounded-full px-6 py-3 gap-2">
@@ -1961,6 +1986,7 @@ function DatosProjectPanel({
   onRequestClose,
   onCloseProject,
   onCancelProject,
+  onReturnLead,
   onFileFieldUpload,
 }: {
   visit: VisitDetails;
@@ -1977,6 +2003,7 @@ function DatosProjectPanel({
   onRequestClose: () => void;
   onCloseProject: () => void;
   onCancelProject: () => void;
+  onReturnLead?: () => void;
   onFileFieldUpload: (fieldName: string, file: File) => void;
 }) {
   const pd = visit.projectDetails || {};
@@ -2050,10 +2077,18 @@ function DatosProjectPanel({
               )
             )}
             {isAdmin && (
-              <Button onClick={onCloseProject}>
-                <CheckCircle className="w-4 h-4" />
-                Cerrar Proyecto
-              </Button>
+              <>
+                <Button onClick={onCloseProject}>
+                  <CheckCircle className="w-4 h-4" />
+                  Cerrar Proyecto
+                </Button>
+                {closeRequested && (
+                  <Button onClick={onReturnLead} className="bg-orange-500 hover:bg-orange-600 text-white">
+                    <Undo2 className="w-4 h-4" />
+                    Devolver Lead
+                  </Button>
+                )}
+              </>
             )}
           </div>
         )}
