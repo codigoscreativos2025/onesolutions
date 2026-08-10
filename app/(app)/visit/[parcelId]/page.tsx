@@ -157,7 +157,7 @@ export default function VisitPage() {
       const visitData: Visit = await visitRes.json();
       const ptData: ProjectType[] = await ptRes.json();
       setVisit(visitData);
-      setProjectTypes(ptData.filter((pt: ProjectType) => pt.name !== "Campos Comunes").sort((a, b) => a.name === "Otros" ? 1 : b.name === "Otros" ? -1 : 0));
+      setProjectTypes(ptData.filter((pt: ProjectType) => pt.name !== "Campos Comunes" && (role !== "SETTER" || pt.name !== "Panel Solar")).sort((a, b) => a.name === "Otros" ? 1 : b.name === "Otros" ? -1 : 0));
 
       let name = visitData.bill?.clientName ?? "";
       let email = visitData.bill?.clientEmail ?? "";

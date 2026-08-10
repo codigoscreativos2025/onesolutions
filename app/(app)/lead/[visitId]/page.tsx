@@ -1057,12 +1057,6 @@ export default function LeadDetailPage() {
   const selectedProjectNames = visit?.projects?.map((p) => p.projectType.name) || [];
   const isAdmin = role === "ADMIN";
 
-  useEffect(() => {
-    if (role === "SETTER" && visit?.stage && visit.stage !== "IN_PROGRESS") {
-      router.push("/dashboard");
-    }
-  }, [role, visit?.stage, router]);
-
   // Detectar si ya se solicitó el cierre
   const closeRequested = (() => {
     if (!visit?.contractFields) return false;
@@ -1130,7 +1124,6 @@ export default function LeadDetailPage() {
           { key: "chat", label: "Chat", icon: MessageSquare },
           { key: "historial", label: "Historial", icon: Clock },
         ].filter(tab => {
-          if (tab.key === "chat" && role === "SETTER") return false;
           if ((tab.key === "contratos" || tab.key === "historial") && role === "PARTNER") return false;
           if (visit?.stage === "CANCELLED" && tab.key !== "datos" && tab.key !== "historial") return false;
           if (role === "ADMIN" && visit?.stage !== "IN_PROGRESS" && tab.key !== "datos" && tab.key !== "historial") return false;
@@ -1863,7 +1856,7 @@ function DatosProjectFieldsPanel({
       try {
         const res = await fetch("/api/project-types");
         const data = await res.json();
-        if (Array.isArray(data)) setAllProjectTypes(data);
+        if (Array.isArray(data)) setAllProjectTypes(data.filter((pt: { name: string }) => role !== "SETTER" || pt.name !== "Panel Solar"));
       } catch { /* */ }
     };
     fetchAllProjectTypes();

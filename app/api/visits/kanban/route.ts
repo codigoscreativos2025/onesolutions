@@ -85,7 +85,6 @@ export async function GET() {
 
     if (role === 'SETTER') {
       whereClause.setterId = currentUserId;
-      whereClause.stage = 'IN_PROGRESS';
     } else if (role === 'SETTER_JR') {
       whereClause.setterId = currentUserId;
     } else if (role === 'CLOSER') {
