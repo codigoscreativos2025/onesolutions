@@ -34,7 +34,7 @@ export default function LoginPage() {
     } else {
       const session = await getSession();
       if (session?.user?.role === "PARTNER") {
-        router.push("/leads");
+        router.push("/dashboard");
       } else {
         router.push("/ranking");
       }

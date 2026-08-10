@@ -1099,7 +1099,11 @@ export default function LeadDetailPage() {
           { key: "contratos", label: "Contratos", icon: FileText },
           { key: "chat", label: "Chat", icon: MessageSquare },
           { key: "historial", label: "Historial", icon: Clock },
-        ].filter(tab => !(tab.key === "chat" && role === "SETTER")).map((tab) => (
+        ].filter(tab => {
+          if (tab.key === "chat" && role === "SETTER") return false;
+          if ((tab.key === "contratos" || tab.key === "historial") && role === "PARTNER") return false;
+          return true;
+        }).map((tab) => (
           <button
             key={tab.key}
             onClick={() => handleTabChange(tab.key)}
@@ -1113,6 +1117,7 @@ export default function LeadDetailPage() {
             {tab.label}
           </button>
         ))}
+        {role !== "PARTNER" && (
         <button
           onClick={() => {
             const metadata = visit.parcel?.metadata ? (() => { try { return JSON.parse(visit.parcel.metadata); } catch { return null; } })() : null;
@@ -1127,6 +1132,7 @@ export default function LeadDetailPage() {
           <MapPin className="w-4 h-4" />
           Ver en mapa
         </button>
+        )}
         {visit.stage === "PROPOSAL_ACCEPTED" && (
           <button
             onClick={handleStartProject}
