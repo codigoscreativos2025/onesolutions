@@ -108,7 +108,7 @@ model Visit {
   closerObjections   VisitCloserObjection[]
   notAvailableTags   VisitNotAvailableTag[]
   bill               Bill?
-  chatRoom           ChatRoom?
+  chatRooms          ChatRoom[]
   slot               CloserSlot?
   projects           VisitProject[]
   commissions        CloserCommission[]
@@ -319,11 +319,14 @@ model Bill {
 }
 
 model ChatRoom {
-  id        Int      @id @default(autoincrement())
-  visitId   Int      @unique
-  visit     Visit    @relation(fields: [visitId], references: [id])
-  createdAt DateTime @default(now())
+  id        Int           @id @default(autoincrement())
+  visitId   Int
+  type      String        @default("GENERAL")
+  visit     Visit         @relation(fields: [visitId], references: [id])
+  createdAt DateTime      @default(now())
   messages  ChatMessage[]
+
+  @@unique([visitId, type])
 }
 
 model ChatMessage {

@@ -39,6 +39,7 @@ export async function GET() {
   } else if (role === "PARTNER") {
     rooms = await prisma.chatRoom.findMany({
       where: {
+        type: "PARTNER",
         visit: {
           parcel: { partnerId: userId },
         },
@@ -66,6 +67,7 @@ export async function GET() {
   } else {
     rooms = await prisma.chatRoom.findMany({
       where: {
+        type: "GENERAL",
         visit: {
           OR: [{ setterId: userId }, { closerId: userId }],
         },

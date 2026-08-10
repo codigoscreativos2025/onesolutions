@@ -152,8 +152,8 @@ export async function GET(request: Request) {
             },
           },
         },
-        chatRoom: {
-          select: { id: true },
+        chatRooms: {
+          select: { id: true, type: true },
         },
         bill: {
           select: {
@@ -191,6 +191,7 @@ export async function GET(request: Request) {
 
     const enrichedVisits = visits.map((v) => ({
       ...v,
+      chatRoom: v.chatRooms?.find(r => r.type === "GENERAL") || null,
       progress: computeProgress(
         {
           ...((v.projectDetails as Record<string, unknown>) || {}),

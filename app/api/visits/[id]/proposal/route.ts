@@ -97,8 +97,8 @@ export async function PATCH(
 
     if (directSale) {
       try {
-        const existingChat = await prisma.chatRoom.findUnique({
-          where: { visitId: visit.id },
+        const existingChat = await prisma.chatRoom.findFirst({
+          where: { visitId: visit.id, type: "GENERAL" },
         });
 
         if (!existingChat) {

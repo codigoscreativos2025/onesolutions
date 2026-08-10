@@ -37,7 +37,7 @@ export async function PATCH(
 
     const existingVisit = await prisma.visit.findUnique({
       where: { id: parseInt(id) },
-      include: { slot: true, chatRoom: true },
+      include: { slot: true, chatRooms: true },
     });
 
     if (!existingVisit) {
@@ -115,8 +115,8 @@ export async function PATCH(
         data: { status: "CUSTOMER" },
       });
 
-      const existingChat = await prisma.chatRoom.findUnique({
-        where: { visitId: visit.id },
+      const existingChat = await prisma.chatRoom.findFirst({
+        where: { visitId: visit.id, type: "GENERAL" },
       });
 
       if (!existingChat) {

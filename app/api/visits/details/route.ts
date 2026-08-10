@@ -152,13 +152,17 @@ export async function GET(request: Request) {
             endAt: true,
           },
         },
-        chatRoom: {
-          select: { id: true },
+        chatRooms: {
+          select: { id: true, type: true },
         },
       },
     });
 
-    return NextResponse.json(visits);
+    return NextResponse.json(visits.map(v => ({
+      ...v,
+      chatRoom: v.chatRooms?.find(r => r.type === "GENERAL") || null,
+      chatRooms: undefined,
+    })));
   } catch (error) {
     console.error('Error fetching visit details:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

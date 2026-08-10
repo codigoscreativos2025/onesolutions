@@ -98,8 +98,8 @@ export async function GET(
             },
           },
         },
-        chatRoom: {
-          select: { id: true },
+        chatRooms: {
+          select: { id: true, type: true },
         },
       },
     });
@@ -108,7 +108,11 @@ export async function GET(
       return NextResponse.json({ error: 'Visit not found' }, { status: 404 });
     }
 
-    return NextResponse.json(visit);
+    return NextResponse.json({
+      ...visit,
+      chatRoom: visit.chatRooms?.find(r => r.type === "GENERAL") || null,
+      chatRooms: undefined,
+    });
   } catch (error) {
     console.error('Error fetching visit details:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

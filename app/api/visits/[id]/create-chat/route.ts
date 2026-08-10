@@ -26,7 +26,7 @@ export async function POST(
     const visit = await prisma.visit.findUnique({
       where: { id: parseInt(id) },
       include: {
-        parcel: { select: { address: true } },
+        parcel: { select: { address: true, partnerId: true } },
         setter: { select: { id: true, name: true, role: true } },
         closer: { select: { id: true, name: true } },
         projectDetails: true,
@@ -53,9 +53,9 @@ export async function POST(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Verificar que el chat no existe ya
-    const existingRoom = await prisma.chatRoom.findUnique({
-      where: { visitId: visit.id },
+    // Verificar que el chat GENERAL no existe ya
+    const existingRoom = await prisma.chatRoom.findFirst({
+      where: { visitId: visit.id, type: "GENERAL" },
     });
 
     if (existingRoom) {
@@ -73,10 +73,11 @@ export async function POST(
       );
     }
 
-    // Crear el chat
+    // Crear el chat GENERAL
     const chatRoom = await prisma.chatRoom.create({
       data: {
         visitId: visit.id,
+        type: "GENERAL",
         messages: {
           create: {
             userId: userId,
@@ -85,6 +86,27 @@ export async function POST(
         },
       },
     });
+
+    // Crear chat PARTNER si la parcela tiene partner asignado
+    if (visit.parcel?.partnerId) {
+      const existingPartnerRoom = await prisma.chatRoom.findFirst({
+        where: { visitId: visit.id, type: "PARTNER" },
+      });
+      if (!existingPartnerRoom) {
+        await prisma.chatRoom.create({
+          data: {
+            visitId: visit.id,
+            type: "PARTNER",
+            messages: {
+              create: {
+                userId: userId,
+                body: "Chat de proyecto con Partner iniciado",
+              },
+            },
+          },
+        });
+      }
+    }
 
     // Actualizar la visita con la fecha de creación del chat
     await prisma.visit.update({

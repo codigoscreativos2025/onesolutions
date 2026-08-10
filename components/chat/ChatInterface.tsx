@@ -88,6 +88,7 @@ type ColumnView = "list" | "conversation" | "info";
 
 export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomList = false }: { isAdmin?: boolean; initialRoomId?: number | null; hideRoomList?: boolean }) {
   const { data: session } = useSession();
+  const role = session?.user?.role ?? "";
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(initialRoomId);
@@ -136,10 +137,10 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
   }, [selectedRoomId]);
 
   useEffect(() => {
-    if (selectedRoom?.visit?.projects && selectedRoom.visit.projects.length > 0) {
+    if (selectedRoom?.visit?.projects && selectedRoom?.visit?.projects.length > 0) {
       const fetchFieldMetas = async () => {
         const allMetas: { fieldName: string; isRequired?: boolean }[] = [];
-        const uniqueIds = Array.from(new Set(selectedRoom.visit.projects!.map((p) => p.projectType.id)));
+        const uniqueIds = Array.from(new Set(selectedRoom?.visit?.projects!.map((p) => p.projectType.id)));
         for (const typeId of uniqueIds) {
           try {
             const res = await fetch(`/api/admin/project-type-fields?projectTypeId=${typeId}`);
@@ -203,10 +204,20 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
   };
 
   const fetchMessages = async (roomId: number) => {
-    const res = await fetch(`/api/chat/rooms/${roomId}`);
-    const data = await res.json();
-    setMessages(data.messages);
-    setSelectedRoom(data);
+    try {
+      const res = await fetch(`/api/chat/rooms/${roomId}`);
+      if (!res.ok) {
+        setSelectedRoom(null);
+        setSelectedRoomId(null);
+        return;
+      }
+      const data = await res.json();
+      setMessages(data.messages);
+      setSelectedRoom(data);
+    } catch {
+      setSelectedRoom(null);
+      setSelectedRoomId(null);
+    }
   };
 
   const handleSelectRoom = (room: Room) => {
@@ -237,7 +248,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
 
   const handleOpenEditModal = () => {
     const pd = projectDetails || {};
-    const address = pd.address || selectedRoom?.visit.parcel?.address || "";
+    const address = pd.address || selectedRoom?.visit?.parcel?.address || "";
     setEditForm({
       ...pd,
       address,
@@ -256,7 +267,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          visitId: selectedRoom.visit.id,
+          visitId: selectedRoom?.visit?.id,
           ...editForm,
         }),
       });
@@ -275,7 +286,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
   const handleFinalize = async () => {
     if (!selectedRoom) return;
     try {
-      const res = await fetch(`/api/visits/${selectedRoom.visit.id}/finalize`, { method: 'PATCH' });
+      const res = await fetch(`/api/visits/${selectedRoom?.visit?.id}/finalize`, { method: 'PATCH' });
       if (res.ok) {
         const updated = await res.json();
         if (selectedRoom) {
@@ -394,8 +405,8 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
   const filteredRooms = rooms.filter((room) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
-    const address = room.visit.parcel.address.toLowerCase();
-    const clientName = (room.visit.bill?.clientName || "").toLowerCase();
+    const address = room.visit?.parcel.address.toLowerCase();
+    const clientName = (room.visit?.bill?.clientName || "").toLowerCase();
     return address.includes(q) || clientName.includes(q);
   });
 
@@ -407,9 +418,9 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
     );
   }
 
-  const projectDetails = selectedRoom?.visit.projectDetails || {};
-  const projects = selectedRoom?.visit.projects || [];
-  const bill = selectedRoom?.visit.bill;
+  const projectDetails = selectedRoom?.visit?.projectDetails || {};
+  const projects = selectedRoom?.visit?.projects || [];
+  const bill = selectedRoom?.visit?.bill;
   const mergedProjectDetails: Record<string, unknown> = {
     ...projectDetails,
     _billClientName: bill?.clientName || (projectDetails as Record<string, unknown>).clientName,
@@ -583,35 +594,37 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                 >
                   <div className="flex justify-between items-start mb-1 gap-2">
                     <p className="font-semibold text-sm truncate">
-                      {room.visit.bill?.clientName || room.visit.projectDetails?.clientName || room.visit.parcel.ownerName || "Sin Nombre"}
+                      {(room as any).type === "PARTNER" ? "🤝 " : ""}
+                      {room.visit?.bill?.clientName || room.visit?.projectDetails?.clientName || room.visit?.parcel.ownerName || "Sin Nombre"}
+                      {(role === "ADMIN" && (room as any).type === "PARTNER") ? <span className="text-[10px] ml-1 text-amber-500">(Partner)</span> : null}
                     </p>
                     <span className="text-[10px] opacity-70 whitespace-nowrap flex-shrink-0 mt-0.5">
                       {room.messages && room.messages.length > 0
                         ? new Date(room.messages[0].createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                        : (room.visit.createdAt ? new Date(room.visit.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "")}
+                        : (room.visit?.createdAt ? new Date(room.visit?.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "")}
                     </span>
                   </div>
                   <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Dirección">
                     <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                    <span>{room.visit.parcel.address}</span>
+                    <span>{room.visit?.parcel.address}</span>
                   </p>
                   <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Status">
                     <Activity className="w-3.5 h-3.5 flex-shrink-0" />
                     <span>
-                      {room.visit.stage === "POTENTIAL_LEAD" ? "Lead Potencial" :
-                       room.visit.stage === "IN_PROGRESS" ? "Agendado" :
-                       room.visit.stage === "PROJECT" ? "En Proyecto" :
-                       room.visit.stage === "CLOSED" ? "Proyecto Cerrado" :
-                       room.visit.stage === "CANCELLED" ? "Proyecto Cancelado" : room.visit.stage || "Desconocido"}
+                      {room.visit?.stage === "POTENTIAL_LEAD" ? "Lead Potencial" :
+                       room.visit?.stage === "IN_PROGRESS" ? "Agendado" :
+                       room.visit?.stage === "PROJECT" ? "En Proyecto" :
+                       room.visit?.stage === "CLOSED" ? "Proyecto Cerrado" :
+                       room.visit?.stage === "CANCELLED" ? "Proyecto Cancelado" : room.visit?.stage || "Desconocido"}
                     </span>
                   </p>
                   <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Fecha">
                     <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
-                    <span>{room.visit.createdAt ? new Date(room.visit.createdAt).toLocaleDateString() : "N/A"}</span>
+                    <span>{room.visit?.createdAt ? new Date(room.visit?.createdAt).toLocaleDateString() : "N/A"}</span>
                   </p>
                   <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Registrado por">
                     <User className="w-3.5 h-3.5 flex-shrink-0" />
-                    <span>{room.visit.setter?.name || "Desconocido"}</span>
+                    <span>{room.visit?.setter?.name || "Desconocido"}</span>
                   </p>
                 </button>
               ))}
@@ -641,22 +654,22 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                           <ArrowLeft className="w-4 h-4" />
                         </button>
                         <p className="font-semibold text-on-surface">
-                          {selectedRoom.visit.bill?.clientName || selectedRoom.visit.projectDetails?.clientName || selectedRoom.visit.parcel.ownerName || "Sin Nombre"}
+                          {selectedRoom?.visit?.bill?.clientName || selectedRoom?.visit?.projectDetails?.clientName || selectedRoom?.visit?.parcel.ownerName || "Sin Nombre"}
                         </p>
                       </div>
                       <p className="text-xs text-on-surface-variant ml-0 lg:ml-0 mt-1">
-                        {selectedRoom.visit.parcel.address}
+                        {selectedRoom?.visit?.parcel.address}
                       </p>
                       <p className="text-xs text-on-surface-variant">
                         Trainee:{' '}
-                        <Link href={`/profile/${selectedRoom.visit.setter.id}`} className="hover:underline">
-                          {selectedRoom.visit.setter.name}
+                        <Link href={`/profile/${selectedRoom?.visit?.setter.id}`} className="hover:underline">
+                          {selectedRoom?.visit?.setter.name}
                         </Link>
-                        {selectedRoom.visit.closer && (
+                        {selectedRoom?.visit?.closer && (
                           <>
                             {' • Closer: '}
-                            <Link href={`/profile/${selectedRoom.visit.closer.id}`} className="hover:underline">
-                              {selectedRoom.visit.closer.name}
+                            <Link href={`/profile/${selectedRoom?.visit?.closer.id}`} className="hover:underline">
+                              {selectedRoom?.visit?.closer.name}
                             </Link>
                           </>
                         )}
@@ -682,7 +695,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                       {(session?.user?.role === "ADMIN" || session?.user?.role === "CLOSER") && (
                         <>
                           <Link
-                            href={`/lead/${selectedRoom.visit.id}?tab=archivos`}
+                            href={`/lead/${selectedRoom?.visit?.id}?tab=archivos`}
                             className="px-3 py-1 text-xs font-medium rounded-full transition-colors flex items-center gap-1 hover:bg-[#f4822130]"
                             style={{ backgroundColor: "#f4822120", color: "#f48221" }}
                           >
@@ -690,7 +703,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                             Archivos
                           </Link>
                           <Link
-                            href={`/lead/${selectedRoom.visit.id}?tab=datos`}
+                            href={`/lead/${selectedRoom?.visit?.id}?tab=datos`}
                             className="px-3 py-1 text-xs font-medium rounded-full transition-colors flex items-center gap-1 hover:bg-[#f4822130]"
                             style={{ backgroundColor: "#f4822120", color: "#f48221" }}
                           >
@@ -699,7 +712,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                           </Link>
                         </>
                       )}
-                      {(session?.user?.role === "ADMIN" || session?.user?.role === "CLOSER") && selectedRoom.visit.stage === 'CLOSED' && !selectedRoom.visit.finalizedAt && (
+                      {(session?.user?.role === "ADMIN" || session?.user?.role === "CLOSER") && selectedRoom?.visit?.stage === 'CLOSED' && !selectedRoom?.visit?.finalizedAt && (
                         <button
                           onClick={handleFinalize}
                           className="px-3 py-1 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-full hover:bg-emerald-200 transition-colors"
@@ -1029,7 +1042,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
         <ContractModal
           isOpen={showContractModal}
           onClose={() => setShowContractModal(false)}
-          visitId={selectedRoom.visit.id}
+          visitId={selectedRoom?.visit?.id}
         />
       )}
     </div>
