@@ -217,7 +217,7 @@ export default function VisitPage() {
 
   async function handleSave(mode: 'lead' | 'potential') {
     if (!visit) return;
-    if (!phone.trim()) { toast.error("El telefono es requerido"); return; }
+    if (mode === 'potential' && !phone.trim()) { toast.error("El telefono es requerido para crear un Lead Potencial"); return; }
     if (mode === 'potential') {
       if (!selectedScheduleDate || !selectedScheduleTime) { toast.error("Debes seleccionar fecha y hora para agendar"); return; }
       if (showCloserDropdown && !selectedCloserId) { toast.error("Debes seleccionar un Closer"); return; }
@@ -385,7 +385,7 @@ export default function VisitPage() {
     </div>
 
     <div className="fixed bottom-24 right-6 z-[60]">
-      <Button onClick={() => handleSave('lead')} disabled={saving || !phone.trim()} className="shadow-xl rounded-full px-6 py-3 gap-2">
+      <Button onClick={() => handleSave('lead')} disabled={saving} className="shadow-xl rounded-full px-6 py-3 gap-2">
         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
         Guardar
       </Button>
