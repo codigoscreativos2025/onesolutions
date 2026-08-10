@@ -1126,6 +1126,8 @@ export default function LeadDetailPage() {
         ].filter(tab => {
           if (tab.key === "chat" && role === "SETTER") return false;
           if ((tab.key === "contratos" || tab.key === "historial") && role === "PARTNER") return false;
+          if (visit?.stage === "CANCELLED" && tab.key !== "datos" && tab.key !== "historial") return false;
+          if ((role === "SETTER" || role === "ADMIN") && visit?.stage !== "IN_PROGRESS" && tab.key !== "datos" && tab.key !== "historial") return false;
           return true;
         }).map((tab) => (
           <button
@@ -1234,6 +1236,7 @@ export default function LeadDetailPage() {
                   onFileFieldUpload={handleFileUploadField}
                   onUpload={handleUpload}
                   onRefresh={() => fetchVisitDetails(true)}
+                  role={role}
                   showBillSection
                   leadTags={leadTags}
                   notAvailTags={notAvailTags}
@@ -1315,7 +1318,7 @@ export default function LeadDetailPage() {
 
         {activeTab === "archivos" && (
           <TabContent key="archivos">
-            <ArchivosPanel visit={visit} onUpdate={async () => {
+            <ArchivosPanel visit={visit} role={role} onUpdate={async () => {
               try {
                 const res = await fetch(`/api/visits/${visitId}/details`);
                 if (res.ok) setVisit(await res.json());
@@ -1352,7 +1355,7 @@ export default function LeadDetailPage() {
         )}
       </AnimatePresence>
 
-      {activeTab !== "chat" && !closeRequested && visit?.stage !== "CANCELLED" && role !== "ADMIN" && (
+      {activeTab !== "chat" && !closeRequested && visit?.stage !== "CANCELLED" && role !== "SETTER" && role !== "ADMIN" && (
         <>
           <div className="fixed bottom-24 right-6 z-[60]">
             <Button onClick={() => setShowSaveConfirm(true)} className="shadow-xl rounded-full px-6 py-3 gap-2">
@@ -1820,6 +1823,7 @@ function DatosProjectFieldsPanel({
   onAddTag,
   onRemoveTag,
   onBillFileUpload,
+  role,
 }: {
   visit: VisitDetails;
   editFields: Record<string, string>;
@@ -1838,6 +1842,7 @@ function DatosProjectFieldsPanel({
   onAddTag: (tag: { name: string; color: string }) => void;
   onRemoveTag: (tagName: string) => void;
   onBillFileUpload?: (type: "imageUrl" | "additionalFileUrl", file: File) => Promise<void>;
+  role?: string;
 }) {
   const pd = visit.projectDetails || {};
   const nonCommonFields = fieldMetas.filter((m) => !COMMON_FIELDS.includes(m.fieldName));
@@ -1926,6 +1931,7 @@ function DatosProjectFieldsPanel({
               type={getType(key)}
               onChange={(_, v) => onFieldChange(key, v)}
               onBlur={onSave}
+              readOnly={role === "SETTER" || role === "ADMIN"}
               isFile={isFieldFile(key)}
               onFileUpload={onFileFieldUpload}
               fileUrl={pd[key] ? String(pd[key]) : undefined}
@@ -1959,6 +1965,7 @@ function DatosProjectFieldsPanel({
                         value={getValue(meta.fieldName)} field={meta.fieldName}
                         type={meta.fieldType || "text"} onChange={(_, v) => onFieldChange(meta.fieldName, v)}
                         onBlur={onSave} isFile={meta.fieldType === "file" || meta.fieldType === "photos"}
+                        readOnly={role === "SETTER" || role === "ADMIN"}
                         onFileUpload={onFileFieldUpload} fileUrl={pd[meta.fieldName] ? String(pd[meta.fieldName]) : undefined}
                         required={meta.isRequired === false ? false : meta.isRequired === true ? true : undefined} />
                     ))}
@@ -2041,7 +2048,7 @@ function DatosProjectPanel({
     return meta?.fieldType === "file" || meta?.fieldType === "photos" || isFileFieldKey(key);
   };
 
-  const isTraineeOrCloser = role === "SETTER" || role === "SETTER_JR" || role === "CLOSER";
+  const isTraineeOrCloser = role === "SETTER_JR" || role === "CLOSER";
   const isAdmin = role === "ADMIN";
 
   return (
@@ -2098,7 +2105,7 @@ function DatosProjectPanel({
         )}
       </Panel>
 
-      <ClientInfoPanel editFields={editFields} onFieldChange={onFieldChange} onSave={onSave} isReadOnly={closeRequested || role === "ADMIN"} visit={visit} />
+      <ClientInfoPanel editFields={editFields} onFieldChange={onFieldChange} onSave={onSave} isReadOnly={closeRequested || role === "SETTER" || role === "ADMIN"} visit={visit} />
 
       <Panel title="Documentos" icon={FileText}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2110,7 +2117,7 @@ function DatosProjectPanel({
             required={true}
             onFileUpload={onFileFieldUpload}
             fileUrl={pd["idDocumentUrl"] ? String(pd["idDocumentUrl"]) : undefined}
-            readOnly={closeRequested || role === "ADMIN"}
+            readOnly={closeRequested || role === "SETTER" || role === "ADMIN"}
           />
           <FieldRow
             label="Recibo de Luz"
@@ -2120,7 +2127,7 @@ function DatosProjectPanel({
             required={true}
             onFileUpload={onFileFieldUpload}
             fileUrl={pd["electricBillUrl"] ? String(pd["electricBillUrl"]) : undefined}
-            readOnly={closeRequested || role === "ADMIN"}
+            readOnly={closeRequested || role === "SETTER" || role === "ADMIN"}
           />
         </div>
       </Panel>
@@ -2136,7 +2143,7 @@ function DatosProjectPanel({
               type={getType(key)}
               onChange={(_, v) => onFieldChange(key, v)}
               onBlur={onSave}
-              readOnly={closeRequested || role === "ADMIN"}
+              readOnly={closeRequested || role === "SETTER" || role === "ADMIN"}
               isFile={isFieldFile(key)}
               onFileUpload={onFileFieldUpload}
               fileUrl={pd[key] ? String(pd[key]) : undefined}
@@ -2174,7 +2181,7 @@ function DatosProjectPanel({
                         type={meta.fieldType}
                         onChange={(_, v) => onFieldChange(meta.fieldName, v)}
                         onBlur={onSave}
-                        readOnly={closeRequested || role === "ADMIN"}
+                        readOnly={closeRequested || role === "SETTER" || role === "ADMIN"}
                         isFile={meta.fieldType === "file" || meta.fieldType === "photos"}
                         onFileUpload={onFileFieldUpload}
                         fileUrl={pd[meta.fieldName] ? String(pd[meta.fieldName]) : undefined}
@@ -2387,7 +2394,7 @@ function DatosCancelledPanel({
   );
 }
 
-function ArchivosPanel({ visit, onUpdate }: { visit: VisitDetails; onUpdate?: () => void }) {
+function ArchivosPanel({ visit, onUpdate, role }: { visit: VisitDetails; onUpdate?: () => void; role?: string }) {
   const router = useRouter();
   const pd = visit.projectDetails || {};
   const bill = visit.bill;
@@ -2558,7 +2565,7 @@ function ArchivosPanel({ visit, onUpdate }: { visit: VisitDetails; onUpdate?: ()
     if (!visit?.contractFields) return false;
     try { return !!(JSON.parse(visit.contractFields)?.closeRequestedAt); } catch { return false; }
   })();
-  const isLocked = role === 'ADMIN' || (visit.stage === 'PROJECT' && closeRequested);
+  const isLocked = role === 'SETTER' || role === 'ADMIN' || (visit.stage === 'PROJECT' && closeRequested);
 
   if (noFiles) {
     return (

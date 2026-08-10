@@ -379,8 +379,8 @@ export default function VisitPage() {
         </section>
       </motion.div>
 
-      <Button onClick={() => handleSave(scheduleSelected ? 'potential' : 'lead')} disabled={saving || !phone.trim()} className="w-full h-14">
-        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : scheduleSelected ? "Crear Lead Potencial" : "Crear Lead"}
+      <Button onClick={() => handleSave('potential')} disabled={saving || !phone.trim() || !scheduleSelected || (showCloserDropdown && !selectedCloserId) || selectedProjectTypes.length === 0} className="w-full h-14">
+        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Crear Lead Potencial"}
       </Button>
     </div>
 
