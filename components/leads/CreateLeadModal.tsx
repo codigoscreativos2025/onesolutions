@@ -74,7 +74,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
       const res = await fetch('/api/project-types');
       const data = await res.json();
       const filtered = Array.isArray(data)
-        ? data.filter((p: ProjectType) => p.name !== "Campos Comunes" && (role !== "SETTER" || p.name !== "Panel Solar")).sort((a: ProjectType, b: ProjectType) => a.name === "Otros" ? 1 : b.name === "Otros" ? -1 : 0)
+        ? data.filter((p: ProjectType) => p.name !== "Campos Comunes").sort((a: ProjectType, b: ProjectType) => a.name === "Otros" ? 1 : b.name === "Otros" ? -1 : 0)
         : data;
       setProjectTypes(filtered);
     } catch (error) {

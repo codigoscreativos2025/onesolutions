@@ -1856,7 +1856,7 @@ function DatosProjectFieldsPanel({
       try {
         const res = await fetch("/api/project-types");
         const data = await res.json();
-        if (Array.isArray(data)) setAllProjectTypes(data.filter((pt: { name: string }) => role !== "SETTER" || pt.name !== "Panel Solar"));
+        if (Array.isArray(data)) setAllProjectTypes(data);
       } catch { /* */ }
     };
     fetchAllProjectTypes();
