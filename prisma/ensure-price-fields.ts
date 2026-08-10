@@ -29,6 +29,7 @@ async function main() {
   let cleaned = 0;
 
   for (const pt of projectTypes) {
+    if (pt.name === "Otros") continue;
     const prefix = PREFIX_MAP[pt.name] || "general";
 
     const existingCostFields = await prisma.projectTypeField.findMany({

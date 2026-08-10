@@ -74,7 +74,7 @@ export async function PATCH(
 
   const isAdmin = session.user.role === "ADMIN";
   const isOwner = parcel?.setterId === parseInt(session.user.id);
-  const isSetterOrCloser = session.user.role === "SETTER" || session.user.role === "CLOSER";
+  const isSetterOrCloser = session.user.role === "SETTER" || session.user.role === "SETTER_JR" || session.user.role === "CLOSER";
 
   const updateData: Record<string, unknown> = {};
 
