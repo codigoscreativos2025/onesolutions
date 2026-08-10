@@ -258,9 +258,6 @@ model ProjectDetails {
   otroDescripcion           String?
 
   // Campos generales para todos los proyectos
-  generalCostPrice  Float?
-  generalSalePrice  Float?
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

@@ -134,10 +134,9 @@ const FIELD_TYPES: Record<string, string> = {
   waterSalePrice: "number",
   siteSurveyDate: "date",
   waterSystemType: "select",
-  generalCostPrice: "number",
-  generalSalePrice: "number",
   hoaInfo: "text",
 };
+
 
 const FIELD_GROUPS: Record<string, { label: string; prefix: string }> = {
   solar: { label: "Panel Solar", prefix: "solar" },
@@ -1092,7 +1091,6 @@ export default function LeadDetailPage() {
           { key: "datos", label: "Datos", icon: Pencil },
           { key: "archivos", label: "Archivos", icon: FileText },
           { key: "contratos", label: "Contratos", icon: FileText },
-          { key: "chat", label: "Chat", icon: MessageSquare },
           { key: "historial", label: "Historial", icon: Clock },
         ].map((tab) => (
           <button
@@ -1288,19 +1286,6 @@ export default function LeadDetailPage() {
           </TabContent>
         )}
 
-        {activeTab === "chat" && (
-          <TabContent key="chat">
-            {visit.stage !== "PROJECT" && visit.stage !== "CLOSED" ? (
-              <div className="flex flex-col items-center justify-center py-12 glass-panel rounded-xl">
-                <MessageSquare className="w-16 h-16 mb-4 opacity-30" />
-                <p className="text-lg font-medium text-on-surface">Chat solo disponible en la etapa En Proyecto</p>
-              </div>
-            ) : (
-              <ChatInterface initialRoomId={visit.chatRoom?.id ?? null} hideRoomList />
-            )}
-          </TabContent>
-        )}
-
         {activeTab === "historial" && (
           <TabContent key="historial">
             <HistorialPanel history={history} loading={historyLoading} />
@@ -1308,7 +1293,7 @@ export default function LeadDetailPage() {
         )}
       </AnimatePresence>
 
-      {activeTab !== "chat" && !closeRequested && (
+      {!closeRequested && (
         <>
           <div className="fixed bottom-24 right-6 z-[60]">
             <Button onClick={() => setShowSaveConfirm(true)} className="shadow-xl rounded-full px-6 py-3 gap-2">

@@ -27,7 +27,7 @@ export async function POST(
       where: { id: parseInt(id) },
       include: {
         parcel: { select: { address: true } },
-        setter: { select: { id: true, name: true } },
+        setter: { select: { id: true, name: true, role: true } },
         closer: { select: { id: true, name: true } },
         projectDetails: true,
         projects: { include: { projectType: true } },
@@ -97,7 +97,7 @@ export async function POST(
 
     // Notificar al setter
     const notifications = [];
-    if (visit.setter) {
+    if (visit.setter && visit.setter.role !== "SETTER") {
       notifications.push({
         userId: visit.setter.id,
         title: 'Chat Creado',

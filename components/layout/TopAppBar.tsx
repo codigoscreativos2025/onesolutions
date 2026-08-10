@@ -12,6 +12,7 @@ export function TopAppBar() {
   const { data: session } = useSession();
   const router = useRouter();
   const { t } = useLocale();
+  const role = session?.user?.role ?? "";
 
   const handleSignOut = () => {
     signOut({ callbackUrl: "/login" });
@@ -71,7 +72,7 @@ export function TopAppBar() {
       <div className="flex items-center gap-1">
         <LanguageSwitcher />
         <ThemeToggle />
-        <NotificationsDropdown />
+        {role !== "SETTER" && <NotificationsDropdown />}
         <button
           onClick={handleSignOut}
           className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-highest transition-colors active:scale-90"

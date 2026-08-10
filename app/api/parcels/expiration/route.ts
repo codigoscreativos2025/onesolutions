@@ -33,7 +33,7 @@ export async function POST() {
         ...(adminId ? { setterId: { not: adminId } } : {}),
       },
       include: {
-        setter: { select: { id: true, name: true } },
+        setter: { select: { id: true, name: true, role: true } },
         visits: {
           orderBy: { createdAt: 'desc' },
           take: 1,
@@ -53,7 +53,7 @@ export async function POST() {
         },
       });
 
-      if (parcel.setterId) {
+      if (parcel.setterId && parcel.setter?.role !== "SETTER") {
         await prisma.notification.create({
           data: {
             userId: parcel.setterId,

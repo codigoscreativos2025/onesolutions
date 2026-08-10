@@ -183,6 +183,19 @@ export function ParcelSheet({
 
   if (!parcel) return null;
 
+  const STAGE_MAP: Record<string, string> = {
+    IN_PROGRESS: "Lead",
+    PROPOSAL_ACCEPTED: "Lead Potencial",
+    PROJECT: "En Proyecto",
+    CLOSED: "Proyecto Cerrado",
+    CANCELLED: "Cancelado",
+  };
+
+  const getStageLabel = (p: Parcel): string => {
+    const latestVisit = p.visits?.[0];
+    return latestVisit?.stage ? (STAGE_MAP[latestVisit.stage] || "Lead") : "Lead";
+  };
+
   const metadata = parcel.metadata ? JSON.parse(parcel.metadata) : {};
   const canVisit = userRole === "SETTER" || userRole === "SETTER_JR" || userRole === "CLOSER";
   const isTakenByMe = parcel.setter?.id === parseInt(userId);
@@ -414,7 +427,7 @@ export function ParcelSheet({
             <InfoCard
               label="Estado"
               value={
-                parcel.status === "LEAD" ? "Lead" :
+                parcel.status === "LEAD" ? getStageLabel(parcel) :
                 parcel.status === "CUSTOMER" ? "Cliente" :
                 (tags.length > 0 ? tags[0].name : "Disponible")
               }

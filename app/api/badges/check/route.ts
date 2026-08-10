@@ -13,7 +13,7 @@ export async function GET() {
 
     const setters = await prisma.user.findMany({
       where: { role: { in: ["SETTER", "SETTER_JR"] } },
-      include: { userBadges: true },
+      select: { id: true, role: true, userBadges: true },
     });
 
     const closers = await prisma.user.findMany({
@@ -44,14 +44,16 @@ export async function GET() {
               update: {},
             });
 
-            await prisma.notification.create({
-              data: {
-                userId: setter.id,
-                title: "¡Nueva medalla obtenida!",
-                body: `Felicidades, has obtenido la medalla ${badge.icon} ${badge.name}`,
-                link: "/ranking",
-              },
-            });
+            if (setter.role !== "SETTER") {
+              await prisma.notification.create({
+                data: {
+                  userId: setter.id,
+                  title: "¡Nueva medalla obtenida!",
+                  body: `Felicidades, has obtenido la medalla ${badge.icon} ${badge.name}`,
+                  link: "/ranking",
+                },
+              });
+            }
           }
         }
       }

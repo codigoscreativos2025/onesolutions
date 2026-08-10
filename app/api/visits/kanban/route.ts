@@ -83,9 +83,12 @@ export async function GET() {
   try {
     const whereClause: Record<string, unknown> = {};
 
-    if (role === 'SETTER' || role === 'SETTER_JR') {
+    if (role === 'SETTER') {
       whereClause.setterId = currentUserId;
       whereClause.stage = 'IN_PROGRESS';
+    } else if (role === 'SETTER_JR') {
+      whereClause.setterId = currentUserId;
+      whereClause.stage = { in: ['IN_PROGRESS', 'PROPOSAL_ACCEPTED'] };
     } else if (role === 'CLOSER') {
       const setterIds = await prisma.user.findMany({
         where: { closerId: currentUserId },

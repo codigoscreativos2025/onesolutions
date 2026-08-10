@@ -260,7 +260,8 @@ export default function VisitPage() {
       }
 
       toast.success(mode === 'potential' ? "Lead Potencial creado" : "Lead guardado");
-      window.location.href = `/dashboard?highlight=${visit.id}`;
+      navigationBlockedRef.current = true;
+      router.push(`/dashboard?highlight=${visit.id}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Error al guardar");
     } finally { setSaving(false); }
@@ -293,6 +294,7 @@ export default function VisitPage() {
         </button>
         <h1 className="font-headline text-xl font-bold text-primary">One Solutions</h1>
         <div className="flex-1" />
+        <Button variant="ghost" size="sm" onClick={() => handleSave('lead')} disabled={saving || !phone.trim()} className="text-xs gap-1.5">Guardar</Button>
         <Button variant="ghost" size="sm" onClick={() => setShowContractModal(true)} className="text-xs gap-1.5"><FileText className="w-4 h-4" /> Tipos de Contratos</Button>
       </motion.header>
 
@@ -379,7 +381,7 @@ export default function VisitPage() {
       </motion.div>
 
       <Button onClick={() => handleSave(scheduleSelected ? 'potential' : 'lead')} disabled={saving || !phone.trim()} className="w-full h-14">
-        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Guardar"}
+        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : scheduleSelected ? "Crear Lead Potencial" : "Crear Lead"}
       </Button>
     </div>
 

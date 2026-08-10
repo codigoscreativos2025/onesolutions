@@ -156,14 +156,17 @@ export async function PATCH(
     }
 
     if (setterId !== undefined) {
-      await prisma.notification.create({
-        data: {
-          userId: setterId,
-          title: 'Lead Transferido',
-          body: `Se te ha asignado un nuevo lead.`,
-          link: `/lead/${visitId}`,
-        },
-      });
+      const targetUser = await prisma.user.findUnique({ where: { id: setterId }, select: { role: true } });
+      if (targetUser && targetUser.role !== "SETTER") {
+        await prisma.notification.create({
+          data: {
+            userId: setterId,
+            title: 'Lead Transferido',
+            body: `Se te ha asignado un nuevo lead.`,
+            link: `/lead/${visitId}`,
+          },
+        });
+      }
     }
     if (closerId !== undefined && closerId !== setterId) {
       await prisma.notification.create({

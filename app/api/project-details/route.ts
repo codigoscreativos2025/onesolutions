@@ -61,7 +61,6 @@ export async function POST(request: Request) {
       "fenceCostPrice", "fenceSalePrice", "fenceCommission",
       "gutterCostPrice", "gutterSalePrice", "gutterCommission",
       "remodelacionCostPrice", "remodelacionSalePrice", "remodelacionCommission",
-      "generalCostPrice", "generalSalePrice",
     ];
     for (const key of numericFields) {
       if (processedDetails[key] !== undefined && processedDetails[key] !== "" && processedDetails[key] !== null) {
@@ -86,7 +85,6 @@ export async function POST(request: Request) {
       "fenceCostPrice", "fenceSalePrice", "fenceCommission",
       "gutterCostPrice", "gutterSalePrice", "gutterCommission",
       "remodelacionCostPrice", "remodelacionSalePrice", "remodelacionCommission",
-      "generalCostPrice", "generalSalePrice",
       "solarPaymentMethod", "roofPaymentMethod", "waterPaymentMethod",
       "fencePaymentMethod", "gutterPaymentMethod", "remodelacionPaymentMethod",
       "otroPaymentMethod", "otroDescripcion",
@@ -156,7 +154,6 @@ export async function PATCH(request: Request) {
       "fenceCostPrice", "fenceSalePrice", "fenceCommission",
       "gutterCostPrice", "gutterSalePrice", "gutterCommission",
       "remodelacionCostPrice", "remodelacionSalePrice", "remodelacionCommission",
-      "generalCostPrice", "generalSalePrice",
     ];
     for (const key of numericFields) {
       if (processedDetails[key] !== undefined && processedDetails[key] !== "" && processedDetails[key] !== null) {

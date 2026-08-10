@@ -58,7 +58,7 @@ export async function PATCH(
         completedAt: newStage === "CLOSED" ? new Date() : undefined,
       },
       include: {
-        setter: { select: { id: true, email: true, name: true } },
+        setter: { select: { id: true, email: true, name: true, role: true } },
         closer: { select: { id: true, name: true } },
         parcel: { select: { address: true } },
         slot: true,
@@ -153,7 +153,7 @@ export async function PATCH(
           });
         }
 
-        if (visit.setter.email) {
+        if (visit.setter.email && visit.setter.role !== "SETTER") {
           await sendEmail({
             to: visit.setter.email,
             subject: "Proyecto Cerrado - One Solutions",
