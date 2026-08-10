@@ -1133,15 +1133,6 @@ function InfoPanelContent({
               <span className="text-on-surface text-right break-words">{projectDetails?.primaryRepCommPct != null ? `${projectDetails.primaryRepCommPct}%` : "N/A"}</span>
             </div>
 
-            <div className="flex justify-between items-start gap-4">
-              <span className="text-on-surface-variant font-medium flex-shrink-0">Costo Total:</span>
-              <span className="text-on-surface font-semibold text-right break-words">{projectDetails?.generalCostPrice != null ? `$${Number(projectDetails.generalCostPrice).toLocaleString()}` : "N/A"}</span>
-            </div>
-
-            <div className="flex justify-between items-start gap-4">
-              <span className="text-on-surface-variant font-medium flex-shrink-0">Precio Total:</span>
-              <span className="text-on-surface font-semibold text-right break-words">{projectDetails?.generalSalePrice != null ? `$${Number(projectDetails.generalSalePrice).toLocaleString()}` : "N/A"}</span>
-            </div>
           </div>
         </div>
       </div>

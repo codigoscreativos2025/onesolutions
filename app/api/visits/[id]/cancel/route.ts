@@ -36,7 +36,6 @@ export async function PATCH(
         outcome: "CANCELLED",
         cancelledAt: new Date(),
         cancellationReason: reason || null,
-        notes: reason || null,
       },
     });
 

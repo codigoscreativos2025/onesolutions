@@ -729,6 +729,12 @@ export default function LeadDetailPage() {
       const url = await handleUpload(file);
       const updated = { ...(visit?.projectDetails || {}), [fieldName]: url };
       setVisit((prev) => (prev ? { ...prev, projectDetails: updated } : prev));
+      
+      setEditFields((prev) => ({ ...prev, [fieldName]: url }));
+      if (editFieldsRef.current) {
+        editFieldsRef.current[fieldName] = url;
+      }
+
       await fetch("/api/project-details", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1233,6 +1239,14 @@ export default function LeadDetailPage() {
                 <div className="mt-6">
                   <NotesPanel visitId={visitId} visitCreatedAt={visit?.createdAt} />
                 </div>
+                {isAdmin && (
+                  <div className="mt-6 flex gap-3">
+                    <Button onClick={handleCancelProjectAction} variant="danger" disabled={saving} className="flex-1">
+                      <X className="w-4 h-4" />
+                      Cancelar Proyecto
+                    </Button>
+                  </div>
+                )}
               </>
             )}
 
@@ -2039,7 +2053,7 @@ function DatosProjectPanel({
         )}
       </Panel>
 
-      <ClientInfoPanel editFields={editFields} onFieldChange={onFieldChange} onSave={onSave} />
+      <ClientInfoPanel editFields={editFields} onFieldChange={onFieldChange} onSave={onSave} isReadOnly={closeRequested} visit={visit} />
 
       <Panel title="Documentos" icon={FileText}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2051,6 +2065,7 @@ function DatosProjectPanel({
             required={true}
             onFileUpload={onFileFieldUpload}
             fileUrl={pd["idDocumentUrl"] ? String(pd["idDocumentUrl"]) : undefined}
+            readOnly={closeRequested}
           />
           <FieldRow
             label="Recibo de Luz"
@@ -2060,6 +2075,7 @@ function DatosProjectPanel({
             required={true}
             onFileUpload={onFileFieldUpload}
             fileUrl={pd["electricBillUrl"] ? String(pd["electricBillUrl"]) : undefined}
+            readOnly={closeRequested}
           />
         </div>
       </Panel>
@@ -2130,14 +2146,6 @@ function DatosProjectPanel({
         );
       })}
 
-      <div className="flex gap-3">
-        {isAdmin && (
-        <Button onClick={onCancelProject} variant="danger" disabled={saving} className="flex-1">
-          <X className="w-4 h-4" />
-          Cancelar Proyecto
-        </Button>
-        )}
-      </div>
     </div>
   );
 }
@@ -2501,9 +2509,16 @@ function ArchivosPanel({ visit, onUpdate }: { visit: VisitDetails; onUpdate?: ()
 
   const noFiles = allFilesFlat.length === 0;
 
+  const closeRequested = (() => {
+    if (!visit?.contractFields) return false;
+    try { return !!(JSON.parse(visit.contractFields)?.closeRequestedAt); } catch { return false; }
+  })();
+  const isLocked = visit.stage === 'PROJECT' && closeRequested;
+
   if (noFiles) {
     return (
       <div className="space-y-6">
+        {!isLocked && (
         <div className="mb-6 p-4 glass-panel rounded-xl">
           <h4 className="text-sm font-semibold mb-3">Agregar Documento</h4>
           <div className="flex flex-col gap-2">
@@ -2547,6 +2562,7 @@ function ArchivosPanel({ visit, onUpdate }: { visit: VisitDetails; onUpdate?: ()
             )}
           </div>
         </div>
+        )}
         <div className="flex flex-col items-center justify-center py-12 text-on-surface-variant">
           <FileText className="w-16 h-16 mb-4 opacity-30" />
           <p className="text-lg font-medium">No hay archivos disponibles</p>
@@ -2557,6 +2573,7 @@ function ArchivosPanel({ visit, onUpdate }: { visit: VisitDetails; onUpdate?: ()
 
   return (
     <div className="space-y-8">
+      {!isLocked && (
       <div className="mb-6 p-4 glass-panel rounded-xl">
         <h4 className="text-sm font-semibold mb-3">Agregar Documento</h4>
         <div className="flex flex-col gap-2">
@@ -2600,6 +2617,7 @@ function ArchivosPanel({ visit, onUpdate }: { visit: VisitDetails; onUpdate?: ()
           )}
         </div>
       </div>
+      )}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
         {allFilesFlat.map((file, i) => {
           const isImage = /\.(jpg|jpeg|png|gif|webp|svg|heic|heif)$/i.test(file.url);
@@ -2611,6 +2629,7 @@ function ArchivosPanel({ visit, onUpdate }: { visit: VisitDetails; onUpdate?: ()
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.03 }}
             >
+              {!isLocked && (
               <button
                 onClick={() => setFileToDelete(file)}
                 className="absolute top-1 left-1 z-10 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
@@ -2618,6 +2637,7 @@ function ArchivosPanel({ visit, onUpdate }: { visit: VisitDetails; onUpdate?: ()
               >
                 <X className="w-3 h-3" />
               </button>
+              )}
               <div className="aspect-square bg-surface-container-low flex items-center justify-center overflow-hidden">
                 {isImage ? (
                   <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
