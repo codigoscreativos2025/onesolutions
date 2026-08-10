@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
-import { ArrowLeft, Upload, Phone, User, Loader2, FileText, X, CheckCircle, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Upload, Phone, User, Loader2, FileText, X, CheckCircle, AlertTriangle, Save } from "lucide-react";
 import { ContractModal } from "@/components/quote/ContractModal";
 import { NotesPanel } from "@/components/lead/NotesPanel";
 import { SlotPicker } from "@/components/calendar/SlotPicker";
@@ -294,7 +294,6 @@ export default function VisitPage() {
         </button>
         <h1 className="font-headline text-xl font-bold text-primary">One Solutions</h1>
         <div className="flex-1" />
-        <Button variant="ghost" size="sm" onClick={() => handleSave('lead')} disabled={saving || !phone.trim()} className="text-xs gap-1.5">Guardar</Button>
         <Button variant="ghost" size="sm" onClick={() => setShowContractModal(true)} className="text-xs gap-1.5"><FileText className="w-4 h-4" /> Tipos de Contratos</Button>
       </motion.header>
 
@@ -382,6 +381,13 @@ export default function VisitPage() {
 
       <Button onClick={() => handleSave(scheduleSelected ? 'potential' : 'lead')} disabled={saving || !phone.trim()} className="w-full h-14">
         {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : scheduleSelected ? "Crear Lead Potencial" : "Crear Lead"}
+      </Button>
+    </div>
+
+    <div className="fixed bottom-24 right-6 z-[60]">
+      <Button onClick={() => handleSave('lead')} disabled={saving || !phone.trim()} className="shadow-xl rounded-full px-6 py-3 gap-2">
+        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+        Guardar
       </Button>
     </div>
 
