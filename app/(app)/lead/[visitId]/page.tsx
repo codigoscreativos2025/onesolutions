@@ -803,13 +803,13 @@ export default function LeadDetailPage() {
         body: JSON.stringify({ contractFields: JSON.stringify(existing) }),
       });
       if (res.ok) {
-        toast.success("Lead devuelto para edición exitosamente");
+        toast.success("Proyecto devuelto para edición exitosamente");
         fetchVisitDetails(true);
       } else {
-        toast.error("Error al devolver lead");
+        toast.error("Error al devolver proyecto");
       }
     } catch {
-      toast.error("Error al devolver lead");
+      toast.error("Error al devolver proyecto");
     }
   };
 
@@ -1460,6 +1460,10 @@ function FieldRow({
   fileUrl?: string;
   required?: boolean;
 }) {
+  if (readOnly && !isFile) {
+    return <ReadOnlyField label={label} value={value || "-"} />;
+  }
+
   if (isFile) {
     return (
       <div className="space-y-1.5">
@@ -2085,7 +2089,7 @@ function DatosProjectPanel({
                 {closeRequested && (
                   <Button onClick={onReturnLead} className="bg-orange-500 hover:bg-orange-600 text-white">
                     <Undo2 className="w-4 h-4" />
-                    Devolver Lead
+                    Devolver Proyecto
                   </Button>
                 )}
               </>
