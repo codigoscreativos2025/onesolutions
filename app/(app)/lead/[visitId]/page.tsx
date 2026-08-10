@@ -1057,12 +1057,6 @@ export default function LeadDetailPage() {
   const selectedProjectNames = visit?.projects?.map((p) => p.projectType.name) || [];
   const isAdmin = role === "ADMIN";
 
-  useEffect(() => {
-    if (role === "SETTER" && visit?.stage && visit.stage !== "IN_PROGRESS") {
-      router.push("/dashboard");
-    }
-  }, [role, visit?.stage, router]);
-
   // Detectar si ya se solicitó el cierre
   const closeRequested = (() => {
     if (!visit?.contractFields) return false;

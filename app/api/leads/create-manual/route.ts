@@ -60,7 +60,7 @@ export async function POST(request: Request) {
         parcelId: parcel.id,
         setterId: assignedSetterId,
         closerId: assignedCloserId,
-        stage: role === 'SETTER' ? 'IN_PROGRESS' : 'PROPOSAL_ACCEPTED',
+        stage: 'PROPOSAL_ACCEPTED',
         outcome: 'MANUAL_LEAD',
         legacyNotes: notes || null,
         scheduledAt: scheduledDate ? new Date(scheduledDate) : null,
