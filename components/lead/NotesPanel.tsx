@@ -177,7 +177,7 @@ export function NotesPanel({ visitId, visitCreatedAt }: NotesPanelProps) {
   };
 
   const canEdit = (note: Note) =>
-    note.user.id === userId || isAdmin;
+    !isAdmin && note.user.id === userId;
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -265,28 +265,30 @@ export function NotesPanel({ visitId, visitCreatedAt }: NotesPanelProps) {
           )}
         </div>
 
-        <div className="flex gap-2 pt-2 border-t border-outline-variant/30">
-          <textarea
-            value={newContent}
-            onChange={(e) => setNewContent(e.target.value)}
-            placeholder="Escribir nota..."
-            className="flex-1 min-h-[60px] bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none rounded-xl p-3 resize-none text-sm text-on-surface"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey && newContent.trim()) {
-                e.preventDefault();
-                setShowAddModal(true);
-              }
-            }}
-          />
-          <Button
-            size="sm"
-            disabled={!newContent.trim()}
-            onClick={() => setShowAddModal(true)}
-            className="shrink-0 self-end"
-          >
-            <Plus className="w-4 h-4" />
-          </Button>
-        </div>
+        {!isAdmin && (
+          <div className="flex gap-2 pt-2 border-t border-outline-variant/30">
+            <textarea
+              value={newContent}
+              onChange={(e) => setNewContent(e.target.value)}
+              placeholder="Escribir nota..."
+              className="flex-1 min-h-[60px] bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none rounded-xl p-3 resize-none text-sm text-on-surface"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey && newContent.trim()) {
+                  e.preventDefault();
+                  setShowAddModal(true);
+                }
+              }}
+            />
+            <Button
+              size="sm"
+              disabled={!newContent.trim()}
+              onClick={() => setShowAddModal(true)}
+              className="shrink-0 self-end"
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
       <Modal

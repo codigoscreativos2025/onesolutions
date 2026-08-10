@@ -1352,7 +1352,7 @@ export default function LeadDetailPage() {
         )}
       </AnimatePresence>
 
-      {activeTab !== "chat" && !closeRequested && visit?.stage !== "CANCELLED" && (
+      {activeTab !== "chat" && !closeRequested && visit?.stage !== "CANCELLED" && role !== "ADMIN" && (
         <>
           <div className="fixed bottom-24 right-6 z-[60]">
             <Button onClick={() => setShowSaveConfirm(true)} className="shadow-xl rounded-full px-6 py-3 gap-2">
@@ -2098,7 +2098,7 @@ function DatosProjectPanel({
         )}
       </Panel>
 
-      <ClientInfoPanel editFields={editFields} onFieldChange={onFieldChange} onSave={onSave} isReadOnly={closeRequested} visit={visit} />
+      <ClientInfoPanel editFields={editFields} onFieldChange={onFieldChange} onSave={onSave} isReadOnly={closeRequested || role === "ADMIN"} visit={visit} />
 
       <Panel title="Documentos" icon={FileText}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2110,7 +2110,7 @@ function DatosProjectPanel({
             required={true}
             onFileUpload={onFileFieldUpload}
             fileUrl={pd["idDocumentUrl"] ? String(pd["idDocumentUrl"]) : undefined}
-            readOnly={closeRequested}
+            readOnly={closeRequested || role === "ADMIN"}
           />
           <FieldRow
             label="Recibo de Luz"
@@ -2120,7 +2120,7 @@ function DatosProjectPanel({
             required={true}
             onFileUpload={onFileFieldUpload}
             fileUrl={pd["electricBillUrl"] ? String(pd["electricBillUrl"]) : undefined}
-            readOnly={closeRequested}
+            readOnly={closeRequested || role === "ADMIN"}
           />
         </div>
       </Panel>
@@ -2136,7 +2136,7 @@ function DatosProjectPanel({
               type={getType(key)}
               onChange={(_, v) => onFieldChange(key, v)}
               onBlur={onSave}
-              readOnly={closeRequested}
+              readOnly={closeRequested || role === "ADMIN"}
               isFile={isFieldFile(key)}
               onFileUpload={onFileFieldUpload}
               fileUrl={pd[key] ? String(pd[key]) : undefined}
@@ -2174,7 +2174,7 @@ function DatosProjectPanel({
                         type={meta.fieldType}
                         onChange={(_, v) => onFieldChange(meta.fieldName, v)}
                         onBlur={onSave}
-                        readOnly={closeRequested}
+                        readOnly={closeRequested || role === "ADMIN"}
                         isFile={meta.fieldType === "file" || meta.fieldType === "photos"}
                         onFileUpload={onFileFieldUpload}
                         fileUrl={pd[meta.fieldName] ? String(pd[meta.fieldName]) : undefined}
@@ -2558,7 +2558,7 @@ function ArchivosPanel({ visit, onUpdate }: { visit: VisitDetails; onUpdate?: ()
     if (!visit?.contractFields) return false;
     try { return !!(JSON.parse(visit.contractFields)?.closeRequestedAt); } catch { return false; }
   })();
-  const isLocked = visit.stage === 'PROJECT' && closeRequested;
+  const isLocked = role === 'ADMIN' || (visit.stage === 'PROJECT' && closeRequested);
 
   if (noFiles) {
     return (
