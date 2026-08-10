@@ -118,7 +118,13 @@ async function processFeatures(features: Record<string, unknown>[]) {
                 id: true,
                 stage: true,
                 outcome: true,
+                createdAt: true,
                 setter: { select: { id: true, name: true } },
+                projects: {
+                  select: {
+                    projectType: { select: { name: true } }
+                  }
+                }
               },
             },
           },

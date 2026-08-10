@@ -38,7 +38,9 @@ interface Parcel {
     id: number;
     stage: string;
     outcome?: string;
+    createdAt?: string;
     setter?: { id: number; name: string };
+    projects?: { projectType: { name: string } }[];
   }[];
 }
 
@@ -527,12 +529,27 @@ export function ParcelSheet({
                 <span className="text-sm text-on-surface-variant">Parcela tomada</span>
               </div>
               
-              <Button
-                disabled
-                className="w-full bg-surface-container-high text-on-surface-variant cursor-not-allowed"
-              >
-                Lead ya creado
-              </Button>
+              <div className="bg-surface-container-low border border-outline-variant/30 rounded-xl p-4 my-2">
+                <div className="flex items-center gap-2 text-sm text-on-surface">
+                  <User className="w-4 h-4 text-primary shrink-0" />
+                  <span className="font-medium">{parcel.visits?.[0]?.setter?.name || "Desconocido"}</span>
+                  <span className="text-on-surface-variant">|</span>
+                  <span className="text-on-surface-variant">
+                    {parcel.visits?.[0]?.createdAt
+                      ? new Date(parcel.visits[0].createdAt).toLocaleDateString("es-MX", { year: "numeric", month: "numeric", day: "numeric" })
+                      : "Fecha desconocida"}
+                  </span>
+                </div>
+                {parcel.visits?.[0]?.projects && parcel.visits[0].projects.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {parcel.visits[0].projects.map((p, idx) => (
+                      <span key={idx} className="text-xs font-semibold text-green-700 bg-green-100 dark:bg-green-500/10 dark:text-green-400 px-2.5 py-1 rounded-md">
+                        {p.projectType.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <Button variant="outline" onClick={onClose} className="w-full mt-3">
                 Cerrar

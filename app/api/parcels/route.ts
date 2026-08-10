@@ -36,9 +36,15 @@ export async function GET() {
           id: true,
           stage: true,
           outcome: true,
+          createdAt: true,
           setter: {
             select: { id: true, name: true },
           },
+          projects: {
+            select: {
+              projectType: { select: { name: true } }
+            }
+          }
         },
       },
     },
