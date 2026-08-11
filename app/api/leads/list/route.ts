@@ -23,6 +23,7 @@ export async function GET() {
     ];
   } else if (role === 'PARTNER') {
     parcelWhere.partnerId = userId;
+    parcelWhere.visits = { some: { stage: { in: ['PROJECT', 'CLOSED'] } } };
   }
 
   parcelWhere.status = { not: 'CUSTOMER' };

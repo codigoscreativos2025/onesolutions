@@ -99,6 +99,7 @@ export async function GET() {
       ];
     } else if (role === 'PARTNER') {
       whereClause.parcel = { partnerId: currentUserId };
+      whereClause.stage = { in: ['PROJECT', 'CLOSED'] };
     }
 
     const visits = await prisma.visit.findMany({

@@ -40,6 +40,7 @@ export async function GET(request: Request) {
       whereClause.closerId = currentUserId;
     } else if (role === 'PARTNER') {
       whereClause.parcel = { partnerId: currentUserId };
+      whereClause.stage = { in: ['PROJECT', 'CLOSED'] };
     }
 
     if (startDate || endDate) {

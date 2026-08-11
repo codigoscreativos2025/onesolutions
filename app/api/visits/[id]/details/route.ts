@@ -109,6 +109,12 @@ export async function GET(
       return NextResponse.json({ error: 'Visit not found' }, { status: 404 });
     }
 
+    if (session.user.role === 'PARTNER') {
+      if (visit.parcel?.partnerId !== parseInt(session.user.id) || (visit.stage !== 'CLOSED' && visit.stage !== 'PROJECT')) {
+        return NextResponse.json({ error: 'Forbidden: Partners can only view assigned closed/project leads' }, { status: 403 });
+      }
+    }
+
     return NextResponse.json({
       ...visit,
       chatRoom: visit.chatRooms?.find(r => r.type === "GENERAL") || null,

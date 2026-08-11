@@ -412,6 +412,11 @@ export default function LeadDetailPage() {
     if (!silent) setLoading(true);
     try {
       const res = await fetch(`/api/visits/${visitId}/details`);
+      if (res.status === 403) {
+        toast.error("No tienes permiso para ver este proyecto");
+        router.push("/dashboard");
+        return;
+      }
       if (!res.ok) throw new Error("Error fetching visit");
       const data = await res.json();
       setVisit(data);
@@ -1167,7 +1172,7 @@ export default function LeadDetailPage() {
           Ver en mapa
         </button>
         )}
-        {visit.stage === "PROPOSAL_ACCEPTED" && role !== "ADMIN" && (
+        {visit.stage === "PROPOSAL_ACCEPTED" && role !== "ADMIN" && role !== "PARTNER" && (
           <button
             onClick={handleStartProject}
             disabled={startingProject}
