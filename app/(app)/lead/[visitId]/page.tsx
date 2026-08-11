@@ -1963,7 +1963,8 @@ function DatosProjectFieldsPanel({
           .filter((m) => !isPartner || !isFieldHiddenForPartner(m.fieldName, m.fieldLabel));
 
         const isPanelSolar = project.projectTypeName.toLowerCase().includes("panel solar");
-        const isProjectReadOnly = role === "ADMIN" || isPartner || (role === "SETTER" && isPanelSolar) || (role === "CLOSER" && !isPanelSolar);
+        const isSetter = role === "SETTER" || role === "SETTER_JR";
+        const isProjectReadOnly = role === "ADMIN" || isPartner || (isSetter && isPanelSolar) || (role === "CLOSER" && !isPanelSolar);
 
         return (
           <div key={project.projectTypeId} className="glass-panel rounded-xl">
@@ -2175,6 +2176,11 @@ function DatosProjectPanel({
       {fieldMetasByProject.length > 0 && fieldMetasByProject.map((project) => {
         const isExpanded = expandedProjects.has(project.projectTypeId);
         const projectFields = project.fields.filter((m) => !COMMON_FIELDS.includes(m.fieldName));
+        
+        const isPanelSolar = project.projectTypeName.toLowerCase().includes("panel solar");
+        const isSetter = role === "SETTER" || role === "SETTER_JR";
+        const isProjectReadOnly = role === "ADMIN" || closeRequested || (isSetter && isPanelSolar) || (role === "CLOSER" && !isPanelSolar);
+
         return (
           <div key={project.projectTypeId} className="glass-panel rounded-xl">
             <button
@@ -2200,7 +2206,7 @@ function DatosProjectPanel({
                         type={meta.fieldType}
                         onChange={(_, v) => onFieldChange(meta.fieldName, v)}
                         onBlur={onSave}
-                        readOnly={closeRequested || role === "ADMIN"}
+                        readOnly={isProjectReadOnly}
                         isFile={meta.fieldType === "file" || meta.fieldType === "photos"}
                         onFileUpload={onFileFieldUpload}
                         fileUrl={pd[meta.fieldName] ? String(pd[meta.fieldName]) : undefined}
