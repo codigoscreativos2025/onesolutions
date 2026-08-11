@@ -142,7 +142,7 @@ export async function PATCH(
         data: {
           userId: effectiveCloserId,
           title: "Nueva cita asignada",
-          body: `Te han asignado una nueva cita de un Trainee.`,
+          body: `Te han asignado una nueva cita de un ${session.user.role === "SETTER_JR" ? "Setter" : "Trainee"}.`,
           link: `/lead/${visit.id}`,
         },
       });
