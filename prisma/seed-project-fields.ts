@@ -73,7 +73,7 @@ async function seedProjectFields() {
     { projectTypeId: commons.id, fieldName: "address", fieldLabel: "Direccion del cliente", fieldType: "text", isRequired: true, order: 2 },
     { projectTypeId: commons.id, fieldName: "clientEmail", fieldLabel: "Email del cliente", fieldType: "text", isRequired: true, order: 3 },
     { projectTypeId: commons.id, fieldName: "closingDate", fieldLabel: "Fecha de cierre", fieldType: "date", isRequired: true, order: 4 },
-    { projectTypeId: commons.id, fieldName: "hoaInfo", fieldLabel: "HOA Informacion", fieldType: "text", isRequired: true, order: 5 },
+    { projectTypeId: commons.id, fieldName: "hoaInfo", fieldLabel: "HOA Informacion", fieldType: "text", isRequired: false, order: 5 },
     { projectTypeId: commons.id, fieldName: "primaryRep", fieldLabel: "Representante principal", fieldType: "text", isRequired: true, order: 6 },
     { projectTypeId: commons.id, fieldName: "primaryRepCommPct", fieldLabel: "% Comision principal", fieldType: "number", isRequired: true, order: 7 },
     { projectTypeId: commons.id, fieldName: "secondaryRep", fieldLabel: "Representante secundario", fieldType: "text", isRequired: false, order: 8 },

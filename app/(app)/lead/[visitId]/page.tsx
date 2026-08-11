@@ -234,7 +234,8 @@ const OPTIONAL_FIELDS = [
   "secondaryRep",
   "secondaryRepCommPct",
   "tertiaryRep",
-  "tertiaryRepCommPct"
+  "tertiaryRepCommPct",
+  "hoaInfo",
 ];
 
 // Campos obligatorios para llegar al 100%
