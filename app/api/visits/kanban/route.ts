@@ -126,7 +126,6 @@ export async function GET() {
             },
           },
         },
-        contractFields: true,
         projectDetails: true,
         bill: {
           select: { clientName: true, clientEmail: true, phone: true, imageUrl: true, additionalFileUrl: true }
