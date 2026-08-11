@@ -809,15 +809,8 @@ export default function LeadDetailPage() {
 
   const handleReturnLead = async () => {
     try {
-      let existing: Record<string, unknown> = {};
-      if (visit?.contractFields) {
-        try { existing = JSON.parse(visit.contractFields); } catch { /* */ }
-      }
-      delete existing.closeRequestedAt;
-      const res = await fetch(`/api/visits/${visitId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contractFields: JSON.stringify(existing) }),
+      const res = await fetch(`/api/visits/${visitId}/return`, {
+        method: "POST",
       });
       if (res.ok) {
         toast.success("Proyecto devuelto para edición exitosamente");
@@ -2105,18 +2098,16 @@ function DatosProjectPanel({
                 </Button>
               )
             )}
-            {isAdmin && (
+            {isAdmin && closeRequested && (
               <>
                 <Button onClick={onCloseProject}>
                   <CheckCircle className="w-4 h-4" />
                   Cerrar Proyecto
                 </Button>
-                {closeRequested && (
-                  <Button onClick={onReturnLead} className="bg-orange-500 hover:bg-orange-600 text-white">
-                    <Undo2 className="w-4 h-4" />
-                    Devolver Proyecto
-                  </Button>
-                )}
+                <Button onClick={onReturnLead} className="bg-orange-500 hover:bg-orange-600 text-white">
+                  <Undo2 className="w-4 h-4" />
+                  Devolver Proyecto
+                </Button>
               </>
             )}
           </div>
