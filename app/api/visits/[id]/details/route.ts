@@ -23,6 +23,7 @@ export async function GET(
             id: true,
             address: true,
             ownerName: true,
+            partnerId: true,
             metadata: true,
             visitHistory: {
               include: {
