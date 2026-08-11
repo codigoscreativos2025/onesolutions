@@ -95,7 +95,7 @@ export function ParcelSheet({
       setVisitNotAvailTags([]);
       return;
     }
-    setMapNotes(sessionStorage.getItem(`map_notes_${parcel.id}`) || "");
+    setMapNotes(parcel.parcelNotes || localStorage.getItem(`map_notes_${parcel.id}`) || "");
     const pId = parcel.id;
     if (!pId) return;
     const isRegridParcel = pId.includes("-") && pId.length > 30;
@@ -449,8 +449,8 @@ export function ParcelSheet({
               <div className="space-y-1">
                 <textarea
                   value={mapNotes}
-                  onChange={(e) => { setMapNotes(e.target.value); sessionStorage.setItem(`map_notes_${parcel.id}`, e.target.value); }}
-                  placeholder="Notas (solo local)..."
+                  onChange={(e) => { setMapNotes(e.target.value); localStorage.setItem(`map_notes_${parcel.id}`, e.target.value); debouncedSaveNotes(e.target.value); }}
+                  placeholder="Notas..."
                   rows={3}
                   className="w-full px-3 py-2 rounded-xl border border-glass-border bg-white/40 dark:bg-black/20 text-on-surface text-sm placeholder:text-on-surface-variant/60 resize-none outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition-colors"
                 />
