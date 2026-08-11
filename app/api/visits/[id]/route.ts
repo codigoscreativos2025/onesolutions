@@ -191,7 +191,7 @@ export async function PATCH(
     }
     if (closerId !== undefined && closerId !== setterId) {
       let isPanelSolarAssignment = false;
-      if (session.user.role === "SETTER" || session.user.role === "SETTER_JR") {
+      if (session.user.role === "SETTER_JR") {
         const visitProjects = await prisma.visitProject.findMany({
           where: { visitId },
           include: { projectType: true }
