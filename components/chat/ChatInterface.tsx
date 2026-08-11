@@ -323,6 +323,12 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
     const value = e.target.value;
     setNewMessage(value);
 
+    const isPartnerRoom = (selectedRoom as any)?.type === "PARTNER" || role === "PARTNER";
+    if (isPartnerRoom) {
+      setShowMentionDropdown(false);
+      return;
+    }
+
     const lastAtIndex = value.lastIndexOf("@");
     if (lastAtIndex !== -1) {
       const textAfterAt = value.slice(lastAtIndex + 1);
@@ -819,10 +825,10 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                     <Input
                       value={newMessage}
                       onChange={handleMessageChange}
-                      placeholder="Escribe un mensaje... usa @ para mencionar"
+                      placeholder={((selectedRoom as any)?.type === "PARTNER" || role === "PARTNER") ? "Escribe un mensaje..." : "Escribe un mensaje... usa @ para mencionar"}
                       className="w-full"
                     />
-                    {showMentionDropdown && filteredMentionUsers.length > 0 && (
+                    {showMentionDropdown && (selectedRoom as any)?.type !== "PARTNER" && role !== "PARTNER" && filteredMentionUsers.length > 0 && (
                       <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto z-10">
                         {filteredMentionUsers.map((user) => (
                           <button
