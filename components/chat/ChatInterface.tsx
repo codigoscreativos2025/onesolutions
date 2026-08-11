@@ -712,11 +712,16 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                           </Link>
                           <Link
                             href={`/lead/${selectedRoom?.visit?.id}?tab=datos`}
-                            className="px-3 py-1 text-xs font-medium rounded-full transition-colors flex items-center gap-1 hover:bg-[#f4822130]"
-                            style={{ backgroundColor: "#f4822120", color: "#f48221" }}
+                            className={`px-3 py-1 text-xs font-medium rounded-full transition-colors flex items-center gap-1 ${
+                              session?.user?.role === "ADMIN" ? "hover:bg-emerald-100" : "hover:bg-[#f4822130]"
+                            }`}
+                            style={{
+                              backgroundColor: session?.user?.role === "ADMIN" ? "#10b98120" : "#f4822120",
+                              color: session?.user?.role === "ADMIN" ? "#10b981" : "#f48221"
+                            }}
                           >
-                            <Pencil className="w-3 h-3" />
-                            Editar
+                            {session?.user?.role === "ADMIN" ? <FileText className="w-3 h-3" /> : <Pencil className="w-3 h-3" />}
+                            {session?.user?.role === "ADMIN" ? "Datos" : "Editar"}
                           </Link>
                         </>
                       )}
