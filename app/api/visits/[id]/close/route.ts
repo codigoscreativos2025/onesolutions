@@ -148,7 +148,7 @@ export async function PATCH(
               userId: admin.id,
               title: "Proyecto Cerrado",
               body: `Se ha cerrado un proyecto en ${visit.parcel.address}.`,
-              link: `/my-projects?filter=closed`,
+              link: `/lead/${visit.id}`,
             },
           });
         }
@@ -164,7 +164,7 @@ export async function PATCH(
               userId: visit.setter.id,
               title: "Proyecto Cerrado",
               body: `Tu proyecto en ${visit.parcel.address} ha sido cerrado.`,
-              link: `/my-projects?filter=closed`,
+              link: `/lead/${visit.id}`,
             },
           });
         }

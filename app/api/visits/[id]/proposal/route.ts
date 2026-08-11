@@ -143,7 +143,7 @@ export async function PATCH(
           userId: effectiveCloserId,
           title: "Nueva cita asignada",
           body: `Te han asignado una nueva cita de un Trainee.`,
-          link: `/my-projects?highlight=${visit.id}`,
+          link: `/lead/${visit.id}`,
         },
       });
     }
@@ -155,8 +155,8 @@ export async function PATCH(
         data: {
           userId: admin.id,
           title: "Propuesta aceptada",
-          body: `Propuesta aceptada para proyecto en ${visit.parcel.address}.`,
-          link: `/my-projects?highlight=${visit.id}`,
+          body: `El proyecto en ${visit.parcel.address} tiene los contratos creados, revisa y firma para que todo este listo.`,
+          link: `/lead/${visit.id}`,
         },
       });
     }
