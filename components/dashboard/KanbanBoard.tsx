@@ -16,7 +16,7 @@ import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { MapPin, User, GripVertical, ArrowLeftRight, X } from "lucide-react";
+import { MapPin, User, GripVertical, ArrowLeftRight, X, Clock, Undo2 } from "lucide-react";
 
 const COLS = [
   { stage: "IN_PROGRESS", title: "Leads", color: "bg-blue-500", colorBar: "bg-blue-500" },
@@ -32,6 +32,7 @@ interface KanbanVisit {
   id: number;
   stage: string;
   createdAt: string;
+  contractFields?: string | null;
   parcel: { id: string; address: string; ownerName: string | null };
   setter: { id: number; name: string };
   closer: { id: number; name: string } | null;
@@ -681,6 +682,33 @@ function KanbanCard({
         </div>
       )}
 
+      {visit.stage === "PROJECT" && (() => {
+        const parsedCF = (() => {
+          if (!visit.contractFields) return {};
+          try { return JSON.parse(visit.contractFields); } catch { return {}; }
+        })();
+        const isCloseRequested = !!parsedCF.closeRequestedAt;
+        const isReturned = !isCloseRequested && !!parsedCF.returnedAt;
+
+        if (isCloseRequested) {
+          return (
+            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-semibold mt-2">
+              <Clock className="w-3 h-3" />
+              <span>Lead en espera</span>
+            </div>
+          );
+        }
+        if (isReturned) {
+          return (
+            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/30 text-[10px] font-semibold mt-2">
+              <Undo2 className="w-3 h-3" />
+              <span>Lead devuelto</span>
+            </div>
+          );
+        }
+        return null;
+      })()}
+
       {visit.stage === "PROJECT" && visit.progress !== undefined && (() => {
         const pct = visit.progress ?? 0;
         return (
@@ -747,6 +775,33 @@ function KanbanCardOverlay({ visit }: { visit: KanbanVisit }) {
           ))}
         </div>
       )}
+
+      {visit.stage === "PROJECT" && (() => {
+        const parsedCF = (() => {
+          if (!visit.contractFields) return {};
+          try { return JSON.parse(visit.contractFields); } catch { return {}; }
+        })();
+        const isCloseRequested = !!parsedCF.closeRequestedAt;
+        const isReturned = !isCloseRequested && !!parsedCF.returnedAt;
+
+        if (isCloseRequested) {
+          return (
+            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-semibold mt-2">
+              <Clock className="w-3 h-3" />
+              <span>Lead en espera</span>
+            </div>
+          );
+        }
+        if (isReturned) {
+          return (
+            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/30 text-[10px] font-semibold mt-2">
+              <Undo2 className="w-3 h-3" />
+              <span>Lead devuelto</span>
+            </div>
+          );
+        }
+        return null;
+      })()}
     </div>
   );
 }

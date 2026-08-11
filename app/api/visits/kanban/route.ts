@@ -126,6 +126,7 @@ export async function GET() {
             },
           },
         },
+        contractFields: true,
         projectDetails: true,
         bill: {
           select: { clientName: true, clientEmail: true, phone: true, imageUrl: true, additionalFileUrl: true }
@@ -164,6 +165,7 @@ export async function GET() {
       id: v.id,
       stage: v.stage,
       createdAt: v.createdAt,
+      contractFields: v.contractFields,
       parcel: v.parcel,
       setter: v.setter,
       closer: v.closer,
