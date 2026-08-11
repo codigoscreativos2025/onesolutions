@@ -17,7 +17,7 @@ export async function PATCH(
 
   const visit = await prisma.visit.findUnique({
     where: { id: visitId },
-    include: { slot: true },
+    include: { slot: true, parcel: { select: { address: true } } },
   });
 
   if (!visit) {
