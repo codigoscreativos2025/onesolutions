@@ -2294,7 +2294,7 @@ function DatosClosedPanel({
 
       <Panel title="Campos Generales" icon={Pencil}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {COMMON_FIELDS.map((key) => (
+          {COMMON_FIELDS.filter(key => role !== "PARTNER" || !isFieldHiddenForPartner(key, fieldLabel(key))).map((key) => (
             <ReadOnlyField
               key={key}
               label={fieldLabel(key)}
@@ -2313,7 +2313,7 @@ function DatosClosedPanel({
       <Panel title="Resumen del Proyecto" icon={User}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ReadOnlyField label="Nombre" value={String(pd.clientName || visit.bill?.clientName || "-")} />
-          <ReadOnlyField label="Email" value={String(pd.clientEmail || visit.bill?.clientEmail || "-")} />
+          {role !== "PARTNER" && <ReadOnlyField label="Email" value={String(pd.clientEmail || visit.bill?.clientEmail || "-")} />}
           <ReadOnlyField label="Dirección" value={String(pd.address || visit.parcel.address)} />
         </div>
       </Panel>
@@ -2322,6 +2322,7 @@ function DatosClosedPanel({
         const isExpanded = expandedProjects.has(project.projectTypeId);
         const projectFields = project.fields
           .filter((m) => !COMMON_FIELDS.includes(m.fieldName))
+          .filter((m) => role !== "PARTNER" || !isFieldHiddenForPartner(m.fieldName, m.fieldLabel))
           .filter((meta) => pd[meta.fieldName] !== undefined && pd[meta.fieldName] !== null && pd[meta.fieldName] !== "");
         return (
           <div key={project.projectTypeId} className="glass-panel rounded-xl">

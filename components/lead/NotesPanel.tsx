@@ -35,6 +35,9 @@ export function NotesPanel({ visitId, visitCreatedAt }: NotesPanelProps) {
   const { data: session } = useSession();
   const userId = session?.user?.id ? parseInt(session.user.id) : null;
   const isAdmin = session?.user?.role === "ADMIN";
+  const isPartner = session?.user?.role === "PARTNER";
+
+  if (isPartner) return null;
 
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
