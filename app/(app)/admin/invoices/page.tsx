@@ -62,8 +62,6 @@ export default function AdminInvoicesPage() {
   ]);
 
   const [contacts, setContacts] = useState<FrequentContact[]>([]);
-  const [selectedContactId, setSelectedContactId] = useState("");
-  const [selectedFromContactId, setSelectedFromContactId] = useState("");
   const [showContactsManager, setShowContactsManager] = useState(false);
 
   const [editingContactId, setEditingContactId] = useState<number | null>(null);
@@ -191,29 +189,6 @@ export default function AdminInvoicesPage() {
     setEditPhone(c.phone || "");
     setEditEmail(c.email || "");
     setEditAddress(c.address || "");
-  };
-
-  const handleContactSelect = (contactId: string) => {
-    setSelectedContactId(contactId);
-    if (!contactId) return;
-    const c = contacts.find((c) => c.id === parseInt(contactId));
-    if (c) {
-      setBillToName(c.name);
-      if (c.phone) setBillToPhone(c.phone);
-      if (c.email) setBillToEmail(c.email);
-      if (c.address) setBillToAddress(c.address);
-    }
-  };
-
-  const handleFromContactSelect = (contactId: string) => {
-    if (!contactId) return;
-    const c = contacts.find((c) => c.id === parseInt(contactId));
-    if (c) {
-      if (c.company) setFromName(c.company);
-      if (c.phone) setFromPhone(c.phone);
-      if (c.email) setFromEmail(c.email);
-      if (c.address) setFromAddress(c.address);
-    }
   };
 
   const addItem = () => {
@@ -449,136 +424,6 @@ export default function AdminInvoicesPage() {
             <Eye className="w-5 h-5" /> Datos de la Factura
           </h2>
 
-          {contacts.length > 0 && (
-            <div>
-              <label className="text-xs font-medium text-on-surface-variant">Seleccionar Contacto</label>
-              <select
-                value={selectedContactId}
-                onChange={(e) => handleContactSelect(e.target.value)}
-                className="w-full h-10 rounded-lg bg-surface-container-low border border-outline-variant px-3 text-sm text-on-surface"
-              >
-                <option value="">-- Seleccionar --</option>
-                {contacts.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}{c.company ? ` (${c.company})` : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <button
-            onClick={() => setShowContactsManager(!showContactsManager)}
-            className="text-sm text-primary hover:underline text-left"
-          >
-            {showContactsManager ? "Ocultar" : "Gestionar Contactos"}
-          </button>
-
-          {showContactsManager && (
-            <div className="space-y-3 border border-outline-variant rounded-xl p-4">
-              {contacts.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-semibold">Contactos Existentes</h4>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {contacts.map((c) =>
-                      editingContactId === c.id ? (
-                        <div key={c.id} className="space-y-1.5 p-3 rounded-lg bg-surface-container-low border border-outline-variant">
-                          <input
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            placeholder="Nombre"
-                            className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low"
-                          />
-                          <input
-                            value={editCompany}
-                            onChange={(e) => setEditCompany(e.target.value)}
-                            placeholder="Empresa"
-                            className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low"
-                          />
-                          <input
-                            value={editPhone}
-                            onChange={(e) => setEditPhone(e.target.value)}
-                            placeholder="Telefono"
-                            className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low"
-                          />
-                          <input
-                            value={editEmail}
-                            onChange={(e) => setEditEmail(e.target.value)}
-                            placeholder="Email"
-                            className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low"
-                          />
-                          <input
-                            value={editAddress}
-                            onChange={(e) => setEditAddress(e.target.value)}
-                            placeholder="Direccion"
-                            className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low"
-                          />
-                          <div className="flex gap-2">
-                            <Button size="sm" onClick={() => handleUpdateContact(c.id)}>Guardar</Button>
-                            <Button size="sm" variant="outline" onClick={() => setEditingContactId(null)}>Cancelar</Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div key={c.id} className="flex items-center justify-between p-2 rounded-lg bg-surface-container-low border border-outline-variant">
-                          <div className="text-xs space-y-0.5 min-w-0">
-                            <p className="font-medium truncate">{c.name}{c.company ? ` — ${c.company}` : ""}</p>
-                            <p className="text-on-surface-variant truncate">{c.phone || "-"} | {c.email || "-"}</p>
-                            {c.address && <p className="text-on-surface-variant truncate">{c.address}</p>}
-                          </div>
-                          <div className="flex gap-1 shrink-0 ml-2">
-                            <Button size="sm" variant="outline" onClick={() => startEditContact(c)}>
-                              <Pencil className="w-3 h-3" />
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={() => handleDeleteContact(c.id)} className="text-red-500 border-red-200 hover:bg-red-50">
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      )
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="border-t border-outline-variant pt-3 space-y-2">
-                <h4 className="text-sm font-semibold">Nuevo Contacto</h4>
-                <input
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="Nombre *"
-                  className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low"
-                />
-                <input
-                  value={newCompany}
-                  onChange={(e) => setNewCompany(e.target.value)}
-                  placeholder="Empresa"
-                  className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low"
-                />
-                <input
-                  value={newPhone}
-                  onChange={(e) => setNewPhone(e.target.value)}
-                  placeholder="Telefono"
-                  className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low"
-                />
-                <input
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder="Email"
-                  className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low"
-                />
-                <input
-                  value={newAddress}
-                  onChange={(e) => setNewAddress(e.target.value)}
-                  placeholder="Direccion"
-                  className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low"
-                />
-                <Button onClick={handleCreateContact} size="sm" className="w-full" disabled={!newName.trim()}>
-                  Guardar Contacto
-                </Button>
-              </div>
-            </div>
-          )}
-
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-medium text-on-surface-variant">Nro Factura</label>
@@ -602,7 +447,80 @@ export default function AdminInvoicesPage() {
           </div>
 
           <div className="border-t border-outline-variant pt-4">
-            <h3 className="text-sm font-semibold mb-2">Facturar A (Bill To):</h3>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold">Facturar A (Bill To)</h3>
+              <button
+                onClick={() => setShowContactsManager(!showContactsManager)}
+                className="text-xs text-primary hover:underline flex items-center gap-1"
+              >
+                {showContactsManager ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                Contactos
+              </button>
+            </div>
+
+            {showContactsManager && (
+              <div className="space-y-3 border border-outline-variant rounded-xl p-4 mb-3">
+                {contacts.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-semibold text-on-surface-variant">Seleccionar o editar</h4>
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                      {contacts.map((c) =>
+                        editingContactId === c.id ? (
+                          <div key={c.id} className="space-y-1.5 p-2 rounded-lg bg-surface-container-low border border-outline-variant">
+                            <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Nombre" className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low" />
+                            <input value={editCompany} onChange={(e) => setEditCompany(e.target.value)} placeholder="Empresa" className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low" />
+                            <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="Telefono" className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low" />
+                            <input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="Email" className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low" />
+                            <input value={editAddress} onChange={(e) => setEditAddress(e.target.value)} placeholder="Direccion" className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low" />
+                            <div className="flex gap-2">
+                              <Button size="sm" onClick={() => handleUpdateContact(c.id)}>Guardar</Button>
+                              <Button size="sm" variant="outline" onClick={() => setEditingContactId(null)}>Cancelar</Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            key={c.id}
+                            onClick={() => {
+                              setBillToName(c.name);
+                              if (c.phone) setBillToPhone(c.phone);
+                              if (c.email) setBillToEmail(c.email);
+                              if (c.address) setBillToAddress(c.address);
+                            }}
+                            className="w-full flex items-center justify-between p-2 rounded-lg bg-surface-container-low border border-outline-variant hover:bg-surface-container-high text-left"
+                          >
+                            <div className="text-xs space-y-0.5 min-w-0">
+                              <p className="font-medium truncate">{c.name}{c.company ? ` — ${c.company}` : ""}</p>
+                              <p className="text-on-surface-variant truncate">{c.phone || "-"} | {c.email || "-"}</p>
+                            </div>
+                            <div className="flex gap-1 shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
+                              <Button size="sm" variant="outline" onClick={() => startEditContact(c)}>
+                                <Pencil className="w-3 h-3" />
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => handleDeleteContact(c.id)} className="text-red-500 border-red-200 hover:bg-red-50">
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </button>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="border-t border-outline-variant pt-3 space-y-2">
+                  <h4 className="text-xs font-semibold text-on-surface-variant">Nuevo Contacto</h4>
+                  <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nombre *" className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low" />
+                  <input value={newCompany} onChange={(e) => setNewCompany(e.target.value)} placeholder="Empresa" className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low" />
+                  <input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="Telefono" className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low" />
+                  <input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="Email" className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low" />
+                  <input value={newAddress} onChange={(e) => setNewAddress(e.target.value)} placeholder="Direccion" className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low" />
+                  <Button onClick={handleCreateContact} size="sm" className="w-full" disabled={!newName.trim()}>
+                    Guardar Contacto
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Input value={billToName} onChange={(e) => setBillToName(e.target.value)} placeholder="Nombre / Empresa" />
               <Input value={billToPhone} onChange={(e) => setBillToPhone(e.target.value)} placeholder="Telefono" inputMode="tel" pattern="[0-9\-\+\(\) ]*" />
@@ -612,29 +530,7 @@ export default function AdminInvoicesPage() {
           </div>
 
           <div className="border-t border-outline-variant pt-4">
-            <h3 className="text-sm font-semibold mb-2">Desde (Invoice From):</h3>
-
-            {contacts.length > 0 && (
-              <div className="mb-3">
-                <label className="text-xs font-medium text-on-surface-variant">Seleccionar Contacto</label>
-                <select
-                  value={selectedFromContactId}
-                  onChange={(e) => {
-                    setSelectedFromContactId(e.target.value);
-                    handleFromContactSelect(e.target.value);
-                  }}
-                  className="w-full h-10 rounded-lg bg-surface-container-low border border-outline-variant px-3 text-sm text-on-surface"
-                >
-                  <option value="">-- Seleccionar --</option>
-                  {contacts.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.company || c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
+            <h3 className="text-sm font-semibold mb-2">Desde (Invoice From)</h3>
             <div className="space-y-2">
               <Input value={fromName} onChange={(e) => setFromName(e.target.value)} placeholder="Nombre" />
               <Input value={fromPhone} onChange={(e) => setFromPhone(e.target.value)} placeholder="Telefono" inputMode="tel" pattern="[0-9\-\+\(\) ]*" />
