@@ -118,7 +118,7 @@ export async function GET(
 
     return NextResponse.json({
       ...visit,
-      chatRoom: visit.chatRooms?.find(r => r.type === "GENERAL") || null,
+      chatRoom: visit.chatRooms?.find(r => (session.user.role === "PARTNER" && r.type === "PARTNER") || (session.user.role !== "PARTNER" && r.type === "GENERAL")) || null,
       chatRooms: undefined,
     });
   } catch (error) {
