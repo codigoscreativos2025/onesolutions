@@ -2077,10 +2077,10 @@ function DatosProjectPanel({
     return meta?.fieldType === "file" || meta?.fieldType === "photos" || isFileFieldKey(key);
   };
 
-  const canRequestClose = role === "SETTER" || role === "SETTER_JR";
   const isAdmin = role === "ADMIN";
   const isTraineeLeadGeneral = visit.setter?.role === "SETTER";
   const isCloserRestrictedGeneral = role === "CLOSER" && isTraineeLeadGeneral;
+  const canRequestClose = role === "SETTER" || role === "SETTER_JR" || (role === "CLOSER" && !isTraineeLeadGeneral);
 
   return (
     <div className="space-y-6">
