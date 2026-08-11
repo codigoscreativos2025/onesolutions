@@ -205,7 +205,7 @@ export async function PATCH(
           data: {
             userId: closerId,
             title: "Asignado a Panel Solar",
-            body: `El Trainee ${session.user.name} te ha seleccionado para el proyecto Panel Solar en ${address}.`,
+            body: `El ${session.user.role === "SETTER_JR" ? "Setter" : "Trainee"} ${session.user.name} te ha seleccionado para el proyecto Panel Solar en ${address}.`,
             link: `/lead/${visitId}`,
           },
         });
