@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { useSession } from "next-auth/react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import {
   Send,
@@ -28,8 +27,30 @@ interface AttachedFile {
   type: string;
 }
 
+const EMAIL_HEADER = `<table width="100%" cellpadding="0" cellspacing="0" style="border-bottom:2px solid #e0e0e0;padding-bottom:20px;margin-bottom:20px;">
+  <tr>
+    <td style="vertical-align:middle;width:90px;">
+      <svg viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg" style="width:70px;height:auto;">
+        <polygon points="30,100 150,30 270,100 270,120 150,50 30,120" fill="#f48221"/>
+        <polygon points="210,115 235,95 255,115 230,135" fill="#1d1d1b"/>
+        <circle cx="150" cy="180" r="65" fill="none" stroke="#1d1d1b" stroke-width="18"/>
+        <text x="150" y="228" font-family="Arial,sans-serif" font-weight="900" font-size="130" text-anchor="middle" fill="#1d1d1b">S</text>
+        <g fill="#f48221">
+          <text x="150" y="325" font-family="Arial Black,Impact,sans-serif" font-weight="900" font-size="95" text-anchor="middle" letter-spacing="1">ONE</text>
+        </g>
+        <text x="150" y="375" font-family="Arial,sans-serif" font-weight="900" font-size="36" text-anchor="middle" fill="#000000" letter-spacing="2">SOLUTIONS</text>
+      </svg>
+    </td>
+    <td style="vertical-align:middle;text-align:right;font-size:13px;color:#555;">
+      <strong style="color:#1d1d1b;font-size:15px;display:block;margin-bottom:5px;">ONE SOLUTIONS COMPANIES LLC</strong>
+      2419 Lake Orange Dr<br>
+      Suite 120<br>
+      Orlando, Florida 32837
+    </td>
+  </tr>
+</table><br><br>`;
+
 export default function AdminEmailsPage() {
-  const { data: session } = useSession();
   const editorRef = useRef<HTMLDivElement>(null);
 
   const [to, setTo] = useState("");
@@ -47,6 +68,12 @@ export default function AdminEmailsPage() {
     document.execCommand(cmd, false, value);
     editorRef.current?.focus();
   };
+
+  useEffect(() => {
+    if (editorRef.current && !editorRef.current.innerHTML.trim()) {
+      editorRef.current.innerHTML = EMAIL_HEADER;
+    }
+  }, []);
 
   const handleInsertLink = () => {
     const url = prompt("Ingresa la URL:");
@@ -168,7 +195,7 @@ export default function AdminEmailsPage() {
       toast.success(`Correo enviado a ${sent} destinatario(s)`);
       setTo("");
       setSubject("");
-      if (editorRef.current) editorRef.current.innerHTML = "";
+      if (editorRef.current) editorRef.current.innerHTML = EMAIL_HEADER;
       setFiles([]);
     } else {
       toast.error(`${sent} enviado(s), ${failed} fallido(s)`);
@@ -183,7 +210,7 @@ export default function AdminEmailsPage() {
         {/* From */}
         <div className="flex items-center gap-3 px-4 py-2 border-b border-outline-variant/30">
           <span className="text-sm font-medium text-on-surface-variant w-16 shrink-0">De</span>
-          <span className="text-sm text-on-surface">{session?.user?.email || "admin@onesolutions.com"}</span>
+          <span className="text-sm text-on-surface">service@onesolutions.com</span>
         </div>
 
         {/* To */}
