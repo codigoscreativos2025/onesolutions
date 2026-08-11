@@ -525,8 +525,15 @@ export default function LeadDetailPage() {
         const parsed = JSON.parse(visit.contractFields);
         if (parsed.postCloseTags && Array.isArray(parsed.postCloseTags)) {
           setPostCloseTags(parsed.postCloseTags);
-          return;
+        } else {
+          setPostCloseTags([]);
         }
+        if (parsed.draftSchedule && !visit.scheduledAt) {
+          if (parsed.draftSchedule.date) setScheduleDate(parsed.draftSchedule.date);
+          if (parsed.draftSchedule.time) setScheduleTime(parsed.draftSchedule.time);
+          if (parsed.draftSchedule.closerId) setScheduleCloserId(parsed.draftSchedule.closerId);
+        }
+        return;
       }
     } catch { /* */ }
     setPostCloseTags([]);
@@ -608,8 +615,8 @@ export default function LeadDetailPage() {
           ...(scheduleIsSelfAssigned ? { closerId: Number(session?.user?.id) } : { closerId: Number(scheduleCloserId) }),
         }),
       });
-      toast.success("Cita agendada");
-      fetchVisitDetails();
+      toast.success("Lead Potencial creado");
+      router.push(`/dashboard?highlight=${visit.id}`);
     } catch {
       toast.error("Error al agendar");
     } finally {
@@ -1216,7 +1223,7 @@ export default function LeadDetailPage() {
 
                 <Button onClick={handleScheduleVisit} disabled={scheduleSaving || !scheduleDate || !scheduleTime} className="w-full">
                   {scheduleSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Calendar className="w-5 h-5" />}
-                  Programar Cita
+                  Crear Lead Potencial
                 </Button>
               </div>
             )}
@@ -1387,7 +1394,10 @@ export default function LeadDetailPage() {
                       if (payload.siteSurveyDate && typeof payload.siteSurveyDate === "string") payload.siteSurveyDate = new Date(payload.siteSurveyDate).toISOString();
                       if (Object.keys(payload).length > 0) { await fetch("/api/project-details", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ visitId, ...payload }) }); }
                       const billData: Record<string, string | null> = { phone: editFields._billPhone?.trim() || visit?.bill?.phone || "", clientName: editFields._billClientName?.trim() || visit?.bill?.clientName || null, clientEmail: editFields._billClientEmail?.trim() || visit?.bill?.clientEmail || null, notes: editFields._billNotes?.trim() || visit?.bill?.notes || null, imageUrl: billUrl || visit?.bill?.imageUrl || null, additionalFileUrl: idUrl || visit?.bill?.additionalFileUrl || null };
-                      await fetch(`/api/visits/${visit?.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bill: { upsert: { create: billData, update: billData } } }) });
+                      let currentContractFields: any = {};
+                      try { if (visit?.contractFields) currentContractFields = JSON.parse(visit.contractFields); } catch {}
+                      currentContractFields.draftSchedule = { date: scheduleDate || "", time: scheduleTime || "", closerId: scheduleCloserId || "" };
+                      await fetch(`/api/visits/${visit?.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bill: { upsert: { create: billData, update: billData } }, contractFields: JSON.stringify(currentContractFields) }) });
                       toast.success("Cambios guardados");
                       fetchVisitDetails(true);
                     } catch { toast.error("Error al guardar"); }
@@ -1658,7 +1668,7 @@ function DatosLeadPanel({
   useEffect(() => {
     fetch("/api/project-types")
       .then((r) => r.json())
-      .then((d) => { if (Array.isArray(d)) setEditProjectTypes(d.filter((pt: { name: string }) => pt.name !== "Campos Comunes")); })
+      .then((d) => { if (Array.isArray(d)) setEditProjectTypes(d.filter((pt: { name: string }) => pt.name !== "Campos Comunes").sort((a, b) => a.name === "Otros" ? 1 : b.name === "Otros" ? -1 : 0)); })
       .catch(() => {});
     setSelectedPTIds(visit.projects.map((p) => p.projectType.id));
   }, [visit.id]);

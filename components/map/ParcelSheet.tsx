@@ -522,7 +522,7 @@ export function ParcelSheet({
             </div>
           )}
 
-          {canVisit && !isAvailable && parcel.status !== "CUSTOMER" && (
+          {!isAdmin && !isAvailable && parcel.status !== "CUSTOMER" && (
             <>
               <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-surface-container-low border border-outline-variant/30">
                 <span className="w-3 h-3 rounded-full bg-green-500 inline-block shrink-0" />
@@ -550,6 +550,15 @@ export function ParcelSheet({
                   </div>
                 )}
               </div>
+
+              {parcel.visits?.[0]?.id && (
+                <Button 
+                  onClick={() => router.push(`/lead/${parcel.visits[0].id}`)} 
+                  className="w-full mt-4 bg-brand-green hover:bg-brand-green/90 text-white shadow-md py-6 rounded-xl"
+                >
+                  Ver detalles
+                </Button>
+              )}
 
               <Button variant="outline" onClick={onClose} className="w-full mt-3">
                 Cerrar
