@@ -614,13 +614,6 @@ export default function LeadDetailPage() {
   const showScheduleCloserDropdown = role === "SETTER_JR" || (role === "SETTER" && hasPanelSolarForSchedule);
   const scheduleIsSelfAssigned = role === "CLOSER" || (role === "SETTER" && !hasPanelSolarForSchedule);
   const scheduleCloser = scheduleClosers.find((c: any) => c.id === Number(scheduleCloserId)) ?? null;
-  const scheduleSlotsByDate: Record<string, any[]> = scheduleCloser
-    ? (scheduleCloser.slots || []).reduce((m: Record<string, any[]>, s: any) => {
-        const d = s.startAt.split("T")[0];
-        (m[d] ??= []).push(s);
-        return m;
-      }, {})
-    : {};
 
   const handleScheduleVisit = async () => {
     if (!visit || !scheduleDate || !scheduleTime) {

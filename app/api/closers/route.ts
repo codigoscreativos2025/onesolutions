@@ -39,10 +39,6 @@ export async function GET(request: Request) {
         id: true,
         name: true,
         email: true,
-        slots: {
-          where: { isBooked: false },
-          orderBy: { startAt: "asc" },
-        },
       },
     });
   } else if (user.role === "SETTER" || user.role === "SETTER_JR") {
@@ -52,10 +48,6 @@ export async function GET(request: Request) {
         id: true,
         name: true,
         email: true,
-        slots: {
-          where: { isBooked: false },
-          orderBy: { startAt: "asc" },
-        },
       },
     });
   } else {
@@ -68,10 +60,6 @@ export async function GET(request: Request) {
         id: true,
         name: true,
         email: true,
-        slots: {
-          where: { isBooked: false },
-          orderBy: { startAt: "asc" },
-        },
       },
     });
   }
