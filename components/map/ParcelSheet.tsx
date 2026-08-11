@@ -458,17 +458,6 @@ export function ParcelSheet({
             </>
           )}
 
-          {!isAvailable && !isTakenByMe && parcel.setter && (
-            <div className="p-4 rounded-xl bg-secondary/10 border border-secondary/20">
-              <p className="text-sm text-secondary font-medium">
-                Esta parcela ya fue tomada por{" "}
-                <Link href={`/profile/${parcel.setter.id}`} className="hover:underline">
-                  {parcel.setter.name}
-                </Link>
-              </p>
-            </div>
-          )}
-
           {parcel.status === "CUSTOMER" && (
             <div className="p-4 rounded-xl bg-primary/10 border border-primary/20">
               <p className="text-sm text-primary font-medium">
