@@ -190,14 +190,35 @@ export async function PATCH(
       }
     }
     if (closerId !== undefined && closerId !== setterId) {
-      await prisma.notification.create({
-        data: {
-          userId: closerId,
-          title: 'Lead Transferido',
-          body: `Se te ha asignado un nuevo lead como closer.`,
-          link: `/lead/${visitId}`,
-        },
-      });
+      let isPanelSolarAssignment = false;
+      if (session.user.role === "SETTER" || session.user.role === "SETTER_JR") {
+        const visitProjects = await prisma.visitProject.findMany({
+          where: { visitId },
+          include: { projectType: true }
+        });
+        isPanelSolarAssignment = visitProjects.some(vp => vp.projectType.name.toLowerCase().includes("panel solar"));
+      }
+
+      if (isPanelSolarAssignment) {
+        const address = visit.parcel?.address || "el lead";
+        await prisma.notification.create({
+          data: {
+            userId: closerId,
+            title: "Asignado a Panel Solar",
+            body: `El Trainee ${session.user.name} te ha seleccionado para el proyecto Panel Solar en ${address}.`,
+            link: `/lead/${visitId}`,
+          },
+        });
+      } else {
+        await prisma.notification.create({
+          data: {
+            userId: closerId,
+            title: 'Lead Transferido',
+            body: `Se te ha asignado un nuevo lead como closer.`,
+            link: `/lead/${visitId}`,
+          },
+        });
+      }
     }
 
     return NextResponse.json({ success: true });

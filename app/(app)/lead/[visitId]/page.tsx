@@ -1961,6 +1961,10 @@ function DatosProjectFieldsPanel({
         const projectFields = project.fields
           .filter((m) => !COMMON_FIELDS.includes(m.fieldName))
           .filter((m) => !isPartner || !isFieldHiddenForPartner(m.fieldName, m.fieldLabel));
+
+        const isPanelSolar = project.projectTypeName.toLowerCase().includes("panel solar");
+        const isProjectReadOnly = role === "ADMIN" || isPartner || (role === "SETTER" && isPanelSolar) || (role === "CLOSER" && !isPanelSolar);
+
         return (
           <div key={project.projectTypeId} className="glass-panel rounded-xl">
             <button
@@ -1982,7 +1986,7 @@ function DatosProjectFieldsPanel({
                         value={getValue(meta.fieldName)} field={meta.fieldName}
                         type={meta.fieldType || "text"} onChange={(_, v) => onFieldChange(meta.fieldName, v)}
                         onBlur={onSave} isFile={meta.fieldType === "file" || meta.fieldType === "photos"}
-                        readOnly={role === "ADMIN" || isPartner}
+                        readOnly={isProjectReadOnly}
                         onFileUpload={onFileFieldUpload} fileUrl={pd[meta.fieldName] ? String(pd[meta.fieldName]) : undefined}
                         required={meta.isRequired === false ? false : meta.isRequired === true ? true : undefined} />
                     ))}

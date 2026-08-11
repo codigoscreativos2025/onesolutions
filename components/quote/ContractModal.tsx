@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, FileText, X, Download, PenLine, Check, ChevronDown, ChevronUp, Pencil, Send, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -36,6 +37,8 @@ interface SignatureField {
 }
 
 export function ContractModal({ isOpen, onClose, visitId, inline }: ContractModalProps) {
+  const { data: session } = useSession();
+  const role = session?.user?.role;
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<ContractData | null>(null);
   const [activeTab, setActiveTab] = useState("");
@@ -508,6 +511,13 @@ export function ContractModal({ isOpen, onClose, visitId, inline }: ContractModa
     );
   };
 
+  const isPanelSolar = activeContract?.name.toLowerCase().includes("panel solar") || activeContract?.type.toLowerCase().includes("panel-solar");
+  const canEditOrSign = (() => {
+    if (role === "SETTER" && isPanelSolar) return false;
+    if (role === "CLOSER" && !isPanelSolar) return false;
+    return true;
+  })();
+
   const innerContent = (
     <>
       <div
@@ -688,26 +698,30 @@ export function ContractModal({ isOpen, onClose, visitId, inline }: ContractModa
                 {activeContract && (
                   <div className="shrink-0 p-3 bg-surface border-t border-outline-variant flex items-center justify-between gap-3 flex-wrap">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Button
-                        onClick={() => { setSignMode(!signMode); setEditMode(false); }}
-                        className="gap-2 text-sm"
-                        style={signMode ? undefined : { backgroundColor: "#f48221" }}
-                        variant={signMode ? "outline" : undefined}
-                        size="sm"
-                      >
-                        <PenLine className="w-4 h-4" />
-                        {signMode ? "Salir de Firma" : "Firmar"}
-                      </Button>
-                      <Button
-                        variant={editMode ? undefined : "outline"}
-                        onClick={() => { setEditMode(!editMode); setSignMode(false); if (!editMode) enterEditMode(); }}
-                        className="gap-2 text-sm"
-                        style={editMode ? { backgroundColor: "#f48221" } : undefined}
-                        size="sm"
-                      >
-                        <Pencil className="w-4 h-4" />
-                        {editMode ? "Salir Edición" : "Editar"}
-                      </Button>
+                      {canEditOrSign && (
+                        <>
+                          <Button
+                            onClick={() => { setSignMode(!signMode); setEditMode(false); }}
+                            className="gap-2 text-sm"
+                            style={signMode ? undefined : { backgroundColor: "#f48221" }}
+                            variant={signMode ? "outline" : undefined}
+                            size="sm"
+                          >
+                            <PenLine className="w-4 h-4" />
+                            {signMode ? "Salir de Firma" : "Firmar"}
+                          </Button>
+                          <Button
+                            variant={editMode ? undefined : "outline"}
+                            onClick={() => { setEditMode(!editMode); setSignMode(false); if (!editMode) enterEditMode(); }}
+                            className="gap-2 text-sm"
+                            style={editMode ? { backgroundColor: "#f48221" } : undefined}
+                            size="sm"
+                          >
+                            <Pencil className="w-4 h-4" />
+                            {editMode ? "Salir Edición" : "Editar"}
+                          </Button>
+                        </>
+                      )}
                       <Button
                         variant="outline"
                         onClick={handleDownloadPdf}

@@ -115,6 +115,24 @@ export async function POST(request: Request) {
       },
     });
 
+    if (projectTypeIds && projectTypeIds.length > 0 && assignedCloserId && (role === "SETTER" || role === "SETTER_JR")) {
+      const projects = await prisma.projectType.findMany({
+        where: { id: { in: projectTypeIds } },
+        select: { name: true }
+      });
+      const hasPanelSolar = projects.some(p => p.name.toLowerCase().includes("panel solar"));
+      if (hasPanelSolar && assignedCloserId !== assignedSetterId) {
+        await prisma.notification.create({
+          data: {
+            userId: assignedCloserId,
+            title: "Asignado a Panel Solar",
+            body: `El Trainee ${session.user.name} te ha seleccionado para el proyecto Panel Solar en ${address}.`,
+            link: `/lead/${visit.id}`,
+          },
+        });
+      }
+    }
+
     return NextResponse.json({
       success: true,
       parcel,
