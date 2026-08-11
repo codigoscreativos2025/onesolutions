@@ -1143,7 +1143,6 @@ export default function LeadDetailPage() {
         ].filter(tab => {
           if ((tab.key === "contratos" || tab.key === "historial") && role === "PARTNER") return false;
           if (visit?.stage === "CANCELLED" && tab.key !== "datos" && tab.key !== "historial") return false;
-          if (role === "ADMIN" && visit?.stage !== "IN_PROGRESS" && tab.key !== "datos" && tab.key !== "historial") return false;
           return true;
         }).map((tab) => (
           <button
@@ -1175,7 +1174,7 @@ export default function LeadDetailPage() {
           Ver en mapa
         </button>
         )}
-        {visit.stage === "PROPOSAL_ACCEPTED" && (
+        {visit.stage === "PROPOSAL_ACCEPTED" && role !== "ADMIN" && (
           <button
             onClick={handleStartProject}
             disabled={startingProject}
