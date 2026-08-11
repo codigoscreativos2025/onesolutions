@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       contentType?: string;
     }> = attachments ? attachments.map(a => ({
       filename: a.filename,
-      content: a.content,
+      content: Buffer.from(a.content, "base64"),
       contentType: a.contentType,
     })) : [];
 
