@@ -16,7 +16,7 @@ import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { MapPin, User, GripVertical, ArrowLeftRight, X, Clock, Undo2 } from "lucide-react";
+import { MapPin, User, GripVertical, ArrowLeftRight, X, Clock, Undo2, CheckCircle } from "lucide-react";
 
 const COLS = [
   { stage: "IN_PROGRESS", title: "Leads", color: "bg-blue-500", colorBar: "bg-blue-500" },
@@ -725,6 +725,22 @@ function KanbanCard({
                 style={{ width: `${pct}%` }}
               />
             </div>
+          </div>
+        );
+      })()}
+
+      {visit.stage === "CLOSED" && (() => {
+        const parsedCF = (() => {
+          if (!visit.contractFields) return {};
+          try { return JSON.parse(visit.contractFields); } catch { return {}; }
+        })();
+        const tag = parsedCF.postCloseTags;
+        if (!tag || typeof tag !== "string") return null;
+        const tagColor = tag === "En Instalación" ? "#f59e0b" : tag === "Instalado" ? "#22c55e" : tag === "Finalizado" ? "#3b82f6" : "#6b7280";
+        return (
+          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold mt-2" style={{ backgroundColor: tagColor + "15", color: tagColor, border: `1px solid ${tagColor}30` }}>
+            <CheckCircle className="w-3 h-3" />
+            <span>{tag}</span>
           </div>
         );
       })()}

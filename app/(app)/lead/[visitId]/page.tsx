@@ -412,7 +412,7 @@ export default function LeadDetailPage() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
-  const [postCloseTags, setPostCloseTags] = useState<string[]>([]);
+  const [postCloseTags, setPostCloseTags] = useState("");
   const [tagSaving, setTagSaving] = useState(false);
   const [showContractModal, setShowContractModal] = useState(false);
   const [leadTags, setLeadTags] = useState<{ name: string; color: string }[]>([]);
@@ -552,10 +552,10 @@ export default function LeadDetailPage() {
     try {
       if (visit.contractFields) {
         const parsed = JSON.parse(visit.contractFields);
-        if (parsed.postCloseTags && Array.isArray(parsed.postCloseTags)) {
-          setPostCloseTags(parsed.postCloseTags);
+        if (parsed.postCloseTags) {
+          setPostCloseTags(typeof parsed.postCloseTags === "string" ? parsed.postCloseTags : "");
         } else {
-          setPostCloseTags([]);
+          setPostCloseTags("");
         }
         if (parsed.draftSchedule && !visit.scheduledAt) {
           if (parsed.draftSchedule.date) setScheduleDate(parsed.draftSchedule.date);
@@ -565,7 +565,7 @@ export default function LeadDetailPage() {
         return;
       }
     } catch { /* */ }
-    setPostCloseTags([]);
+          setPostCloseTags("");
   }, [visit]);
 
   useEffect(() => { fetchVisitDetails(); }, [visitId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1021,26 +1021,17 @@ export default function LeadDetailPage() {
   };
 
   const handleToggleTag = async (tag: string) => {
-    if (!visit) return;
-    let newTags: string[];
-    if (postCloseTags.includes(tag)) {
-      newTags = postCloseTags.filter((t) => t !== tag);
-    } else {
-      if (postCloseTags.length >= 3) {
-        toast.error("Máximo 3 tags permitidos");
-        return;
-      }
-      newTags = [...postCloseTags, tag];
-    }
+    if (tagSaving) return;
+    const newTag = postCloseTags === tag ? "" : tag;
     const prevTags = postCloseTags;
-    setPostCloseTags(newTags);
+    setPostCloseTags(newTag);
     setTagSaving(true);
     try {
       let existing: Record<string, unknown> = {};
-      if (visit.contractFields) {
+      if (visit?.contractFields) {
         try { existing = JSON.parse(visit.contractFields); } catch { /* */ }
       }
-      existing.postCloseTags = newTags;
+      existing.postCloseTags = newTag;
       await fetch(`/api/visits/${visitId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -2254,7 +2245,7 @@ function DatosClosedPanel({
   fieldMetas: FieldMeta[];
   fieldMetasByProject: { projectTypeName: string; projectTypeId: number; fields: FieldMeta[] }[];
   selectedProjectNames: string[];
-  postCloseTags: string[];
+  postCloseTags: string;
   onToggleTag: (tag: string) => void;
   tagSaving: boolean;
   isAdmin: boolean;
@@ -2285,23 +2276,21 @@ function DatosClosedPanel({
                 onClick={() => onToggleTag(tag)}
                 disabled={tagSaving}
                 className={`px-4 py-2 rounded-full border text-sm font-medium transition-all ${
-                  postCloseTags.includes(tag)
+                  postCloseTags === tag
                     ? "bg-primary/10 border-primary text-primary"
                     : "bg-surface-container-low border-outline-variant text-on-surface-variant hover:border-primary/30"
                 }`}
               >
-                {postCloseTags.includes(tag) && <CheckCircle className="w-3 h-3 inline mr-1" />}
+                {postCloseTags === tag && <CheckCircle className="w-3 h-3 inline mr-1" />}
                 {tag}
               </button>
             ))}
           </div>
-          {postCloseTags.length > 0 && (
+          {postCloseTags && (
             <div className="mt-3 flex flex-wrap gap-2">
-              {postCloseTags.map((tag) => (
-                <span key={tag} className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                  {tag}
-                </span>
-              ))}
+              <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                {postCloseTags}
+              </span>
             </div>
           )}
         </Panel>
