@@ -28,6 +28,7 @@ interface ContractModalProps {
   onClose: () => void;
   visitId: number;
   inline?: boolean;
+  isTraineeLead?: boolean;
 }
 
 interface SignatureField {
@@ -36,7 +37,7 @@ interface SignatureField {
   element?: HTMLElement;
 }
 
-export function ContractModal({ isOpen, onClose, visitId, inline }: ContractModalProps) {
+export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead }: ContractModalProps) {
   const { data: session } = useSession();
   const role = session?.user?.role;
   const [loading, setLoading] = useState(false);
@@ -514,7 +515,7 @@ export function ContractModal({ isOpen, onClose, visitId, inline }: ContractModa
   const isPanelSolar = activeContract?.name.toLowerCase().includes("panel solar") || activeContract?.type.toLowerCase().includes("panel-solar");
   const canEditOrSign = (() => {
     if (role === "SETTER" && isPanelSolar) return false;
-    if (role === "CLOSER" && !isPanelSolar) return false;
+    if (role === "CLOSER" && isTraineeLead && !isPanelSolar) return false;
     return true;
   })();
 
