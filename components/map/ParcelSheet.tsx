@@ -553,7 +553,7 @@ export function ParcelSheet({
 
               {parcel.visits?.[0]?.id && (
                 <Button 
-                  onClick={() => router.push(`/lead/${parcel.visits[0].id}`)} 
+                  onClick={() => router.push(`/lead/${parcel.visits?.[0]?.id}`)} 
                   className="w-full mt-4 bg-brand-green hover:bg-brand-green/90 text-white shadow-md py-6 rounded-xl"
                 >
                   Ver detalles
