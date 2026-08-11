@@ -2126,7 +2126,7 @@ function DatosProjectPanel({
                   Cerrar Proyecto
                 </Button>
                 <Button onClick={onReturnLead} className="bg-orange-500 hover:bg-orange-600 text-white">
-                  <Undo2 className="w-4 h-4" />
+                  <RotateCcw className="w-4 h-4" />
                   Devolver Proyecto
                 </Button>
               </>
