@@ -72,7 +72,7 @@ export function TopAppBar() {
       <div className="flex items-center gap-1">
         <LanguageSwitcher />
         <ThemeToggle />
-        {role !== "SETTER" && role !== "SETTER_JR" && <NotificationsDropdown />}
+        {role !== "SETTER_JR" && <NotificationsDropdown />}
         <button
           onClick={handleSignOut}
           className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-highest transition-colors active:scale-90"
