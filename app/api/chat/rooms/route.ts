@@ -41,6 +41,7 @@ export async function GET() {
       where: {
         type: "PARTNER",
         visit: {
+          stage: { not: "CANCELLED" },
           parcel: { partnerId: userId },
         },
       },

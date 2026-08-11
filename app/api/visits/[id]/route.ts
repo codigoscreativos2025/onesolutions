@@ -52,6 +52,26 @@ export async function PATCH(
       where: { id: visit.parcelId },
       data: { partnerId: partnerId || null, lastUpdatedAt: new Date() },
     });
+
+    if (partnerId) {
+      const existingPartnerRoom = await prisma.chatRoom.findFirst({
+        where: { visitId: visit.id, type: "PARTNER" },
+      });
+      if (!existingPartnerRoom) {
+        await prisma.chatRoom.create({
+          data: {
+            visitId: visit.id,
+            type: "PARTNER",
+            messages: {
+              create: {
+                userId: parseInt(session.user.id),
+                body: "Chat de proyecto con Partner iniciado",
+              },
+            },
+          },
+        });
+      }
+    }
   }
 
 
