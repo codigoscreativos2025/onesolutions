@@ -2232,6 +2232,7 @@ function DatosClosedPanel({
   onToggleTag,
   tagSaving,
   isAdmin,
+  role,
 }: {
   visit: VisitDetails;
   fieldMetas: FieldMeta[];
