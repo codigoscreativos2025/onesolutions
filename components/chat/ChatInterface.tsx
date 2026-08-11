@@ -1068,6 +1068,8 @@ function InfoPanelContent({
   bill?: { imageUrl: string; phone: string; clientName: string; clientEmail: string; additionalFileUrl?: string; additionalFileName?: string };
   stageLabels: Record<string, string>;
 }) {
+  const { data: session } = useSession();
+  const isPartner = session?.user?.role === "PARTNER";
   const { visit } = room;
   const [projectDetails, setProjectDetails] = useState<any>(visit.projectDetails);
   useEffect(() => {
@@ -1119,15 +1121,19 @@ function InfoPanelContent({
               <span className="text-on-surface text-right break-words">{bill?.clientName || projectDetails?.clientName || visit.parcel.ownerName || "Sin Nombre"}</span>
             </div>
 
-            <div className="flex justify-between items-start gap-4">
-              <span className="text-on-surface-variant font-medium flex-shrink-0">Teléfono:</span>
-              <span className="text-on-surface text-right break-words">{bill?.phone || projectDetails?.phone || "N/A"}</span>
-            </div>
+            {!isPartner && (
+              <div className="flex justify-between items-start gap-4">
+                <span className="text-on-surface-variant font-medium flex-shrink-0">Teléfono:</span>
+                <span className="text-on-surface text-right break-words">{bill?.phone || projectDetails?.phone || "N/A"}</span>
+              </div>
+            )}
 
-            <div className="flex justify-between items-start gap-4">
-              <span className="text-on-surface-variant font-medium flex-shrink-0">Email:</span>
-              <span className="text-on-surface text-right break-words">{bill?.clientEmail || projectDetails?.clientEmail || "N/A"}</span>
-            </div>
+            {!isPartner && (
+              <div className="flex justify-between items-start gap-4">
+                <span className="text-on-surface-variant font-medium flex-shrink-0">Email:</span>
+                <span className="text-on-surface text-right break-words">{bill?.clientEmail || projectDetails?.clientEmail || "N/A"}</span>
+              </div>
+            )}
 
             <div className="flex justify-between items-start gap-4">
               <span className="text-on-surface-variant font-medium flex-shrink-0">Dirección:</span>
@@ -1149,10 +1155,12 @@ function InfoPanelContent({
               <span className="text-on-surface text-right break-words">{projectDetails?.primaryRep || "N/A"}</span>
             </div>
 
-            <div className="flex justify-between items-start gap-4">
-              <span className="text-on-surface-variant font-medium flex-shrink-0">Comisión (%):</span>
-              <span className="text-on-surface text-right break-words">{projectDetails?.primaryRepCommPct != null ? `${projectDetails.primaryRepCommPct}%` : "N/A"}</span>
-            </div>
+            {!isPartner && (
+              <div className="flex justify-between items-start gap-4">
+                <span className="text-on-surface-variant font-medium flex-shrink-0">Comisión (%):</span>
+                <span className="text-on-surface text-right break-words">{projectDetails?.primaryRepCommPct != null ? `${projectDetails.primaryRepCommPct}%` : "N/A"}</span>
+              </div>
+            )}
 
           </div>
         </div>

@@ -207,6 +207,29 @@ function getTimelineColor(action: string): string {
   return "#6b7280";
 }
 
+function isFieldHiddenForPartner(fieldName: string, fieldLabelStr?: string): boolean {
+  const name = fieldName.toLowerCase();
+  const label = (fieldLabelStr || "").toLowerCase();
+
+  const sensitiveKeywords = [
+    "comm", "comision", "comisión",
+    "cost", "costo",
+    "price", "precio",
+    "incentive", "incentivo",
+    "sale", "venta",
+  ];
+
+  for (const kw of sensitiveKeywords) {
+    if (name.includes(kw) || label.includes(kw)) {
+      return true;
+    }
+  }
+
+  if (name.includes("repcomm") || name.includes("commpct")) return true;
+
+  return false;
+}
+
 const OPTIONAL_FIELDS = [
   "secondaryRep",
   "secondaryRepCommPct",
@@ -1613,14 +1636,16 @@ function ClientInfoPanel({
   onSave?: () => void;
   isReadOnly?: boolean;
   visit?: VisitDetails;
+  role?: string;
 }) {
+  const isPartner = role === "PARTNER";
   if (isReadOnly && visit) {
     return (
       <Panel title="Información del Cliente" icon={User}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ReadOnlyField label="Nombre" value={visit.bill?.clientName || "-"} />
-          <ReadOnlyField label="Correo" value={visit.bill?.clientEmail || "-"} />
-          <ReadOnlyField label="Teléfono" value={visit.bill?.phone || "-"} />
+          {!isPartner && <ReadOnlyField label="Correo" value={visit.bill?.clientEmail || "-"} />}
+          {!isPartner && <ReadOnlyField label="Teléfono" value={visit.bill?.phone || "-"} />}
         </div>
       </Panel>
     );
@@ -1632,14 +1657,18 @@ function ClientInfoPanel({
           <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">Nombre<RequiredBadge required={true} /></label>
           <Input value={editFields?._billClientName || ""} onChange={(e) => onFieldChange?.("_billClientName", (e.target as HTMLInputElement).value)} onBlur={onSave} placeholder="Nombre del cliente" />
         </div>
-        <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">Correo<RequiredBadge required={true} /></label>
-          <Input type="email" value={editFields?._billClientEmail || ""} onChange={(e) => onFieldChange?.("_billClientEmail", (e.target as HTMLInputElement).value)} onBlur={onSave} placeholder="Correo electrónico" />
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">Teléfono<RequiredBadge required={true} /></label>
-          <Input type="tel" value={editFields?._billPhone || ""} onChange={(e) => onFieldChange?.("_billPhone", (e.target as HTMLInputElement).value)} onBlur={onSave} placeholder="Número de teléfono" />
-        </div>
+        {!isPartner && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">Correo<RequiredBadge required={true} /></label>
+            <Input type="email" value={editFields?._billClientEmail || ""} onChange={(e) => onFieldChange?.("_billClientEmail", (e.target as HTMLInputElement).value)} onBlur={onSave} placeholder="Correo electrónico" />
+          </div>
+        )}
+        {!isPartner && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">Teléfono<RequiredBadge required={true} /></label>
+            <Input type="tel" value={editFields?._billPhone || ""} onChange={(e) => onFieldChange?.("_billPhone", (e.target as HTMLInputElement).value)} onBlur={onSave} placeholder="Número de teléfono" />
+          </div>
+        )}
       </div>
     </Panel>
   );
@@ -1736,7 +1765,7 @@ function DatosLeadPanel({
 
   return (
     <div className="space-y-6">
-      <ClientInfoPanel editFields={editFields} onFieldChange={onFieldChange} isReadOnly={isReadOnly} visit={visit} />
+      <ClientInfoPanel editFields={editFields} onFieldChange={onFieldChange} isReadOnly={isReadOnly} visit={visit} role={role} />
 
       <Panel title="Documentos" icon={FileText}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1897,36 +1926,46 @@ function DatosProjectFieldsPanel({
     return meta?.fieldType === "file" || meta?.fieldType === "photos" || isFileFieldKey(key);
   };
 
+  const isPartner = role === "PARTNER";
+  const commonFieldsFiltered = COMMON_FIELDS.filter((key) => {
+    if (!isPartner) return true;
+    return !isFieldHiddenForPartner(key, fieldLabel(key));
+  });
+
   return (
     <div className="space-y-6">
       {showBillSection && (
-        <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={onFieldChange} onUpload={onUpload} onRefresh={onRefresh} leadTags={leadTags} notAvailTags={notAvailTags} onAddTag={onAddTag} onRemoveTag={onRemoveTag} onBillFileUpload={onBillFileUpload} />
+        <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={onFieldChange} onUpload={onUpload} onRefresh={onRefresh} leadTags={leadTags} notAvailTags={notAvailTags} onAddTag={onAddTag} onRemoveTag={onRemoveTag} onBillFileUpload={onBillFileUpload} role={role} />
       )}
 
-      <Panel title="Campos Generales" icon={Pencil}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {COMMON_FIELDS.map((key) => (
-            <FieldRow
-              key={key}
-              label={fieldLabel(key)}
-              value={getValue(key)}
-              field={key}
-              type={getType(key)}
-              onChange={(_, v) => onFieldChange(key, v)}
-              onBlur={onSave}
-              readOnly={role === "ADMIN"}
-              isFile={isFieldFile(key)}
-              onFileUpload={onFileFieldUpload}
-              fileUrl={pd[key] ? String(pd[key]) : undefined}
-              required={OPTIONAL_FIELDS.includes(key) ? false : REQUIRED_COMMON_FIELDS.has(key) ? true : false}
-            />
-          ))}
-        </div>
-      </Panel>
+      {commonFieldsFiltered.length > 0 && (
+        <Panel title="Campos Generales" icon={Pencil}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {commonFieldsFiltered.map((key) => (
+              <FieldRow
+                key={key}
+                label={fieldLabel(key)}
+                value={getValue(key)}
+                field={key}
+                type={getType(key)}
+                onChange={(_, v) => onFieldChange(key, v)}
+                onBlur={onSave}
+                readOnly={role === "ADMIN" || isPartner}
+                isFile={isFieldFile(key)}
+                onFileUpload={onFileFieldUpload}
+                fileUrl={pd[key] ? String(pd[key]) : undefined}
+                required={OPTIONAL_FIELDS.includes(key) ? false : REQUIRED_COMMON_FIELDS.has(key) ? true : false}
+              />
+            ))}
+          </div>
+        </Panel>
+      )}
 
       {fieldMetasByProject.length > 0 && fieldMetasByProject.map((project) => {
         const isExpanded = expandedProjects.has(project.projectTypeId);
-        const projectFields = project.fields.filter((m) => !COMMON_FIELDS.includes(m.fieldName));
+        const projectFields = project.fields
+          .filter((m) => !COMMON_FIELDS.includes(m.fieldName))
+          .filter((m) => !isPartner || !isFieldHiddenForPartner(m.fieldName, m.fieldLabel));
         return (
           <div key={project.projectTypeId} className="glass-panel rounded-xl">
             <button
@@ -1948,7 +1987,7 @@ function DatosProjectFieldsPanel({
                         value={getValue(meta.fieldName)} field={meta.fieldName}
                         type={meta.fieldType || "text"} onChange={(_, v) => onFieldChange(meta.fieldName, v)}
                         onBlur={onSave} isFile={meta.fieldType === "file" || meta.fieldType === "photos"}
-                        readOnly={role === "ADMIN"}
+                        readOnly={role === "ADMIN" || isPartner}
                         onFileUpload={onFileFieldUpload} fileUrl={pd[meta.fieldName] ? String(pd[meta.fieldName]) : undefined}
                         required={meta.isRequired === false ? false : meta.isRequired === true ? true : undefined} />
                     ))}
@@ -2322,7 +2361,7 @@ function DatosClosedPanel({
         );
       })}
 
-      {visit.bill?.notes && (
+      {role !== "PARTNER" && visit.bill?.notes && (
         <Panel title="Notas" icon={Pencil}>
           <p className="text-sm text-on-surface whitespace-pre-wrap">{visit.bill.notes}</p>
         </Panel>
