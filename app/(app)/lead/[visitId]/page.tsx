@@ -1631,6 +1631,7 @@ function ClientInfoPanel({
   onSave,
   isReadOnly,
   visit,
+  role,
 }: {
   editFields?: Record<string, string>;
   onFieldChange?: (key: string, v: string) => void;
@@ -2126,7 +2127,7 @@ function DatosProjectPanel({
         )}
       </Panel>
 
-      <ClientInfoPanel editFields={editFields} onFieldChange={onFieldChange} onSave={onSave} isReadOnly={closeRequested || role === "ADMIN"} visit={visit} />
+      <ClientInfoPanel editFields={editFields} onFieldChange={onFieldChange} onSave={onSave} isReadOnly={closeRequested || role === "ADMIN"} visit={visit} role={role} />
 
       <Panel title="Documentos" icon={FileText}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2259,7 +2260,7 @@ function DatosClosedPanel({
 
   return (
     <div className="space-y-6">
-      <ClientInfoPanel isReadOnly visit={visit} />
+      <ClientInfoPanel isReadOnly visit={visit} role={role} />
       {isAdmin && (
         <Panel title="Estado Post-Cierre" icon={BadgeCheck}>
           <div className="flex flex-wrap gap-2">
