@@ -110,7 +110,7 @@ export async function POST(
           name: { in: mentions },
           NOT: { id: userId },
         },
-        select: { id: true, name: true },
+        select: { id: true, name: true, role: true },
       });
 
       const mentionedNames = new Set(mentions);
@@ -124,7 +124,7 @@ export async function POST(
           userId: u.id,
           title: "Te mencionaron en un chat",
           body: `@${user.name} te mencionó en el chat de ${address}`,
-          link: "/chat",
+          link: u.role === "ADMIN" ? `/admin/chats?room=${params.id}` : `/chat?room=${params.id}`,
         }));
 
         await prisma.notification.createMany({ data: notifications });

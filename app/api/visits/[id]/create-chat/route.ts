@@ -124,7 +124,7 @@ export async function POST(
         userId: visit.setter.id,
         title: 'Chat Creado',
         body: `Se ha creado el chat para el proyecto en ${visit.parcel.address}`,
-        link: '/chat',
+        link: `/chat?room=${room.id}`,
       });
     }
 
@@ -139,7 +139,7 @@ export async function POST(
         userId: admin.id,
         title: 'Chat Creado',
         body: `Se ha creado el chat para el proyecto en ${visit.parcel.address}`,
-        link: '/admin/chats',
+        link: `/admin/chats?room=${room.id}`,
       });
     });
 
