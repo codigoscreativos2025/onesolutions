@@ -63,6 +63,7 @@ export default function AdminInvoicesPage() {
 
   const [contacts, setContacts] = useState<FrequentContact[]>([]);
   const [selectedContactId, setSelectedContactId] = useState("");
+  const [selectedFromContactId, setSelectedFromContactId] = useState("");
   const [showContactsManager, setShowContactsManager] = useState(false);
 
   const [editingContactId, setEditingContactId] = useState<number | null>(null);
@@ -201,6 +202,17 @@ export default function AdminInvoicesPage() {
       if (c.phone) setBillToPhone(c.phone);
       if (c.email) setBillToEmail(c.email);
       if (c.address) setBillToAddress(c.address);
+    }
+  };
+
+  const handleFromContactSelect = (contactId: string) => {
+    if (!contactId) return;
+    const c = contacts.find((c) => c.id === parseInt(contactId));
+    if (c) {
+      if (c.company) setFromName(c.company);
+      if (c.phone) setFromPhone(c.phone);
+      if (c.email) setFromEmail(c.email);
+      if (c.address) setFromAddress(c.address);
     }
   };
 
@@ -601,6 +613,28 @@ export default function AdminInvoicesPage() {
 
           <div className="border-t border-outline-variant pt-4">
             <h3 className="text-sm font-semibold mb-2">Desde (Invoice From):</h3>
+
+            {contacts.length > 0 && (
+              <div className="mb-3">
+                <label className="text-xs font-medium text-on-surface-variant">Seleccionar Contacto</label>
+                <select
+                  value={selectedFromContactId}
+                  onChange={(e) => {
+                    setSelectedFromContactId(e.target.value);
+                    handleFromContactSelect(e.target.value);
+                  }}
+                  className="w-full h-10 rounded-lg bg-surface-container-low border border-outline-variant px-3 text-sm text-on-surface"
+                >
+                  <option value="">-- Seleccionar --</option>
+                  {contacts.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.company || c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Input value={fromName} onChange={(e) => setFromName(e.target.value)} placeholder="Nombre" />
               <Input value={fromPhone} onChange={(e) => setFromPhone(e.target.value)} placeholder="Telefono" inputMode="tel" pattern="[0-9\-\+\(\) ]*" />

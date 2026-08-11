@@ -30,16 +30,11 @@ interface AttachedFile {
 const EMAIL_HEADER = `<table width="100%" cellpadding="0" cellspacing="0" style="border-bottom:2px solid #e0e0e0;padding-bottom:20px;margin-bottom:20px;">
   <tr>
     <td style="vertical-align:middle;width:90px;">
-      <svg viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg" style="width:70px;height:auto;">
-        <polygon points="30,100 150,30 270,100 270,120 150,50 30,120" fill="#f48221"/>
-        <polygon points="210,115 235,95 255,115 230,135" fill="#1d1d1b"/>
-        <circle cx="150" cy="180" r="65" fill="none" stroke="#1d1d1b" stroke-width="18"/>
-        <text x="150" y="228" font-family="Arial,sans-serif" font-weight="900" font-size="130" text-anchor="middle" fill="#1d1d1b">S</text>
-        <g fill="#f48221">
-          <text x="150" y="325" font-family="Arial Black,Impact,sans-serif" font-weight="900" font-size="95" text-anchor="middle" letter-spacing="1">ONE</text>
-        </g>
-        <text x="150" y="375" font-family="Arial,sans-serif" font-weight="900" font-size="36" text-anchor="middle" fill="#000000" letter-spacing="2">SOLUTIONS</text>
-      </svg>
+      <div style="text-align:center;line-height:1;">
+        <div style="display:inline-block;width:50px;height:50px;border-radius:50%;border:4px solid #1d1d1b;text-align:center;line-height:46px;font-size:32px;font-weight:900;font-family:Arial,sans-serif;color:#1d1d1b;">S</div>
+        <div style="font-size:24px;font-weight:900;color:#f48221;font-family:Arial,sans-serif;letter-spacing:1px;margin-top:5px;">ONE</div>
+        <div style="font-size:9px;font-weight:900;color:#1d1d1b;font-family:Arial,sans-serif;letter-spacing:2px;margin-top:2px;">SOLUTIONS</div>
+      </div>
     </td>
     <td style="vertical-align:middle;text-align:right;font-size:13px;color:#555;">
       <strong style="color:#1d1d1b;font-size:15px;display:block;margin-bottom:5px;">ONE SOLUTIONS COMPANIES LLC</strong>
