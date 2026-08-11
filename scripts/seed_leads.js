@@ -18,10 +18,10 @@ async function main() {
     const parcel = await prisma.parcel.create({
       data: {
         id: parcelId,
-        address: `Calle Prueba Maria ${i}`,
+        address: `Calle Lead Jr ${Date.now().toString().slice(-3)}-${i}`,
         geometry: JSON.stringify({ type: "Point", coordinates: [-80.1918, 25.7617] }),
         territory: "Florida",
-        status: "AVAILABLE",
+        status: "LEAD",
         setterId: maria.id,
       }
     });

@@ -126,7 +126,8 @@ export async function PATCH(
     const isFirstTimeCloser = closerId !== undefined && !visit.closerId;
     const isSelfAssign = closerId !== undefined && String(closerId) === session.user.id;
     const isSetToSelf = setterId !== undefined && String(setterId) === session.user.id;
-    if (session.user.role !== "ADMIN" && !isFirstTimeCloser && !isSelfAssign && !isSetToSelf) {
+    const isScheduling = updateData.stage === "PROPOSAL_ACCEPTED" || updateData.scheduledAt !== undefined;
+    if (session.user.role !== "ADMIN" && !isFirstTimeCloser && !isSelfAssign && !isSetToSelf && !isScheduling) {
       return NextResponse.json({ error: "Only admins can transfer leads" }, { status: 403 });
     }
 

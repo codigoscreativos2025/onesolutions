@@ -603,10 +603,14 @@ export default function LeadDetailPage() {
       toast.error("Selecciona un Closer");
       return;
     }
+    if (!visit.projects || visit.projects.length === 0) {
+      toast.error("Debes seleccionar al menos un tipo de proyecto");
+      return;
+    }
     setScheduleSaving(true);
     try {
       const scheduledAt = new Date(`${scheduleDate}T${scheduleTime}:00`).toISOString();
-      await fetch(`/api/visits/${visit.id}`, {
+      const patchRes = await fetch(`/api/visits/${visit.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -615,10 +619,16 @@ export default function LeadDetailPage() {
           ...(scheduleIsSelfAssigned ? { closerId: Number(session?.user?.id) } : { closerId: Number(scheduleCloserId) }),
         }),
       });
+
+      if (!patchRes.ok) {
+        const errorData = await patchRes.json().catch(() => ({}));
+        throw new Error(errorData.error || "Error al agendar cita");
+      }
+
       toast.success("Lead Potencial creado");
       router.push(`/dashboard?highlight=${visit.id}`);
-    } catch {
-      toast.error("Error al agendar");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al agendar");
     } finally {
       setScheduleSaving(false);
     }
