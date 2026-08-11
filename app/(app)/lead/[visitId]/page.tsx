@@ -1697,7 +1697,7 @@ function DatosLeadPanel({
   const [saving, setSaving] = useState(false);
   const [editProjectTypes, setEditProjectTypes] = useState<{ id: number; name: string }[]>([]);
   const [selectedPTIds, setSelectedPTIds] = useState<number[]>([]);
-  const isReadOnly = role === "ADMIN" || visit.stage === "CANCELLED";
+  const isReadOnly = role === "ADMIN" || visit.stage === "CANCELLED" || role === "CLOSER";
 
   useEffect(() => {
     fetch("/api/project-types")
@@ -1945,7 +1945,7 @@ function DatosProjectFieldsPanel({
                 type={getType(key)}
                 onChange={(_, v) => onFieldChange(key, v)}
                 onBlur={onSave}
-                readOnly={role === "ADMIN" || isPartner}
+                readOnly={role === "ADMIN" || isPartner || role === "CLOSER"}
                 isFile={isFieldFile(key)}
                 onFileUpload={onFileFieldUpload}
                 fileUrl={pd[key] ? String(pd[key]) : undefined}
@@ -2070,7 +2070,7 @@ function DatosProjectPanel({
     return meta?.fieldType === "file" || meta?.fieldType === "photos" || isFileFieldKey(key);
   };
 
-  const isTraineeOrCloser = role === "SETTER" || role === "SETTER_JR" || role === "CLOSER";
+  const canRequestClose = role === "SETTER" || role === "SETTER_JR";
   const isAdmin = role === "ADMIN";
 
   return (
@@ -2096,7 +2096,7 @@ function DatosProjectPanel({
         </div>
         {progress === 100 && (
           <div className="mt-4 flex gap-3 flex-wrap items-center">
-            {isTraineeOrCloser && (
+            {canRequestClose && (
               closeRequested ? (
                 <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/40 text-amber-600 dark:text-amber-400">
                   <BadgeCheck className="w-4 h-4 shrink-0" />
@@ -2125,7 +2125,7 @@ function DatosProjectPanel({
         )}
       </Panel>
 
-      <ClientInfoPanel editFields={editFields} onFieldChange={onFieldChange} onSave={onSave} isReadOnly={closeRequested || role === "ADMIN"} visit={visit} role={role} />
+      <ClientInfoPanel editFields={editFields} onFieldChange={onFieldChange} onSave={onSave} isReadOnly={closeRequested || role === "ADMIN" || role === "CLOSER"} visit={visit} role={role} />
 
       <Panel title="Documentos" icon={FileText}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2137,7 +2137,7 @@ function DatosProjectPanel({
             required={true}
             onFileUpload={onFileFieldUpload}
             fileUrl={pd["idDocumentUrl"] ? String(pd["idDocumentUrl"]) : undefined}
-            readOnly={closeRequested || role === "ADMIN"}
+            readOnly={closeRequested || role === "ADMIN" || role === "CLOSER"}
           />
           <FieldRow
             label="Recibo de Luz"
@@ -2147,7 +2147,7 @@ function DatosProjectPanel({
             required={true}
             onFileUpload={onFileFieldUpload}
             fileUrl={pd["electricBillUrl"] ? String(pd["electricBillUrl"]) : undefined}
-            readOnly={closeRequested || role === "ADMIN"}
+            readOnly={closeRequested || role === "ADMIN" || role === "CLOSER"}
           />
         </div>
       </Panel>
@@ -2163,7 +2163,7 @@ function DatosProjectPanel({
               type={getType(key)}
               onChange={(_, v) => onFieldChange(key, v)}
               onBlur={onSave}
-              readOnly={closeRequested || role === "ADMIN"}
+              readOnly={closeRequested || role === "ADMIN" || role === "CLOSER"}
               isFile={isFieldFile(key)}
               onFileUpload={onFileFieldUpload}
               fileUrl={pd[key] ? String(pd[key]) : undefined}
