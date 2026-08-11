@@ -1360,7 +1360,7 @@ export default function LeadDetailPage() {
         {activeTab === "contratos" && (
           <TabContent key="contratos">
             <div className="w-full">
-              <ContractModal isOpen={true} onClose={() => {}} visitId={visitId} inline={true} isTraineeLead={visit.setter?.role === "SETTER_JR"} />
+              <ContractModal isOpen={true} onClose={() => {}} visitId={visitId} inline={true} isTraineeLead={visit.setter?.role === "SETTER"} />
             </div>
           </TabContent>
         )}
@@ -1964,7 +1964,7 @@ function DatosProjectFieldsPanel({
 
         const isPanelSolar = project.projectTypeName.toLowerCase().includes("panel solar");
         const isSetter = role === "SETTER" || role === "SETTER_JR";
-        const isTraineeLead = visit.setter?.role === "SETTER_JR";
+        const isTraineeLead = visit.setter?.role === "SETTER";
         const isCloserRestricted = role === "CLOSER" && isTraineeLead;
         const isProjectReadOnly = role === "ADMIN" || isPartner || (isSetter && isPanelSolar) || (isCloserRestricted && !isPanelSolar);
 
@@ -2183,7 +2183,7 @@ function DatosProjectPanel({
         
         const isPanelSolar = project.projectTypeName.toLowerCase().includes("panel solar");
         const isSetter = role === "SETTER" || role === "SETTER_JR";
-        const isTraineeLead = visit.setter?.role === "SETTER_JR";
+        const isTraineeLead = visit.setter?.role === "SETTER";
         const isCloserRestricted = role === "CLOSER" && isTraineeLead;
         const isProjectReadOnly = role === "ADMIN" || closeRequested || (isSetter && isPanelSolar) || (isCloserRestricted && !isPanelSolar);
 
