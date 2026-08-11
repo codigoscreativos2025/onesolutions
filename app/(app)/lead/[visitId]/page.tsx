@@ -1334,6 +1334,7 @@ export default function LeadDetailPage() {
                 onToggleTag={handleToggleTag}
                 tagSaving={tagSaving}
                 isAdmin={isAdmin}
+                role={role}
               />
               <div className="mt-6">
                 <NotesPanel visitId={visitId} visitCreatedAt={visit?.createdAt} />
@@ -2240,6 +2241,7 @@ function DatosClosedPanel({
   onToggleTag: (tag: string) => void;
   tagSaving: boolean;
   isAdmin: boolean;
+  role?: string;
 }) {
   const pd = visit.projectDetails || {};
 
