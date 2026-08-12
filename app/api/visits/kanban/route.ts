@@ -81,7 +81,7 @@ export async function GET() {
   const role = session.user.role;
 
   try {
-    const whereClause: Record<string, unknown> = {};
+    let whereClause: Record<string, unknown> = {};
 
     if (role === 'SETTER') {
       whereClause.setterId = currentUserId;
@@ -98,8 +98,13 @@ export async function GET() {
         { setterId: { in: [currentUserId, ...ids] } },
       ];
     } else if (role === 'PARTNER') {
-      whereClause.parcel = { partnerId: currentUserId };
-      whereClause.stage = { in: ['PROJECT', 'CLOSED'] };
+      whereClause = {
+        OR: [
+          { parcel: { partnerId: currentUserId } },
+          { projects: { some: { partnerId: currentUserId } } },
+        ],
+        stage: { in: ['PROJECT', 'CLOSED'] },
+      };
     }
 
     const visits = await prisma.visit.findMany({

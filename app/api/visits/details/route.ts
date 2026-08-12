@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   const role = session.user.role;
 
   try {
-    const whereClause: Record<string, unknown> = {};
+    let whereClause: Record<string, unknown> = {};
 
     if (filter === 'scheduled') {
       whereClause.scheduledAt = { not: null };
@@ -39,8 +39,13 @@ export async function GET(request: Request) {
     } else if (role === 'CLOSER') {
       whereClause.closerId = currentUserId;
     } else if (role === 'PARTNER') {
-      whereClause.parcel = { partnerId: currentUserId };
-      whereClause.stage = { in: ['PROJECT', 'CLOSED'] };
+      whereClause = {
+        OR: [
+          { parcel: { partnerId: currentUserId } },
+          { projects: { some: { partnerId: currentUserId } } },
+        ],
+        stage: { in: ['PROJECT', 'CLOSED'] },
+      };
     }
 
     if (startDate || endDate) {

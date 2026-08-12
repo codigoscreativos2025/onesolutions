@@ -86,16 +86,27 @@ export async function GET(request: Request) {
   const userId = parseInt(session.user.id);
   const role = session.user.role;
 
-  if (role !== 'CLOSER' && role !== 'ADMIN' && role !== 'SETTER' && role !== 'SETTER_JR') {
+  if (role !== 'CLOSER' && role !== 'ADMIN' && role !== 'SETTER' && role !== 'SETTER_JR' && role !== 'PARTNER') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   try {
-    const whereClause: Record<string, unknown> = role === 'ADMIN'
-      ? {}
-      : role === 'CLOSER'
-        ? { closerId: userId }
-        : { setterId: userId };
+    let whereClause: Record<string, unknown>;
+    if (role === 'ADMIN') {
+      whereClause = {};
+    } else if (role === 'PARTNER') {
+      whereClause = {
+        OR: [
+          { parcel: { partnerId: userId } },
+          { projects: { some: { partnerId: userId } } },
+        ],
+        stage: { in: ['PROJECT', 'CLOSED'] },
+      };
+    } else if (role === 'CLOSER') {
+      whereClause = { closerId: userId };
+    } else {
+      whereClause = { setterId: userId };
+    }
 
     if (filter && filter !== 'all') {
       if (filter === 'leads') {
@@ -133,6 +144,9 @@ export async function GET(request: Request) {
         projects: {
           include: {
             projectType: {
+              select: { id: true, name: true },
+            },
+            partner: {
               select: { id: true, name: true },
             },
           },

@@ -43,6 +43,7 @@ model User {
   auditLogs      AuditLog[] @relation("AuditLog")
   commissions    CloserCommission[]
   visitNotes     VisitNote[]
+  assignedProjects VisitProject[] @relation("ProjectPartner")
 }
 
 model CloserSlot {
@@ -162,6 +163,8 @@ model VisitProject {
   visit         Visit       @relation(fields: [visitId], references: [id], onDelete: Cascade)
   projectTypeId Int
   projectType   ProjectType @relation(fields: [projectTypeId], references: [id])
+  partnerId     Int?
+  partner       User?       @relation("ProjectPartner", fields: [partnerId], references: [id])
 
   @@unique([visitId, projectTypeId])
 }

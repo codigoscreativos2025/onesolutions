@@ -69,6 +69,9 @@ export async function GET(
                 name: true,
               },
             },
+            partner: {
+              select: { id: true, name: true },
+            },
           },
         },
         objections: {
@@ -111,8 +114,11 @@ export async function GET(
     }
 
     if (session.user.role === 'PARTNER') {
-      if (visit.parcel?.partnerId !== parseInt(session.user.id) || (visit.stage !== 'CLOSED' && visit.stage !== 'PROJECT')) {
-        return NextResponse.json({ error: 'Forbidden: Partners can only view assigned closed/project leads' }, { status: 403 });
+      const isAssignedProject = visit.projects.some(
+        (vp) => vp.partnerId === parseInt(session.user.id)
+      );
+      if (!isAssignedProject && visit.parcel?.partnerId !== parseInt(session.user.id)) {
+        return NextResponse.json({ error: 'Forbidden: Partners can only view assigned projects' }, { status: 403 });
       }
     }
 

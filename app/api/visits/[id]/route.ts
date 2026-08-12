@@ -25,7 +25,7 @@ export async function PATCH(
   }
 
   const body = await request.json();
-  const { contractSignatures, contractFields, contractType, commissions, rejectionReason, setterId, closerId, bill, partnerId, projectTypeIds, ...updateData } = body;
+  const { contractSignatures, contractFields, contractType, commissions, rejectionReason, setterId, closerId, bill, partnerId, projectTypeIds, projectPartners, ...updateData } = body;
 
   // Handle project type updates
   if (projectTypeIds !== undefined && Array.isArray(projectTypeIds)) {
@@ -44,6 +44,16 @@ export async function PATCH(
       await prisma.bill.update({ where: { visitId }, data: bill.upsert?.update || bill.upsert?.create || bill });
     } else {
       await prisma.bill.create({ data: { ...bill.upsert?.create, visitId } });
+    }
+  }
+
+  // Handle project type partner assignments
+  if (projectPartners !== undefined && Array.isArray(projectPartners)) {
+    for (const pp of projectPartners) {
+      await prisma.visitProject.updateMany({
+        where: { visitId, projectTypeId: pp.projectTypeId },
+        data: { partnerId: pp.partnerId || null },
+      });
     }
   }
 

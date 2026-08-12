@@ -227,6 +227,8 @@ function isFieldHiddenForPartner(fieldName: string, fieldLabelStr?: string): boo
 
   if (name.includes("repcomm") || name.includes("commpct")) return true;
 
+  if (name === "primaryrep" || name === "secondaryrep" || name === "tertiaryrep") return true;
+
   return false;
 }
 
@@ -332,7 +334,7 @@ interface VisitDetails {
     additionalFileName?: string | null;
   } | null;
   projectDetails?: Record<string, unknown> & { createdAt?: string };
-  projects: { projectType: { id: number; name: string } }[];
+  projects: { projectType: { id: number; name: string }; partnerId?: number | null; partner?: { id: number; name: string } | null }[];
   objections: { objection: { id: number; name: string; color: string }; notes: string | null }[];
   closerObjections: {
     closerObjection: { id: number; name: string; color: string };
@@ -1290,6 +1292,7 @@ export default function LeadDetailPage() {
                   onCancelProject={handleCancelProjectAction}
                   onReturnLead={handleReturnLead}
                   onFileFieldUpload={handleFileUploadField}
+                  onRefresh={fetchVisitDetails}
                 />
                 <div className="mt-6">
                   <NotesPanel visitId={visitId} visitCreatedAt={visit?.createdAt} />
@@ -2014,12 +2017,14 @@ function DatosProjectPanel({
   selectedProjectNames,
   progress,
   role,
-  closeRequested,
   onRequestClose,
   onCloseProject,
   onCancelProject,
-  onReturnLead,
   onFileFieldUpload,
+  onReturnLead,
+  closeRequested,
+  isPartnerView,
+  onRefresh,
 }: {
   visit: VisitDetails;
   editFields: Record<string, string>;
@@ -2031,16 +2036,46 @@ function DatosProjectPanel({
   selectedProjectNames: string[];
   progress: number;
   role: string;
-  closeRequested: boolean;
   onRequestClose: () => void;
   onCloseProject: () => void;
   onCancelProject: () => void;
-  onReturnLead?: () => void;
   onFileFieldUpload: (fieldName: string, file: File) => void;
+  onReturnLead?: () => void;
+  closeRequested?: boolean;
+  isPartnerView?: boolean;
+  onRefresh?: () => void;
 }) {
   const pd = visit.projectDetails || {};
   const nonCommonFields = fieldMetas.filter((m) => !COMMON_FIELDS.includes(m.fieldName));
+
   const [expandedProjects, setExpandedProjects] = useState<Set<number>>(new Set());
+  const [partners, setPartners] = useState<{ id: number; name: string }[]>([]);
+  const [partnerSaving, setPartnerSaving] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("/api/users/transferable?all=true")
+      .then((r) => r.json())
+      .then((users) => {
+        setPartners(users.filter((u: { role: string }) => u.role === "PARTNER"));
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleAssignPartner = async (projectTypeId: number, partnerId: number | null) => {
+    setPartnerSaving(projectTypeId);
+    try {
+      await fetch(`/api/visits/${visit.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectPartners: [{ projectTypeId, partnerId }] }),
+      });
+      onRefresh?.();
+    } catch {
+      toast.error("Error al asignar partner");
+    } finally {
+      setPartnerSaving(null);
+    }
+  };
 
   const toggleExpandProject = (ptId: number) => {
     setExpandedProjects((prev) => {
@@ -2190,10 +2225,26 @@ function DatosProjectPanel({
               onClick={() => toggleExpandProject(project.projectTypeId)}
               className="w-full p-6 flex items-center justify-between text-left"
             >
-              <h3 className="font-semibold text-lg flex items-center gap-2 text-on-surface">
-                <Package className="w-5 h-5 text-primary" />
-                {project.projectTypeName}
-              </h3>
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <h3 className="font-semibold text-lg flex items-center gap-2 text-on-surface">
+                  <Package className="w-5 h-5 text-primary shrink-0" />
+                  {project.projectTypeName}
+                </h3>
+                {isAdmin && (
+                  <select
+                    value={String(visit.projects?.find(p => p.projectType.id === project.projectTypeId)?.partnerId ?? "")}
+                    onChange={(e) => handleAssignPartner(project.projectTypeId, e.target.value ? parseInt(e.target.value) : null)}
+                    className="h-8 px-2 rounded-lg bg-surface-container-low border border-outline-variant text-xs text-on-surface min-w-[120px]"
+                    disabled={partnerSaving === project.projectTypeId}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <option value="">Sin partner</option>
+                    {partners.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
               <ChevronDown className={`w-5 h-5 text-on-surface-variant transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
             </button>
             {isExpanded && (
