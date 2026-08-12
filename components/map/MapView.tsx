@@ -385,6 +385,11 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
 
       map.current = m;
       setMapReady(true);
+
+      // Aplicar center pendiente si ya llegó (para el "Ver en mapa")
+      if (centerRef.current) {
+        m.flyTo({ center: [centerRef.current[1], centerRef.current[0]], zoom: 18 });
+      }
     });
   }, [mapReady]);
 

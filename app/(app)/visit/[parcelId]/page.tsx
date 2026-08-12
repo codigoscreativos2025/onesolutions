@@ -151,7 +151,7 @@ export default function VisitPage() {
       const [visitRes, ptRes, closersRes] = await Promise.all([
         fetch(`/api/visits/active?parcelId=${parcelId}`),
         fetch("/api/project-types"),
-        isSetter || isSetterJr ? fetch("/api/closers") : Promise.resolve(null),
+        (isSetter || isSetterJr || role === "ADMIN") ? fetch("/api/closers") : Promise.resolve(null),
       ]);
       if (!visitRes.ok) { setLoading(false); return; }
       const visitData: Visit = await visitRes.json();
