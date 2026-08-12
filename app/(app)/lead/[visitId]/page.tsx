@@ -1666,8 +1666,7 @@ function DatosLeadPanel({
   const [editProjectTypes, setEditProjectTypes] = useState<{ id: number; name: string }[]>([]);
   const [selectedPTIds, setSelectedPTIds] = useState<number[]>([]);
   const isTraineeLead = visit.setter?.role === "SETTER";
-  const isCloserRestricted = role === "CLOSER" && isTraineeLead;
-  const isReadOnly = role === "ADMIN" || visit.stage === "CANCELLED" || isCloserRestricted;
+  const isReadOnly = role === "ADMIN" || visit.stage === "CANCELLED";
 
   useEffect(() => {
     fetch("/api/project-types")
@@ -1898,7 +1897,7 @@ function DatosProjectFieldsPanel({
   });
 
   const isTraineeLeadGeneral = visit.setter?.role === "SETTER";
-  const isCloserRestrictedGeneral = role === "CLOSER" && isTraineeLeadGeneral;
+
 
   return (
     <div className="space-y-6">
@@ -1918,7 +1917,7 @@ function DatosProjectFieldsPanel({
                 type={getType(key)}
                 onChange={(_, v) => onFieldChange(key, v)}
                 onBlur={onSave}
-                readOnly={role === "ADMIN" || isPartner || isCloserRestrictedGeneral}
+                readOnly={role === "ADMIN" || isPartner}
                 isFile={isFieldFile(key)}
                 onFileUpload={onFileFieldUpload}
                 fileUrl={pd[key] ? String(pd[key]) : undefined}
@@ -1938,8 +1937,7 @@ function DatosProjectFieldsPanel({
         const isPanelSolar = project.projectTypeName.toLowerCase().includes("panel solar");
         const isSetter = role === "SETTER" || role === "SETTER_JR";
         const isTraineeLead = visit.setter?.role === "SETTER";
-        const isCloserRestricted = role === "CLOSER" && isTraineeLead;
-        const isProjectReadOnly = role === "ADMIN" || isPartner || (isSetter && isPanelSolar) || (isCloserRestricted && !isPanelSolar);
+        const isProjectReadOnly = role === "ADMIN" || isPartner || (isSetter && isPanelSolar);
 
         return (
           <div key={project.projectTypeId} className="glass-panel rounded-xl">
@@ -2080,7 +2078,7 @@ function DatosProjectPanel({
 
   const isAdmin = role === "ADMIN";
   const isTraineeLeadGeneral = visit.setter?.role === "SETTER";
-  const isCloserRestrictedGeneral = role === "CLOSER" && isTraineeLeadGeneral;
+
   const canRequestClose = role === "SETTER" || role === "SETTER_JR" || (role === "CLOSER" && !isTraineeLeadGeneral);
 
   const visibleProjects = role === "PARTNER"
@@ -2142,7 +2140,7 @@ function DatosProjectPanel({
         )}
       </Panel>
 
-      <ClientInfoPanel editFields={editFields} onFieldChange={onFieldChange} onSave={onSave} isReadOnly={closeRequested || role === "ADMIN" || isCloserRestrictedGeneral} visit={visit} role={role} />
+      <ClientInfoPanel editFields={editFields} onFieldChange={onFieldChange} onSave={onSave} isReadOnly={closeRequested || role === "ADMIN"} visit={visit} role={role} />
 
       <Panel title="Documentos" icon={FileText}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2154,7 +2152,7 @@ function DatosProjectPanel({
             required={true}
             onFileUpload={onFileFieldUpload}
             fileUrl={pd["idDocumentUrl"] ? String(pd["idDocumentUrl"]) : undefined}
-            readOnly={closeRequested || role === "ADMIN" || isCloserRestrictedGeneral}
+            readOnly={closeRequested || role === "ADMIN"}
           />
           <FieldRow
             label="Recibo de Luz"
@@ -2164,7 +2162,7 @@ function DatosProjectPanel({
             required={true}
             onFileUpload={onFileFieldUpload}
             fileUrl={pd["electricBillUrl"] ? String(pd["electricBillUrl"]) : undefined}
-            readOnly={closeRequested || role === "ADMIN" || isCloserRestrictedGeneral}
+            readOnly={closeRequested || role === "ADMIN"}
           />
         </div>
       </Panel>
@@ -2180,7 +2178,7 @@ function DatosProjectPanel({
               type={getType(key)}
               onChange={(_, v) => onFieldChange(key, v)}
               onBlur={onSave}
-              readOnly={closeRequested || role === "ADMIN" || isCloserRestrictedGeneral}
+              readOnly={closeRequested || role === "ADMIN"}
               isFile={isFieldFile(key)}
               onFileUpload={onFileFieldUpload}
               fileUrl={pd[key] ? String(pd[key]) : undefined}
@@ -2197,8 +2195,7 @@ function DatosProjectPanel({
         const isPanelSolar = project.projectTypeName.toLowerCase().includes("panel solar");
         const isSetter = role === "SETTER" || role === "SETTER_JR";
         const isTraineeLead = visit.setter?.role === "SETTER";
-        const isCloserRestricted = role === "CLOSER" && isTraineeLead;
-        const isProjectReadOnly = role === "ADMIN" || closeRequested || (isSetter && isPanelSolar) || (isCloserRestricted && !isPanelSolar);
+        const isProjectReadOnly = role === "ADMIN" || closeRequested || (isSetter && isPanelSolar);
 
         return (
           <div key={project.projectTypeId} className="glass-panel rounded-xl">
