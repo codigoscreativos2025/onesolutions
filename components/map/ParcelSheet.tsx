@@ -518,7 +518,7 @@ export function ParcelSheet({
             </p>
           )}
 
-          {canVisit && (isAvailable || hasPriorProjects) && parcel.status !== "CUSTOMER" && (
+          {canVisit && (isAvailable || hasPriorProjects) && (
             <div className="flex flex-col gap-3">
               <Button
                 onClick={handleKnockDoor}
@@ -579,7 +579,7 @@ export function ParcelSheet({
             </>
           )}
 
-          {canVisit && parcel.status === "CUSTOMER" && (
+          {canVisit && parcel.status === "CUSTOMER" && !hasPriorProjects && (
             <Button variant="outline" onClick={onClose} className="w-full">
               Cerrar
             </Button>
