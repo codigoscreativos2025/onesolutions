@@ -17,6 +17,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { MapPin, User, GripVertical, ArrowLeftRight, X, Clock, Undo2, CheckCircle } from "lucide-react";
+import { useLocale } from "@/lib/locale-context";
 
 const COLS = [
   { stage: "IN_PROGRESS", title: "Leads", color: "bg-blue-500", colorBar: "bg-blue-500" },
@@ -57,6 +58,7 @@ interface KanbanBoardProps {
 }
 
 export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: KanbanBoardProps) {
+  const { t } = useLocale();
   const router = useRouter();
   const [data, setData] = useState<GroupedVisits>({});
   const [loading, setLoading] = useState(true);
@@ -317,7 +319,7 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
         <div className="glass-panel rounded-2xl border-t-4 border-t-primary">
           <div className="p-4 border-b border-outline-variant">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-on-surface">Proyectos</h3>
+              <h3 className="font-semibold text-on-surface">{t.chat.projects}</h3>
               <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">{filtered.length}</span>
             </div>
           </div>
@@ -420,10 +422,10 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
               onChange={(e) => { setUserTypeFilter(e.target.value); setSpecificUserFilter(""); }}
               className="h-9 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface flex-1 min-w-[140px]"
             >
-              <option value="">Todos</option>
-              <option value="SETTER">Trainee</option>
+              <option value="">{t.common.all}</option>
+              <option value="SETTER">{t.roles.SETTER}</option>
               <option value="SETTER_JR">Setter</option>
-              <option value="CLOSER">Closer</option>
+              <option value="CLOSER">{t.roles.CLOSER}</option>
             </select>
             <select
               value={specificUserFilter}

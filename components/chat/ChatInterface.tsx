@@ -547,7 +547,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-headline text-2xl font-bold text-on-surface">
-            {isAdmin ? "Chats Internos" : "Chat"}
+            {isAdmin ? t.chat.adminTitle : t.chat.title}
           </h1>
           <p className="text-on-surface-variant">
             {isAdmin
@@ -583,7 +583,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
       {rooms.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-64 text-on-surface-variant">
           <MessageSquare className="w-12 h-12 mb-3 opacity-50" />
-          <p>No hay chats activos</p>
+          <p>{t.chat.noChats}</p>
         </div>
       ) : (
         <div className="glass-panel rounded-2xl overflow-hidden flex h-full">
@@ -598,7 +598,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
                 <input
                   type="text"
-                  placeholder={isAdminRole ? "Buscar proyecto..." : "Buscar chat..."}
+                  placeholder={isAdminRole ? t.common.search + "..." : t.common.search + "..."}
                   value={searchQuery}
                   onChange={handleSearchChange}
                   className="w-full h-10 pl-9 pr-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-sm text-on-surface"
@@ -623,9 +623,9 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                       }`}
                     >
                       <p className="font-semibold text-sm truncate">
-                        {g.visit.bill?.clientName || g.visit.projectDetails?.clientName || g.visit.parcel.ownerName || "Sin Nombre"}
+                        {g.visit.bill?.clientName || g.visit.projectDetails?.clientName || g.visit.parcel.ownerName || t.common.none}
                       </p>
-                      <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Dirección">
+                      <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title={t.chat.address}>
                         <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
                         <span>{g.visit.parcel.address}</span>
                       </p>
@@ -660,7 +660,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                     <div className="flex justify-between items-start mb-1 gap-2">
                       <p className="font-semibold text-sm truncate">
                         {(room as any).type === "PARTNER" ? "🤝 " : ""}
-                        {room.visit?.bill?.clientName || room.visit?.projectDetails?.clientName || room.visit?.parcel.ownerName || "Sin Nombre"}
+                        {room.visit?.bill?.clientName || room.visit?.projectDetails?.clientName || room.visit?.parcel.ownerName || t.common.none}
                       </p>
                       <span className="text-[10px] opacity-70 whitespace-nowrap flex-shrink-0 mt-0.5">
                         {room.messages && room.messages.length > 0
@@ -668,7 +668,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                           : (room.visit?.createdAt ? new Date(room.visit?.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "")}
                       </span>
                     </div>
-                    <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Dirección">
+                    <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title={t.chat.address}>
                       <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
                       <span>{room.visit?.parcel.address}</span>
                     </p>
@@ -726,7 +726,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                           <ArrowLeft className="w-4 h-4" />
                         </button>
                         <p className="font-semibold text-on-surface">
-                          {selectedRoom?.visit?.bill?.clientName || selectedRoom?.visit?.projectDetails?.clientName || selectedRoom?.visit?.parcel.ownerName || "Sin Nombre"}
+                          {selectedRoom?.visit?.bill?.clientName || selectedRoom?.visit?.projectDetails?.clientName || selectedRoom?.visit?.parcel.ownerName || t.common.none}
                         </p>
                       </div>
                       <p className="text-xs text-on-surface-variant ml-0 lg:ml-0 mt-1">
@@ -798,7 +798,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                             }}
                           >
                             {session?.user?.role === "ADMIN" ? <FileText className="w-3 h-3" /> : <Pencil className="w-3 h-3" />}
-                            {session?.user?.role === "ADMIN" ? "Datos" : "Editar"}
+                            {session?.user?.role === "ADMIN" ? "Datos" : t.chat.editProject}
                           </Link>
                         </>
                       )}
@@ -817,7 +817,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                     <div className="mt-3">
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-xs text-on-surface-variant">
-                          Progreso del proyecto
+                          {t.chat.projectProgress}
                         </span>
                         <span className="text-xs font-semibold text-on-surface">
                           {completionPercentage}%
@@ -875,7 +875,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                                   rel="noopener noreferrer"
                                   className="text-xs underline mt-1 block"
                                 >
-                                  {msg.fileName || "Ver archivo"}
+                                  {msg.fileName || t.chat.viewFile}
                                 </a>
                               )}
                             </div>
@@ -909,7 +909,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                     <Input
                       value={newMessage}
                       onChange={handleMessageChange}
-                      placeholder={((selectedRoom as any)?.type === "PARTNER" || role === "PARTNER") ? "Escribe un mensaje..." : "Escribe un mensaje... usa @ para mencionar"}
+                      placeholder={((selectedRoom as any)?.type === "PARTNER" || role === "PARTNER") ? t.chat.writeMessage : `${t.chat.writeMessage} usa @ para mencionar`}
                       className="w-full"
                     />
                     {showMentionDropdown && (selectedRoom as any)?.type !== "PARTNER" && role !== "PARTNER" && filteredMentionUsers.length > 0 && (
@@ -941,7 +941,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
               </>
             ) : (
               <div className="flex-1 flex items-center justify-center text-on-surface-variant">
-                <p>Selecciona un chat</p>
+                <p>{t.chat.selectChat}</p>
               </div>
             )}
           </div>
@@ -952,7 +952,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
               ${(!showInfoPanel && mobileColumn !== "info") ? "hidden lg:flex" : "flex"}
             `}>
               <div className="p-4 border-b border-outline-variant/20 flex items-center justify-between flex-shrink-0">
-                <h3 className="font-semibold text-on-surface text-sm">Detalles del Proyecto</h3>
+                <h3 className="font-semibold text-on-surface text-sm">{t.chat.projectInfo}</h3>
                 <button
                   onClick={() => { setShowInfoPanel(false); setMobileColumn("conversation"); }}
                   className="lg:hidden p-1 rounded-lg hover:bg-surface-container-high text-on-surface-variant"
@@ -977,17 +977,17 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
       <Modal
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
-        title="Editar Información del Proyecto"
+        title={t.chat.editProjectInfo}
       >
         <div className="space-y-4 max-h-[70vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Nombre del Cliente"
+              label={t.chat.clientName}
               value={editForm.clientName || ""}
               onChange={(e) => setEditForm({ ...editForm, clientName: e.target.value })}
             />
             <Input
-              label="Email del Cliente"
+              label={t.chat.clientEmail}
               type="email"
               value={editForm.clientEmail || ""}
               onChange={(e) => setEditForm({ ...editForm, clientEmail: e.target.value })}
@@ -995,7 +995,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
           </div>
 
           <Input
-            label="Dirección"
+            label={t.chat.address}
             value={editForm.address || ""}
             onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
           />
@@ -1009,7 +1009,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
 
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Fecha de Cierre"
+              label={t.chat.closingDate}
               type="date"
               value={editForm.closingDate ? new Date(editForm.closingDate).toISOString().split("T")[0] : ""}
               onChange={(e) => setEditForm({ ...editForm, closingDate: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
@@ -1018,15 +1018,15 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
 
           {projects.some(p => p.projectType.name === "Panel Solar") && (
             <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-3">
-              <p className="text-sm font-semibold text-on-surface">Panel Solar</p>
+              <p className="text-sm font-semibold text-on-surface">{t.chat.solarPanel}</p>
               <div className="grid grid-cols-2 gap-3">
                 <Input
-                  label="Financiadora"
+                  label={t.chat.financier}
                   value={editForm.solarFinancier || ""}
                   onChange={(e) => setEditForm({ ...editForm, solarFinancier: e.target.value })}
                 />
                 <Input
-                  label="Tamaño del Sistema"
+                  label={t.chat.systemSize}
                   value={editForm.systemSize || ""}
                   onChange={(e) => setEditForm({ ...editForm, systemSize: e.target.value })}
                 />
@@ -1035,7 +1035,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
           )}
 
           <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-3">
-            <p className="text-sm font-semibold text-on-surface">Comisiones</p>
+            <p className="text-sm font-semibold text-on-surface">{t.chat.commissions}</p>
             <div className="grid grid-cols-2 gap-3">
               <Input
                 label="Representante Principal"
@@ -1075,7 +1075,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                           onChange={(e) => setEditForm({ ...editForm, [field.fieldName]: e.target.value })}
                           className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface mt-1"
                         >
-                          <option value="">Seleccionar...</option>
+                          <option value="">{t.common.selectOption}</option>
                           {field.options && JSON.parse(field.options).map((opt: string) => (
                             <option key={opt} value={opt}>{opt}</option>
                           ))}
@@ -1115,14 +1115,14 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
               className="flex-1"
               onClick={() => setShowEditModal(false)}
             >
-              Cancelar
+              {t.common.cancel}
             </Button>
             <Button
               className="flex-1"
               onClick={handleSaveProjectDetails}
               isLoading={saving}
             >
-              Guardar Cambios
+              {t.chat.saveChanges}
             </Button>
           </div>
         </div>
@@ -1151,6 +1151,7 @@ function InfoPanelContent({
   stageLabels: Record<string, string>;
 }) {
   const { data: session } = useSession();
+  const { t } = useLocale();
   const isPartner = session?.user?.role === "PARTNER";
   const { visit } = room;
   const [projectDetails, setProjectDetails] = useState<any>(visit.projectDetails);
@@ -1178,7 +1179,7 @@ function InfoPanelContent({
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="p-4 border-b border-outline-variant/30 flex-shrink-0">
-        <h3 className="font-headline text-lg font-bold text-on-surface">Resumen del Proyecto</h3>
+        <h3 className="font-headline text-lg font-bold text-on-surface">{t.chat.projectInfo}</h3>
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0 p-4">
@@ -1194,13 +1195,13 @@ function InfoPanelContent({
             )}
             
             <div className="flex justify-between items-start gap-4">
-              <span className="text-on-surface-variant font-medium flex-shrink-0">Tipos de Proyectos:</span>
-              <span className="text-on-surface text-right break-words">{projects.length > 0 ? projects.map(p => p.projectType.name).join(", ") : "Ninguno"}</span>
+              <span className="text-on-surface-variant font-medium flex-shrink-0">{t.chat.projects}:</span>
+              <span className="text-on-surface text-right break-words">{projects.length > 0 ? projects.map(p => p.projectType.name).join(", ") : t.common.none}</span>
             </div>
 
             <div className="flex justify-between items-start gap-4">
-              <span className="text-on-surface-variant font-medium flex-shrink-0">Nombre:</span>
-              <span className="text-on-surface text-right break-words">{bill?.clientName || projectDetails?.clientName || visit.parcel.ownerName || "Sin Nombre"}</span>
+              <span className="text-on-surface-variant font-medium flex-shrink-0">{t.chat.client}:</span>
+              <span className="text-on-surface text-right break-words">{bill?.clientName || projectDetails?.clientName || visit.parcel.ownerName || t.common.none}</span>
             </div>
 
             {!isPartner && (
@@ -1212,18 +1213,18 @@ function InfoPanelContent({
 
             {!isPartner && (
               <div className="flex justify-between items-start gap-4">
-                <span className="text-on-surface-variant font-medium flex-shrink-0">Email:</span>
+                <span className="text-on-surface-variant font-medium flex-shrink-0">{t.chat.email}:</span>
                 <span className="text-on-surface text-right break-words">{bill?.clientEmail || projectDetails?.clientEmail || "N/A"}</span>
               </div>
             )}
 
             <div className="flex justify-between items-start gap-4">
-              <span className="text-on-surface-variant font-medium flex-shrink-0">Dirección:</span>
+              <span className="text-on-surface-variant font-medium flex-shrink-0">{t.chat.address}:</span>
               <span className="text-on-surface text-right break-words">{visit.parcel.address}</span>
             </div>
 
             <div className="flex justify-between items-start gap-4">
-              <span className="text-on-surface-variant font-medium flex-shrink-0">Fecha de Cierre:</span>
+              <span className="text-on-surface-variant font-medium flex-shrink-0">{t.chat.closingDate}:</span>
               <span className="text-on-surface text-right break-words">{projectDetails?.closingDate ? new Date(String(projectDetails.closingDate)).toLocaleDateString() : "En proceso"}</span>
             </div>
 
@@ -1239,7 +1240,7 @@ function InfoPanelContent({
 
             {!isPartner && (
               <div className="flex justify-between items-start gap-4">
-                <span className="text-on-surface-variant font-medium flex-shrink-0">Comisión (%):</span>
+                <span className="text-on-surface-variant font-medium flex-shrink-0">{t.chat.commissions} (%):</span>
                 <span className="text-on-surface text-right break-words">{projectDetails?.primaryRepCommPct != null ? `${projectDetails.primaryRepCommPct}%` : "N/A"}</span>
               </div>
             )}
@@ -1257,16 +1258,17 @@ function AdminRoomSelector({
   group?: { visit: Room["visit"]; general?: Room; partners: Room[] };
   onOpenRoom: (room?: Room) => void;
 }) {
+  const { t } = useLocale();
   if (!group) {
     return (
       <div className="flex-1 flex items-center justify-center text-on-surface-variant">
-        <p>Selecciona un chat</p>
+        <p>{t.chat.selectChat}</p>
       </div>
     );
   }
 
   const clientName =
-    group.visit.bill?.clientName || group.visit.projectDetails?.clientName || group.visit.parcel.ownerName || "Sin Nombre";
+    group.visit.bill?.clientName || group.visit.projectDetails?.clientName || group.visit.parcel.ownerName || t.common.none;
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-6 gap-4">

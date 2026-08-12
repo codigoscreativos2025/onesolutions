@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { MapPin, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useGeolocation } from '@/hooks/useGeolocation';
+import { useLocale } from '@/lib/locale-context';
 
 interface LocationValidatorProps {
   parcelId: string;
@@ -12,6 +13,7 @@ interface LocationValidatorProps {
 }
 
 export function LocationValidator({ parcelId, onValidated, onCancel }: LocationValidatorProps) {
+  const { t } = useLocale();
   const { location, error, loading, requestLocation } = useGeolocation();
   const [validating, setValidating] = useState(false);
   const [validationResult, setValidationResult] = useState<{
@@ -97,7 +99,7 @@ export function LocationValidator({ parcelId, onValidated, onCancel }: LocationV
                 onClick={onCancel}
                 className="flex-1"
               >
-                Cancelar
+                {t.common.cancel}
               </Button>
               <Button
                 onClick={handleValidateLocation}
@@ -134,7 +136,7 @@ export function LocationValidator({ parcelId, onValidated, onCancel }: LocationV
                 onClick={onCancel}
                 className="flex-1"
               >
-                Cancelar
+                {t.common.cancel}
               </Button>
               <Button
                 onClick={handleValidateLocation}
@@ -166,7 +168,7 @@ export function LocationValidator({ parcelId, onValidated, onCancel }: LocationV
                 onClick={onCancel}
                 className="flex-1"
               >
-                Cancelar
+                {t.common.cancel}
               </Button>
               <Button
                 onClick={handleCheckDistance}
@@ -213,7 +215,7 @@ export function LocationValidator({ parcelId, onValidated, onCancel }: LocationV
                 onClick={onCancel}
                 className="flex-1"
               >
-                Cancelar
+                {t.common.cancel}
               </Button>
               {!validationResult.valid && (
                 <Button

@@ -16,6 +16,7 @@ import {
   Filler,
 } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
+import { useLocale } from "@/lib/locale-context";
 
 ChartJS.register(
   CategoryScale,
@@ -56,6 +57,7 @@ const BAR_COLORS = [
 ];
 
 export function MetricsCharts({ userId }: MetricsChartsProps) {
+  const { t } = useLocale();
   const [chartData, setChartData] = useState<ChartData | null>(null);
   const [period, setPeriod] = useState<'7d' | '30d' | 'month' | 'custom'>('7d');
   const [customStart, setCustomStart] = useState('');
@@ -107,28 +109,28 @@ export function MetricsCharts({ userId }: MetricsChartsProps) {
     labels: chartData.labels,
     datasets: [
       {
-        label: 'Puertas Tocadas',
+        label: t.dashboard.doorsKnocked,
         data: chartData.doorsKnocked,
         backgroundColor: COLORS.doors.border,
         borderColor: COLORS.doors.border,
         borderWidth: 1,
       },
       {
-        label: 'Leads Potenciales',
+        label: t.dashboard.leadsGenerated,
         data: chartData.leadsGenerated,
         backgroundColor: COLORS.leads.border,
         borderColor: COLORS.leads.border,
         borderWidth: 1,
       },
       {
-        label: 'Proyectos Cerrados',
+        label: t.dashboard.projectsClosed,
         data: chartData.projectsClosed,
         backgroundColor: COLORS.projects.border,
         borderColor: COLORS.projects.border,
         borderWidth: 1,
       },
       {
-        label: 'Objeciones',
+        label: t.dashboard.objections,
         data: chartData.objections,
         backgroundColor: COLORS.objections.border,
         borderColor: COLORS.objections.border,

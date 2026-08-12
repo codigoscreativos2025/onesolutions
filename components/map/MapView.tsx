@@ -7,6 +7,8 @@ import { ParcelSheet } from "./ParcelSheet";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 
+import { useLocale } from "@/lib/locale-context";
+
 interface Parcel {
   id: string;
   address: string;
@@ -39,6 +41,7 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const autoOpenedRef = useRef(false);
+  const { t } = useLocale();
 
   // Auto-open parcel sheet when coming from lead details
   useEffect(() => {
@@ -457,7 +460,7 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
           <div className="flex flex-col items-center gap-3 text-on-surface-variant">
             <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             <div className="text-center">
-              <p>Cargando mapa...</p>
+              <p>{t.map.loading}</p>
               <p className="text-xs text-on-surface-variant mt-1">Si tarda demasiado, verifica tu conexion</p>
             </div>
           </div>

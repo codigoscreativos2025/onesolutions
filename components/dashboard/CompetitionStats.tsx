@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Award, Target, DoorOpen, CheckCircle, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useLocale } from "@/lib/locale-context";
 
 interface UserStats {
   id: number;
@@ -29,6 +30,7 @@ interface ComparisonData {
 }
 
 export function CompetitionStats() {
+  const { t } = useLocale();
   const { data: session } = useSession();
   const router = useRouter();
   const [data, setData] = useState<ComparisonData | null>(null);
@@ -81,7 +83,7 @@ export function CompetitionStats() {
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
       <div className="flex items-center gap-2 mb-6">
         <Award className="w-6 h-6 text-primary" />
-        <h2 className="text-xl font-bold">Tu Posición en el Ranking</h2>
+        <h2 className="text-xl font-bold">{t.ranking.yourPosition}</h2>
       </div>
 
       <div className="space-y-6">
@@ -90,7 +92,7 @@ export function CompetitionStats() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <DoorOpen className="w-5 h-5 text-blue-500" />
-              <span className="font-semibold">Puertas Tocadas</span>
+              <span className="font-semibold">{t.dashboard.doorsKnocked}</span>
             </div>
             <span className="text-sm text-gray-600 dark:text-gray-400">
               #{getMyPosition(data.rankings.doorsKnocked)} de {data.rankings.doorsKnocked.length}
@@ -152,7 +154,7 @@ export function CompetitionStats() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Target className="w-5 h-5 text-green-500" />
-              <span className="font-semibold">Leads Potenciales</span>
+              <span className="font-semibold">{t.dashboard.leadsGenerated}</span>
             </div>
             <span className="text-sm text-gray-600 dark:text-gray-400">
               #{getMyPosition(data.rankings.leadsGenerated)} de {data.rankings.leadsGenerated.length}
@@ -214,7 +216,7 @@ export function CompetitionStats() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-purple-500" />
-              <span className="font-semibold">Proyectos Cerrados</span>
+              <span className="font-semibold">{t.dashboard.projectsClosed}</span>
             </div>
             <span className="text-sm text-gray-600 dark:text-gray-400">
               #{getMyPosition(data.rankings.projectsClosed)} de {data.rankings.projectsClosed.length}

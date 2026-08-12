@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { X, Calendar, MapPin, User, FileText, Filter, MessageSquare, AlertCircle } from 'lucide-react';
 import { ContractModal } from '@/components/quote/ContractModal';
+import { useLocale } from "@/lib/locale-context";
 
 interface ProjectType {
   id: number;
@@ -71,6 +72,7 @@ interface MetricDetailModalProps {
 }
 
 export function MetricDetailModal({ isOpen, onClose, metricType, userId }: MetricDetailModalProps) {
+  const { t } = useLocale();
   const router = useRouter();
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(false);
@@ -114,15 +116,15 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
   const getTitle = () => {
     switch (metricType) {
       case 'doors':
-        return 'Puertas Tocadas';
+        return t.dashboard.doorsKnocked;
       case 'parcels':
         return 'Parcelas';
       case 'leads':
         return 'Leads';
       case 'potential':
-        return 'Leads Potenciales';
+        return t.dashboard.leadsGenerated;
       case 'closed':
-        return 'Proyectos Cerrados';
+        return t.dashboard.projectsClosed;
       case 'cancelled':
         return 'Proyectos Cancelados';
       default:
@@ -308,13 +310,13 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                     <div className="flex items-center gap-2 text-sm">
                       <User className="w-4 h-4 text-gray-500" />
-                      <span className="text-gray-600 dark:text-gray-400">Trainee:</span>
+                      <span className="text-gray-600 dark:text-gray-400">{t.roles.SETTER}:</span>
                       <Link href={`/profile/${visit.setter.id}`} className="font-medium hover:underline">{visit.setter.name}</Link>
                     </div>
                     {visit.closer && (
                       <div className="flex items-center gap-2 text-sm">
                         <User className="w-4 h-4 text-gray-500" />
-                        <span className="text-gray-600 dark:text-gray-400">Closer:</span>
+                        <span className="text-gray-600 dark:text-gray-400">{t.roles.CLOSER}:</span>
                         <Link href={`/profile/${visit.closer.id}`} className="font-medium hover:underline">{visit.closer.name}</Link>
                       </div>
                     )}
@@ -324,7 +326,7 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
                   {visit.objections.length > 0 && (
                     <div className="mb-3">
                       <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                        Objeciones de Trainee:
+                        {t.metrics.setterObjections}:
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {visit.objections.map((obj, idx) => (
@@ -347,7 +349,7 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
                   {visit.closerObjections && visit.closerObjections.length > 0 && (
                     <div className="mb-3">
                       <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                        Objeciones de Closer:
+                        {t.metrics.closerObjections}:
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {visit.closerObjections.map((obj, idx) => (
@@ -370,7 +372,7 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
                   {visit.projects && visit.projects.length > 0 && (
                     <div className="mb-3">
                       <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                        Proyectos:
+                        {t.chat.projects}:
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {visit.projects.map((p, idx) => (
@@ -389,24 +391,24 @@ export function MetricDetailModal({ isOpen, onClose, metricType, userId }: Metri
                   {visit.bill && (
                     <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                       <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                        Datos del Cliente:
+                        {t.visit.clientInfo}:
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         {visit.bill.clientName && (
                           <div>
-                            <span className="text-gray-500">Nombre:</span>{' '}
+                            <span className="text-gray-500">{t.visit.name}:</span>{' '}
                             <span className="font-medium">{visit.bill.clientName}</span>
                           </div>
                         )}
                         {visit.bill.phone && (
                           <div>
-                            <span className="text-gray-500">Teléfono:</span>{' '}
+                            <span className="text-gray-500">{t.visit.phone}:</span>{' '}
                             <span className="font-medium">{visit.bill.phone}</span>
                           </div>
                         )}
                         {visit.bill.clientEmail && (
                           <div className="col-span-2">
-                            <span className="text-gray-500">Email:</span>{' '}
+                            <span className="text-gray-500">{t.chat.email}:</span>{' '}
                             <span className="font-medium">{visit.bill.clientEmail}</span>
                           </div>
                         )}

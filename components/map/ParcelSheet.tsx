@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { CreateLeadModal } from "@/components/leads/CreateLeadModal";
 import { DoorOpen, X, User, Tag, Plus, Pencil, Trash2, DoorClosed, ThumbsDown, Clock, UserX, Home } from "lucide-react";
 import { toast } from "sonner";
+import { useLocale } from "@/lib/locale-context";
 
 interface TagObject {
   name: string;
@@ -65,6 +66,7 @@ export function ParcelSheet({
   userRole,
   userId,
 }: ParcelSheetProps) {
+  const { t } = useLocale();
   const router = useRouter();
   const [claiming, setClaiming] = useState(false);
   const [claimError, setClaimError] = useState("");
@@ -454,8 +456,8 @@ export function ParcelSheet({
               label="Estado"
               value={
                 parcel.status === "LEAD" ? getStageLabel(parcel) :
-                parcel.status === "CUSTOMER" ? "Cliente" :
-                (tags.length > 0 ? tags[0].name : "Disponible")
+                parcel.status === "CUSTOMER" ? t.map.customer :
+                (tags.length > 0 ? tags[0].name : t.map.available)
               }
             />
           </div>
@@ -485,7 +487,7 @@ export function ParcelSheet({
           {parcel.status === "CUSTOMER" && (
             <div className="p-4 rounded-xl bg-primary/10 border border-primary/20">
               <p className="text-sm text-primary font-medium">
-                Cliente concretado
+                {t.map.completedCustomer}
               </p>
             </div>
           )}
@@ -526,11 +528,11 @@ export function ParcelSheet({
                 className="w-full bg-brand-green hover:bg-brand-green/90 text-white py-6 text-lg rounded-xl shadow-md"
               >
                 <DoorOpen className="w-5 h-5 mr-2" />
-                Crear Lead
+                {t.map.knockDoor}
               </Button>
 
               <Button variant="ghost" onClick={onClose} className="w-full mt-2">
-                Cerrar
+                {t.common.close}
               </Button>
             </div>
           )}
@@ -539,7 +541,7 @@ export function ParcelSheet({
             <>
               <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-surface-container-low border border-outline-variant/30">
                 <span className="w-3 h-3 rounded-full bg-green-500 inline-block shrink-0" />
-                <span className="text-sm text-on-surface-variant">Parcela tomada</span>
+                <span className="text-sm text-on-surface-variant">{t.map.takenBy}</span>
               </div>
               
               <div className="bg-surface-container-low border border-outline-variant/30 rounded-xl p-4 my-2">
@@ -574,14 +576,14 @@ export function ParcelSheet({
               )}
 
               <Button variant="outline" onClick={onClose} className="w-full mt-3">
-                Cerrar
+                {t.common.close}
               </Button>
             </>
           )}
 
           {canVisit && parcel.status === "CUSTOMER" && !hasPriorProjects && (
             <Button variant="outline" onClick={onClose} className="w-full">
-              Cerrar
+              {t.common.close}
             </Button>
           )}
         </div>
@@ -602,6 +604,7 @@ export function ParcelSheet({
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useLocale();
   const colors = {
     AVAILABLE: "bg-error/10 text-error",
     LEAD: "bg-secondary-container/20 text-secondary",
@@ -609,9 +612,9 @@ function StatusBadge({ status }: { status: string }) {
   };
 
   const labels = {
-    AVAILABLE: "Disponible para visitar",
-    LEAD: "Lead",
-    CUSTOMER: "Cliente",
+    AVAILABLE: t.map.available,
+    LEAD: t.map.lead,
+    CUSTOMER: t.map.customer,
   };
 
   const tooltips = {
