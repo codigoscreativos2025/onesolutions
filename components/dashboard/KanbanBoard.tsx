@@ -84,6 +84,7 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
   const [activeColumn, setActiveColumn] = useState<string | null>(null);
   const [userTypeFilter, setUserTypeFilter] = useState("");
   const [specificUserFilter, setSpecificUserFilter] = useState("");
+  const [postCloseFilter, setPostCloseFilter] = useState("");
   const [allUsers, setAllUsers] = useState<TransferUser[]>([]);
 
   useEffect(() => {
@@ -260,6 +261,17 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
         if (v.setter?.id !== uid && v.closer?.id !== uid) return false;
       }
 
+      if (postCloseFilter) {
+        let tag = "";
+        try {
+          if (v.contractFields) {
+            const cf = JSON.parse(v.contractFields);
+            tag = cf.postCloseTags || "";
+          }
+        } catch { /* */ }
+        if (tag !== postCloseFilter) return false;
+      }
+
       return true;
     });
   };
@@ -271,6 +283,7 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
     setClientFilter("");
     setUserTypeFilter("");
     setSpecificUserFilter("");
+    setPostCloseFilter("");
   };
 
   // Compute unique project types from loaded data
@@ -337,7 +350,7 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
     );
   }
 
-  const hasActiveFilters = projectTypeFilter || addressFilter || clientFilter || activeColumn !== null || userTypeFilter || specificUserFilter;
+  const hasActiveFilters = projectTypeFilter || addressFilter || clientFilter || activeColumn !== null || userTypeFilter || specificUserFilter || postCloseFilter;
 
   return (
     <div className="space-y-4">
@@ -422,6 +435,35 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
                 <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
               ))}
             </select>
+          </div>
+        )}
+        {activeColumn === "CLOSED" && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            <span className="text-xs text-on-surface-variant self-center mr-1">Estado:</span>
+            {["En permisos", "En instalacion", "Finalizado"].map((tag) => {
+              const isActive = postCloseFilter === tag;
+              return (
+                <button
+                  key={tag}
+                  onClick={() => setPostCloseFilter(isActive ? "" : tag)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
+                    isActive
+                      ? "bg-primary/10 text-primary border-primary/30"
+                      : "bg-transparent text-on-surface-variant border-outline-variant"
+                  }`}
+                >
+                  {tag}
+                </button>
+              );
+            })}
+            {postCloseFilter && (
+              <button
+                onClick={() => setPostCloseFilter("")}
+                className="px-2 py-1 rounded-full text-xs text-primary hover:underline"
+              >
+                <X className="w-3 h-3 inline" />
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -736,7 +778,7 @@ function KanbanCard({
         })();
         const tag = parsedCF.postCloseTags;
         if (!tag || typeof tag !== "string") return null;
-        const tagColor = tag === "En Instalación" ? "#f59e0b" : tag === "Instalado" ? "#22c55e" : tag === "Finalizado" ? "#3b82f6" : "#6b7280";
+        const tagColor = tag === "En permisos" ? "#f59e0b" : tag === "En instalacion" ? "#06b6d4" : tag === "Finalizado" ? "#22c55e" : "#6b7280";
         return (
           <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold mt-2" style={{ backgroundColor: tagColor + "15", color: tagColor, border: `1px solid ${tagColor}30` }}>
             <CheckCircle className="w-3 h-3" />
