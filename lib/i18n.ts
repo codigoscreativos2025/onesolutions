@@ -45,6 +45,8 @@ export const translations = {
       required: "Requerido",
       optional: "Opcional",
       selectOption: "Seleccionar...",
+      create: "Crear",
+      noData: "Sin datos",
     },
     dashboard: {
       greeting: "Hola",
@@ -234,6 +236,8 @@ export const translations = {
       required: "Required",
       optional: "Optional",
       selectOption: "Select...",
+      create: "Create",
+      noData: "No data",
     },
     dashboard: {
       greeting: "Hello",
