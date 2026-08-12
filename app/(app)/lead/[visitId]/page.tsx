@@ -2352,10 +2352,26 @@ function DatosClosedPanel({
               onClick={() => toggleExpandProject(project.projectTypeId)}
               className="w-full p-6 flex items-center justify-between text-left"
             >
-              <h3 className="font-semibold text-lg flex items-center gap-2 text-on-surface">
-                <Package className="w-5 h-5 text-primary" />
-                {project.projectTypeName}
-              </h3>
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <h3 className="font-semibold text-lg flex items-center gap-2 text-on-surface">
+                  <Package className="w-5 h-5 text-primary shrink-0" />
+                  {project.projectTypeName}
+                </h3>
+                {isAdmin && (
+                  <select
+                    value={String(visit.projects?.find(p => p.projectType.id === project.projectTypeId)?.partnerId ?? "")}
+                    onChange={(e) => handleAssignPartner(project.projectTypeId, e.target.value ? parseInt(e.target.value) : null)}
+                    className="h-8 px-2 rounded-lg bg-surface-container-low border border-outline-variant text-xs text-on-surface min-w-[120px]"
+                    disabled={partnerSaving === project.projectTypeId}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <option value="">Sin partner</option>
+                    {partners.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
               <ChevronDown className={`w-5 h-5 text-on-surface-variant transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
             </button>
             {isExpanded && (
