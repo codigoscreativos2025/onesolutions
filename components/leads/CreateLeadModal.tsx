@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { X, MapPin, User, Phone, FileText, Mail, Loader2 } from 'lucide-react';
+import { X, MapPin, User, Phone, FileText, Mail, Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { SlotPicker } from '@/components/calendar/SlotPicker';
@@ -287,6 +287,15 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
               ))}
             </div>
           </div>
+
+          {role === "SETTER" && hasPanelSolar && (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400">
+              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+              <p className="text-sm font-medium">
+                Este lead será asignado al closer con capacidades de panel solar.
+              </p>
+            </div>
+          )}
 
           {showCloserDropdown && (
             <div>

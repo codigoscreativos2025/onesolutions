@@ -47,8 +47,25 @@ export async function GET() {
         slot: true,
       },
     });
-  } else {
-    // Setter
+  } else if (role === "SETTER") {
+    visits = await prisma.visit.findMany({
+      where: {
+        setterId: userId,
+        stage: {
+          in: ["PROPOSAL_ACCEPTED", "CLOSED"],
+        },
+        projects: { none: { projectType: { name: { contains: "panel solar" } } } }
+      },
+      orderBy: { createdAt: "desc" },
+      include: {
+        parcel: { select: { id: true, address: true } },
+        setter: { select: { id: true, name: true } },
+        closer: { select: { name: true } },
+        bill: true,
+        slot: true,
+      },
+    });
+  } else if (role === "SETTER_JR") {
     visits = await prisma.visit.findMany({
       where: {
         setterId: userId,

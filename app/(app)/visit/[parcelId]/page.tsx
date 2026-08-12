@@ -101,10 +101,10 @@ export default function VisitPage() {
   const isSetterJr = role === "SETTER_JR";
   const isCloser = role === "CLOSER";
   const hasPanelSolar = projectTypes.some((pt) => selectedProjectTypes.includes(pt.id) && pt.name.toLowerCase().includes("panel solar"));
-  // Solo Setter (SETTER_JR) o ADMIN eligen closer
-  const showCloserDropdown = isSetterJr || role === "ADMIN";
-  // Trainee (SETTER) y Closer siempre se autoasignan
-  const isSelfAssigned = isCloser || isSetter;
+  // Setter Jr, Admin, y Trainee (SETTER) si tiene Panel Solar eligen closer
+  const showCloserDropdown = isSetterJr || role === "ADMIN" || (isSetter && hasPanelSolar);
+  // Trainee (SETTER) si no es Panel Solar y Closer siempre se autoasignan
+  const isSelfAssigned = isCloser || (isSetter && !hasPanelSolar);
   const scheduleSelected = selectedScheduleDate && selectedScheduleTime;
 
   useEffect(() => { fetchData(); }, [parcelId]); // eslint-disable-line
@@ -357,6 +357,15 @@ export default function VisitPage() {
         <section className="space-y-4 border-t border-outline-variant pt-6">
           <label className={labelClass}>Agendar Visita</label>
 
+          {role === "SETTER" && hasPanelSolar && (
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400">
+              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+              <p className="text-sm font-medium">
+                Este lead será asignado al closer con capacidades de panel solar.
+              </p>
+            </div>
+          )}
+
           {showCloserDropdown && (
             <select value={selectedCloserId} onChange={(e) => setSelectedCloserId(e.target.value)}
               className={`${inputNoIcon} px-4`} required>
@@ -365,9 +374,9 @@ export default function VisitPage() {
             </select>
           )}
 
-          {session?.user?.id && (
+          {session?.user?.id && (!showCloserDropdown || selectedCloserId) && (
             <SlotPicker
-              userId={showCloserDropdown && selectedCloserId ? Number(selectedCloserId) : Number(session.user.id)}
+              userId={showCloserDropdown ? Number(selectedCloserId) : Number(session.user.id)}
               selectedDate={selectedScheduleDate || undefined}
               selectedTime={selectedScheduleTime || undefined}
               onSelect={(date, time) => {

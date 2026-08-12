@@ -105,16 +105,7 @@ const STAGE_COLORS: Record<string, string> = {
   CANCELLED: "bg-red-100 text-red-700 border-red-300",
 };
 
-const COMMON_FIELDS = [
-  "closingDate",
-  "hoaInfo",
-  "primaryRep",
-  "primaryRepCommPct",
-  "secondaryRep",
-  "secondaryRepCommPct",
-  "tertiaryRep",
-  "tertiaryRepCommPct",
-];
+import { COMMON_FIELDS, OPTIONAL_FIELDS, FILE_FIELD_KEYS } from '@/lib/project-constants';
 
 const FIELD_TYPES: Record<string, string> = {
   closingDate: "date",
@@ -174,19 +165,7 @@ function groupFieldsByType(fields: { fieldName: string; fieldLabel?: string; fie
   return { groups, other };
 }
 
-const FILE_FIELD_KEYS = new Set([
-  "electricBillUrl",
-  "closingFormUrl",
-  "homeInsuranceUrl",
-  "homeTitleUrl",
-  "idDocumentUrl",
-  "nocUrl",
-  "materialsOrderUrl",
-  "roofReportUrl",
-  "exteriorScopeUrl",
-  "panelsPhotoUrl",
-  "propertyPhotosJson",
-]);
+
 
 function fieldLabel(key: string): string {
   return FIELD_LABEL_MAP[key] || key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase());
@@ -232,13 +211,7 @@ function isFieldHiddenForPartner(fieldName: string, fieldLabelStr?: string): boo
   return false;
 }
 
-const OPTIONAL_FIELDS = [
-  "secondaryRep",
-  "secondaryRepCommPct",
-  "tertiaryRep",
-  "tertiaryRepCommPct",
-  "hoaInfo",
-];
+
 
 // Campos obligatorios para llegar al 100%
 const REQUIRED_COMMON_FIELDS = new Set([

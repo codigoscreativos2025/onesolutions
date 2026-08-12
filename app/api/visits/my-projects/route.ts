@@ -3,18 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 export const dynamic = 'force-dynamic';
 
-const COMMON_FIELDS = [
-  "closingDate", "paymentMethod", "primaryRep", "primaryRepCommPct",
-  "generalCostPrice", "generalSalePrice",
-];
-
-const OPTIONAL_FIELDS = ["generalCostPrice", "generalSalePrice"];
-
-const FILE_FIELD_KEYS = new Set([
-  "electricBillUrl", "closingFormUrl", "homeInsuranceUrl", "homeTitleUrl",
-  "idDocumentUrl", "nocUrl", "materialsOrderUrl", "roofReportUrl",
-  "exteriorScopeUrl", "panelsPhotoUrl", "propertyPhotosJson",
-]);
+import { COMMON_FIELDS, OPTIONAL_FIELDS, FILE_FIELD_KEYS } from '@/lib/project-constants';
 
 function computeProgress(
   projectDetails: Record<string, unknown> | null,
@@ -104,7 +93,12 @@ export async function GET(request: Request) {
       };
     } else if (role === 'CLOSER') {
       whereClause = { closerId: userId };
-    } else {
+    } else if (role === 'SETTER') {
+      whereClause = {
+        setterId: userId,
+        projects: { none: { projectType: { name: { contains: "panel solar" } } } }
+      };
+    } else if (role === 'SETTER_JR') {
       whereClause = { setterId: userId };
     }
 

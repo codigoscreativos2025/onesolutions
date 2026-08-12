@@ -3,25 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 export const dynamic = 'force-dynamic';
 
-const COMMON_FIELDS = [
-  "closingDate", "primaryRep", "primaryRepCommPct",
-  "generalCostPrice", "generalSalePrice",
-];
-
-const OPTIONAL_FIELDS = [
-  "generalCostPrice",
-  "generalSalePrice",
-  "secondaryRep",
-  "secondaryRepCommPct",
-  "tertiaryRep",
-  "tertiaryRepCommPct"
-];
-
-const FILE_FIELD_KEYS = new Set([
-  "electricBillUrl", "closingFormUrl", "homeInsuranceUrl", "homeTitleUrl",
-  "idDocumentUrl", "nocUrl", "materialsOrderUrl", "roofReportUrl",
-  "exteriorScopeUrl", "panelsPhotoUrl", "propertyPhotosJson",
-]);
+import { COMMON_FIELDS, OPTIONAL_FIELDS, FILE_FIELD_KEYS } from '@/lib/project-constants';
 
 function computeProgress(
   projectDetails: Record<string, unknown> | null,
@@ -85,6 +67,7 @@ export async function GET() {
 
     if (role === 'SETTER') {
       whereClause.setterId = currentUserId;
+      whereClause.projects = { none: { projectType: { name: { contains: "panel solar" } } } };
     } else if (role === 'SETTER_JR') {
       whereClause.setterId = currentUserId;
     } else if (role === 'CLOSER') {
@@ -95,7 +78,13 @@ export async function GET() {
       const ids = setterIds.map((s) => s.id);
       whereClause.OR = [
         { closerId: currentUserId },
-        { setterId: { in: [currentUserId, ...ids] } },
+        { setterId: currentUserId },
+        {
+          AND: [
+            { setterId: { in: ids } },
+            { projects: { some: { projectType: { name: { contains: "panel solar" } } } } }
+          ]
+        }
       ];
     } else if (role === 'PARTNER') {
       whereClause = {

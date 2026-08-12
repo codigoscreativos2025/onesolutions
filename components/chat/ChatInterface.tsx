@@ -3,6 +3,8 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import Image from "next/image";
+import { COMMON_FIELDS, OPTIONAL_FIELDS, FILE_FIELD_KEYS } from "@/lib/project-constants";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Send, Paperclip, Loader2, MessageSquare, Package, FileText, Pencil, CheckCheck, Search, ArrowLeft, Info, List, X, MapPin, User, PlusCircle, Phone, Folder, Calendar, Activity } from "lucide-react";
@@ -445,31 +447,9 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
       return true;
     };
 
-    const COMMON_FIELDS_CHAT = [
-      "closingDate",
-      "primaryRep",
-      "primaryRepCommPct",
-      "generalCostPrice",
-      "generalSalePrice",
-    ];
 
-    const OPTIONAL_FIELDS_CHAT = ["generalCostPrice", "generalSalePrice"];
 
-    const FILE_FIELD_KEYS_CHAT = new Set([
-      "electricBillUrl",
-      "closingFormUrl",
-      "homeInsuranceUrl",
-      "homeTitleUrl",
-      "idDocumentUrl",
-      "nocUrl",
-      "materialsOrderUrl",
-      "roofReportUrl",
-      "exteriorScopeUrl",
-      "panelsPhotoUrl",
-      "propertyPhotosJson",
-    ]);
-
-    const requiredCommonFields = COMMON_FIELDS_CHAT.filter((f) => !OPTIONAL_FIELDS_CHAT.includes(f));
+    const requiredCommonFields = COMMON_FIELDS.filter((f) => !OPTIONAL_FIELDS.includes(f));
     let totalFields = requiredCommonFields.length;
     let completedFields = requiredCommonFields.filter((f) => isValid(mergedProjectDetails[f])).length;
 
@@ -481,7 +461,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
       }
     }
 
-    for (const field of OPTIONAL_FIELDS_CHAT) {
+    for (const field of OPTIONAL_FIELDS) {
       if (isValid(mergedProjectDetails[field])) {
         totalFields++;
         completedFields++;
@@ -489,7 +469,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
     }
 
     for (const meta of fieldMetas) {
-      if (COMMON_FIELDS_CHAT.includes(meta.fieldName) || FILE_FIELD_KEYS_CHAT.has(meta.fieldName)) continue;
+      if (COMMON_FIELDS.includes(meta.fieldName) || FILE_FIELD_KEYS.has(meta.fieldName)) continue;
 
       if (meta.isRequired === false) {
         if (isValid(mergedProjectDetails[meta.fieldName])) {

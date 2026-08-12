@@ -14,7 +14,12 @@ export async function GET() {
 
   const parcelWhere: Record<string, unknown> = {};
 
-  if (role === 'SETTER' || role === 'SETTER_JR') {
+  if (role === 'SETTER') {
+    parcelWhere.setterId = userId;
+    parcelWhere.visits = {
+      none: { projects: { some: { projectType: { name: { contains: "panel solar" } } } } }
+    };
+  } else if (role === 'SETTER_JR') {
     parcelWhere.setterId = userId;
   } else if (role === 'CLOSER') {
     parcelWhere.OR = [
