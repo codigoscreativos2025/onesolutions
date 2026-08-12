@@ -2024,6 +2024,7 @@ function DatosProjectPanel({
   const [expandedProjects, setExpandedProjects] = useState<Set<number>>(new Set());
   const [partners, setPartners] = useState<{ id: number; name: string }[]>([]);
   const [partnerSaving, setPartnerSaving] = useState<number | null>(null);
+  const { data: session } = useSession();
 
   useEffect(() => {
     fetch("/api/users/transferable?all=true")
@@ -2081,6 +2082,13 @@ function DatosProjectPanel({
   const isTraineeLeadGeneral = visit.setter?.role === "SETTER";
   const isCloserRestrictedGeneral = role === "CLOSER" && isTraineeLeadGeneral;
   const canRequestClose = role === "SETTER" || role === "SETTER_JR" || (role === "CLOSER" && !isTraineeLeadGeneral);
+
+  const visibleProjects = role === "PARTNER"
+    ? fieldMetasByProject.filter((project) => {
+        const vp = visit.projects?.find(p => p.projectType.id === project.projectTypeId);
+        return vp?.partnerId && session?.user?.id && vp.partnerId === parseInt(session.user.id);
+      })
+    : fieldMetasByProject;
 
   return (
     <div className="space-y-6">
@@ -2182,7 +2190,7 @@ function DatosProjectPanel({
         </div>
       </Panel>
 
-      {fieldMetasByProject.length > 0 && fieldMetasByProject.map((project) => {
+      {visibleProjects.length > 0 && visibleProjects.map((project) => {
         const isExpanded = expandedProjects.has(project.projectTypeId);
         const projectFields = project.fields.filter((m) => !COMMON_FIELDS.includes(m.fieldName));
         
