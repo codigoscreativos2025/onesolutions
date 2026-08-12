@@ -96,9 +96,9 @@ export async function GET(request: Request) {
     } else if (role === 'SETTER') {
       whereClause = {
         setterId: userId,
-        projects: { none: { projectType: { name: { contains: "panel solar" } } } }
+        projects: { none: { projectType: { name: { contains: "panel solar" } } } },
       };
-    } else if (role === 'SETTER_JR') {
+    } else {
       whereClause = { setterId: userId };
     }
 
