@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Pencil, Trash2, Plus, Loader2, Calendar } from "lucide-react";
+import { useLocale } from "@/lib/locale-context";
 
 interface Note {
   id: number;
@@ -33,6 +34,7 @@ function Panel({ children }: { children: React.ReactNode }) {
 
 export function NotesPanel({ visitId, visitCreatedAt }: NotesPanelProps) {
   const { data: session } = useSession();
+  const { t } = useLocale();
   const userId = session?.user?.id ? parseInt(session.user.id) : null;
   const isAdmin = session?.user?.role === "ADMIN";
   const isPartner = session?.user?.role === "PARTNER";
@@ -314,7 +316,7 @@ export function NotesPanel({ visitId, visitCreatedAt }: NotesPanelProps) {
               onClick={() => setShowAddModal(false)}
               className="flex-1"
             >
-              Cancelar
+              {t.common.cancel}
             </Button>
             <Button onClick={handleAdd} disabled={saving} className="flex-1">
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
@@ -342,7 +344,7 @@ export function NotesPanel({ visitId, visitCreatedAt }: NotesPanelProps) {
               onClick={() => setShowEditModal(false)}
               className="flex-1"
             >
-              Cancelar
+              {t.common.cancel}
             </Button>
             <Button
               onClick={handleEdit}
@@ -350,7 +352,7 @@ export function NotesPanel({ visitId, visitCreatedAt }: NotesPanelProps) {
               className="flex-1"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Pencil className="w-4 h-4" />}
-              Guardar
+              {t.common.save}
             </Button>
           </div>
         </div>
@@ -381,7 +383,7 @@ export function NotesPanel({ visitId, visitCreatedAt }: NotesPanelProps) {
               onClick={() => setShowDeleteModal(false)}
               className="flex-1"
             >
-              Cancelar
+              {t.common.cancel}
             </Button>
             <Button
               onClick={handleDelete}
@@ -390,7 +392,7 @@ export function NotesPanel({ visitId, visitCreatedAt }: NotesPanelProps) {
               className="flex-1"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-              Eliminar
+              {t.common.delete}
             </Button>
           </div>
         </div>

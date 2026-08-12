@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { SlotPicker } from '@/components/calendar/SlotPicker';
 import { toast } from 'sonner';
+import { useLocale } from '@/lib/locale-context';
 
 interface CreateLeadModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ interface ProjectType {
 
 export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, initialOwnerName }: CreateLeadModalProps) {
   const { data: session } = useSession();
+  const { t } = useLocale();
   const [loading, setLoading] = useState(false);
   const [loadingClosers, setLoadingClosers] = useState(false);
   const [projectTypes, setProjectTypes] = useState<ProjectType[]>([]);
@@ -198,7 +200,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
           <div>
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               <MapPin className="w-4 h-4" />
-              Dirección *
+              {t.chat.address} *
             </label>
             <Input
               value={formData.address}
@@ -226,7 +228,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
           <div>
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               <Phone className="w-4 h-4" />
-              Teléfono
+              {t.visit.phone}
             </label>
             <Input
               value={formData.phone}
@@ -242,7 +244,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
           <div>
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               <Mail className="w-4 h-4" />
-              Email
+              {t.chat.email}
             </label>
             <Input
               value={formData.clientEmail}
@@ -268,7 +270,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
 
           <div>
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-              Proyectos
+              {t.chat.projects}
             </label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
               {projectTypes.map((project) => (
@@ -311,7 +313,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
                 <option value="">
-                  {loadingClosers ? 'Cargando closers...' : 'Seleccionar closer...'}
+                  {loadingClosers ? t.common.loading : t.visit.selectCloser}
                 </option>
                 {closers.map((closer) => (
                   <option key={closer.id} value={closer.id}>
@@ -347,7 +349,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
               onClick={onClose}
               className="flex-1"
             >
-              Cancelar
+              {t.common.cancel}
             </Button>
             <Button
               type="submit"
