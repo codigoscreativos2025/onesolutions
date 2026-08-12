@@ -2079,7 +2079,7 @@ function DatosProjectPanel({
   const isAdmin = role === "ADMIN";
   const isTraineeLeadGeneral = visit.setter?.role === "SETTER";
 
-  const canRequestClose = role === "SETTER" || role === "SETTER_JR" || (role === "CLOSER" && !isTraineeLeadGeneral);
+  const canRequestClose = role === "SETTER" || role === "SETTER_JR" || role === "CLOSER";
 
   const visibleProjects = role === "PARTNER"
     ? fieldMetasByProject.filter((project) => {
