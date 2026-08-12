@@ -65,6 +65,14 @@ export async function POST(
       if (hasClosedVisits) isReclaim = true;
     }
 
+    await prisma.visit.create({
+      data: {
+        parcelId: parcel.id,
+        setterId: userId,
+        stage: "IN_PROGRESS",
+      },
+    });
+
     const updated = await prisma.parcel.update({
       where: { id: parcel.id },
       data: {
@@ -73,6 +81,7 @@ export async function POST(
         ...(isReclaim ? { parcelTags: null } : {}),
         address: body.address || parcel.address || "Sin dirección",
         ownerName: body.ownerName || parcel.ownerName || null,
+        metadata: body.metadata || parcel.metadata || null,
       },
       include: {
         setter: { select: { id: true, name: true } },
@@ -86,14 +95,6 @@ export async function POST(
             setter: { select: { id: true, name: true } },
           },
         },
-      },
-    });
-
-    await prisma.visit.create({
-      data: {
-        parcelId: parcel.id,
-        setterId: userId,
-        stage: "IN_PROGRESS",
       },
     });
 

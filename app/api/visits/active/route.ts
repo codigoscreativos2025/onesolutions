@@ -59,7 +59,7 @@ export async function GET(request: Request) {
   });
 
   if (!visit) {
-    return NextResponse.json({});
+    return NextResponse.json(null);
   }
 
   return NextResponse.json(visit);

@@ -271,7 +271,7 @@ export default function VisitPage() {
     return <div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 
-  if (!visit) {
+  if (!visit || !visit.id) {
     return (
       <motion.div className="text-center py-12" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <p className="text-on-surface-variant">No se encontró visita activa</p>
