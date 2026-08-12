@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
@@ -46,6 +46,8 @@ interface ObjectionEntry {
 
 interface Room {
   id: number;
+  type?: string;
+  partnerId?: number | null;
   visit: {
     id: number;
     setterId: number;
@@ -58,7 +60,7 @@ interface Room {
     closer?: { id: number; name: string };
     bill?: { imageUrl: string; phone: string; clientName: string; clientEmail: string; additionalFileUrl?: string; additionalFileName?: string };
     projectDetails?: ProjectDetails;
-    projects?: { projectType: ProjectType }[];
+    projects?: { projectType: ProjectType; partner?: { id: number; name: string } | null }[];
     objections?: ObjectionEntry[];
     closerObjections?: ObjectionEntry[];
     commissions?: { id: number; percentage: number; role: string; user: { id: number; name: string } }[];
@@ -95,6 +97,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
   const [rooms, setRooms] = useState<Room[]>([]);
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(initialRoomId);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -418,6 +421,42 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
     return address.includes(q) || clientName.includes(q);
   });
 
+  const isAdminRole = role === "ADMIN";
+
+  const adminGroups = useMemo(() => {
+    if (!isAdminRole) return [];
+    const map = new Map<number, { visit: Room["visit"]; general?: Room; partners: Room[] }>();
+    for (const r of rooms) {
+      if (!map.has(r.visit.id)) map.set(r.visit.id, { visit: r.visit, partners: [] });
+      const g = map.get(r.visit.id)!;
+      if (r.type === "GENERAL") g.general = r;
+      else g.partners.push(r);
+    }
+    return Array.from(map.values());
+  }, [rooms, isAdminRole]);
+
+  const filteredAdminGroups = adminGroups.filter((g) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const address = g.visit.parcel.address.toLowerCase();
+    const clientName = (g.visit.bill?.clientName || "").toLowerCase();
+    return address.includes(q) || clientName.includes(q);
+  });
+
+  const openRoom = (room?: Room) => {
+    if (!room) return;
+    setSelectedRoomId(room.id);
+    setSelectedRoom(room);
+    setSelectedVisitId(null);
+  };
+
+  const handleSelectVisit = (visitId: number) => {
+    setSelectedVisitId(visitId);
+    setSelectedRoom(null);
+    setSelectedRoomId(null);
+    setMobileColumn("conversation");
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -557,7 +596,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
                 <input
                   type="text"
-                  placeholder="Buscar chat..."
+                  placeholder={isAdminRole ? "Buscar proyecto..." : "Buscar chat..."}
                   value={searchQuery}
                   onChange={handleSearchChange}
                   className="w-full h-10 pl-9 pr-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-sm text-on-surface"
@@ -566,59 +605,99 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
             </div>
             
             <div className="flex-1 overflow-y-auto min-h-0">
-              {filteredRooms.map((room) => (
-                <button
-                  key={room.id}
-                  onClick={() => handleSelectRoom(room)}
-                  className={`w-full text-left p-4 border-b border-outline-variant/20 last:border-0 transition-colors ${
-                    selectedRoomId === room.id
-                      ? "bg-primary/10 text-on-surface"
-                      : (room.messages && room.messages.length > 0 && !room.messages[0].isRead && room.messages[0].userId !== parseInt(session?.user?.id || "0"))
-                      ? "bg-primary text-on-primary"
-                      : "hover:bg-surface-container-low text-on-surface"
-                  }`}
-                >
-                  <div className="flex justify-between items-start mb-1 gap-2">
-                    <p className="font-semibold text-sm truncate">
-                      {(room as any).type === "PARTNER" ? "🤝 " : ""}
-                      {room.visit?.bill?.clientName || room.visit?.projectDetails?.clientName || room.visit?.parcel.ownerName || "Sin Nombre"}
-                      {(role === "ADMIN" && (room as any).type === "PARTNER") ? <span className="text-[10px] ml-1 text-amber-500">(Partner)</span> : null}
+              {isAdminRole ? (
+                filteredAdminGroups.map((g) => {
+                  const partnerNames = g.partners.map((pr) => {
+                    const pp = pr.visit.projects?.find((p) => p.partner?.id === pr.partnerId);
+                    return pp?.partner?.name || "Partner";
+                  });
+                      const uniqPartnerNames = Array.from(new Set(partnerNames));
+                  return (
+                    <button
+                      key={g.visit.id}
+                      onClick={() => handleSelectVisit(g.visit.id)}
+                      className={`w-full text-left p-4 border-b border-outline-variant/20 last:border-0 transition-colors ${
+                        selectedVisitId === g.visit.id ? "bg-primary/10 text-on-surface" : "hover:bg-surface-container-low text-on-surface"
+                      }`}
+                    >
+                      <p className="font-semibold text-sm truncate">
+                        {g.visit.bill?.clientName || g.visit.projectDetails?.clientName || g.visit.parcel.ownerName || "Sin Nombre"}
+                      </p>
+                      <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Dirección">
+                        <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span>{g.visit.parcel.address}</span>
+                      </p>
+                      <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Iniciado por">
+                        <User className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span>
+                          Iniciado por {g.visit.setter?.name || "Desconocido"}{g.visit.closer ? ` • ${g.visit.closer.name}` : ""}
+                        </span>
+                      </p>
+                      <p className="text-xs mt-1 truncate flex items-center gap-1.5" title="Partner">
+                        <span className="text-amber-500 font-medium">🤝</span>
+                        <span className={uniqPartnerNames.length > 0 ? "text-amber-600" : "text-on-surface-variant"}>
+                          {uniqPartnerNames.length > 0 ? uniqPartnerNames.join(", ") : "En espera del partner"}
+                        </span>
+                      </p>
+                    </button>
+                  );
+                })
+              ) : (
+                filteredRooms.map((room) => (
+                  <button
+                    key={room.id}
+                    onClick={() => handleSelectRoom(room)}
+                    className={`w-full text-left p-4 border-b border-outline-variant/20 last:border-0 transition-colors ${
+                      selectedRoomId === room.id
+                        ? "bg-primary/10 text-on-surface"
+                        : (room.messages && room.messages.length > 0 && !room.messages[0].isRead && room.messages[0].userId !== parseInt(session?.user?.id || "0"))
+                        ? "bg-primary text-on-primary"
+                        : "hover:bg-surface-container-low text-on-surface"
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-1 gap-2">
+                      <p className="font-semibold text-sm truncate">
+                        {(room as any).type === "PARTNER" ? "🤝 " : ""}
+                        {room.visit?.bill?.clientName || room.visit?.projectDetails?.clientName || room.visit?.parcel.ownerName || "Sin Nombre"}
+                      </p>
+                      <span className="text-[10px] opacity-70 whitespace-nowrap flex-shrink-0 mt-0.5">
+                        {room.messages && room.messages.length > 0
+                          ? new Date(room.messages[0].createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                          : (room.visit?.createdAt ? new Date(room.visit?.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "")}
+                      </span>
+                    </div>
+                    <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Dirección">
+                      <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>{room.visit?.parcel.address}</span>
                     </p>
-                    <span className="text-[10px] opacity-70 whitespace-nowrap flex-shrink-0 mt-0.5">
-                      {room.messages && room.messages.length > 0
-                        ? new Date(room.messages[0].createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                        : (room.visit?.createdAt ? new Date(room.visit?.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "")}
-                    </span>
-                  </div>
-                  <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Dirección">
-                    <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                    <span>{room.visit?.parcel.address}</span>
-                  </p>
-                  <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Status">
-                    <Activity className="w-3.5 h-3.5 flex-shrink-0" />
-                    <span>
-                      {room.visit?.stage === "POTENTIAL_LEAD" ? "Lead Potencial" :
-                       room.visit?.stage === "IN_PROGRESS" ? "Agendado" :
-                       room.visit?.stage === "PROJECT" ? "En Proyecto" :
-                       room.visit?.stage === "CLOSED" ? "Proyecto Cerrado" :
-                       room.visit?.stage === "CANCELLED" ? "Proyecto Cancelado" : room.visit?.stage || "Desconocido"}
-                    </span>
-                  </p>
-                  <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Fecha">
-                    <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
-                    <span>{room.visit?.createdAt ? new Date(room.visit?.createdAt).toLocaleDateString() : "N/A"}</span>
-                  </p>
-                  <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Registrado por">
-                    <User className="w-3.5 h-3.5 flex-shrink-0" />
-                    <span>{room.visit?.setter?.name || "Desconocido"}</span>
-                  </p>
-                </button>
-              ))}
-              {filteredRooms.length === 0 && (
-                <div className="p-4 text-center text-sm text-on-surface-variant">
-                  Sin resultados
-                </div>
+                    <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Status">
+                      <Activity className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>
+                        {room.visit?.stage === "POTENTIAL_LEAD" ? "Lead Potencial" :
+                         room.visit?.stage === "IN_PROGRESS" ? "Agendado" :
+                         room.visit?.stage === "PROJECT" ? "En Proyecto" :
+                         room.visit?.stage === "CLOSED" ? "Proyecto Cerrado" :
+                         room.visit?.stage === "CANCELLED" ? "Proyecto Cancelado" : room.visit?.stage || "Desconocido"}
+                      </span>
+                    </p>
+                    <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Fecha">
+                      <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>{room.visit?.createdAt ? new Date(room.visit?.createdAt).toLocaleDateString() : "N/A"}</span>
+                    </p>
+                    <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Registrado por">
+                      <User className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>{room.visit?.setter?.name || "Desconocido"}</span>
+                    </p>
+                  </button>
+                ))
               )}
+              {isAdminRole
+                ? (filteredAdminGroups.length === 0 && (
+                    <div className="p-4 text-center text-sm text-on-surface-variant">Sin resultados</div>
+                  ))
+                : (filteredRooms.length === 0 && (
+                    <div className="p-4 text-center text-sm text-on-surface-variant">Sin resultados</div>
+                  ))}
             </div>
           </div>
           )}
@@ -627,7 +706,12 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
           <div className={`flex-1 flex flex-col min-h-0
             ${mobileColumn !== "conversation" ? "hidden lg:flex" : "flex"}
           `}>
-            {selectedRoom ? (
+            {isAdminRole && selectedVisitId && !selectedRoom ? (
+              <AdminRoomSelector
+                group={adminGroups.find((g) => g.visit.id === selectedVisitId)}
+                onOpenRoom={openRoom}
+              />
+            ) : selectedRoom ? (
               <>
                 <div className="p-4 border-b border-outline-variant/30">
                   <div className="flex justify-between items-start">
@@ -646,6 +730,17 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                       <p className="text-xs text-on-surface-variant ml-0 lg:ml-0 mt-1">
                         {selectedRoom?.visit?.parcel.address}
                       </p>
+                      {selectedRoom?.type === "PARTNER" && (() => {
+                        const covered = selectedRoom?.visit?.projects
+                          ?.filter((p) => p.partner?.id === selectedRoom?.partnerId)
+                          .map((p) => p.projectType.name)
+                          .join(", ");
+                        return covered ? (
+                          <p className="text-xs text-orange-600 font-medium mt-1">
+                            Cubre: {covered}
+                          </p>
+                        ) : null;
+                      })()}
                       <p className="text-xs text-on-surface-variant">
                         Trainee:{' '}
                         <Link href={`/profile/${selectedRoom?.visit?.setter.id}`} className="hover:underline">
@@ -1150,5 +1245,73 @@ function InfoPanelContent({
           </div>
         </div>
       </div>
+  );
+}
+
+function AdminRoomSelector({
+  group,
+  onOpenRoom,
+}: {
+  group?: { visit: Room["visit"]; general?: Room; partners: Room[] };
+  onOpenRoom: (room?: Room) => void;
+}) {
+  if (!group) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-on-surface-variant">
+        <p>Selecciona un chat</p>
+      </div>
+    );
+  }
+
+  const clientName =
+    group.visit.bill?.clientName || group.visit.projectDetails?.clientName || group.visit.parcel.ownerName || "Sin Nombre";
+
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center p-6 gap-4">
+      <div className="text-center">
+        <p className="font-semibold text-lg text-on-surface">{clientName}</p>
+        <p className="text-sm text-on-surface-variant">{group.visit.parcel.address}</p>
+      </div>
+
+      <button
+        onClick={() => onOpenRoom(group.general)}
+        disabled={!group.general}
+        className="w-full max-w-sm p-4 rounded-xl border border-green-500/40 bg-green-500/10 text-left hover:bg-green-500/20 transition-colors flex items-center gap-3 disabled:opacity-50"
+      >
+        <MessageSquare className="w-6 h-6 text-green-600" />
+        <div>
+          <p className="font-semibold text-green-700">Interno</p>
+          <p className="text-xs text-on-surface-variant">Chat con setter/closer/trainee</p>
+        </div>
+      </button>
+
+      {group.partners.map((pr) => {
+        const pp = pr.visit.projects?.find((p) => p.partner?.id === pr.partnerId);
+        const partnerName = pp?.partner?.name || "Partner";
+        const coveredContracts = pr.visit.projects
+          ?.filter((p) => p.partner?.id === pr.partnerId)
+          .map((p) => p.projectType.name)
+          .join(", ");
+        return (
+          <button
+            key={pr.id}
+            onClick={() => onOpenRoom(pr)}
+            className="w-full max-w-sm p-4 rounded-xl border border-orange-500/40 bg-orange-500/10 text-left hover:bg-orange-500/20 transition-colors flex items-center gap-3"
+          >
+            <MessageSquare className="w-6 h-6 text-orange-600" />
+            <div>
+              <p className="font-semibold text-orange-700">🤝 {partnerName}</p>
+              <p className="text-xs text-on-surface-variant">
+                {coveredContracts ? `Cubre: ${coveredContracts}` : "Partner"}
+              </p>
+            </div>
+          </button>
+        );
+      })}
+
+      {group.partners.length === 0 && (
+        <p className="text-sm text-on-surface-variant">En espera del partner</p>
+      )}
+    </div>
   );
 }

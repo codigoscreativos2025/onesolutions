@@ -23,6 +23,12 @@ export async function GET() {
             parcel: { select: { address: true, ownerName: true } },
             setter: { select: { id: true, name: true } },
             closer: { select: { id: true, name: true } },
+            projects: {
+              include: {
+                projectType: { select: { id: true, name: true } },
+                partner: { select: { id: true, name: true } },
+              },
+            },
             bill: true,
             projectDetails: true,
           },
@@ -40,9 +46,9 @@ export async function GET() {
     rooms = await prisma.chatRoom.findMany({
       where: {
         type: "PARTNER",
+        partnerId: userId,
         visit: {
           stage: { not: "CANCELLED" },
-          parcel: { partnerId: userId },
         },
       },
       orderBy: { createdAt: "desc" },
@@ -52,6 +58,12 @@ export async function GET() {
             parcel: { select: { address: true, ownerName: true } },
             setter: { select: { id: true, name: true } },
             closer: { select: { id: true, name: true } },
+            projects: {
+              include: {
+                projectType: { select: { id: true, name: true } },
+                partner: { select: { id: true, name: true } },
+              },
+            },
             bill: true,
             projectDetails: true,
           },

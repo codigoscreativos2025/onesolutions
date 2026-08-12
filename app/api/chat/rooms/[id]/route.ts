@@ -31,7 +31,7 @@ export async function GET(
           closer: { select: { id: true, name: true } },
           bill: { select: { imageUrl: true, clientName: true, phone: true, clientEmail: true, additionalFileUrl: true, additionalFileName: true } },
           projectDetails: true,
-          projects: { include: { projectType: { select: { id: true, name: true } } } },
+          projects: { include: { projectType: { select: { id: true, name: true } }, partner: { select: { id: true, name: true } } } },
           objections: { include: { objection: { select: { name: true, color: true } } } },
           closerObjections: { include: { closerObjection: { select: { name: true, color: true } } } },
           notes: true,
@@ -63,7 +63,7 @@ export async function GET(
   const hasAccess =
     role === "ADMIN" ||
     (room.type === "GENERAL" && (room.visit.setterId === userId || room.visit.closerId === userId)) ||
-    (role === "PARTNER" && room.type === "PARTNER" && room.visit.parcel?.partnerId === userId);
+    (role === "PARTNER" && room.type === "PARTNER" && room.partnerId === userId);
 
   if (!hasAccess) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

@@ -75,7 +75,7 @@ export async function POST(
   const hasAccess =
     role === "ADMIN" ||
     (room.type === "GENERAL" && (room.visit.setterId === userId || room.visit.closerId === userId)) ||
-    (role === "PARTNER" && room.type === "PARTNER" && room.visit.parcel?.partnerId === userId);
+    (role === "PARTNER" && room.type === "PARTNER" && room.partnerId === userId);
 
   if (!hasAccess) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

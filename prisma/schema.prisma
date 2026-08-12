@@ -325,11 +325,12 @@ model ChatRoom {
   id        Int           @id @default(autoincrement())
   visitId   Int
   type      String        @default("GENERAL")
+  partnerId Int?
   visit     Visit         @relation(fields: [visitId], references: [id])
   createdAt DateTime      @default(now())
   messages  ChatMessage[]
 
-  @@unique([visitId, type])
+  @@unique([visitId, type, partnerId])
 }
 
 model ChatMessage {

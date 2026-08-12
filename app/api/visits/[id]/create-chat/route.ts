@@ -87,16 +87,22 @@ export async function POST(
       },
     });
 
-    // Crear chat PARTNER si la parcela tiene partner asignado
-    if (visit.parcel?.partnerId) {
+    // Crear chat PARTNER por cada partner único asignado a los contratos
+    const partnerProjects = await prisma.visitProject.findMany({
+      where: { visitId: visit.id, partnerId: { not: null } },
+      select: { partnerId: true },
+    });
+    const uniquePartnerIds = Array.from(new Set(partnerProjects.map((p) => p.partnerId).filter((id): id is number => id !== null)));
+    for (const pid of uniquePartnerIds) {
       const existingPartnerRoom = await prisma.chatRoom.findFirst({
-        where: { visitId: visit.id, type: "PARTNER" },
+        where: { visitId: visit.id, type: "PARTNER", partnerId: pid },
       });
       if (!existingPartnerRoom) {
         await prisma.chatRoom.create({
           data: {
             visitId: visit.id,
             type: "PARTNER",
+            partnerId: pid,
             messages: {
               create: {
                 userId: userId,
