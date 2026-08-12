@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { FileText, Filter, Download } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useLocale } from "@/lib/locale-context";
 
 interface AuditLog {
   id: number;
@@ -24,6 +25,7 @@ interface AuditLog {
 export default function AuditLogsPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { t } = useLocale();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterAction, setFilterAction] = useState<string>('all');
@@ -126,9 +128,9 @@ export default function AuditLogsPage() {
               className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
             >
               <option value="all">Todas</option>
-              <option value="CREATE">Crear</option>
+              <option value="CREATE">{t.common.create}</option>
               <option value="UPDATE">Actualizar</option>
-              <option value="DELETE">Eliminar</option>
+              <option value="DELETE">{t.common.delete}</option>
               <option value="ASSIGN">Asignar</option>
             </select>
           </div>
@@ -220,7 +222,7 @@ export default function AuditLogsPage() {
           <div className="text-center py-12">
             <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500 dark:text-gray-400">
-              No se encontraron registros con los filtros aplicados
+              {t.common.noData}
             </p>
           </div>
         )}

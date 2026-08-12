@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Plus, Pencil, Trash2, Loader2, Save, Info, Image } from "lucide-react";
+import { useLocale } from "@/lib/locale-context";
 
 interface ProjectType {
   id: number;
@@ -28,6 +29,7 @@ interface ProjectTypeField {
 export default function AdminProjectFieldsPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { t } = useLocale();
 
   const [projectTypes, setProjectTypes] = useState<ProjectType[]>([]);
   const [selectedProjectType, setSelectedProjectType] = useState<number | null>(null);
@@ -209,10 +211,10 @@ export default function AdminProjectFieldsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-headline text-2xl font-bold text-on-surface">
-          Campos de Proyectos
+          {t.admin.projectFields}
         </h1>
         <p className="text-on-surface-variant">
-          Configura los campos personalizados para cada tipo de proyecto. Selecciona &quot;Campos Comunes&quot; para definir campos obligatorios que aplican a todos los proyectos.
+          {t.admin.projectFieldsDesc}
         </p>
       </div>
 
@@ -400,11 +402,11 @@ export default function AdminProjectFieldsPage() {
               className="flex-1"
               onClick={() => setIsModalOpen(false)}
             >
-              Cancelar
+              {t.common.cancel}
             </Button>
             <Button type="submit" className="flex-1" isLoading={saving}>
               <Save className="w-5 h-5 mr-2" />
-              {editingField ? "Guardar" : "Crear"}
+              {editingField ? t.common.save : "Crear"}
             </Button>
           </div>
         </form>

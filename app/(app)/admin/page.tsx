@@ -1,18 +1,28 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/auth";
+"use client";
+
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import Link from "next/link";
 import { Users, BarChart3, ReceiptText, Mail } from "lucide-react";
+import { useLocale } from "@/lib/locale-context";
 
-export default async function AdminPage() {
-  const session = await auth();
+export default function AdminPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const { t } = useLocale();
 
-  if (session?.user?.role !== "ADMIN") {
-    redirect("/dashboard");
-  }
+  useEffect(() => {
+    if (status === "unauthenticated" || (status === "authenticated" && session?.user?.role !== "ADMIN")) {
+      router.push("/dashboard");
+    }
+  }, [status, session, router]);
+
+  if (status === "loading" || !session) return null;
 
   const menuItems = [
-    { title: "Usuarios", description: "Gestiona trainers, closers, setters y partners", href: "/admin/users", icon: Users, color: "bg-primary/10 text-primary" },
-    { title: "Métricas", description: "Visualiza el rendimiento general", href: "/admin/metrics", icon: BarChart3, color: "bg-tertiary/10 text-tertiary" },
+    { title: t.admin.users, description: t.admin.usersDesc, href: "/admin/users", icon: Users, color: "bg-primary/10 text-primary" },
+    { title: t.admin.metrics, description: t.admin.metricsDesc, href: "/admin/metrics", icon: BarChart3, color: "bg-tertiary/10 text-tertiary" },
     { title: "Facturas", description: "Genera facturas personalizadas y descarga PDFs", href: "/admin/invoices", icon: ReceiptText, color: "bg-primary/10 text-primary" },
     { title: "Correos", description: "Envia correos con plantillas predeterminadas a usuarios y clientes", href: "/admin/emails", icon: Mail, color: "bg-secondary/10 text-secondary" },
   ];
@@ -21,10 +31,10 @@ export default async function AdminPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-headline text-2xl font-bold text-on-surface">
-          Administración
+          {t.admin.title}
         </h1>
         <p className="text-on-surface-variant">
-          Panel de control general de la plataforma
+          {t.admin.subtitle}
         </p>
       </div>
 

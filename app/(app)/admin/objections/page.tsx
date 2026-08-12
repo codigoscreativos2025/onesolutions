@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Plus, Pencil, Trash2, Loader2, Users, UserCheck } from "lucide-react";
+import { useLocale } from "@/lib/locale-context";
 
 interface Objection {
   id: number;
@@ -21,6 +22,7 @@ interface Objection {
 export default function AdminObjectionsPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { t } = useLocale();
 
   const [activeTab, setActiveTab] = useState<"setter" | "closer">("setter");
   const [setterObjections, setSetterObjections] = useState<Objection[]>([]);
@@ -140,10 +142,10 @@ export default function AdminObjectionsPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="font-headline text-2xl font-bold text-on-surface">
-            Objeciones
+            {t.admin.objections}
           </h1>
           <p className="text-on-surface-variant">
-            Configura las objeciones para trainers y closers
+            {t.admin.objectionsDesc}
           </p>
         </div>
         <Button onClick={openCreateModal}>
@@ -165,7 +167,7 @@ export default function AdminObjectionsPage() {
           <Users className={`w-6 h-6 ${activeTab === "setter" ? "text-primary" : "text-on-surface-variant"}`} />
           <div className="text-left">
             <span className="font-semibold text-on-surface text-sm block">
-              Objeciones Trainee
+              {t.metrics.setterObjections}
             </span>
             <span className="text-xs text-on-surface-variant">
               {setterObjections.length} configuradas
@@ -183,7 +185,7 @@ export default function AdminObjectionsPage() {
           <UserCheck className={`w-6 h-6 ${activeTab === "closer" ? "text-primary" : "text-on-surface-variant"}`} />
           <div className="text-left">
             <span className="font-semibold text-on-surface text-sm block">
-              Trabajando con Objeciones
+              {t.metrics.closerObjections}
             </span>
             <span className="text-xs text-on-surface-variant">
               {closerObjections.length} configuradas

@@ -6,6 +6,7 @@ import { X, MapPin, User, FileText, Package, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ContractModal } from '@/components/quote/ContractModal';
 import { toast } from 'sonner';
+import { useLocale } from "@/lib/locale-context";
 
 function extractFirstUrl(raw: string | undefined): string {
   if (!raw) return "";
@@ -110,6 +111,7 @@ interface ViewProjectModalProps {
 }
 
 export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalProps) {
+  const { t } = useLocale();
   const [visit, setVisit] = useState<VisitDetails | null>(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'history'>('details');
@@ -137,9 +139,9 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
         const errBody = await res.json().catch(() => ({ error: "Unknown error" }));
         throw new Error(errBody.details || errBody.error || "Error saving");
       }
-      toast.success("Datos guardados");
+      toast.success(t.common.success);
     } catch {
-      toast.error("Error al guardar");
+      toast.error(t.common.error);
     } finally {
       setSaving(false);
     }
@@ -676,7 +678,7 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
                   </div>
                   <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600">
                     <Button onClick={handleSaveInline} disabled={saving} className="w-full">
-                      {saving ? "Guardando..." : "Guardar Cambios"}
+                      {saving ? t.common.loading : t.chat.saveChanges}
                     </Button>
                   </div>
                 </div>
@@ -756,7 +758,7 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
             Documentos
           </Button>
           <Button onClick={onClose} className="flex-1">
-            Cerrar
+            {t.common.close}
           </Button>
         </div>
       </div>

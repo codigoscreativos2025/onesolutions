@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useLocale } from "@/lib/locale-context";
 
 interface FilterOption {
   value: string;
@@ -29,6 +30,7 @@ export function AdvancedFilters({
   onFilterChange,
   onClearAll,
 }: AdvancedFiltersProps) {
+  const { t } = useLocale();
   const [isOpen, setIsOpen] = useState(false);
 
   const hasActiveFilters = Object.values(activeFilters).some((v) => v && v !== 'all');
@@ -43,7 +45,7 @@ export function AdvancedFilters({
             className="flex items-center gap-2 text-lg font-semibold hover:text-primary transition-colors"
           >
             <Filter className="w-5 h-5" />
-            Filtros Avanzados
+            {t.common.filter}
             {hasActiveFilters && (
               <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
                 {Object.values(activeFilters).filter((v) => v && v !== 'all').length}
@@ -78,7 +80,7 @@ export function AdvancedFilters({
                     onChange={(e) => onFilterChange(filter.id, e.target.value)}
                     className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
                   >
-                    <option value="all">Todos</option>
+                    <option value="all">{t.common.all}</option>
                     {filter.options.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}

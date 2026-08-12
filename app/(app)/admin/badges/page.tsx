@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useLocale } from "@/lib/locale-context";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
@@ -24,6 +25,7 @@ interface Badge {
 export default function AdminBadgesPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { t } = useLocale();
 
   const [badges, setBadges] = useState<Badge[]>([]);
   const [loading, setLoading] = useState(true);
@@ -152,10 +154,10 @@ export default function AdminBadgesPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="font-headline text-2xl font-bold text-on-surface">
-            Medallas
+            {t.admin.badges}
           </h1>
           <p className="text-on-surface-variant">
-            Configura las medallas y metas para setters y closers
+            {t.admin.badgesDesc}
           </p>
         </div>
         <div className="flex gap-2">
@@ -369,10 +371,10 @@ export default function AdminBadgesPage() {
               className="flex-1"
               onClick={() => setIsModalOpen(false)}
             >
-              Cancelar
+              {t.common.cancel}
             </Button>
             <Button type="submit" className="flex-1">
-              {editingBadge ? "Guardar" : "Crear"}
+              {editingBadge ? t.common.save : "Crear"}
             </Button>
           </div>
         </form>

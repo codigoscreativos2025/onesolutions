@@ -11,6 +11,7 @@ import { Plus, Pencil, Trash2, Loader2, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 import Link from "next/link";
+import { useLocale } from "@/lib/locale-context";
 
 interface User {
   id: number;
@@ -39,6 +40,7 @@ interface User {
 export default function AdminUsersPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { t } = useLocale();
 
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -307,10 +309,10 @@ export default function AdminUsersPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="font-headline text-2xl font-bold text-on-surface">
-            Usuarios
+            {t.admin.users}
           </h1>
           <p className="text-on-surface-variant">
-            Gestiona trainers, closers y administradores
+            {t.admin.usersDesc}
           </p>
         </div>
         <Button onClick={openCreateModal}>
@@ -644,10 +646,10 @@ export default function AdminUsersPage() {
               className="flex-1"
               onClick={() => setIsModalOpen(false)}
             >
-              Cancelar
+              {t.common.cancel}
             </Button>
             <Button type="submit" className="flex-1" isLoading={submitting}>
-              {editingUser ? "Guardar" : "Crear"}
+              {editingUser ? t.common.save : "Crear"}
             </Button>
           </div>
         </form>

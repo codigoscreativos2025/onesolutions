@@ -37,7 +37,10 @@ interface SignatureField {
   element?: HTMLElement;
 }
 
+import { useLocale } from "@/lib/locale-context";
+
 export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead }: ContractModalProps) {
+  const { t } = useLocale();
   const { data: session } = useSession();
   const role = session?.user?.role;
   const [loading, setLoading] = useState(false);
@@ -193,7 +196,7 @@ export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead 
       
     } catch (error) {
       console.error(error);
-      toast.error("Error al cargar los contratos");
+      toast.error(t.common.error);
     } finally {
       setLoading(false);
     }
@@ -220,11 +223,11 @@ export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead 
         }),
       });
       if (!res.ok) throw new Error("Error saving signatures");
-      toast.success("Firmas guardadas");
+      toast.success(t.common.success);
       fetchContracts();
     } catch (error) {
       console.error(error);
-      toast.error("Error al guardar firmas");
+      toast.error(t.common.error);
     } finally {
       setSavingSignatures(false);
     }
@@ -257,10 +260,10 @@ export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead 
         }),
       });
       if (!res.ok) throw new Error("Error saving fields");
-      toast.success("Campos guardados exitosamente");
+      toast.success(t.common.success);
     } catch (error) {
       console.error(error);
-      toast.error("Error al guardar campos");
+      toast.error(t.common.error);
     } finally {
       setSavingFields(false);
     }
@@ -436,14 +439,14 @@ export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead 
       });
 
       if (res.ok) {
-        toast.success("Contrato enviado por email");
+        toast.success(t.common.success);
         setShowSendEmail(false);
       } else {
-        toast.error("Error al enviar el email");
+        toast.error(t.common.error);
       }
     } catch (error) {
       console.error("Error sending email:", error);
-      toast.error("Error al enviar el email");
+      toast.error(t.common.error);
     } finally {
       replacements.forEach(r => { r.element.innerHTML = r.originalHTML; });
       setSendingEmail(false);
@@ -461,7 +464,7 @@ export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead 
           onChange={(e) => handleFieldChange(field.key, e.target.value)}
           className={baseClass}
         >
-          <option value="">Seleccionar...</option>
+          <option value="">{t.common.selectOption}</option>
           {field.options?.map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
@@ -477,7 +480,7 @@ export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead 
             onChange={(e) => handleFieldChange(field.key, e.target.checked ? "true" : "")}
             className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary"
           />
-          <span className="text-sm text-on-surface">Sí</span>
+          <span className="text-sm text-on-surface">{t.common.yes}</span>
         </div>
       );
     }

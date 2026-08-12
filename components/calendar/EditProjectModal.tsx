@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { X, Save, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { useLocale } from "@/lib/locale-context";
 
 interface ProjectDetails {
   [key: string]: string | number | boolean | null | undefined;
@@ -27,6 +28,7 @@ interface EditProjectModalProps {
 }
 
 export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditProjectModalProps) {
+  const { t } = useLocale();
   const [projectDetails, setProjectDetails] = useState<ProjectDetails>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -118,7 +120,7 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
     const invalidEmails: string[] = [];
     if (projectDetails.clientEmail && typeof projectDetails.clientEmail === "string") {
       if (!projectDetails.clientEmail.toLowerCase().endsWith("@gmail.com")) {
-        invalidEmails.push("Email del Cliente");
+        invalidEmails.push(t.chat.clientEmail);
       }
     }
 
@@ -176,7 +178,7 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-y-auto pb-20">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-2xl font-bold">Editar Información del Proyecto</h2>
+          <h2 className="text-2xl font-bold">{t.chat.editProjectInfo}</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
@@ -196,18 +198,18 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
               {/* Campos Comunes — siempre visibles */}
               <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <h3 className="font-semibold text-lg">Campos Comunes</h3>
-                <Input label="Nombre del Cliente" value={projectDetails.clientName as string || ''} onChange={(e) => handleFieldChange('clientName', e.target.value)} />
-                <Input label="Email del Cliente" type="email" value={projectDetails.clientEmail as string || ''} onChange={(e) => handleFieldChange('clientEmail', e.target.value)} />
-                <Input label="Dirección" value={projectDetails.address as string || ''} onChange={(e) => handleFieldChange('address', e.target.value)} />
-                <Input label="Fecha de Cierre" type="date" 
+                <Input label={t.chat.clientName} value={projectDetails.clientName as string || ''} onChange={(e) => handleFieldChange('clientName', e.target.value)} />
+                <Input label={t.chat.clientEmail} type="email" value={projectDetails.clientEmail as string || ''} onChange={(e) => handleFieldChange('clientEmail', e.target.value)} />
+                <Input label={t.chat.address} value={projectDetails.address as string || ''} onChange={(e) => handleFieldChange('address', e.target.value)} />
+                <Input label={t.chat.closingDate} type="date" 
                   value={projectDetails.closingDate ? new Date(projectDetails.closingDate as string).toISOString().split('T')[0] : ''}
                   onChange={(e) => handleFieldChange('closingDate', e.target.value)}
                   min="1900-01-01" max="2100-12-31" />
                 <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Método de Pago</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">{t.chat.paymentMethod}</label>
                   <select value={projectDetails.paymentMethod as string || ''} onChange={(e) => handleFieldChange('paymentMethod', e.target.value)}
                     className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface">
-                    <option value="">Seleccionar...</option>
+                    <option value="">{t.common.selectOption}</option>
                     {["Cash","Transferencia","Cheques","LightReach","SkyLight","SunGage","Sunrise Capital","Foundations Finance","Otro"].map(o => <option key={o} value={o}>{o}</option>)}
                   </select>
                 </div>
@@ -236,7 +238,7 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
                             onChange={(e) => handleFieldChange(field.fieldName, e.target.value)}
                             className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
                           >
-                            <option value="">Seleccionar...</option>
+                            <option value="">{t.common.selectOption}</option>
                             {field.options && JSON.parse(field.options).map((opt: string) => (
                               <option key={opt} value={opt}>{opt}</option>
                             ))}
@@ -347,7 +349,7 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
         {/* Footer */}
         <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
           <Button onClick={onClose} variant="outline" className="flex-1">
-            Cancelar
+            {t.common.cancel}
           </Button>
           <Button onClick={handleSave} disabled={saving || loading} className="flex-1">
             {saving ? (
@@ -355,7 +357,7 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
             ) : (
               <>
                 <Save className="w-4 h-4 mr-2" />
-                Guardar
+                {t.common.save}
               </>
             )}
           </Button>
@@ -382,3 +384,4 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
     </div>
   );
 }
+

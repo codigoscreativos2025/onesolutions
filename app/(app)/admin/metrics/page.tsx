@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useLocale } from "@/lib/locale-context";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import {
@@ -55,6 +56,7 @@ interface Metrics {
 export default function AdminMetricsPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { t } = useLocale();
 
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [loading, setLoading] = useState(true);
@@ -152,15 +154,15 @@ export default function AdminMetricsPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="font-headline text-2xl font-bold text-on-surface">
-            Métricas del Negocio
+            {t.metrics.title}
           </h1>
           <p className="text-on-surface-variant">
-            Rendimiento general y seguimiento de metas
+            {t.metrics.subtitle}
           </p>
         </div>
         <Button onClick={openGoalsModal}>
           <Settings className="w-5 h-5 mr-2" />
-          Configurar Metas
+          {t.metrics.configureGoals}
         </Button>
       </div>
 
@@ -170,7 +172,7 @@ export default function AdminMetricsPage() {
           <div className="flex items-center gap-3">
             <Target className="w-6 h-6 text-primary" />
             <h2 className="font-headline text-lg font-bold text-on-surface">
-              Metas del Mes
+              {t.metrics.monthlyGoals}
             </h2>
           </div>
           {monthlyGoal && (
@@ -238,12 +240,12 @@ export default function AdminMetricsPage() {
         <div className="flex items-center gap-3 mb-4">
           <TrendingUp className="w-6 h-6 text-primary" />
           <h2 className="font-headline text-lg font-bold text-on-surface">
-            Tasas de Conversión
+            {t.metrics.conversionRates}
           </h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/30">
-            <p className="text-sm text-on-surface-variant mb-2">Puertas → Prospectos</p>
+            <p className="text-sm text-on-surface-variant mb-2">{t.metrics.doorsToProspects}</p>
             <p className="font-display text-3xl font-bold text-primary">
               {(metrics?.conversionDoorToProspect || 0).toFixed(1)}%
             </p>
@@ -260,7 +262,7 @@ export default function AdminMetricsPage() {
             )}
           </div>
           <div className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/30">
-            <p className="text-sm text-on-surface-variant mb-2">Prospectos → Cerrados</p>
+            <p className="text-sm text-on-surface-variant mb-2">{t.metrics.prospectsToClosed}</p>
             <p className="font-display text-3xl font-bold text-primary">
               {(metrics?.conversionProspectToClosed || 0).toFixed(1)}%
             </p>
@@ -316,7 +318,7 @@ export default function AdminMetricsPage() {
         <div className="flex items-center gap-3 mb-4">
           <Package className="w-6 h-6 text-primary" />
           <h2 className="font-headline text-lg font-bold text-on-surface">
-            Proyectos por Tipo
+            {t.metrics.projectsByType}
           </h2>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -343,7 +345,7 @@ export default function AdminMetricsPage() {
           <div className="flex items-center gap-3 mb-4">
             <Calendar className="w-6 h-6 text-secondary" />
             <h2 className="font-headline text-lg font-bold text-on-surface">
-              Meta Semanal
+              {t.metrics.weeklyGoals}
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -375,15 +377,15 @@ export default function AdminMetricsPage() {
         onClose={() => setActiveDetail(null)}
         title={
           activeDetail === "doors"
-            ? "Top Puertas Tocadas"
+            ? t.metrics.topDoorsKnocked
             : activeDetail === "prospects"
-            ? "Top Prospectos Generados"
+            ? t.metrics.topProspects
             : activeDetail === "projects"
-            ? "Top Proyectos Cerrados"
+            ? t.metrics.topProjectsClosed
             : activeDetail === "setterObjections"
-            ? "Objeciones Trainee"
+            ? t.metrics.setterObjections
             : activeDetail === "closerObjections"
-            ? "Objeciones Closer"
+            ? t.metrics.closerObjections
             : "Detalle"
         }
       >

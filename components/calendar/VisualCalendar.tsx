@@ -15,6 +15,7 @@ import {
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useLocale } from "@/lib/locale-context";
 
 interface CalendarVisit {
   id: number;
@@ -44,6 +45,7 @@ function formatTimeAMPM(dateStr: string): string {
 }
 
 export function VisualCalendar({ visits, onDayClick, dayAvailability, onMonthChange }: VisualCalendarProps) {
+  const { t } = useLocale();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
@@ -159,7 +161,7 @@ export function VisualCalendar({ visits, onDayClick, dayAvailability, onMonthCha
                   {format(day, 'd')}
                 </div>
                 {isCurrentMonth && avail !== null && (
-                  <div className={`w-2 h-2 rounded-full ${isAvailable ? 'bg-green-500' : 'bg-red-500'}`} title={isAvailable ? 'Disponible' : 'No Disponible'} />
+                  <div className={`w-2 h-2 rounded-full ${isAvailable ? 'bg-green-500' : 'bg-red-500'}`} title={isAvailable ? t.map.available : t.visit.notAvailable} />
                 )}
               </div>
               <div className="flex items-center gap-1">
@@ -190,7 +192,7 @@ export function VisualCalendar({ visits, onDayClick, dayAvailability, onMonthCha
                   })}
                   {dayVisits.length > 3 && (
                     <div className="text-xs text-gray-500 dark:text-gray-400 pl-1">
-                      +{dayVisits.length - 3} más
+                      +{dayVisits.length - 3}
                     </div>
                   )}
                 </div>
