@@ -1265,7 +1265,6 @@ export default function LeadDetailPage() {
                   onCancelProject={handleCancelProjectAction}
                   onReturnLead={handleReturnLead}
                   onFileFieldUpload={handleFileUploadField}
-                  onRefresh={fetchVisitDetails}
                 />
                 <div className="mt-6">
                   <NotesPanel visitId={visitId} visitCreatedAt={visit?.createdAt} />
@@ -1283,9 +1282,6 @@ export default function LeadDetailPage() {
 
             {visit.stage === "CLOSED" && (
               <>
-                {isAdmin && (
-                  <AssignPartnerPanel visitId={visit.id} currentPartnerId={visit.parcel?.partnerId} onRefresh={() => fetchVisitDetails(true)} />
-                )}
                 <DatosClosedPanel
                 visit={visit}
                 fieldMetas={fieldMetas}
@@ -1296,6 +1292,7 @@ export default function LeadDetailPage() {
                 tagSaving={tagSaving}
                 isAdmin={isAdmin}
                 role={role}
+                onRefresh={fetchVisitDetails}
               />
               <div className="mt-6">
                 <NotesPanel visitId={visitId} visitCreatedAt={visit?.createdAt} />
@@ -1995,7 +1992,6 @@ function DatosProjectPanel({
   onReturnLead,
   closeRequested,
   isPartnerView,
-  onRefresh,
 }: {
   visit: VisitDetails;
   editFields: Record<string, string>;
@@ -2014,40 +2010,12 @@ function DatosProjectPanel({
   onReturnLead?: () => void;
   closeRequested?: boolean;
   isPartnerView?: boolean;
-  onRefresh?: () => void;
 }) {
   const pd = visit.projectDetails || {};
   const nonCommonFields = fieldMetas.filter((m) => !COMMON_FIELDS.includes(m.fieldName));
 
   const [expandedProjects, setExpandedProjects] = useState<Set<number>>(new Set());
-  const [partners, setPartners] = useState<{ id: number; name: string }[]>([]);
-  const [partnerSaving, setPartnerSaving] = useState<number | null>(null);
   const { data: session } = useSession();
-
-  useEffect(() => {
-    fetch("/api/users/transferable?all=true")
-      .then((r) => r.json())
-      .then((users) => {
-        setPartners(users.filter((u: { role: string }) => u.role === "PARTNER"));
-      })
-      .catch(() => {});
-  }, []);
-
-  const handleAssignPartner = async (projectTypeId: number, partnerId: number | null) => {
-    setPartnerSaving(projectTypeId);
-    try {
-      await fetch(`/api/visits/${visit.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectPartners: [{ projectTypeId, partnerId }] }),
-      });
-      onRefresh?.();
-    } catch {
-      toast.error("Error al asignar partner");
-    } finally {
-      setPartnerSaving(null);
-    }
-  };
 
   const toggleExpandProject = (ptId: number) => {
     setExpandedProjects((prev) => {
@@ -2203,26 +2171,10 @@ function DatosProjectPanel({
               onClick={() => toggleExpandProject(project.projectTypeId)}
               className="w-full p-6 flex items-center justify-between text-left"
             >
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <h3 className="font-semibold text-lg flex items-center gap-2 text-on-surface">
-                  <Package className="w-5 h-5 text-primary shrink-0" />
-                  {project.projectTypeName}
-                </h3>
-                {isAdmin && (
-                  <select
-                    value={String(visit.projects?.find(p => p.projectType.id === project.projectTypeId)?.partnerId ?? "")}
-                    onChange={(e) => handleAssignPartner(project.projectTypeId, e.target.value ? parseInt(e.target.value) : null)}
-                    className="h-8 px-2 rounded-lg bg-surface-container-low border border-outline-variant text-xs text-on-surface min-w-[120px]"
-                    disabled={partnerSaving === project.projectTypeId}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <option value="">Sin partner</option>
-                    {partners.map((p) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                )}
-              </div>
+              <h3 className="font-semibold text-lg flex items-center gap-2 text-on-surface">
+                <Package className="w-5 h-5 text-primary shrink-0" />
+                {project.projectTypeName}
+              </h3>
               <ChevronDown className={`w-5 h-5 text-on-surface-variant transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
             </button>
             {isExpanded && (
@@ -2269,6 +2221,7 @@ function DatosClosedPanel({
   tagSaving,
   isAdmin,
   role,
+  onRefresh,
 }: {
   visit: VisitDetails;
   fieldMetas: FieldMeta[];
@@ -2279,11 +2232,47 @@ function DatosClosedPanel({
   tagSaving: boolean;
   isAdmin: boolean;
   role?: string;
+  onRefresh?: () => void;
 }) {
   const pd = visit.projectDetails || {};
 
   const nonCommonFields = fieldMetas.filter((m) => !COMMON_FIELDS.includes(m.fieldName));
   const [expandedProjects, setExpandedProjects] = useState<Set<number>>(new Set());
+  const [partners, setPartners] = useState<{ id: number; name: string }[]>([]);
+  const [partnerSaving, setPartnerSaving] = useState<number | null>(null);
+  const { data: session } = useSession();
+
+  useEffect(() => {
+    fetch("/api/users/transferable?all=true")
+      .then((r) => r.json())
+      .then((users) => {
+        setPartners(users.filter((u: { role: string }) => u.role === "PARTNER"));
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleAssignPartner = async (projectTypeId: number, partnerId: number | null) => {
+    setPartnerSaving(projectTypeId);
+    try {
+      await fetch(`/api/visits/${visit.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectPartners: [{ projectTypeId, partnerId }] }),
+      });
+      onRefresh?.();
+    } catch {
+      toast.error("Error al asignar partner");
+    } finally {
+      setPartnerSaving(null);
+    }
+  };
+
+  const visibleProjects = role === "PARTNER"
+    ? fieldMetasByProject.filter((project) => {
+        const vp = visit.projects?.find(p => p.projectType.id === project.projectTypeId);
+        return vp?.partnerId && session?.user?.id && vp.partnerId === parseInt(session.user.id);
+      })
+    : fieldMetasByProject;
 
   const toggleExpandProject = (ptId: number) => {
     setExpandedProjects((prev) => {
@@ -2351,7 +2340,7 @@ function DatosClosedPanel({
         </div>
       </Panel>
 
-      {fieldMetasByProject.length > 0 && fieldMetasByProject.map((project) => {
+      {visibleProjects.length > 0 && visibleProjects.map((project) => {
         const isExpanded = expandedProjects.has(project.projectTypeId);
         const projectFields = project.fields
           .filter((m) => !COMMON_FIELDS.includes(m.fieldName))
@@ -2976,56 +2965,4 @@ function ReadOnlyField({
   );
 }
 
-function AssignPartnerPanel({ visitId, currentPartnerId, onRefresh }: { visitId: number; currentPartnerId?: number | null; onRefresh: () => void }) {
-  const [partners, setPartners] = useState<{ id: number; name: string }[]>([]);
-  const [selectedPartnerId, setSelectedPartnerId] = useState(String(currentPartnerId ?? ""));
-  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    setSelectedPartnerId(String(currentPartnerId ?? ""));
-  }, [currentPartnerId]);
-
-  useEffect(() => {
-    fetch("/api/users/transferable?all=true")
-      .then((r) => r.json())
-      .then((users: { id: number; name: string; role: string }[]) => {
-        setPartners(users.filter((u) => u.role === "PARTNER"));
-      })
-      .catch(() => {});
-  }, []);
-
-  const handleAssignPartner = async () => {
-    setSaving(true);
-    try {
-      const pid = selectedPartnerId ? parseInt(selectedPartnerId) : null;
-      const res = await fetch(`/api/visits/${visitId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ partnerId: pid }),
-      });
-      if (res.ok) {
-        toast.success(pid ? "Partner asignado" : "Partner removido");
-        onRefresh();
-      } else {
-        toast.error("Error al asignar");
-      }
-    } catch { toast.error("Error"); }
-    finally { setSaving(false); }
-  };
-
-  return (
-    <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800 mb-4">
-      <h4 className="text-sm font-semibold text-purple-700 dark:text-purple-300 mb-2">Asignar Partner</h4>
-      <div className="flex gap-2">
-        <select value={selectedPartnerId} onChange={(e) => setSelectedPartnerId(e.target.value)}
-          className="flex-1 h-9 px-2 rounded-lg border border-purple-200 dark:border-purple-700 bg-white dark:bg-gray-800 text-sm">
-          <option value="">Sin partner</option>
-          {partners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
-        <Button onClick={handleAssignPartner} disabled={saving} size="sm" className="gap-1">
-          {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Guardar"}
-        </Button>
-      </div>
-    </div>
-  );
-}
