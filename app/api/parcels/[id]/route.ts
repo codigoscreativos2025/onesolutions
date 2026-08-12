@@ -22,13 +22,17 @@ export async function GET(
       },
       visits: {
         orderBy: { createdAt: "desc" },
-        take: 1,
         include: {
           setter: {
             select: { id: true, name: true },
           },
           closer: {
             select: { id: true, name: true },
+          },
+          projects: {
+            include: {
+              projectType: { select: { id: true, name: true } },
+            },
           },
           objections: {
             include: {

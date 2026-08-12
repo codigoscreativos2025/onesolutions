@@ -46,15 +46,23 @@ export async function POST(
       });
     }
 
+    // Check for closed visits to allow reclaim
+    const closedVisitsCount = await prisma.visit.count({
+      where: { parcelId: parcel.id, stage: "CLOSED" },
+    });
+    const hasClosedVisits = closedVisitsCount > 0;
+
+    let isReclaim = false;
     if (parcel.status !== "AVAILABLE") {
       const existingSetter =
         parcel.setterId !== userId && parcel.setterId !== null;
-      if (existingSetter) {
+      if (existingSetter && !hasClosedVisits) {
         return NextResponse.json(
           { error: "Parcel already claimed" },
           { status: 409 }
         );
       }
+      if (hasClosedVisits) isReclaim = true;
     }
 
     const updated = await prisma.parcel.update({
@@ -62,6 +70,7 @@ export async function POST(
       data: {
         status: "LEAD",
         setterId: userId,
+        ...(isReclaim ? { parcelTags: null } : {}),
         address: body.address || parcel.address || "Sin dirección",
         ownerName: body.ownerName || parcel.ownerName || null,
       },

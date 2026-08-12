@@ -202,6 +202,8 @@ export function ParcelSheet({
   const canVisit = userRole === "SETTER" || userRole === "SETTER_JR" || userRole === "CLOSER";
   const isTakenByMe = parcel.setter?.id === parseInt(userId);
   const isAvailable = parcel.status === "AVAILABLE";
+  const closedVisits = parcel.visits?.filter(v => v.stage === "CLOSED") || [];
+  const hasPriorProjects = closedVisits.length > 0;
 
   const tags: TagObject[] = (() => {
     try {
@@ -399,6 +401,34 @@ export function ParcelSheet({
 
           </div>
 
+          {hasPriorProjects && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                Historial de Proyectos
+              </h3>
+              {closedVisits.map((v) => (
+                <div key={v.id} className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/15 flex justify-between items-start">
+                  <div className="text-sm">
+                    <p className="font-medium text-on-surface">
+                      Cerrado por {v.setter?.name || "Desconocido"}
+                    </p>
+                    <p className="text-xs text-on-surface-variant mt-0.5">
+                      Proyectos: {v.projects?.map(p => p.projectType.name).join(", ") || "N/A"}
+                    </p>
+                    {v.createdAt && (
+                      <p className="text-xs text-on-surface-variant mt-0.5">
+                        {new Date(v.createdAt).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                  <Link href={`/lead/${v.id}`} target="_blank" className="text-primary text-xs hover:underline shrink-0 ml-2">
+                    Ver
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
+
           {quickTagMessage && (
             <div
               className="p-4 rounded-xl border flex items-center gap-3"
@@ -436,7 +466,7 @@ export function ParcelSheet({
             />
           </div>
 
-          {canVisit && isAvailable && parcel.status !== "CUSTOMER" && (
+          {canVisit && isAvailable && !hasPriorProjects && parcel.status !== "CUSTOMER" && (
             <>
               <div className="grid grid-cols-2 gap-2">
                 <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO ABRIO", "#ef4444")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#ef4444" }}><DoorClosed className="w-3.5 h-3.5 mr-1" />No abrio</Button>
@@ -494,7 +524,7 @@ export function ParcelSheet({
             </p>
           )}
 
-          {canVisit && isAvailable && parcel.status !== "CUSTOMER" && (
+          {canVisit && (isAvailable || hasPriorProjects) && parcel.status !== "CUSTOMER" && (
             <div className="flex flex-col gap-3">
               <Button
                 onClick={handleKnockDoor}
@@ -511,7 +541,7 @@ export function ParcelSheet({
             </div>
           )}
 
-          {!isAdmin && !isAvailable && parcel.status !== "CUSTOMER" && (
+          {!isAdmin && !isAvailable && !hasPriorProjects && parcel.status !== "CUSTOMER" && (
             <>
               <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-surface-container-low border border-outline-variant/30">
                 <span className="w-3 h-3 rounded-full bg-green-500 inline-block shrink-0" />
