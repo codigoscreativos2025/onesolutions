@@ -66,7 +66,7 @@ export default function LoginPage() {
           <h1 className="font-display text-3xl font-bold text-on-surface">
             One Solutions
           </h1>
-          <p className="text-on-surface-variant mt-2">Bienvenido</p>
+          <p className="text-on-surface-variant mt-2">{t.login.title}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">

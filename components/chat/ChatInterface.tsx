@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
+import { useLocale } from "@/lib/locale-context";
 import { COMMON_FIELDS, OPTIONAL_FIELDS, FILE_FIELD_KEYS } from "@/lib/project-constants";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -93,6 +94,7 @@ type ColumnView = "list" | "conversation" | "info";
 export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomList = false }: { isAdmin?: boolean; initialRoomId?: number | null; hideRoomList?: boolean }) {
   const { data: session } = useSession();
   const role = session?.user?.role ?? "";
+  const { t } = useLocale();
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(initialRoomId);

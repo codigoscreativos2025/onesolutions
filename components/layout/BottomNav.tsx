@@ -17,12 +17,12 @@ export function BottomNav() {
   const navItems = [
     { href: "/map", label: t.nav.map, icon: Map, roles: ["SETTER", "SETTER_JR", "CLOSER", "ADMIN"] },
     { href: "/ranking", label: t.nav.ranking, icon: Trophy, roles: ["SETTER", "SETTER_JR", "CLOSER", "ADMIN"], highlighted: true },
-    { href: "/metrics", label: "Dashboard", icon: BarChart3, roles: ["SETTER", "SETTER_JR", "CLOSER", "ADMIN"] },
-    { href: "/dashboard", label: "Pipeline", icon: LayoutDashboard, roles: ["SETTER", "SETTER_JR", "CLOSER", "ADMIN"] },
+    { href: "/metrics", label: t.nav.metrics, icon: BarChart3, roles: ["SETTER", "SETTER_JR", "CLOSER", "ADMIN"] },
+    { href: "/dashboard", label: t.nav.pipeline, icon: LayoutDashboard, roles: ["SETTER", "SETTER_JR", "CLOSER", "ADMIN"] },
     { href: "/calendar", label: t.nav.calendar, icon: Calendar, roles: ["SETTER", "CLOSER", "ADMIN"] },
     { href: "/chat", label: t.nav.chat, icon: MessageSquare, roles: ["SETTER", "CLOSER", "ADMIN", "PARTNER"] },
-    { href: "/dashboard", label: "Proyectos", icon: Briefcase, roles: ["PARTNER"] },
-    { href: "/admin", label: "Admin", icon: Shield, roles: ["ADMIN"] },
+    { href: "/dashboard", label: t.nav.projects, icon: Briefcase, roles: ["PARTNER"] },
+    { href: "/admin", label: t.nav.admin, icon: Shield, roles: ["ADMIN"] },
   ];
 
   const visibleItems = navItems.filter((item) =>

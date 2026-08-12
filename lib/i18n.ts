@@ -13,6 +13,9 @@ export const translations = {
       ranking: "Ranking",
       chat: "Chat",
       admin: "Admin",
+      metrics: "Métricas",
+      pipeline: "Pipeline",
+      projects: "Proyectos",
     },
     login: {
       title: "Iniciar Sesión",
@@ -199,6 +202,9 @@ export const translations = {
       ranking: "Ranking",
       chat: "Chat",
       admin: "Admin",
+      metrics: "Metrics",
+      pipeline: "Pipeline",
+      projects: "Projects",
     },
     login: {
       title: "Login",
