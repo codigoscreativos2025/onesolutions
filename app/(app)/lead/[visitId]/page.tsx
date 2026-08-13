@@ -2081,7 +2081,7 @@ function DatosProjectPanel({
           <div className="mt-4 flex gap-3 flex-wrap items-center">
             {canRequestClose && (
               closeRequested ? (
-                <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/40 text-amber-600 dark:text-amber-400">
+                <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
                   <Clock className="w-4 h-4 shrink-0" />
                   <span className="text-sm font-semibold">Cierre Solicitado</span>
                 </div>

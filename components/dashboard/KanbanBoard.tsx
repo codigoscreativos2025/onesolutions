@@ -738,7 +738,7 @@ function KanbanCard({
           return (
             <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-semibold mt-2">
               <Clock className="w-3 h-3" />
-              <span>Lead en espera</span>
+              <span>Cierre Solicitado</span>
             </div>
           );
         }
@@ -848,7 +848,7 @@ function KanbanCardOverlay({ visit }: { visit: KanbanVisit }) {
           return (
             <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-semibold mt-2">
               <Clock className="w-3 h-3" />
-              <span>Lead en espera</span>
+              <span>Cierre Solicitado</span>
             </div>
           );
         }
