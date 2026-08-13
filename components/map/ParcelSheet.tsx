@@ -569,7 +569,8 @@ export function ParcelSheet({
               {parcel.visits?.[0]?.id && (
                 <Button 
                   onClick={() => router.push(`/lead/${parcel.visits?.[0]?.id}`)} 
-                  className="w-full mt-4 bg-brand-green hover:bg-brand-green/90 text-white shadow-md py-6 rounded-xl"
+                  disabled={userRole === "SETTER_JR"}
+                  className="w-full mt-4 bg-brand-green hover:bg-brand-green/90 text-white shadow-md py-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Ver detalles
                 </Button>
