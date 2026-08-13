@@ -344,6 +344,25 @@ export async function PATCH(
         data: { parcelTags: null },
       });
     }
+    
+    if (updateData.stage === "CLOSED" && session.user.role === "ADMIN") {
+      const address = visit.parcel?.address || "un proyecto";
+      const userIdsToNotify = [];
+      if (visit.setterId) userIdsToNotify.push(visit.setterId);
+      if (visit.closerId) userIdsToNotify.push(visit.closerId);
+      
+      const uniqueIds = Array.from(new Set(userIdsToNotify));
+      for (const id of uniqueIds) {
+        await prisma.notification.create({
+          data: {
+            userId: id,
+            title: "Proyecto Cerrado",
+            body: `El proyecto en ${address} ha sido cerrado por el Admin.`,
+            link: `/lead/${visitId}`,
+          }
+        });
+      }
+    }
   }
 
   return NextResponse.json({ success: true });
