@@ -27,7 +27,7 @@ export async function PATCH(
 
   const role = session.user.role;
   const userId = parseInt(session.user.id);
-  if (role === 'SETTER' || role === 'SETTER_JR') {
+  if (role === 'SETTER' || role === 'SETTER_JR' || role === 'TRAINEE') {
     const isOwner = visit.setterId === userId || visit.closerId === userId || visit.parcel?.visitHistory?.some((h: any) => h.setter?.name === session.user.name);
     if (!isOwner) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });

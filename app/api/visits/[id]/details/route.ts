@@ -114,10 +114,9 @@ export async function GET(
       return NextResponse.json({ error: 'Visit not found' }, { status: 404 });
     }
 
-    const userId = parseInt(session.user.id);
     const role = session.user.role;
-
-    if (role === 'SETTER' || role === 'SETTER_JR') {
+    const userId = parseInt(session.user.id);
+    if (role === 'SETTER' || role === 'SETTER_JR' || role === 'TRAINEE') {
       const isOwner = visit.setter?.id === userId || visit.closer?.id === userId || visit.parcel?.visitHistory?.some(h => h.setter?.name === session.user.name);
       if (!isOwner) {
         return NextResponse.json({ error: 'Forbidden: You can only view your own projects' }, { status: 403 });

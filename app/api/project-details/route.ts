@@ -41,10 +41,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "visitId required" }, { status: 400 });
     }
 
+    const visit = await prisma.visit.findUnique({
+      where: { id: parseInt(visitId) },
+      include: { slot: true },
+    });
+
+    if (!visit) {
+      return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+    }
+
     // Convertir fechas de string a Date
     const processedDetails = { ...details };
     if (processedDetails.closingDate && typeof processedDetails.closingDate === 'string') {
-      processedDetails.closingDate = new Date(processedDetails.closingDate);
+      const parsedClosingDate = new Date(processedDetails.closingDate);
+      
+      const baseDate = visit.slot?.startAt || visit.createdAt;
+      const minDate = new Date(baseDate);
+      minDate.setDate(minDate.getDate() + 14);
+      minDate.setHours(0, 0, 0, 0);
+
+      const checkDate = new Date(parsedClosingDate);
+      checkDate.setHours(0, 0, 0, 0);
+
+      if (checkDate < minDate) {
+        return NextResponse.json({ error: "La fecha de cierre debe ser al menos 14 días después de la creación de la cita." }, { status: 400 });
+      }
+
+      processedDetails.closingDate = parsedClosingDate;
     }
     if (processedDetails.siteSurveyDate && typeof processedDetails.siteSurveyDate === 'string') {
       processedDetails.siteSurveyDate = new Date(processedDetails.siteSurveyDate);

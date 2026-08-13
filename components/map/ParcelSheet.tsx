@@ -424,7 +424,7 @@ export function ParcelSheet({
                       </p>
                     )}
                   </div>
-                  {userRole !== "SETTER_JR" && (userRole !== "SETTER" || v.setter?.id === parseInt(userId)) && (
+                  {userRole !== "SETTER_JR" && (userRole !== "SETTER" && userRole !== "TRAINEE" || v.setter?.id === parseInt(userId)) && (
                     <Link href={`/lead/${v.id}`} target="_blank" className="text-primary text-xs hover:underline shrink-0 ml-2">
                       Ver
                     </Link>
@@ -581,7 +581,7 @@ export function ParcelSheet({
               {parcel.visits?.[0]?.id && (
                 <Button 
                   onClick={() => router.push(`/lead/${parcel.visits?.[0]?.id}`)} 
-                  disabled={userRole === "SETTER_JR" || (userRole === "SETTER" && !isTakenByMe)}
+                  disabled={userRole === "SETTER_JR" || ((userRole === "SETTER" || userRole === "TRAINEE") && !isTakenByMe)}
                   className="w-full mt-4 bg-brand-green hover:bg-brand-green/90 text-white shadow-md py-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Ver detalles

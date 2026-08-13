@@ -538,35 +538,33 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
       />
 
       {/* Leyenda de Etiquetas */}
-      {legendTags.length > 0 && (
-        <div className="absolute top-4 left-4 z-10 bg-surface/95 backdrop-blur-xl shadow-2xl border border-outline-variant/30 rounded-2xl p-4 min-w-[220px]">
-          <h3 className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mb-3 ml-1">
-            Leyenda de Estados
-          </h3>
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-3 bg-surface-container-low rounded-xl p-2 border border-outline-variant/30 transition-all hover:bg-surface-container-high">
-              <div className="w-3.5 h-3.5 rounded-full shadow-sm shrink-0 bg-[#22C55E]" />
-              <input type="text" readOnly value="Lead Nuevo" className="bg-transparent border-none p-0 text-xs font-semibold text-on-surface outline-none w-full pointer-events-none truncate" />
-            </div>
-            <div className="flex items-center gap-3 bg-surface-container-low rounded-xl p-2 border border-outline-variant/30 transition-all hover:bg-surface-container-high">
-              <div className="w-3.5 h-3.5 rounded-full shadow-sm shrink-0 bg-[#10b981]" />
-              <input type="text" readOnly value="Cliente" className="bg-transparent border-none p-0 text-xs font-semibold text-on-surface outline-none w-full pointer-events-none truncate" />
-            </div>
-            {legendTags.map((tag) => (
-              <div key={tag.id} className="flex items-center gap-3 bg-surface-container-low rounded-xl p-2 border border-outline-variant/30 transition-all hover:bg-surface-container-high">
-                <div className="w-3.5 h-3.5 rounded-full shadow-sm shrink-0" style={{ backgroundColor: tag.color }} />
-                <input
-                  type="text"
-                  readOnly
-                  value={tag.name}
-                  className="bg-transparent border-none p-0 text-xs font-semibold text-on-surface outline-none w-full pointer-events-none truncate"
-                  title={tag.name}
-                />
-              </div>
-            ))}
+      <div className="absolute top-4 left-4 z-10 bg-surface/95 backdrop-blur-xl shadow-2xl border border-outline-variant/30 rounded-2xl p-4 min-w-[220px]">
+        <h3 className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mb-3 ml-1">
+          Leyenda de Estados
+        </h3>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-3 bg-surface-container-low rounded-xl p-2 border border-outline-variant/30 transition-all hover:bg-surface-container-high">
+            <div className="w-3.5 h-3.5 rounded-full shadow-sm shrink-0 bg-[#22C55E]" />
+            <input type="text" readOnly value="Lead Nuevo" className="bg-transparent border-none p-0 text-xs font-semibold text-on-surface outline-none w-full pointer-events-none truncate" />
           </div>
+          <div className="flex items-center gap-3 bg-surface-container-low rounded-xl p-2 border border-outline-variant/30 transition-all hover:bg-surface-container-high">
+            <div className="w-3.5 h-3.5 rounded-full shadow-sm shrink-0 bg-[#10b981]" />
+            <input type="text" readOnly value="Cliente" className="bg-transparent border-none p-0 text-xs font-semibold text-on-surface outline-none w-full pointer-events-none truncate" />
+          </div>
+          {legendTags.map((tag) => (
+            <div key={tag.id} className="flex items-center gap-3 bg-surface-container-low rounded-xl p-2 border border-outline-variant/30 transition-all hover:bg-surface-container-high">
+              <div className="w-3.5 h-3.5 rounded-full shadow-sm shrink-0" style={{ backgroundColor: tag.color }} />
+              <input
+                type="text"
+                readOnly
+                value={tag.name}
+                className="bg-transparent border-none p-0 text-xs font-semibold text-on-surface outline-none w-full pointer-events-none truncate"
+                title={tag.name}
+              />
+            </div>
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }

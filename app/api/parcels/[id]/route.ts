@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { verifyApiAuth } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
@@ -7,10 +7,11 @@ export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authRes = await verifyApiAuth();
+  if (authRes.error) {
+    return NextResponse.json({ error: authRes.error }, { status: authRes.status });
   }
+  const session = authRes.session!;
 
   const { id } = await params;
 
@@ -20,6 +21,7 @@ export async function GET(
       setter: {
         select: { id: true, name: true },
       },
+      visitHistory: true,
       visits: {
         orderBy: { createdAt: "desc" },
         include: {
@@ -58,6 +60,24 @@ export async function GET(
     return NextResponse.json({ error: "Parcel not found" }, { status: 404 });
   }
 
+  const role = session.user.role;
+  const userId = parseInt(session.user.id);
+  
+  if (role === 'SETTER' || role === 'SETTER_JR' || role === 'TRAINEE') {
+    const isOwner = parcel.setterId === userId || 
+                    parcel.visits?.some((v: any) => v.setterId === userId || v.closerId === userId) ||
+                    parcel.visitHistory?.some((h: any) => h.setterId === userId);
+    if (!isOwner) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  } else if (role === 'PARTNER') {
+    if (parcel.partnerId !== userId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
+
+  // Remove history/notes if Trainee didn't claim it? No, if isOwner is true, they claimed it or were assigned.
+
   return NextResponse.json(parcel);
 }
 
@@ -65,10 +85,11 @@ export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session || !session.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authRes = await verifyApiAuth();
+  if (authRes.error) {
+    return NextResponse.json({ error: authRes.error }, { status: authRes.status });
   }
+  const session = authRes.session!;
 
   const { id } = await params;
   const body = await request.json();
