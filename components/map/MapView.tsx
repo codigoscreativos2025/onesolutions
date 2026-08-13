@@ -342,6 +342,7 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
         id: "parcel-status-circles",
         type: "circle",
         source: "parcel-status-points",
+        filter: ["!=", ["get", "hasHistory"], true],
         minzoom: 8,
         paint: {
           "circle-radius": 8,
@@ -349,6 +350,25 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
           "circle-opacity": 0.9,
           "circle-stroke-color": "#ffffff",
           "circle-stroke-width": 2,
+        },
+      });
+
+      m.addLayer({
+        id: "parcel-status-triangles",
+        type: "symbol",
+        source: "parcel-status-points",
+        filter: ["==", ["get", "hasHistory"], true],
+        minzoom: 8,
+        layout: {
+          "text-field": "▲",
+          "text-size": 22,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true,
+        },
+        paint: {
+          "text-color": ["get", "color"],
+          "text-halo-color": "#ffffff",
+          "text-halo-width": 1.5,
         },
       });
 
@@ -361,7 +381,7 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
           const res = await fetch(
             `/api/parcels/in-viewport?swlat=${sw.lat}&swlng=${sw.lng}&nelat=${ne.lat}&nelng=${ne.lng}`
           );
-          const parcels: { id: string; status: string; parcelTags?: string; coordinates: [number, number] }[] = await res.json();
+          const parcels: { id: string; status: string; parcelTags?: string; coordinates: [number, number]; hasHistory?: boolean }[] = await res.json();
           const features = parcels.map((p) => {
             let dotColor = p.status === "LEAD" ? "#22C55E" : (p.status === "CUSTOMER" ? "#10b981" : "#EF4444");
             if (p.status !== "LEAD" && p.status !== "CUSTOMER" && p.parcelTags) {
@@ -376,6 +396,7 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
               properties: {
                 id: p.id,
                 color: dotColor,
+                hasHistory: !!p.hasHistory,
               },
             };
           });

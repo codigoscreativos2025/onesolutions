@@ -34,11 +34,16 @@ export async function GET(request: Request) {
         geometry: true,
         parcelTags: true,
         setter: { select: { name: true } },
+        visits: {
+          select: {
+            stage: true,
+          }
+        }
       },
     });
 
     const results = parcels
-      .map((p) => {
+      .map((p: any) => {
         try {
           const geom = JSON.parse(p.geometry);
           if (!geom?.coordinates?.[0]) return null;
@@ -57,6 +62,8 @@ export async function GET(request: Request) {
           const lat = sumLat / count;
           const lng = sumLng / count;
           if (lat < swLat || lat > neLat || lng < swLng || lng > neLng) return null;
+          const hasHistory = p.status === 'CUSTOMER' || (p.visits && p.visits.some((v: any) => v.stage === "CLOSED"));
+
           return {
             id: p.id,
             address: p.address,
@@ -64,6 +71,7 @@ export async function GET(request: Request) {
             parcelTags: p.parcelTags,
             coordinates: [lng, lat],
             setterName: p.setter?.name,
+            hasHistory
           };
         } catch {
           return null;
