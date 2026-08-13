@@ -2381,13 +2381,14 @@ function DatosClosedPanel({
                   <select
                     value={String(visit.projects?.find(p => p.projectType.id === project.projectTypeId)?.partnerId ?? "")}
                     onChange={(e) => handleAssignPartner(project.projectTypeId, e.target.value ? parseInt(e.target.value) : null)}
-                    className="h-8 px-2 rounded-lg bg-surface-container-low border border-outline-variant text-xs text-on-surface min-w-[120px]"
+                    className="h-8 px-3 rounded-full text-xs font-bold tracking-wider cursor-pointer outline-none transition-colors min-w-[120px]"
+                    style={{ backgroundColor: "#f4822120", color: "#f48221", border: "1px solid #f4822140" }}
                     disabled={partnerSaving === project.projectTypeId}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <option value="">Sin partner</option>
+                    <option value="" className="text-on-surface bg-surface-container-high">Sin partner</option>
                     {partners.map((p) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
+                      <option key={p.id} value={p.id} className="text-on-surface bg-surface-container-high">{p.name}</option>
                     ))}
                   </select>
                 )}
@@ -2648,12 +2649,15 @@ function ArchivosPanel({ visit, onUpdate, role }: { visit: VisitDetails; onUpdat
     if (!visit?.contractFields) return false;
     try { return !!(JSON.parse(visit.contractFields)?.closeRequestedAt); } catch { return false; }
   })();
-  const isLocked = role === 'ADMIN' || (visit.stage === 'PROJECT' && closeRequested);
+  
+  const isFinished = visit.stage === 'CLOSED' || visit.stage === 'CANCELLED' || (visit.stage === 'PROJECT' && closeRequested);
+  const canUpload = role !== 'ADMIN' && !isFinished;
+  const canDelete = role === 'ADMIN' || !isFinished;
 
   if (noFiles) {
     return (
       <div className="space-y-6">
-        {!isLocked && (
+        {canUpload && (
         <div className="mb-6 p-4 glass-panel rounded-xl">
           <h4 className="text-sm font-semibold mb-3">Agregar Documento</h4>
           <div className="flex flex-col gap-2">
@@ -2708,7 +2712,7 @@ function ArchivosPanel({ visit, onUpdate, role }: { visit: VisitDetails; onUpdat
 
   return (
     <div className="space-y-8">
-      {!isLocked && (
+      {canUpload && (
       <div className="mb-6 p-4 glass-panel rounded-xl">
         <h4 className="text-sm font-semibold mb-3">Agregar Documento</h4>
         <div className="flex flex-col gap-2">
@@ -2764,7 +2768,7 @@ function ArchivosPanel({ visit, onUpdate, role }: { visit: VisitDetails; onUpdat
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.03 }}
             >
-              {!isLocked && (
+              {canDelete && (
               <button
                 onClick={() => setFileToDelete(file)}
                 className="absolute top-1 left-1 z-10 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
