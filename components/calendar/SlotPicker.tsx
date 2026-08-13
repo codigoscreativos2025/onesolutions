@@ -181,12 +181,12 @@ export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: Slo
               className={`min-h-[40px] p-1 rounded-lg border text-sm transition-all ${
                 !isCurrentMonth
                   ? 'border-transparent opacity-30 cursor-default'
+                  : isSelected
+                  ? 'border-primary bg-primary/10 text-primary'
                   : isPastDate
                   ? 'border-gray-200 bg-gray-100 text-gray-400 dark:border-gray-700 dark:bg-gray-800 opacity-60 cursor-not-allowed'
                   : !available
                   ? 'border-red-200 bg-red-50 dark:border-gray-700 opacity-50 cursor-not-allowed'
-                  : isSelected
-                  ? 'border-primary bg-primary/10 text-primary'
                   : 'border-green-300 bg-green-50 text-green-800 hover:border-green-400 cursor-pointer'
               }`}
             >
