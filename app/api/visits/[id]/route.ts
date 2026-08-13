@@ -245,21 +245,25 @@ export async function PATCH(
     }
     if (closerId !== undefined && closerId !== setterId) {
       let isPanelSolarAssignment = false;
-      if (session.user.role === "SETTER_JR") {
-        const visitProjects = await prisma.visitProject.findMany({
-          where: { visitId },
-          include: { projectType: true }
-        });
-        isPanelSolarAssignment = visitProjects.some(vp => vp.projectType.name.toLowerCase().includes("panel solar"));
-      }
+      const visitProjects = await prisma.visitProject.findMany({
+        where: { visitId },
+        include: { projectType: true }
+      });
+      isPanelSolarAssignment = visitProjects.some(vp => vp.projectType.name.toLowerCase().includes("panel solar"));
 
       if (isPanelSolarAssignment) {
         const address = visit.parcel?.address || "el lead";
+        let roleName = "Usuario";
+        if (session.user.role === "SETTER") roleName = "Setter";
+        else if (session.user.role === "SETTER_JR") roleName = "Setter Jr";
+        else if (session.user.role === "TRAINEE") roleName = "Trainee";
+        else if (session.user.role === "ADMIN") roleName = "Admin";
+        
         await prisma.notification.create({
           data: {
             userId: closerId,
             title: "Asignado a Panel Solar",
-            body: `El ${session.user.role === "SETTER_JR" ? "Setter" : "Trainee"} ${session.user.name} te ha seleccionado para el proyecto Panel Solar en ${address}.`,
+            body: `El ${roleName} ${session.user.name} te ha seleccionado para el proyecto Panel Solar en ${address}.`,
             link: `/lead/${visitId}`,
           },
         });
