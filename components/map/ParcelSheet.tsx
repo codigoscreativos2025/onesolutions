@@ -424,9 +424,11 @@ export function ParcelSheet({
                       </p>
                     )}
                   </div>
-                  <Link href={`/lead/${v.id}`} target="_blank" className="text-primary text-xs hover:underline shrink-0 ml-2">
-                    Ver
-                  </Link>
+                  {userRole !== "SETTER_JR" && (
+                    <Link href={`/lead/${v.id}`} target="_blank" className="text-primary text-xs hover:underline shrink-0 ml-2">
+                      Ver
+                    </Link>
+                  )}
                 </div>
               ))}
             </div>
