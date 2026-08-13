@@ -56,6 +56,7 @@ interface Room {
     stage?: string;
     createdAt?: string;
     finalizedAt?: string;
+    contractFields?: string | null;
     parcel: { id: string; address: string; ownerName?: string; parcelTags?: string | null };
     setter: { id: number; name: string };
     closer?: { id: number; name: string };
@@ -104,6 +105,24 @@ function parseParcelTags(raw?: string | null): ParcelTag[] {
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
+  }
+}
+
+function getVisitSpecialTag(visit: { stage?: string; contractFields?: string | null }): string {
+  if (!visit.contractFields) return "";
+  try {
+    const cf = JSON.parse(visit.contractFields);
+    if (visit.stage === "CLOSED") {
+      return cf.postCloseTags || "";
+    }
+    if (visit.stage === "PROJECT") {
+      if (cf.closeRequestedAt) return "Cierre Solicitado";
+      if (cf.returnedAt) return "Proyecto devuelto";
+      return "";
+    }
+    return "";
+  } catch {
+    return "";
   }
 }
 
@@ -439,7 +458,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
     const clientName = (room.visit?.bill?.clientName || "").toLowerCase();
     const matchesSearch = !q || address.includes(q) || clientName.includes(q);
     const matchesStage = !stageFilter || room.visit?.stage === stageFilter;
-    const matchesTag = !tagFilter || parseParcelTags(room.visit?.parcel.parcelTags).some((t) => t.name === tagFilter);
+    const matchesTag = !tagFilter || getVisitSpecialTag(room.visit) === tagFilter;
     return matchesSearch && matchesStage && matchesTag;
   });
 
@@ -458,14 +477,22 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
   }, [rooms, isAdminRole]);
 
   const availableTags = useMemo(() => {
-    const set = new Map<string, string>();
-    for (const room of rooms) {
-      for (const t of parseParcelTags(room.visit?.parcel.parcelTags)) {
-        if (t.name) set.set(t.name, t.color || "#3b82f6");
-      }
+    if (!stageFilter) return [];
+    if (stageFilter === "CLOSED") {
+      return [
+        { name: "En permisos", color: "#f59e0b" },
+        { name: "En instalacion", color: "#06b6d4" },
+        { name: "Finalizado", color: "#22c55e" },
+      ];
     }
-    return Array.from(set, ([name, color]) => ({ name, color }));
-  }, [rooms]);
+    if (stageFilter === "PROJECT") {
+      return [
+        { name: "Cierre Solicitado", color: "#10b981" },
+        { name: "Proyecto devuelto", color: "#f97316" },
+      ];
+    }
+    return [];
+  }, [stageFilter]);
 
   const filteredAdminGroups = adminGroups.filter((g) => {
     const q = searchQuery.trim().toLowerCase();
@@ -473,7 +500,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
     const clientName = (g.visit.bill?.clientName || "").toLowerCase();
     const matchesSearch = !q || address.includes(q) || clientName.includes(q);
     const matchesStage = !stageFilter || g.visit.stage === stageFilter;
-    const matchesTag = !tagFilter || parseParcelTags(g.visit.parcel.parcelTags).some((t) => t.name === tagFilter);
+    const matchesTag = !tagFilter || getVisitSpecialTag(g.visit) === tagFilter;
     return matchesSearch && matchesStage && matchesTag;
   });
 
@@ -640,18 +667,18 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                 <div className="flex gap-2 mt-2">
                   <select
                     value={stageFilter}
-                    onChange={(e) => setStageFilter(e.target.value)}
+                    onChange={(e) => { setStageFilter(e.target.value); setTagFilter(""); }}
                     className="h-9 px-2 rounded-lg bg-surface-container-low border border-outline-variant text-xs text-on-surface flex-1 min-w-0"
                   >
                     <option value="">Todas las etapas</option>
-                    {Object.entries(stageLabels).map(([key, label]) => (
-                      <option key={key} value={key}>{label}</option>
-                    ))}
+                    <option value="PROJECT">En Proyecto</option>
+                    <option value="CLOSED">Proyecto Finalizado</option>
                   </select>
                   <select
                     value={tagFilter}
                     onChange={(e) => setTagFilter(e.target.value)}
                     className="h-9 px-2 rounded-lg bg-surface-container-low border border-outline-variant text-xs text-on-surface flex-1 min-w-0"
+                    disabled={!stageFilter}
                   >
                     <option value="">Todas las etiquetas</option>
                     {availableTags.map((t) => (
