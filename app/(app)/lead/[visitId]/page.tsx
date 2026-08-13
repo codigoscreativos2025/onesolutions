@@ -1267,7 +1267,7 @@ export default function LeadDetailPage() {
                   onFileFieldUpload={handleFileUploadField}
                 />
                 <div className="mt-6">
-                  <NotesPanel visitId={visitId} visitCreatedAt={visit?.createdAt} />
+                  <NotesPanel visitId={visitId} visitCreatedAt={visit?.createdAt} disabled={closeRequested} />
                 </div>
                 {isAdmin && (
                   <div className="mt-6 flex gap-3">
@@ -1295,7 +1295,7 @@ export default function LeadDetailPage() {
                 onRefresh={fetchVisitDetails}
               />
               <div className="mt-6">
-                <NotesPanel visitId={visitId} visitCreatedAt={visit?.createdAt} />
+                <NotesPanel visitId={visitId} visitCreatedAt={visit?.createdAt} disabled={true} />
               </div>
             </>
             )}

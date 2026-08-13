@@ -18,6 +18,7 @@ interface Note {
 interface NotesPanelProps {
   visitId: number;
   visitCreatedAt?: string;
+  disabled?: boolean;
 }
 
 function Panel({ children }: { children: React.ReactNode }) {
@@ -32,7 +33,7 @@ function Panel({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function NotesPanel({ visitId, visitCreatedAt }: NotesPanelProps) {
+export function NotesPanel({ visitId, visitCreatedAt, disabled }: NotesPanelProps) {
   const { data: session } = useSession();
   const { t } = useLocale();
   const userId = session?.user?.id ? parseInt(session.user.id) : null;
@@ -182,7 +183,7 @@ export function NotesPanel({ visitId, visitCreatedAt }: NotesPanelProps) {
   };
 
   const canEdit = (note: Note) =>
-    !isAdmin && note.user.id === userId;
+    !isAdmin && !disabled && note.user.id === userId;
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -270,7 +271,7 @@ export function NotesPanel({ visitId, visitCreatedAt }: NotesPanelProps) {
           )}
         </div>
 
-        {!isAdmin && (
+        {!isAdmin && !disabled && (
           <div className="flex gap-2 pt-2 border-t border-outline-variant/30">
             <textarea
               value={newContent}
