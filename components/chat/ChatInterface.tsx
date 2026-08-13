@@ -16,16 +16,19 @@ import { ContractModal } from "@/components/quote/ContractModal";
 
 const getStageBadge = (stage?: string) => {
   const stageMap: Record<string, { label: string, color: string }> = {
-    "IN_PROGRESS": { label: "Leads", color: "bg-blue-500" },
-    "POTENTIAL_LEAD": { label: "Lead Potencial", color: "bg-amber-500" },
-    "PROPOSAL_ACCEPTED": { label: "Leads Potenciales", color: "bg-amber-500" },
-    "PROJECT": { label: "En Proyecto", color: "bg-purple-500" },
-    "CLOSED": { label: "Proyecto Finalizado", color: "bg-green-500" },
-    "CANCELLED": { label: "Proyecto Cancelado", color: "bg-red-500" }
+    "IN_PROGRESS": { label: "Leads", color: "#3b82f6" },
+    "POTENTIAL_LEAD": { label: "Lead Potencial", color: "#f59e0b" },
+    "PROPOSAL_ACCEPTED": { label: "Leads Potenciales", color: "#f59e0b" },
+    "PROJECT": { label: "En Proyecto", color: "#a855f7" },
+    "CLOSED": { label: "Proyecto Finalizado", color: "#22c55e" },
+    "CANCELLED": { label: "Proyecto Cancelado", color: "#ef4444" }
   };
-  const s = stageMap[stage || ""] || { label: stage || "Desconocido", color: "bg-gray-500" };
+  const s = stageMap[stage || ""] || { label: stage || "Desconocido", color: "#6b7280" };
   return (
-    <span className={`px-2 py-0.5 rounded text-[10px] font-bold text-white ${s.color}`}>
+    <span 
+      className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide"
+      style={{ backgroundColor: `${s.color}20`, color: s.color, border: `1px solid ${s.color}40` }}
+    >
       {s.label}
     </span>
   );
@@ -921,11 +924,21 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                   </div>
                   
                   <div className="mt-3 flex items-center">
-                    <span className="px-3 py-1 rounded-full text-xs font-bold tracking-wider bg-surface-container-high text-on-surface-variant border border-outline-variant/30">
-                      {selectedRoom?.type === "PARTNER" 
-                        ? `CHAT PARTNER '${selectedRoom?.visit?.projects?.find(p => p.partner?.id === selectedRoom.partnerId)?.partner?.name || "Desconocido"}'` 
-                        : "CHAT INTERNO"}
-                    </span>
+                    {selectedRoom?.type === "PARTNER" ? (
+                      <span 
+                        className="px-3 py-1 rounded-full text-xs font-bold tracking-wider"
+                        style={{ backgroundColor: "#f4822120", color: "#f48221", border: "1px solid #f4822140" }}
+                      >
+                        CHAT PARTNER '{selectedRoom?.visit?.projects?.find(p => p.partner?.id === selectedRoom.partnerId)?.partner?.name || "Desconocido"}'
+                      </span>
+                    ) : (
+                      <span 
+                        className="px-3 py-1 rounded-full text-xs font-bold tracking-wider"
+                        style={{ backgroundColor: "#22c55e20", color: "#22c55e", border: "1px solid #22c55e40" }}
+                      >
+                        CHAT INTERNO
+                      </span>
+                    )}
                   </div>
                   
                   {projectDetails && (

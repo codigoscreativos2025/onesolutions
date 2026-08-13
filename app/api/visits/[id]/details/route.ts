@@ -121,6 +121,13 @@ export async function GET(
       if (!isOwner) {
         return NextResponse.json({ error: 'Forbidden: You can only view your own projects' }, { status: 403 });
       }
+      
+      if (role === 'TRAINEE' && visit.stage === 'CLOSED') {
+        const hasSolar = visit.projects?.some((p: any) => p.projectType?.name?.toLowerCase().includes("solar"));
+        if (hasSolar) {
+          return NextResponse.json({ error: 'Forbidden: Los proyectos solares cerrados pertenecen al Closer.' }, { status: 403 });
+        }
+      }
     }
 
     if (session.user.role === 'PARTNER') {

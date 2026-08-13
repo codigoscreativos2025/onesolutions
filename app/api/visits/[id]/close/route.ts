@@ -175,6 +175,35 @@ export async function PATCH(
             },
           });
         }
+        
+        // Notify the closer if the project contains solar panels
+        if (visit.closer && visit.closer.id) {
+          let hasSolar = false;
+          if (projectTypeIds && Array.isArray(projectTypeIds) && projectTypeIds.length > 0) {
+            const types = await prisma.projectType.findMany({ where: { id: { in: projectTypeIds } } });
+            hasSolar = types.some((t: any) => t.name.toLowerCase().includes("solar"));
+          }
+          
+          if (hasSolar) {
+            // Find closer email if we didn't fetch it
+            const closerUser = await prisma.user.findUnique({ where: { id: visit.closer.id } });
+            if (closerUser?.email) {
+              await sendEmail({
+                to: closerUser.email,
+                subject: "Proyecto Solar Transferido - One Solutions",
+                html: emailTemplates.projectProgress(closerUser.name, visit.parcel.address, "Proyecto Solar Transferido"),
+              });
+            }
+            await prisma.notification.create({
+              data: {
+                userId: visit.closer.id,
+                title: "Proyecto Solar Transferido",
+                body: `Se te ha transferido un proyecto cerrado con paneles solares en ${visit.parcel.address}.`,
+                link: `/lead/${visit.id}`,
+              },
+            });
+          }
+        }
       } catch (emailError) {
         console.error("Error sending close notification emails:", emailError);
       }
