@@ -108,8 +108,8 @@ export async function POST(request: Request) {
     if (assignedCloserId && assignedCloserId !== userId) {
       const addressName = address || "un lead manual";
       let roleName = "Usuario";
-      if (role === "SETTER") roleName = "Setter";
-      else if (role === "SETTER_JR") roleName = "Setter Jr";
+      if (role === "SETTER") roleName = "Trainee";
+      else if (role === "SETTER_JR") roleName = "Setter";
       else if ((role as string) === "TRAINEE") roleName = "Trainee";
       else if (role === "ADMIN") roleName = "Admin";
 

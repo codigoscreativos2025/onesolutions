@@ -254,8 +254,8 @@ export async function PATCH(
       if (isPanelSolarAssignment) {
         const address = visit.parcel?.address || "el lead";
         let roleName = "Usuario";
-        if (session.user.role === "SETTER") roleName = "Setter";
-        else if (session.user.role === "SETTER_JR") roleName = "Setter Jr";
+        if (session.user.role === "SETTER") roleName = "Trainee";
+        else if (session.user.role === "SETTER_JR") roleName = "Setter";
         else if (session.user.role === "TRAINEE") roleName = "Trainee";
         else if (session.user.role === "ADMIN") roleName = "Admin";
         
