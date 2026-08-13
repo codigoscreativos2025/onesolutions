@@ -160,12 +160,14 @@ export async function PATCH(
           });
         }
 
-        if (visit.setter.email && visit.setter.role !== "SETTER") {
-          await sendEmail({
-            to: visit.setter.email,
-            subject: "Proyecto Cerrado - One Solutions",
-            html: emailTemplates.projectProgress(visit.setter.name, visit.parcel.address, "Proyecto Cerrado"),
-          });
+        if (visit.setter && visit.setter.id) {
+          if (visit.setter.email) {
+            await sendEmail({
+              to: visit.setter.email,
+              subject: "Proyecto Cerrado - One Solutions",
+              html: emailTemplates.projectProgress(visit.setter.name, visit.parcel.address, "Proyecto Cerrado"),
+            });
+          }
           await prisma.notification.create({
             data: {
               userId: visit.setter.id,
@@ -176,7 +178,7 @@ export async function PATCH(
           });
         }
         
-        // Notify the closer if the project contains solar panels
+        // Notify the closer
         if (visit.closer && visit.closer.id) {
           let hasSolar = false;
           if (projectTypeIds && Array.isArray(projectTypeIds) && projectTypeIds.length > 0) {
@@ -184,25 +186,24 @@ export async function PATCH(
             hasSolar = types.some((t: any) => t.name.toLowerCase().includes("solar"));
           }
           
-          if (hasSolar) {
-            // Find closer email if we didn't fetch it
-            const closerUser = await prisma.user.findUnique({ where: { id: visit.closer.id } });
-            if (closerUser?.email) {
-              await sendEmail({
-                to: closerUser.email,
-                subject: "Proyecto Solar Transferido - One Solutions",
-                html: emailTemplates.projectProgress(closerUser.name, visit.parcel.address, "Proyecto Solar Transferido"),
-              });
-            }
-            await prisma.notification.create({
-              data: {
-                userId: visit.closer.id,
-                title: "Proyecto Solar Transferido",
-                body: `Se te ha transferido un proyecto cerrado con paneles solares en ${visit.parcel.address}.`,
-                link: `/lead/${visit.id}`,
-              },
+          const closerUser = await prisma.user.findUnique({ where: { id: visit.closer.id } });
+          if (closerUser?.email) {
+            await sendEmail({
+              to: closerUser.email,
+              subject: hasSolar ? "Proyecto Solar Transferido - One Solutions" : "Proyecto Cerrado - One Solutions",
+              html: emailTemplates.projectProgress(closerUser.name, visit.parcel.address, hasSolar ? "Proyecto Solar Transferido" : "Proyecto Cerrado"),
             });
           }
+          await prisma.notification.create({
+            data: {
+              userId: visit.closer.id,
+              title: hasSolar ? "Proyecto Solar Transferido" : "Proyecto Cerrado",
+              body: hasSolar 
+                ? `Se te ha transferido un proyecto cerrado con paneles solares en ${visit.parcel.address}.`
+                : `Tu proyecto en ${visit.parcel.address} ha sido cerrado.`,
+              link: `/lead/${visit.id}`,
+            },
+          });
         }
       } catch (emailError) {
         console.error("Error sending close notification emails:", emailError);
