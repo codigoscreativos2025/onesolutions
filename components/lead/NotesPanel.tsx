@@ -227,7 +227,7 @@ export function NotesPanel({ visitId, visitCreatedAt, disabled }: NotesPanelProp
             </div>
           ) : notes.length === 0 ? (
             <p className="text-sm text-on-surface-variant text-center py-8">
-              Sin notas{filterDate ? " en esta fecha" : ""}
+              {disabled ? "En espera del administrador" : `Sin notas${filterDate ? " en esta fecha" : ""}`}
             </p>
           ) : (
             notes.map((note) => (
