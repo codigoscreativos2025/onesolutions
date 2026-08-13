@@ -56,7 +56,7 @@ interface Room {
     stage?: string;
     createdAt?: string;
     finalizedAt?: string;
-    parcel: { id: string; address: string; ownerName?: string };
+    parcel: { id: string; address: string; ownerName?: string; parcelTags?: string | null };
     setter: { id: number; name: string };
     closer?: { id: number; name: string };
     bill?: { imageUrl: string; phone: string; clientName: string; clientEmail: string; additionalFileUrl?: string; additionalFileName?: string };
@@ -91,6 +91,22 @@ interface Message {
 
 type ColumnView = "list" | "conversation" | "info";
 
+interface ParcelTag {
+  name: string;
+  color?: string;
+  date?: string;
+}
+
+function parseParcelTags(raw?: string | null): ParcelTag[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomList = false }: { isAdmin?: boolean; initialRoomId?: number | null; hideRoomList?: boolean }) {
   const { data: session } = useSession();
   const role = session?.user?.role ?? "";
@@ -113,6 +129,8 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
   const [mentionSearch, setMentionSearch] = useState("");
   const [commonFields, setCommonFields] = useState<CommonField[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [stageFilter, setStageFilter] = useState("");
+  const [tagFilter, setTagFilter] = useState("");
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [mobileColumn, setMobileColumn] = useState<ColumnView>("list");
   const [fieldMetas, setFieldMetas] = useState<{ fieldName: string; isRequired?: boolean }[]>([]);
@@ -416,11 +434,13 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
   };
 
   const filteredRooms = rooms.filter((room) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.trim().toLowerCase();
     const address = room.visit?.parcel.address.toLowerCase();
     const clientName = (room.visit?.bill?.clientName || "").toLowerCase();
-    return address.includes(q) || clientName.includes(q);
+    const matchesSearch = !q || address.includes(q) || clientName.includes(q);
+    const matchesStage = !stageFilter || room.visit?.stage === stageFilter;
+    const matchesTag = !tagFilter || parseParcelTags(room.visit?.parcel.parcelTags).some((t) => t.name === tagFilter);
+    return matchesSearch && matchesStage && matchesTag;
   });
 
   const isAdminRole = role === "ADMIN";
@@ -437,12 +457,24 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
     return Array.from(map.values());
   }, [rooms, isAdminRole]);
 
+  const availableTags = useMemo(() => {
+    const set = new Map<string, string>();
+    for (const room of rooms) {
+      for (const t of parseParcelTags(room.visit?.parcel.parcelTags)) {
+        if (t.name) set.set(t.name, t.color || "#3b82f6");
+      }
+    }
+    return Array.from(set, ([name, color]) => ({ name, color }));
+  }, [rooms]);
+
   const filteredAdminGroups = adminGroups.filter((g) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.trim().toLowerCase();
     const address = g.visit.parcel.address.toLowerCase();
     const clientName = (g.visit.bill?.clientName || "").toLowerCase();
-    return address.includes(q) || clientName.includes(q);
+    const matchesSearch = !q || address.includes(q) || clientName.includes(q);
+    const matchesStage = !stageFilter || g.visit.stage === stageFilter;
+    const matchesTag = !tagFilter || parseParcelTags(g.visit.parcel.parcelTags).some((t) => t.name === tagFilter);
+    return matchesSearch && matchesStage && matchesTag;
   });
 
   const openRoom = (room?: Room) => {
@@ -604,6 +636,39 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                   className="w-full h-10 pl-9 pr-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-sm text-on-surface"
                 />
               </div>
+              {role !== "PARTNER" && (
+                <div className="flex gap-2 mt-2">
+                  <select
+                    value={stageFilter}
+                    onChange={(e) => setStageFilter(e.target.value)}
+                    className="h-9 px-2 rounded-lg bg-surface-container-low border border-outline-variant text-xs text-on-surface flex-1 min-w-0"
+                  >
+                    <option value="">Todas las etapas</option>
+                    {Object.entries(stageLabels).map(([key, label]) => (
+                      <option key={key} value={key}>{label}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={tagFilter}
+                    onChange={(e) => setTagFilter(e.target.value)}
+                    className="h-9 px-2 rounded-lg bg-surface-container-low border border-outline-variant text-xs text-on-surface flex-1 min-w-0"
+                  >
+                    <option value="">Todas las etiquetas</option>
+                    {availableTags.map((t) => (
+                      <option key={t.name} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                  {(stageFilter || tagFilter) && (
+                    <button
+                      onClick={() => { setStageFilter(""); setTagFilter(""); }}
+                      className="px-2 rounded-lg text-on-surface-variant hover:text-primary flex-shrink-0"
+                      title="Limpiar filtros"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
             
             <div className="flex-1 overflow-y-auto min-h-0">
@@ -1192,6 +1257,24 @@ function InfoPanelContent({
               }`}>
                 {stageLabels[visit.stage] || visit.stage}
               </span>
+            )}
+
+            {!isPartner && parseParcelTags(visit.parcel.parcelTags).length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {parseParcelTags(visit.parcel.parcelTags).map((tag, i) => (
+                  <span
+                    key={`${tag.name}-${i}`}
+                    className="px-2 py-0.5 rounded-full text-[10px] font-medium border"
+                    style={{
+                      backgroundColor: `${tag.color || "#3b82f6"}1a`,
+                      color: tag.color || "#3b82f6",
+                      borderColor: `${tag.color || "#3b82f6"}40`,
+                    }}
+                  >
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
             )}
             
             <div className="flex justify-between items-start gap-4">

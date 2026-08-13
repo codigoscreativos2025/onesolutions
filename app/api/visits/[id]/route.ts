@@ -55,6 +55,33 @@ export async function PATCH(
         data: { partnerId: pp.partnerId || null },
       });
     }
+
+    // Crear chat PARTNER por cada partner único asignado
+    const assignedPartnerIds = Array.from(new Set(
+      projectPartners
+        .map((pp: { partnerId: number | null }) => pp.partnerId)
+        .filter((id): id is number => id !== null)
+    ));
+    for (const pid of assignedPartnerIds) {
+      const existingPartnerRoom = await prisma.chatRoom.findFirst({
+        where: { visitId: visit.id, type: "PARTNER", partnerId: pid },
+      });
+      if (!existingPartnerRoom) {
+        await prisma.chatRoom.create({
+          data: {
+            visitId: visit.id,
+            type: "PARTNER",
+            partnerId: pid,
+            messages: {
+              create: {
+                userId: parseInt(session.user.id),
+                body: "Chat de proyecto con Partner iniciado",
+              },
+            },
+          },
+        });
+      }
+    }
   }
 
   if (partnerId !== undefined && visit.parcelId) {
@@ -65,13 +92,14 @@ export async function PATCH(
 
     if (partnerId) {
       const existingPartnerRoom = await prisma.chatRoom.findFirst({
-        where: { visitId: visit.id, type: "PARTNER" },
+        where: { visitId: visit.id, type: "PARTNER", partnerId: partnerId },
       });
       if (!existingPartnerRoom) {
         await prisma.chatRoom.create({
           data: {
             visitId: visit.id,
             type: "PARTNER",
+            partnerId: partnerId,
             messages: {
               create: {
                 userId: parseInt(session.user.id),

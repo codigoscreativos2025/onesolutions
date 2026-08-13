@@ -199,7 +199,7 @@ export async function GET(request: Request) {
 
     const enrichedVisits = visits.map((v) => ({
       ...v,
-      chatRoom: v.chatRooms?.find(r => r.type === "GENERAL") || null,
+      chatRoom: v.chatRooms?.find(r => r.type === (role === "PARTNER" ? "PARTNER" : "GENERAL")) || null,
       progress: computeProgress(
         {
           ...((v.projectDetails as Record<string, unknown>) || {}),

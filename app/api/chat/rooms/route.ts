@@ -20,7 +20,7 @@ export async function GET() {
       include: {
         visit: {
           include: {
-            parcel: { select: { address: true, ownerName: true } },
+            parcel: { select: { address: true, ownerName: true, parcelTags: true } },
             setter: { select: { id: true, name: true } },
             closer: { select: { id: true, name: true } },
             projects: {
@@ -55,7 +55,7 @@ export async function GET() {
       include: {
         visit: {
           include: {
-            parcel: { select: { address: true, ownerName: true } },
+            parcel: { select: { address: true, ownerName: true, parcelTags: true } },
             setter: { select: { id: true, name: true } },
             closer: { select: { id: true, name: true } },
             projects: {
@@ -89,7 +89,7 @@ export async function GET() {
       include: {
         visit: {
           include: {
-            parcel: { select: { address: true, ownerName: true } },
+            parcel: { select: { address: true, ownerName: true, parcelTags: true } },
             setter: { select: { id: true, name: true } },
             closer: { select: { id: true, name: true } },
             bill: true,

@@ -26,7 +26,7 @@ export async function GET(
           closerId: true,
           stage: true,
           createdAt: true,
-          parcel: { select: { id: true, address: true, partnerId: true } },
+          parcel: { select: { id: true, address: true, partnerId: true, parcelTags: true } },
           setter: { select: { id: true, name: true } },
           closer: { select: { id: true, name: true } },
           bill: { select: { imageUrl: true, clientName: true, phone: true, clientEmail: true, additionalFileUrl: true, additionalFileName: true } },
