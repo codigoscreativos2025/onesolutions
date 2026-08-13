@@ -213,6 +213,11 @@ export function ParcelSheet({
   const isAvailable = parcel.status === "AVAILABLE";
   const closedVisits = parcel.visits?.filter(v => v.stage === "CLOSED") || [];
   const hasPriorProjects = closedVisits.length > 0;
+  
+  const latestVisit = parcel.visits?.[0];
+  const hasActiveVisit = !!latestVisit && (latestVisit.stage !== "CLOSED" && latestVisit.stage !== "CANCELLED");
+  const canCreateLead = canVisit && !hasActiveVisit && (isAvailable || hasPriorProjects || parcel.status === "CUSTOMER");
+  const showActiveDetails = hasActiveVisit;
 
   const tags: TagObject[] = (() => {
     try {
@@ -532,7 +537,7 @@ export function ParcelSheet({
             </p>
           )}
 
-          {canVisit && (isAvailable || hasPriorProjects) && (
+          {canCreateLead && (
             <div className="flex flex-col gap-3">
               <Button
                 onClick={handleKnockDoor}
@@ -549,7 +554,7 @@ export function ParcelSheet({
             </div>
           )}
 
-          {!isAvailable && !hasPriorProjects && parcel.status !== "CUSTOMER" && (
+          {showActiveDetails && (
             <>
               <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-surface-container-low border border-outline-variant/30">
                 <span className="w-3 h-3 rounded-full bg-green-500 inline-block shrink-0" />
@@ -594,7 +599,7 @@ export function ParcelSheet({
             </>
           )}
 
-          {canVisit && parcel.status === "CUSTOMER" && !hasPriorProjects && (
+          {canVisit && !hasActiveVisit && !canCreateLead && (
             <Button variant="outline" onClick={onClose} className="w-full">
               {t.common.close}
             </Button>

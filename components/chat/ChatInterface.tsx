@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { toast } from "sonner";
+import { format } from "date-fns";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
@@ -12,6 +14,22 @@ import { Send, Paperclip, Loader2, MessageSquare, Package, FileText, Pencil, Che
 import { Modal } from "@/components/ui/Modal";
 import { ContractModal } from "@/components/quote/ContractModal";
 
+const getStageBadge = (stage?: string) => {
+  const stageMap: Record<string, { label: string, color: string }> = {
+    "IN_PROGRESS": { label: "Leads", color: "bg-blue-500" },
+    "POTENTIAL_LEAD": { label: "Lead Potencial", color: "bg-amber-500" },
+    "PROPOSAL_ACCEPTED": { label: "Leads Potenciales", color: "bg-amber-500" },
+    "PROJECT": { label: "En Proyecto", color: "bg-purple-500" },
+    "CLOSED": { label: "Proyecto Finalizado", color: "bg-green-500" },
+    "CANCELLED": { label: "Proyecto Cancelado", color: "bg-red-500" }
+  };
+  const s = stageMap[stage || ""] || { label: stage || "Desconocido", color: "bg-gray-500" };
+  return (
+    <span className={`px-2 py-0.5 rounded text-[10px] font-bold text-white ${s.color}`}>
+      {s.label}
+    </span>
+  );
+};
 interface ProjectDetails {
   [key: string]: string | number | boolean | undefined;
   clientName?: string;
@@ -672,7 +690,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                   >
                     <option value="">Todas las etapas</option>
                     <option value="PROJECT">En Proyecto</option>
-                    <option value="CLOSED">Proyecto Finalizado</option>
+                    <option value="CLOSED">Proyecto finalizado</option>
                   </select>
                   <select
                     value={tagFilter}
@@ -733,6 +751,9 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                           {uniqPartnerNames.length > 0 ? uniqPartnerNames.join(", ") : "En espera del partner"}
                         </span>
                       </p>
+                      <div className="mt-2 flex items-center gap-2">
+                        {getStageBadge(g.visit.stage)}
+                      </div>
                     </button>
                   );
                 })
@@ -766,13 +787,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                     </p>
                     <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Status">
                       <Activity className="w-3.5 h-3.5 flex-shrink-0" />
-                      <span>
-                        {room.visit?.stage === "POTENTIAL_LEAD" ? "Lead Potencial" :
-                         room.visit?.stage === "IN_PROGRESS" ? "Agendado" :
-                         room.visit?.stage === "PROJECT" ? "En Proyecto" :
-                         room.visit?.stage === "CLOSED" ? "Proyecto Cerrado" :
-                         room.visit?.stage === "CANCELLED" ? "Proyecto Cancelado" : room.visit?.stage || "Desconocido"}
-                      </span>
+                      {getStageBadge(room.visit?.stage)}
                     </p>
                     <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Fecha">
                       <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
@@ -903,6 +918,14 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                         </button>
                       )}
                     </div>
+                  </div>
+                  
+                  <div className="mt-3 flex items-center">
+                    <span className="px-3 py-1 rounded-full text-xs font-bold tracking-wider bg-surface-container-high text-on-surface-variant border border-outline-variant/30">
+                      {selectedRoom?.type === "PARTNER" 
+                        ? `CHAT PARTNER '${selectedRoom?.visit?.projects?.find(p => p.partner?.id === selectedRoom.partnerId)?.partner?.name || "Desconocido"}'` 
+                        : "CHAT INTERNO"}
+                    </span>
                   </div>
                   
                   {projectDetails && (
