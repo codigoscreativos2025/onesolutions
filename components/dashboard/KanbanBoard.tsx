@@ -746,7 +746,7 @@ function KanbanCard({
           return (
             <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/30 text-[10px] font-semibold mt-2">
               <Undo2 className="w-3 h-3" />
-              <span>Lead devuelto</span>
+              <span>Proyecto devuelto</span>
             </div>
           );
         }
@@ -856,7 +856,7 @@ function KanbanCardOverlay({ visit }: { visit: KanbanVisit }) {
           return (
             <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/30 text-[10px] font-semibold mt-2">
               <Undo2 className="w-3 h-3" />
-              <span>Lead devuelto</span>
+              <span>Proyecto devuelto</span>
             </div>
           );
         }
