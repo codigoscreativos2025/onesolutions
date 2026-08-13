@@ -547,7 +547,7 @@ export function ParcelSheet({
             </div>
           )}
 
-          {!isAdmin && !isAvailable && !hasPriorProjects && parcel.status !== "CUSTOMER" && (
+          {!isAvailable && !hasPriorProjects && parcel.status !== "CUSTOMER" && (
             <>
               <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-surface-container-low border border-outline-variant/30">
                 <span className="w-3 h-3 rounded-full bg-green-500 inline-block shrink-0" />
