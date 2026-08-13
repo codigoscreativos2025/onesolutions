@@ -12,9 +12,12 @@ import {
   subMonths,
   startOfWeek,
   endOfWeek,
+  isBefore,
+  startOfDay,
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Clock, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface DayData {
   available: boolean;
@@ -100,8 +103,17 @@ export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: Slo
     return getAvailabilityForDate(date)?.ranges || [];
   };
 
+  const today = startOfDay(new Date());
+
   const handleDayClick = (day: Date) => {
-    if (isSameMonth(day, currentMonth) && isDayAvailable(day)) {
+    if (!isSameMonth(day, currentMonth)) return;
+    
+    if (isBefore(day, today)) {
+      toast.error("No se pueden agendar visitas en fechas pasadas.");
+      return;
+    }
+
+    if (isDayAvailable(day)) {
       setInternalSelectedDate(day);
     }
   };
@@ -159,17 +171,18 @@ export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: Slo
           const isCurrentMonth = isSameMonth(day, currentMonth);
           const isSelected = internalSelectedDate ? isSameDay(day, internalSelectedDate) : false;
           const available = isCurrentMonth && isDayAvailable(day);
-          const canClick = isCurrentMonth && available;
+          const isPastDate = isBefore(day, today);
 
           return (
             <button
               type="button"
               key={index}
               onClick={() => handleDayClick(day)}
-              disabled={!canClick}
               className={`min-h-[40px] p-1 rounded-lg border text-sm transition-all ${
                 !isCurrentMonth
                   ? 'border-transparent opacity-30 cursor-default'
+                  : isPastDate
+                  ? 'border-gray-200 bg-gray-100 text-gray-400 dark:border-gray-700 dark:bg-gray-800 opacity-60 cursor-not-allowed'
                   : !available
                   ? 'border-red-200 bg-red-50 dark:border-gray-700 opacity-50 cursor-not-allowed'
                   : isSelected
