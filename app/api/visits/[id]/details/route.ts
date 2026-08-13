@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { auth } from '@/auth';
+import { verifyApiAuth } from '@/lib/auth-utils';
 export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const authRes = await verifyApiAuth();
+  if (authRes.error) {
+    return NextResponse.json({ error: authRes.error }, { status: authRes.status });
   }
+  const session = authRes.session!;
 
   try {
     const visitId = parseInt(params.id);
@@ -111,6 +112,16 @@ export async function GET(
 
     if (!visit) {
       return NextResponse.json({ error: 'Visit not found' }, { status: 404 });
+    }
+
+    const userId = parseInt(session.user.id);
+    const role = session.user.role;
+
+    if (role === 'SETTER' || role === 'SETTER_JR') {
+      const isOwner = visit.setter?.id === userId || visit.closer?.id === userId || visit.parcel?.visitHistory?.some(h => h.setter?.name === session.user.name);
+      if (!isOwner) {
+        return NextResponse.json({ error: 'Forbidden: You can only view your own projects' }, { status: 403 });
+      }
     }
 
     if (session.user.role === 'PARTNER') {

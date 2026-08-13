@@ -34,6 +34,7 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
   const [saving, setSaving] = useState(false);
   const [projectFields, setProjectFields] = useState<{ typeName: string; fields: ProjectTypeField[] }[]>([]);
   const [showEmailWarning, setShowEmailWarning] = useState(false);
+  const [minClosingDate, setMinClosingDate] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (isOpen && visitId) {
@@ -58,6 +59,12 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
           address: details.address || data.parcel?.address || '',
           phone: bill.phone || '',
         });
+
+        const baseDate = data.scheduledAt ? new Date(data.scheduledAt) : new Date(data.createdAt);
+        if (!isNaN(baseDate.getTime())) {
+          baseDate.setDate(baseDate.getDate() + 14);
+          setMinClosingDate(baseDate.toISOString().split("T")[0]);
+        }
 
         // Fetch project type fields for all selected project types
         if (data.projects?.length > 0) {
@@ -204,7 +211,7 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
                 <Input label={t.chat.closingDate} type="date" 
                   value={projectDetails.closingDate ? new Date(projectDetails.closingDate as string).toISOString().split('T')[0] : ''}
                   onChange={(e) => handleFieldChange('closingDate', e.target.value)}
-                  min="1900-01-01" max="2100-12-31" />
+                  min={minClosingDate || "1900-01-01"} max="2100-12-31" />
                 <div>
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">{t.chat.paymentMethod}</label>
                   <select value={projectDetails.paymentMethod as string || ''} onChange={(e) => handleFieldChange('paymentMethod', e.target.value)}

@@ -20,3 +20,17 @@ export async function requireAuth(locale: string) {
 
   return session;
 }
+
+export async function verifyApiAuth(allowedRoles?: string[]) {
+  const session = await auth();
+  
+  if (!session?.user) {
+    return { error: 'Unauthorized', status: 401 };
+  }
+  
+  if (allowedRoles && !allowedRoles.includes(session.user.role)) {
+    return { error: 'Forbidden', status: 403 };
+  }
+  
+  return { session, user: session.user };
+}

@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { verifyApiAuth } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
@@ -7,21 +7,37 @@ export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authRes = await verifyApiAuth();
+  if (authRes.error) {
+    return NextResponse.json({ error: authRes.error }, { status: authRes.status });
   }
+  const session = authRes.session!;
 
   const { id } = await params;
   const visitId = parseInt(id);
 
   const visit = await prisma.visit.findUnique({
     where: { id: visitId },
-    include: { slot: true, parcel: { select: { address: true } } },
+    include: { slot: true, parcel: { select: { address: true, visitHistory: { include: { setter: { select: { name: true } } } } } } },
   });
 
   if (!visit) {
     return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+  }
+
+  const role = session.user.role;
+  const userId = parseInt(session.user.id);
+  if (role === 'SETTER' || role === 'SETTER_JR') {
+    const isOwner = visit.setterId === userId || visit.closerId === userId || visit.parcel?.visitHistory?.some((h: any) => h.setter?.name === session.user.name);
+    if (!isOwner) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  } else if (role === 'PARTNER') {
+    // Basic block for partner updating core visit fields (partner only updates details usually)
+    const bodyTest = await request.clone().json().catch(() => ({}));
+    if (bodyTest.stage || bodyTest.setterId || bodyTest.closerId) {
+      return NextResponse.json({ error: "Forbidden: Partners cannot modify core visit data" }, { status: 403 });
+    }
   }
 
   const body = await request.json();
@@ -333,9 +349,9 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authRes = await verifyApiAuth(['ADMIN']);
+  if (authRes.error) {
+    return NextResponse.json({ error: authRes.error }, { status: authRes.status });
   }
 
   const { id } = await params;

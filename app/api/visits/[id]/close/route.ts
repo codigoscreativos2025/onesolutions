@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { verifyApiAuth } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { emailTemplates } from "@/lib/email-templates";
@@ -8,10 +8,11 @@ export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authRes = await verifyApiAuth();
+  if (authRes.error) {
+    return NextResponse.json({ error: authRes.error }, { status: authRes.status });
   }
+  const session = authRes.session!;
 
   const body = await request.json();
   const { notes, billImageUrl, billFileName, action, clientName, clientEmail, clientPhone, projectTypeIds, commissions } = body;
@@ -37,11 +38,17 @@ export async function PATCH(
 
     const existingVisit = await prisma.visit.findUnique({
       where: { id: parseInt(id) },
-      include: { slot: true, chatRooms: true },
+      include: { slot: true, chatRooms: true, parcel: { select: { visitHistory: { include: { setter: { select: { name: true } } } } } } },
     });
 
     if (!existingVisit) {
       return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+    }
+
+    const role = session.user.role;
+    if (role !== 'ADMIN') {
+      const isOwner = existingVisit.setterId === userId || existingVisit.closerId === userId || existingVisit.parcel?.visitHistory?.some((h: any) => h.setter?.name === session.user.name);
+      if (!isOwner) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     let newStage = "CLOSED";

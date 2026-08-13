@@ -2,11 +2,16 @@ import { readFile } from "fs/promises";
 import { existsSync } from "fs";
 import { NextResponse } from "next/server";
 import path from "path";
+import { verifyApiAuth } from "@/lib/auth-utils";
 
 export async function GET(
   request: Request,
   { params }: { params: { name: string } }
 ) {
+  const authRes = await verifyApiAuth();
+  if (authRes.error) {
+    return NextResponse.json({ error: authRes.error }, { status: authRes.status });
+  }
   const { name } = await params;
   const uploadDir = process.env.UPLOAD_DIR || "./uploads";
   const filePath = path.join(uploadDir, name);

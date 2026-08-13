@@ -1,9 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { verifyApiAuth } from "@/lib/auth-utils";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
+  const authRes = await verifyApiAuth();
+  if (authRes.error) {
+    return NextResponse.json({ error: authRes.error }, { status: authRes.status });
+  }
+
   const type = request.nextUrl.searchParams.get("type") || "trainers";
   const period = request.nextUrl.searchParams.get("period") || "all";
 
