@@ -97,7 +97,14 @@ export function ParcelSheet({
       setVisitNotAvailTags([]);
       return;
     }
-    setMapNotes(parcel.parcelNotes || localStorage.getItem(`map_notes_${parcel.id}`) || "");
+    
+    // Fetch from in-memory API
+    if (parcel.id) {
+      fetch(`/api/map-notes?parcelId=${parcel.id}`)
+        .then(res => res.json())
+        .then(data => setMapNotes(data.note || ""))
+        .catch(() => setMapNotes(""));
+    }
     const pId = parcel.id;
     if (!pId) return;
     const isRegridParcel = pId.includes("-") && pId.length > 30;
@@ -164,10 +171,10 @@ export function ParcelSheet({
   const saveNotesAuto = useCallback(async (notes: string) => {
     if (!parcel) return;
     try {
-      await fetch(`/api/parcels/${parcel.id}`, {
-        method: "PATCH",
+      await fetch(`/api/map-notes`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ parcelNotes: notes }),
+        body: JSON.stringify({ parcelId: parcel.id, note: notes }),
       });
     } catch { /* ignore */ }
   }, [parcel]);
@@ -475,7 +482,10 @@ export function ParcelSheet({
               <div className="space-y-1">
                 <textarea
                   value={mapNotes}
-                  onChange={(e) => { setMapNotes(e.target.value); localStorage.setItem(`map_notes_${parcel.id}`, e.target.value); debouncedSaveNotes(e.target.value); }}
+                  onChange={(e) => { 
+                    setMapNotes(e.target.value); 
+                    debouncedSaveNotes(e.target.value); 
+                  }}
                   placeholder="Notas..."
                   rows={3}
                   className="w-full px-3 py-2 rounded-xl border border-glass-border bg-white/40 dark:bg-black/20 text-on-surface text-sm placeholder:text-on-surface-variant/60 resize-none outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition-colors"
