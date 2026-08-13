@@ -53,10 +53,27 @@ export async function GET(request: Request) {
       day = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1);
     }
 
+    // Fetch visits for the user where scheduledAt is in this month
+    const visits = await prisma.visit.findMany({
+      where: {
+        closerId: userId,
+        scheduledAt: {
+          gte: monthStart,
+          lte: monthEnd,
+        },
+        stage: { not: "CANCELLED" }
+      },
+      select: { scheduledAt: true }
+    });
+    
+    // Create an array of strings representing exact booked times, e.g. "2026-08-26T16:00:00.000Z"
+    const bookedSlots = visits.map(v => v.scheduledAt?.toISOString()).filter(Boolean);
+
     return NextResponse.json({
       month: targetDate.getMonth() + 1,
       year: targetDate.getFullYear(),
       availability: monthAvailability,
+      bookedSlots,
     });
   } catch (error) {
     console.error('Error fetching availability:', error);

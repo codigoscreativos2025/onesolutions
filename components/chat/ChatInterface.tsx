@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useSession } from "next-auth/react";
+import { formatPhoneNumber } from "@/lib/utils";
 import Link from "next/link";
 import Image from "next/image";
 import { useLocale } from "@/lib/locale-context";
@@ -1132,7 +1133,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
             label="Teléfono del Cliente"
             type="tel"
             value={(editForm.phone as string) || bill?.phone || ""}
-            onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+            onChange={(e) => setEditForm({ ...editForm, phone: formatPhoneNumber(e.target.value) })}
           />
 
           <div className="grid grid-cols-2 gap-4">

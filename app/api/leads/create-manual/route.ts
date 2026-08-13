@@ -104,6 +104,27 @@ export async function POST(request: Request) {
       });
     }
 
+    // Notificar al closer si fue asignado y no es quien está creando el lead
+    if (assignedCloserId && assignedCloserId !== userId) {
+      const addressName = address || "un lead manual";
+      let roleName = "Usuario";
+      if (role === "SETTER") roleName = "Setter";
+      else if (role === "SETTER_JR") roleName = "Setter Jr";
+      else if ((role as string) === "TRAINEE") roleName = "Trainee";
+      else if (role === "ADMIN") roleName = "Admin";
+
+      // Podemos chequear si es panel solar, pero como es manual y recién se crea
+      // simplemente notificamos de la asignación.
+      await prisma.notification.create({
+        data: {
+          userId: assignedCloserId,
+          title: "Nuevo Lead Asignado",
+          body: `El ${roleName} ${session.user.name} te ha agendado una cita en ${addressName}.`,
+          link: `/lead/${visit.id}`,
+        },
+      });
+    }
+
     // Registrar en el historial
     await prisma.parcelVisitHistory.create({
       data: {
