@@ -96,6 +96,15 @@ export async function PATCH(
             },
           },
         });
+        
+        await prisma.notification.create({
+          data: {
+            userId: pid,
+            title: "Nuevo proyecto asignado",
+            body: `Se te ha asignado el proyecto en ${visit.parcel?.address || 'la parcela'}`,
+            link: `/lead/${visit.id}`,
+          },
+        });
       }
     }
   }
@@ -122,6 +131,15 @@ export async function PATCH(
                 body: "Chat de proyecto con Partner iniciado",
               },
             },
+          },
+        });
+
+        await prisma.notification.create({
+          data: {
+            userId: partnerId,
+            title: "Nuevo proyecto asignado",
+            body: `Se te ha asignado el proyecto en ${visit.parcel?.address || 'la parcela'}`,
+            link: `/lead/${visit.id}`,
           },
         });
       }

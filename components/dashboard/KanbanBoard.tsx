@@ -33,6 +33,7 @@ interface KanbanVisit {
   id: number;
   stage: string;
   createdAt: string;
+  assignedAt?: string | null;
   contractFields?: string | null;
   parcel: { id: string; address: string; ownerName: string | null };
   setter: { id: number; name: string };
@@ -332,6 +333,12 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
                   <MapPin className="w-3 h-3 flex-shrink-0" />
                   <span className="truncate">{visit.parcel.address}</span>
                 </div>
+                {visit.assignedAt && (
+                  <div className="flex items-center gap-2 mt-1 text-xs text-primary font-medium">
+                    <Clock className="w-3 h-3 flex-shrink-0" />
+                    <span>Asignado: {new Date(visit.assignedAt).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                  </div>
+                )}
                 {visit.projects?.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2">
                     {visit.projects.map((p) => (
