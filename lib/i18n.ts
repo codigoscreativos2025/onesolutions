@@ -62,7 +62,7 @@ export const translations = {
     map: {
       title: "Mapa de Parcelas",
       loading: "Cargando parcelas...",
-      knockDoor: "Tocar Puerta",
+      knockDoor: "Crear Lead",
       continueVisit: "Continuar Visita",
       available: "Disponible",
       lead: "Lead",
@@ -253,7 +253,7 @@ export const translations = {
     map: {
       title: "Parcels Map",
       loading: "Loading parcels...",
-      knockDoor: "Knock Door",
+      knockDoor: "Create Lead",
       continueVisit: "Continue Visit",
       available: "Available",
       lead: "Lead",

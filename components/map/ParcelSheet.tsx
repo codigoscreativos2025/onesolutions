@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { CreateLeadModal } from "@/components/leads/CreateLeadModal";
-import { DoorOpen, X, User, Tag, Plus, Pencil, Trash2, DoorClosed, ThumbsDown, Clock, UserX, Home } from "lucide-react";
+import { DoorOpen, X, User, Tag, Plus, Pencil, Trash2, DoorClosed, ThumbsDown, Clock, UserX, Home, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useLocale } from "@/lib/locale-context";
 
@@ -592,7 +592,7 @@ export function ParcelSheet({
                 disabled={claiming}
                 className="w-full bg-brand-green hover:bg-brand-green/90 text-white py-6 text-lg rounded-xl shadow-md"
               >
-                <DoorOpen className="w-5 h-5 mr-2" />
+                <UserPlus className="w-5 h-5 mr-2" />
                 {t.map.knockDoor}
               </Button>
 
