@@ -53,10 +53,16 @@ export async function GET(request: Request) {
       day = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1);
     }
 
-    // Fetch visits for the user where scheduledAt is in this month
+    const currentUserId = parseInt(session.user.id);
+    // Fetch visits for both the target user and the session user to prevent double-booking
     const visits = await prisma.visit.findMany({
       where: {
-        closerId: userId,
+        OR: [
+          { closerId: userId },
+          { setterId: userId },
+          { closerId: currentUserId },
+          { setterId: currentUserId }
+        ],
         scheduledAt: {
           gte: monthStart,
           lte: monthEnd,
