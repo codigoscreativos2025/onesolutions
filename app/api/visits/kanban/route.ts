@@ -1,28 +1,39 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { auth } from '@/auth';
-export const dynamic = 'force-dynamic';
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
+export const dynamic = "force-dynamic";
 
-import { COMMON_FIELDS, OPTIONAL_FIELDS, FILE_FIELD_KEYS } from '@/lib/project-constants';
+import {
+  COMMON_FIELDS,
+  OPTIONAL_FIELDS,
+  FILE_FIELD_KEYS,
+} from "@/lib/project-constants";
 
 function computeProgress(
   projectDetails: Record<string, unknown> | null,
-  fieldMetasByType: Record<number, { fieldName: string; isRequired?: boolean }[]>,
+  fieldMetasByType: Record<
+    number,
+    { fieldName: string; isRequired?: boolean }[]
+  >,
   projectTypeIds: number[],
-  stage?: string
+  stage?: string,
 ): number {
   if (!projectDetails) return 0;
   const isValid = (val: unknown) => {
     if (val === undefined || val === null) return false;
-    if (typeof val === 'string' && val.trim() === "") return false;
+    if (typeof val === "string" && val.trim() === "") return false;
     return true;
   };
 
-  const requiredCommonFields = COMMON_FIELDS.filter((f) => !OPTIONAL_FIELDS.includes(f));
+  const requiredCommonFields = COMMON_FIELDS.filter(
+    (f) => !OPTIONAL_FIELDS.includes(f),
+  );
   let totalFields = requiredCommonFields.length;
-  let completedFields = requiredCommonFields.filter((f) => isValid(projectDetails[f])).length;
+  let completedFields = requiredCommonFields.filter((f) =>
+    isValid(projectDetails[f]),
+  ).length;
 
-  const billFields = ['_billClientName', '_billClientEmail', '_billPhone'];
+  const billFields = ["_billClientName", "_billClientEmail", "_billPhone"];
   for (const field of billFields) {
     totalFields++;
     if (isValid(projectDetails[field])) {
@@ -30,17 +41,19 @@ function computeProgress(
     }
   }
 
-
-
   for (const ptId of projectTypeIds) {
     const metas = fieldMetasByType[ptId] || [];
     for (const meta of metas) {
-      if (COMMON_FIELDS.includes(meta.fieldName) || FILE_FIELD_KEYS.has(meta.fieldName)) continue;
-      
-    if (meta.isRequired !== false) {
-      totalFields++;
-      if (isValid(projectDetails[meta.fieldName])) completedFields++;
-    }
+      if (
+        COMMON_FIELDS.includes(meta.fieldName) ||
+        FILE_FIELD_KEYS.has(meta.fieldName)
+      )
+        continue;
+
+      if (meta.isRequired !== false) {
+        totalFields++;
+        if (isValid(projectDetails[meta.fieldName])) completedFields++;
+      }
     }
   }
 
@@ -50,13 +63,15 @@ function computeProgress(
     if (isValid(projectDetails["electricBillUrl"])) completedFields++;
   }
 
-  return totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
+  return totalFields > 0
+    ? Math.round((completedFields / totalFields) * 100)
+    : 0;
 }
 
 export async function GET() {
   const session = await auth();
   if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const currentUserId = parseInt(session.user.id);
@@ -65,12 +80,14 @@ export async function GET() {
   try {
     let whereClause: Record<string, unknown> = {};
 
-    if (role === 'SETTER') {
+    if (role === "SETTER") {
       whereClause.setterId = currentUserId;
-      whereClause.projects = { none: { projectType: { name: { contains: "panel solar" } } } };
-    } else if (role === 'SETTER_JR') {
+      whereClause.projects = {
+        none: { projectType: { name: { contains: "panel solar" } } },
+      };
+    } else if (role === "SETTER_JR") {
       whereClause.setterId = currentUserId;
-    } else if (role === 'CLOSER') {
+    } else if (role === "CLOSER") {
       const setterIds = await prisma.user.findMany({
         where: { closerId: currentUserId },
         select: { id: true },
@@ -82,23 +99,27 @@ export async function GET() {
         {
           AND: [
             { setterId: { in: ids } },
-            { projects: { some: { projectType: { name: { contains: "panel solar" } } } } }
-          ]
-        }
+            {
+              projects: {
+                some: { projectType: { name: { contains: "panel solar" } } },
+              },
+            },
+          ],
+        },
       ];
-    } else if (role === 'PARTNER') {
+    } else if (role === "PARTNER") {
       whereClause = {
         OR: [
           { parcel: { partnerId: currentUserId } },
           { projects: { some: { partnerId: currentUserId } } },
         ],
-        stage: { in: ['PROJECT', 'CLOSED'] },
+        stage: { in: ["PROJECT", "CLOSED"] },
       };
     }
 
     const visits = await prisma.visit.findMany({
       where: whereClause,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: {
         parcel: {
           select: {
@@ -123,8 +144,17 @@ export async function GET() {
         },
         projectDetails: true,
         bill: {
-          select: { clientName: true, clientEmail: true, phone: true, imageUrl: true, additionalFileUrl: true }
-        }
+          select: {
+            clientName: true,
+            clientEmail: true,
+            phone: true,
+            imageUrl: true,
+            additionalFileUrl: true,
+          },
+        },
+        chatRooms: {
+          select: { id: true, type: true, createdAt: true, partnerId: true },
+        },
       },
     });
 
@@ -135,14 +165,19 @@ export async function GET() {
       }
     }
 
-    const commonsId = (await prisma.projectType.findFirst({
-      where: { name: "Campos Comunes" },
-      select: { id: true },
-    }))?.id;
+    const commonsId = (
+      await prisma.projectType.findFirst({
+        where: { name: "Campos Comunes" },
+        select: { id: true },
+      })
+    )?.id;
 
     if (commonsId) allProjectTypeIds.add(commonsId);
 
-    const fieldMetasByType: Record<number, { fieldName: string; isRequired?: boolean }[]> = {};
+    const fieldMetasByType: Record<
+      number,
+      { fieldName: string; isRequired?: boolean }[]
+    > = {};
     for (const ptId of Array.from(allProjectTypeIds)) {
       const fields = await prisma.projectTypeField.findMany({
         where: { projectTypeId: ptId },
@@ -155,30 +190,44 @@ export async function GET() {
       ? (fieldMetasByType[commonsId] || []).map((f) => f.fieldName)
       : [];
 
-    const enriched = visits.map((v) => ({
-      id: v.id,
-      stage: v.stage,
-      createdAt: v.createdAt,
-      contractFields: v.contractFields,
-      parcel: v.parcel,
-      setter: v.setter,
-      closer: v.closer,
-      projects: v.projects,
-      projectDetails: v.projectDetails,
-      progress: computeProgress(
-        { 
-          ...(v.projectDetails as Record<string, unknown> || {}), 
-          _billClientName: v.bill?.clientName, 
-          _billClientEmail: v.bill?.clientEmail, 
-          _billPhone: v.bill?.phone,
-          electricBillUrl: (v.projectDetails as Record<string, unknown>)?.electricBillUrl || v.bill?.imageUrl,
-          idDocumentUrl: (v.projectDetails as Record<string, unknown>)?.idDocumentUrl || v.bill?.additionalFileUrl,
-        },
-        fieldMetasByType,
-        [...v.projects.map((p) => p.projectType.id), ...(commonsId ? [commonsId] : [])],
-        v.stage
-      ),
-    }));    const grouped: Record<string, typeof enriched> = {
+    const enriched = visits.map((v) => {
+      const partnerChat = v.chatRooms?.find(
+        (r) => r.type === "PARTNER" && r.partnerId === currentUserId,
+      );
+      return {
+        id: v.id,
+        stage: v.stage,
+        createdAt: v.createdAt,
+        assignedAt: partnerChat ? partnerChat.createdAt : null,
+        contractFields: v.contractFields,
+        parcel: v.parcel,
+        setter: v.setter,
+        closer: v.closer,
+        projects: v.projects,
+        projectDetails: v.projectDetails,
+        progress: computeProgress(
+          {
+            ...((v.projectDetails as Record<string, unknown>) || {}),
+            _billClientName: v.bill?.clientName,
+            _billClientEmail: v.bill?.clientEmail,
+            _billPhone: v.bill?.phone,
+            electricBillUrl:
+              (v.projectDetails as Record<string, unknown>)?.electricBillUrl ||
+              v.bill?.imageUrl,
+            idDocumentUrl:
+              (v.projectDetails as Record<string, unknown>)?.idDocumentUrl ||
+              v.bill?.additionalFileUrl,
+          },
+          fieldMetasByType,
+          [
+            ...v.projects.map((p) => p.projectType.id),
+            ...(commonsId ? [commonsId] : []),
+          ],
+          v.stage,
+        ),
+      };
+    });
+    const grouped: Record<string, typeof enriched> = {
       IN_PROGRESS: [],
       PROPOSAL_ACCEPTED: [],
       PROJECT: [],
@@ -194,7 +243,10 @@ export async function GET() {
 
     return NextResponse.json(grouped);
   } catch (error) {
-    console.error('Error fetching kanban data:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error("Error fetching kanban data:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
