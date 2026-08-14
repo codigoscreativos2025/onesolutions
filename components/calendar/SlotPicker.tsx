@@ -84,7 +84,7 @@ export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: Slo
 
   useEffect(() => {
     fetchAvailability(currentMonth);
-  }, []); // eslint-disable-line
+  }, [fetchAvailability, currentMonth]);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
