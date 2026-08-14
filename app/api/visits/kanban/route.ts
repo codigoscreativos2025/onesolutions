@@ -82,9 +82,6 @@ export async function GET() {
 
     if (role === "SETTER") {
       whereClause.setterId = currentUserId;
-      whereClause.projects = {
-        none: { projectType: { name: { contains: "panel solar" } } },
-      };
     } else if (role === "SETTER_JR") {
       whereClause.setterId = currentUserId;
     } else if (role === "CLOSER") {
