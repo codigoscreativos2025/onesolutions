@@ -3028,36 +3028,34 @@ function DatosClosedPanel({
   return (
     <div className="space-y-6">
       <ClientInfoPanel isReadOnly visit={visit} role={role} />
-      {isAdmin && (
-        <Panel title="Estado Post-Cierre" icon={BadgeCheck}>
-          <div className="flex flex-wrap gap-2">
-            {POST_CLOSURE_TAGS.map((tag) => (
-              <button
-                key={tag}
-                onClick={() => onToggleTag(tag)}
-                disabled={tagSaving}
-                className={`px-4 py-2 rounded-full border text-sm font-medium transition-all ${
-                  postCloseTags === tag
-                    ? "bg-primary/10 border-primary text-primary"
-                    : "bg-surface-container-low border-outline-variant text-on-surface-variant hover:border-primary/30"
-                }`}
-              >
-                {postCloseTags === tag && (
-                  <CheckCircle className="w-3 h-3 inline mr-1" />
-                )}
-                {tag}
-              </button>
-            ))}
+      <Panel title="Estado Post-Cierre" icon={BadgeCheck}>
+        <div className="flex flex-wrap gap-2">
+          {POST_CLOSURE_TAGS.map((tag) => (
+            <button
+              key={tag}
+              onClick={() => onToggleTag(tag)}
+              disabled={tagSaving || !isAdmin}
+              className={`px-4 py-2 rounded-full border text-sm font-medium transition-all ${
+                postCloseTags === tag
+                  ? "bg-primary/10 border-primary text-primary"
+                  : "bg-surface-container-low border-outline-variant text-on-surface-variant hover:border-primary/30"
+              } ${!isAdmin ? "cursor-not-allowed opacity-70" : ""}`}
+            >
+              {postCloseTags === tag && (
+                <CheckCircle className="w-3 h-3 inline mr-1" />
+              )}
+              {tag}
+            </button>
+          ))}
+        </div>
+        {postCloseTags && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+              {postCloseTags}
+            </span>
           </div>
-          {postCloseTags && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                {postCloseTags}
-              </span>
-            </div>
-          )}
-        </Panel>
-      )}
+        )}
+      </Panel>
 
       <Panel title="Campos Generales" icon={Pencil}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
