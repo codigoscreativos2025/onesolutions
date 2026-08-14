@@ -107,9 +107,11 @@ export function ParcelSheet({
     }
     const pId = parcel.id;
     if (!pId) return;
-    const isRegridParcel = pId.includes("-") && pId.length > 30;
-    if (isRegridParcel) return;
-    fetch(`/api/parcels/${pId}`)
+    // Skip DB fetch for pure external ids not yet claimed (uuid-like Regrid or gis:id still try)
+    const isUnsavedRegridOnly =
+      pId.includes("-") && pId.length > 30 && !pId.includes(":");
+    if (isUnsavedRegridOnly) return;
+    fetch(`/api/parcels/${encodeURIComponent(pId)}`)
       .then((r) => {
         if (!r.ok) return null;
         return r.json();
@@ -153,7 +155,7 @@ export function ParcelSheet({
     
     isSavingRef.current = true;
     try {
-      const res = await fetch(`/api/parcels/${parcel.id}`, {
+      const res = await fetch(`/api/parcels/${encodeURIComponent(parcel.id)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ parcelTags: JSON.stringify(newTags), address: parcel.address, geometry: parcel.geometry }),

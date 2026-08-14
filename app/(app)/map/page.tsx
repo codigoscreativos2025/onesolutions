@@ -40,7 +40,7 @@ export default function MapPage() {
   useEffect(() => {
     if (autoOpen && highlightId) {
       // Fetch parcel from local DB to get metadata + geometry
-      fetch(`/api/parcels/${highlightId}`)
+      fetch(`/api/parcels/${encodeURIComponent(highlightId)}`)
         .then(r => r.json())
         .then(data => {
           if (data && data.geometry) {
@@ -75,7 +75,7 @@ export default function MapPage() {
 
     try {
       const res = await fetch(
-        `/api/regrid/search?query=${encodeURIComponent(query)}`
+        `/api/gis/search?query=${encodeURIComponent(query)}`
       );
       const data = await res.json();
 
@@ -121,7 +121,7 @@ export default function MapPage() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar direcciones con Regrid..."
+            placeholder="Buscar direcciones en Orlando / Orange County..."
             className="flex-1 bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-on-surface-variant outline-none"
           />
           <button

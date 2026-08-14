@@ -11,7 +11,8 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id } = await params;
+  const { id: rawId } = await params;
+  const id = decodeURIComponent(rawId);
   const userId = parseInt(session.user.id);
   const body = await request.json().catch(() => ({}));
 
@@ -42,6 +43,7 @@ export async function POST(
           ownerName: body.ownerName || null,
           geometry: body.geometry || defaultGeometry,
           metadata: body.metadata || null,
+          territory: "Florida",
         },
       });
     }

@@ -39,6 +39,35 @@ npx prisma db seed
 npm run dev
 ```
 
+### Mapa de parcelas (GIS gratis / freeregrid)
+
+Por defecto el mapa usa el **GIS público de Orange County (Orlando, FL)** en lugar de Regrid:
+
+- Centro inicial del mapa: **downtown Orlando**
+- Polígonos y dueño desde ArcGIS del condado
+- APIs: `/api/gis/geojson`, `/api/gis/parcels`, `/api/gis/search`, `/api/gis/parcel/[id]`
+
+Variables en `.env`:
+
+```env
+PARCEL_PROVIDER=gis
+# REGRID_API_KEY solo hace falta si PARCEL_PROVIDER=regrid
+```
+
+Rama de desarrollo: `freeregrid`.
+
+**Probar en local:**
+
+1. `npm run dev` → http://localhost:3000
+2. Login con un usuario del seed
+3. Ir a **Mapa** — debe abrir centrado en Orlando
+4. Zoom ≥ 14 para ver polígonos de parcelas
+5. Click en un polígono → sheet con dirección y nombre del propietario
+6. Buscar p.ej. `54 W Church St` o una dirección de Orlando
+
+Cobertura actual: **Orange County, FL**. Otros condados se añaden en `lib/gis/catalog.ts` + `lib/gis/providers/`.
+
+
 ## Limpiar la base de datos (SQLite)
 
 ```bash

@@ -12,7 +12,8 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id } = await params;
+  const { id: rawId } = await params;
+  const id = decodeURIComponent(rawId);
 
   const parcel = await prisma.parcel.findFirst({
     where: { OR: [{ id }, { externalId: id }] },
@@ -70,11 +71,14 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id } = await params;
+  const { id: rawId } = await params;
+  const id = decodeURIComponent(rawId);
   const body = await request.json();
-  const { partnerId, parcelTags, parcelNotes, visitedStatus, address: bodyAddress, geometry: bodyGeometry } = body;
+  const { partnerId, parcelTags, parcelNotes, visitedStatus, address: bodyAddress, geometry: bodyGeometry, ownerName: bodyOwnerName, metadata: bodyMetadata } = body;
 
-  const parcel = await prisma.parcel.findUnique({ where: { id } });
+  const parcel = await prisma.parcel.findFirst({
+    where: { OR: [{ id }, { externalId: id }] },
+  });
 
   const isAdmin = session.user.role === "ADMIN";
   const isOwner = parcel?.setterId === parseInt(session.user.id);
@@ -98,15 +102,20 @@ export async function PATCH(
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });
   }
 
-  // Use upsert for Regrid parcels (may not exist in DB yet)
+  const parcelKey = parcel?.id || id;
+
+  // Upsert for GIS/Regrid parcels (may not exist in DB yet)
   const created = await prisma.parcel.upsert({
-    where: { id },
+    where: { id: parcelKey },
     update: updateData,
     create: {
-      id,
+      id: parcelKey,
+      externalId: parcel?.externalId || id,
       ...updateData,
-      address: bodyAddress || "Sin direccion",
-      geometry: bodyGeometry || JSON.stringify({ type: "Polygon", coordinates: [] }),
+      address: bodyAddress || parcel?.address || "Sin direccion",
+      ownerName: bodyOwnerName || parcel?.ownerName || null,
+      geometry: bodyGeometry || parcel?.geometry || JSON.stringify({ type: "Polygon", coordinates: [] }),
+      metadata: bodyMetadata || parcel?.metadata || null,
       ...(isAdmin ? { partnerId: partnerId as number } : {}),
     },
     include: {
@@ -118,7 +127,7 @@ export async function PATCH(
   if (visitedStatus && (isAdmin || isOwner || isSetterOrCloser)) {
     await prisma.parcelVisitHistory.create({
       data: {
-        parcelId: id,
+        parcelId: created.id,
         setterId: parseInt(session.user.id),
         visitedAt: new Date(),
         status: visitedStatus,

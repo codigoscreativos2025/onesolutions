@@ -31,34 +31,61 @@ interface Parcel {
   }[];
 }
 
-const defaultCenter: [number, number] = [32.7767, -96.7970];
+/** Downtown Orlando [lat, lng] */
+const defaultCenter: [number, number] = [28.5383, -81.3792];
 
-export default function MapView({ center, autoOpenId }: { center?: [number, number] | null; autoOpenId?: string | null }) {
+const EMPTY_FC: GeoJSON.FeatureCollection = {
+  type: "FeatureCollection",
+  features: [],
+};
+
+function getTagColor(parcelTags?: string): string | null {
+  try {
+    if (parcelTags) {
+      const tags = JSON.parse(parcelTags);
+      if (Array.isArray(tags) && tags.length > 0) return tags[0].color;
+    }
+  } catch {
+    /* */
+  }
+  return null;
+}
+
+export default function MapView({
+  center,
+  autoOpenId,
+}: {
+  center?: [number, number] | null;
+  autoOpenId?: string | null;
+}) {
   const { data: session } = useSession();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const mapTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
   const [mapReady, setMapReady] = useState(false);
-  const [legendTags, setLegendTags] = useState<{id: number, name: string, color: string}[]>([]);
+  const [legendTags, setLegendTags] = useState<
+    { id: number; name: string; color: string }[]
+  >([]);
+  const [parcelsHint, setParcelsHint] = useState<string | null>(null);
   const autoOpenedRef = useRef(false);
 
   useEffect(() => {
     fetch("/api/settings/tags")
-      .then(r => r.json())
-      .then(d => { if (Array.isArray(d)) setLegendTags(d); })
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d)) setLegendTags(d);
+      })
       .catch(() => {});
   }, []);
   const { t } = useLocale();
 
-  // Auto-open parcel sheet when coming from lead details
   useEffect(() => {
     if (autoOpenId && !autoOpenedRef.current) {
       autoOpenedRef.current = true;
-      // Fetch the specific parcel from our DB
-      fetch(`/api/parcels/${autoOpenId}`)
-        .then(r => r.json())
-        .then(data => {
+      fetch(`/api/parcels/${encodeURIComponent(autoOpenId)}`)
+        .then((r) => r.json())
+        .then((data) => {
           if (data && data.id) {
             const parcel: Parcel = {
               id: data.id,
@@ -72,41 +99,41 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
             };
             setSelectedParcel(parcel);
 
-            // Highlight on the map
             if (map.current && data.geometry) {
               try {
                 const geom = JSON.parse(data.geometry);
-                if (geom.coordinates?.[0]) {
-                  const coords = geom.coordinates[0].map((c: [number, number]) => [c[1], c[0]]);
-                  const source = map.current.getSource("highlighted-parcel") as maplibregl.GeoJSONSource;
-                  if (source) {
-                    source.setData({
+                selectedGeometryRef.current = geom;
+                (map.current.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
+                  type: "FeatureCollection",
+                  features: [
+                    {
                       type: "Feature",
-                      properties: { ll_uuid: data.id },
-                      geometry: { type: "Polygon", coordinates: [coords.map(([lng, lat]: [number, number]) => [lng, lat])] },
-                    });
-                  }
-                  // Pulse effect
-                  map.current.setPaintProperty("parcel-highlight", "fill-color", "#f48221");
-                  map.current.setPaintProperty("parcel-highlight", "fill-opacity", 0.6);
-                  setTimeout(() => {
-                    map.current?.setPaintProperty("parcel-highlight", "fill-opacity", 0.3);
-                  }, 3000);
-                }
-              } catch {}
+                      geometry: geom,
+                      properties: {
+                        fillColor: "#f48221",
+                        borderColor: "#f48221",
+                      },
+                    },
+                  ],
+                });
+              } catch {
+                /* */
+              }
             }
           }
         })
         .catch(() => {});
     }
   }, [autoOpenId]);
-  const isSavingRef = useRef(false);
-  const noteTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const fetchMarkersRef = useRef<() => void>();
+  const fetchParcelsRef = useRef<() => void>();
   const initializedRef = useRef(false);
   const centerRef = useRef<[number, number] | null | undefined>(center);
   const selectedGeometryRef = useRef<GeoJSON.Geometry | null>(null);
   const quickTagActiveRef = useRef(false);
+  const parcelsAbortRef = useRef<AbortController | null>(null);
+  const parcelsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     centerRef.current = center;
@@ -117,7 +144,7 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
     initializedRef.current = true;
 
     const initialCenter = centerRef.current || defaultCenter;
-    const zoom = centerRef.current ? 18 : 15;
+    const zoom = centerRef.current ? 18 : 16;
 
     const m = new maplibregl.Map({
       container: mapContainer.current,
@@ -146,24 +173,26 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
     mapTimeout.current = setTimeout(() => {
       if (!mapReady) {
         setMapReady(true);
-        toast.error("El mapa esta tardando. Si no ves las parcelas, intenta recargar.");
+        toast.error(
+          "El mapa esta tardando. Si no ves las parcelas, intenta recargar."
+        );
       }
     }, 15000);
 
     m.on("load", () => {
       if (mapTimeout.current) clearTimeout(mapTimeout.current);
-      m.addSource("regrid-parcels", {
-        type: "vector",
-        tiles: [`${window.location.origin}/api/regrid/tiles/{z}/{x}/{y}`],
-        minzoom: 10,
-        maxzoom: 22,
+
+      m.addSource("gis-parcels", {
+        type: "geojson",
+        data: EMPTY_FC,
+        promoteId: "ll_uuid",
       });
 
       m.addLayer({
         id: "parcel-borders",
         type: "line",
-        source: "regrid-parcels",
-        "source-layer": "parcels",
+        source: "gis-parcels",
+        minzoom: 14,
         paint: {
           "line-color": "#088",
           "line-width": 1,
@@ -173,17 +202,17 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
       m.addLayer({
         id: "parcel-fills",
         type: "fill",
-        source: "regrid-parcels",
-        "source-layer": "parcels",
+        source: "gis-parcels",
+        minzoom: 14,
         paint: {
           "fill-color": "#088",
-          "fill-opacity": 0.1,
+          "fill-opacity": 0.12,
         },
       });
 
       m.addSource("selected-source", {
         type: "geojson",
-        data: { type: "FeatureCollection", features: [] },
+        data: EMPTY_FC,
       });
 
       m.addLayer({
@@ -209,133 +238,272 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
       m.addLayer({
         id: "parcel-hover",
         type: "fill",
-        source: "regrid-parcels",
-        "source-layer": "parcels",
+        source: "gis-parcels",
+        minzoom: 14,
         paint: {
           "fill-color": "#ff8800",
           "fill-opacity": 0.4,
         },
-        filter: ["==", "ll_uuid", ""],
+        filter: ["==", ["get", "ll_uuid"], ""],
       });
+
+      const loadViewportParcels = async () => {
+        if (!map.current) return;
+        const z = map.current.getZoom();
+        if (z < 14) {
+          setParcelsHint("Acerca el mapa para ver parcelas");
+          (map.current.getSource("gis-parcels") as maplibregl.GeoJSONSource)?.setData(
+            EMPTY_FC
+          );
+          return;
+        }
+
+        const bounds = map.current.getBounds();
+        const west = bounds.getWest();
+        const south = bounds.getSouth();
+        const east = bounds.getEast();
+        const north = bounds.getNorth();
+
+        parcelsAbortRef.current?.abort();
+        const ac = new AbortController();
+        parcelsAbortRef.current = ac;
+
+        try {
+          const res = await fetch(
+            `/api/gis/geojson?west=${west}&south=${south}&east=${east}&north=${north}`,
+            { signal: ac.signal }
+          );
+          if (!res.ok) {
+            setParcelsHint("No se pudieron cargar parcelas GIS");
+            return;
+          }
+          const data = await res.json();
+          if (data.tooLarge) {
+            setParcelsHint(
+              data.message || "Acerca el mapa para ver parcelas"
+            );
+            (map.current?.getSource("gis-parcels") as maplibregl.GeoJSONSource)?.setData(
+              EMPTY_FC
+            );
+            return;
+          }
+          setParcelsHint(null);
+          const fc: GeoJSON.FeatureCollection = {
+            type: "FeatureCollection",
+            features: Array.isArray(data.features) ? data.features : [],
+          };
+          (map.current?.getSource("gis-parcels") as maplibregl.GeoJSONSource)?.setData(
+            fc
+          );
+        } catch (err) {
+          if ((err as Error)?.name === "AbortError") return;
+          setParcelsHint("Error cargando parcelas del condado");
+        }
+      };
+
+      const scheduleParcelLoad = () => {
+        if (parcelsDebounceRef.current) clearTimeout(parcelsDebounceRef.current);
+        parcelsDebounceRef.current = setTimeout(() => {
+          loadViewportParcels();
+        }, 350);
+      };
+
+      fetchParcelsRef.current = loadViewportParcels;
+
+      const enrichParcelFromClick = async (
+        props: Record<string, unknown>,
+        geom: GeoJSON.Geometry,
+        lng: number,
+        lat: number
+      ) => {
+        const llUuid = String(props.ll_uuid || "");
+        const basicParcel: Parcel = {
+          id: llUuid || `gis-${props.parcel_id || "unknown"}`,
+          address: String(props.address || props.headline || "Sin direccion"),
+          ownerName: props.owner ? String(props.owner) : undefined,
+          city: props.city ? String(props.city) : undefined,
+          state: props.state ? String(props.state) : "FL",
+          zipCode: props.zipCode ? String(props.zipCode) : undefined,
+          status: "AVAILABLE",
+          geometry: JSON.stringify(geom),
+          metadata: JSON.stringify({
+            source: "gis",
+            regrid_id: llUuid,
+            owner: props.owner,
+            parcel_id: props.parcel_id,
+            property_class: props.property_class,
+            acreage: props.acreage,
+            land_value: props.land_value,
+            building_value: props.building_value,
+            city: props.city,
+            state: props.state || "FL",
+            zipCode: props.zipCode,
+          }),
+        };
+
+        selectedGeometryRef.current = geom;
+        const selectedColor = "#f48221";
+        (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData(
+          {
+            type: "FeatureCollection",
+            features: [
+              {
+                type: "Feature" as const,
+                geometry: geom,
+                properties: {
+                  fillColor: selectedColor,
+                  borderColor: selectedColor,
+                },
+              },
+            ],
+          }
+        );
+        setSelectedParcel(basicParcel);
+
+        try {
+          // Prefer full GIS detail + merge with DB if exists
+          let fullParcel: Parcel | null = null;
+
+          if (llUuid) {
+            const gisRes = await fetch(
+              `/api/gis/parcel/${encodeURIComponent(llUuid)}`
+            );
+            if (gisRes.ok) {
+              fullParcel = await gisRes.json();
+            }
+
+            const dbRes = await fetch(
+              `/api/parcels/${encodeURIComponent(llUuid)}`
+            );
+            if (dbRes.ok) {
+              const dbParcel = await dbRes.json();
+              if (dbParcel?.id) {
+                const meta = fullParcel?.metadata
+                  ? JSON.parse(
+                      typeof fullParcel.metadata === "string"
+                        ? fullParcel.metadata
+                        : JSON.stringify(fullParcel.metadata)
+                    )
+                  : {};
+                const dbMeta = dbParcel.metadata
+                  ? JSON.parse(dbParcel.metadata)
+                  : {};
+                fullParcel = {
+                  ...basicParcel,
+                  ...dbParcel,
+                  address: dbParcel.address || fullParcel?.address || basicParcel.address,
+                  ownerName:
+                    dbParcel.ownerName ||
+                    fullParcel?.ownerName ||
+                    basicParcel.ownerName,
+                  geometry: basicParcel.geometry,
+                  metadata: JSON.stringify({
+                    ...meta,
+                    ...dbMeta,
+                    regrid_id: llUuid,
+                    source: "gis",
+                  }),
+                };
+              }
+            } else if (fullParcel) {
+              fullParcel = {
+                ...fullParcel,
+                geometry: basicParcel.geometry,
+              };
+            }
+          }
+
+          // Fallback: point query if no id on feature
+          if (!fullParcel) {
+            const pointRes = await fetch(
+              `/api/gis/parcels?lat=${lat}&lng=${lng}`
+            );
+            if (pointRes.ok) {
+              const list = await pointRes.json();
+              if (Array.isArray(list) && list[0]) {
+                fullParcel = {
+                  ...list[0],
+                  geometry: list[0].geometry || basicParcel.geometry,
+                };
+              }
+            }
+          }
+
+          if (fullParcel && fullParcel.id) {
+            setSelectedParcel(fullParcel);
+            const updatedTagColor = getTagColor(fullParcel.parcelTags);
+            const selColor =
+              fullParcel.status === "LEAD"
+                ? "#22C55E"
+                : fullParcel.status === "CUSTOMER"
+                  ? "#10b981"
+                  : updatedTagColor || "#ef4444";
+            if (selectedGeometryRef.current) {
+              (map.current?.getSource(
+                "selected-source"
+              ) as maplibregl.GeoJSONSource)?.setData({
+                type: "FeatureCollection",
+                features: [
+                  {
+                    type: "Feature" as const,
+                    geometry: selectedGeometryRef.current,
+                    properties: {
+                      fillColor: selColor,
+                      borderColor: selColor,
+                    },
+                  },
+                ],
+              });
+            }
+            fetchMarkersRef.current?.();
+          }
+        } catch {
+          /* keep basic parcel */
+        }
+      };
 
       m.on("click", "parcel-fills", async (e) => {
         if (!e.features?.[0]) return;
         quickTagActiveRef.current = false;
-        const props = e.features[0].properties;
-        const llUuid = props.ll_uuid || "";
+        const props = (e.features[0].properties || {}) as Record<string, unknown>;
+        const geom =
+          (e.features[0] as unknown as { geometry: GeoJSON.Geometry }).geometry ||
+          e.features[0].geometry;
         const { lng, lat } = e.lngLat;
-
-        const getTagColor = (parcelTags?: string): string | null => {
-          try {
-            if (parcelTags) {
-              const tags = JSON.parse(parcelTags);
-              if (Array.isArray(tags) && tags.length > 0) return tags[0].color;
-            }
-          } catch { /* */ }
-          return null;
-        };
-
-        const basicParcel: Parcel = {
-          id: props.ll_uuid || `regrid-${props.fid}`,
-          address: props.address || props.headline || "Sin direccion",
-          ownerName: props.owner,
-          status: "AVAILABLE",
-          geometry: JSON.stringify(e.features[0].geometry),
-          metadata: JSON.stringify({
-            regrid_id: props.ll_uuid,
-            path: props.path,
-            owner: props.owner,
-            parcelnumb: props.parcelnumb,
-          }),
-        };
-        const geom = (e.features[0] as unknown as { geometry: GeoJSON.Geometry }).geometry || e.features[0].geometry;
-        selectedGeometryRef.current = geom;
-        const tagColor = getTagColor(basicParcel.parcelTags);
-        const selectedColor = tagColor || "#f48221";
-        (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
-          type: "FeatureCollection",
-          features: [{
-            type: "Feature" as const,
-            geometry: geom,
-            properties: {
-              fillColor: selectedColor,
-              borderColor: selectedColor,
-            },
-          }],
-        });
-
-        setSelectedParcel(basicParcel);
-
-        try {
-          const res = await fetch(`/api/parcels/${props.ll_uuid}`);
-          if (res.ok) {
-            const fullParcel = await res.json();
-            if (fullParcel && fullParcel.id) {
-              const meta = fullParcel.metadata ? JSON.parse(fullParcel.metadata) : {};
-              const updatedParcel: Parcel = {
-                ...fullParcel,
-                geometry: basicParcel.geometry,
-                metadata: JSON.stringify({
-                  ...(typeof fullParcel.metadata === 'string' ? meta : (fullParcel.metadata || {})),
-                  regrid_id: props.ll_uuid,
-                  path: props.path,
-                }),
-              };
-              setSelectedParcel(updatedParcel);
-
-              const updatedTagColor = getTagColor(updatedParcel.parcelTags);
-              const selColor = updatedParcel.status === "LEAD" ? "#22C55E" : updatedParcel.status === "CUSTOMER" ? "#10b981" : (updatedTagColor || "#ef4444");
-              selectedGeometryRef.current = geom;
-              (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
-                type: "FeatureCollection",
-                features: [{
-                  type: "Feature" as const,
-                  geometry: (e.features[0] as unknown as { geometry: GeoJSON.Geometry }).geometry || e.features[0].geometry,
-                  properties: {
-                    fillColor: selColor,
-                    borderColor: selColor,
-                  },
-                }],
-              });
-              
-              // Trigger a refresh of the status markers so the point appears/updates globally
-              if (fetchMarkersRef.current) fetchMarkersRef.current();
-            }
-          }
-        } catch {
-          (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
-            type: "FeatureCollection",
-            features: [],
-          });
-        }
+        await enrichParcelFromClick(props, geom as GeoJSON.Geometry, lng, lat);
       });
 
       m.on("mousemove", "parcel-fills", (e) => {
         if (!e.features?.[0]) return;
         m.getCanvas().style.cursor = "pointer";
-        const llUuid = e.features[0].properties.ll_uuid;
-        m.setFilter("parcel-hover", ["==", "ll_uuid", llUuid || ""]);
+        const llUuid = e.features[0].properties?.ll_uuid;
+        m.setFilter("parcel-hover", [
+          "==",
+          ["get", "ll_uuid"],
+          llUuid || "",
+        ]);
       });
 
       m.on("mouseleave", "parcel-fills", () => {
         m.getCanvas().style.cursor = "";
-        m.setFilter("parcel-hover", ["==", "ll_uuid", ""]);
+        m.setFilter("parcel-hover", ["==", ["get", "ll_uuid"], ""]);
       });
 
       m.on("click", (e) => {
-        const features = m.queryRenderedFeatures(e.point, { layers: ["parcel-fills"] });
+        const features = m.queryRenderedFeatures(e.point, {
+          layers: ["parcel-fills"],
+        });
         if (features.length === 0) {
           setSelectedParcel(null);
-          (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
-            type: "FeatureCollection",
-            features: [],
-          });
+          (map.current?.getSource(
+            "selected-source"
+          ) as maplibregl.GeoJSONSource)?.setData(EMPTY_FC);
         }
       });
 
       m.addSource("parcel-status-points", {
         type: "geojson",
-        data: { type: "FeatureCollection", features: [] },
+        data: EMPTY_FC,
       });
 
       m.addLayer({
@@ -381,18 +549,35 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
           const res = await fetch(
             `/api/parcels/in-viewport?swlat=${sw.lat}&swlng=${sw.lng}&nelat=${ne.lat}&nelng=${ne.lng}`
           );
-          const parcels: { id: string; status: string; parcelTags?: string; coordinates: [number, number]; hasHistory?: boolean }[] = await res.json();
+          const parcels: {
+            id: string;
+            status: string;
+            parcelTags?: string;
+            coordinates: [number, number];
+            hasHistory?: boolean;
+          }[] = await res.json();
           const features = parcels.map((p) => {
-            let dotColor = p.status === "LEAD" ? "#22C55E" : (p.status === "CUSTOMER" ? "#10b981" : "#EF4444");
+            let dotColor =
+              p.status === "LEAD"
+                ? "#22C55E"
+                : p.status === "CUSTOMER"
+                  ? "#10b981"
+                  : "#EF4444";
             if (p.status !== "LEAD" && p.status !== "CUSTOMER" && p.parcelTags) {
               try {
                 const tags = JSON.parse(p.parcelTags);
-                if (Array.isArray(tags) && tags.length > 0) dotColor = tags[0].color;
-              } catch { /* */ }
+                if (Array.isArray(tags) && tags.length > 0)
+                  dotColor = tags[0].color;
+              } catch {
+                /* */
+              }
             }
             return {
               type: "Feature" as const,
-              geometry: { type: "Point" as const, coordinates: p.coordinates },
+              geometry: {
+                type: "Point" as const,
+                coordinates: p.coordinates,
+              },
               properties: {
                 id: p.id,
                 color: dotColor,
@@ -400,27 +585,35 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
               },
             };
           });
-          (map.current?.getSource("parcel-status-points") as maplibregl.GeoJSONSource)?.setData({
+          (map.current?.getSource(
+            "parcel-status-points"
+          ) as maplibregl.GeoJSONSource)?.setData({
             type: "FeatureCollection",
             features,
           });
-        } catch { /* */ }
+        } catch {
+          /* */
+        }
       };
 
       fetchMarkersRef.current = fetchStatusMarkers;
 
       m.on("moveend", () => {
         fetchStatusMarkers();
+        scheduleParcelLoad();
       });
 
       fetchStatusMarkers();
+      scheduleParcelLoad();
 
       map.current = m;
       setMapReady(true);
 
-      // Aplicar center pendiente si ya llegó (para el "Ver en mapa")
       if (centerRef.current) {
-        m.flyTo({ center: [centerRef.current[1], centerRef.current[0]], zoom: 18 });
+        m.flyTo({
+          center: [centerRef.current[1], centerRef.current[0]],
+          zoom: 18,
+        });
       }
     });
   }, [mapReady]);
@@ -431,11 +624,12 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
       if (!center || !map.current) return;
       map.current.flyTo({ center: [center[1], center[0]], zoom: 18 });
       centerRef.current = center;
+      setTimeout(() => fetchParcelsRef.current?.(), 500);
     };
     if (map.current.isStyleLoaded()) {
       doFly();
     } else {
-      map.current.once('style.load', doFly);
+      map.current.once("style.load", doFly);
     }
   }, [center]);
 
@@ -443,6 +637,8 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
     initMap();
     return () => {
       if (mapTimeout.current) clearTimeout(mapTimeout.current);
+      if (parcelsDebounceRef.current) clearTimeout(parcelsDebounceRef.current);
+      parcelsAbortRef.current?.abort();
       if (map.current) {
         map.current.remove();
         map.current = null;
@@ -453,27 +649,31 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
 
   const handleQuickTagApplied = useCallback(() => {
     quickTagActiveRef.current = true;
-    (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
-      type: "FeatureCollection",
-      features: [],
-    });
+    (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData(
+      EMPTY_FC
+    );
     selectedGeometryRef.current = null;
     fetchMarkersRef.current?.();
   }, []);
 
   const handleClaim = async (parcelId: string) => {
-    const res = await fetch(`/api/parcels/${parcelId}/claim`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        address: selectedParcel?.address,
-        ownerName: selectedParcel?.ownerName,
-        geometry: selectedParcel?.geometry,
-        metadata: selectedParcel?.metadata,
-      }),
-    });
+    const res = await fetch(
+      `/api/parcels/${encodeURIComponent(parcelId)}/claim`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          address: selectedParcel?.address,
+          ownerName: selectedParcel?.ownerName,
+          geometry: selectedParcel?.geometry,
+          metadata: selectedParcel?.metadata,
+        }),
+      }
+    );
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: "Error al reclamar parcela" }));
+      const err = await res
+        .json()
+        .catch(() => ({ error: "Error al reclamar parcela" }));
       throw new Error(err.error);
     }
     const claimed = await res.json();
@@ -490,9 +690,16 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
             <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             <div className="text-center">
               <p>{t.map.loading}</p>
-              <p className="text-xs text-on-surface-variant mt-1">Si tarda demasiado, verifica tu conexion</p>
+              <p className="text-xs text-on-surface-variant mt-1">
+                Si tarda demasiado, verifica tu conexion
+              </p>
             </div>
           </div>
+        </div>
+      )}
+      {mapReady && parcelsHint && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 px-4 py-2 rounded-full bg-surface/95 border border-outline-variant/40 text-xs text-on-surface shadow-lg">
+          {parcelsHint}
         </div>
       )}
       <ParcelSheet
@@ -501,10 +708,9 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
           setSelectedParcel(null);
           quickTagActiveRef.current = false;
           selectedGeometryRef.current = null;
-          (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
-            type: "FeatureCollection",
-            features: [],
-          });
+          (map.current?.getSource(
+            "selected-source"
+          ) as maplibregl.GeoJSONSource)?.setData(EMPTY_FC);
         }}
         onClaim={handleClaim}
         onVisitStarted={() => {
@@ -514,30 +720,37 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
           setSelectedParcel(updated);
           if (quickTagActiveRef.current) return;
           try {
-            const tags = updated.parcelTags ? JSON.parse(updated.parcelTags) : [];
+            const tags = updated.parcelTags
+              ? JSON.parse(updated.parcelTags)
+              : [];
             const tagColor = tags.length > 0 ? tags[0].color : null;
             const color = tagColor || "#f48221";
             if (map.current && selectedGeometryRef.current) {
-              (map.current.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData({
+              (map.current.getSource(
+                "selected-source"
+              ) as maplibregl.GeoJSONSource)?.setData({
                 type: "FeatureCollection",
-                features: [{
-                  type: "Feature" as const,
-                  geometry: selectedGeometryRef.current!,
-                  properties: {
-                    fillColor: color,
-                    borderColor: color,
+                features: [
+                  {
+                    type: "Feature" as const,
+                    geometry: selectedGeometryRef.current!,
+                    properties: {
+                      fillColor: color,
+                      borderColor: color,
+                    },
                   },
-                }],
+                ],
               });
             }
-          } catch { /* */ }
+          } catch {
+            /* */
+          }
         }}
         onQuickTagApplied={handleQuickTagApplied}
         userRole={session?.user?.role || ""}
         userId={session?.user?.id || ""}
       />
 
-      {/* Leyenda de Etiquetas */}
       {legendTags.length > 0 && (
         <div className="absolute top-4 left-4 z-10 bg-surface/95 backdrop-blur-xl shadow-2xl border border-outline-variant/30 rounded-2xl p-4 min-w-[220px]">
           <h3 className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mb-3 ml-1">
@@ -546,15 +759,31 @@ export default function MapView({ center, autoOpenId }: { center?: [number, numb
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-3 bg-surface-container-low rounded-xl p-2 border border-outline-variant/30 transition-all hover:bg-surface-container-high">
               <div className="w-3.5 h-3.5 rounded-full shadow-sm shrink-0 bg-[#22C55E]" />
-              <input type="text" readOnly value="Lead Nuevo" className="bg-transparent border-none p-0 text-xs font-semibold text-on-surface outline-none w-full pointer-events-none truncate" />
+              <input
+                type="text"
+                readOnly
+                value="Lead Nuevo"
+                className="bg-transparent border-none p-0 text-xs font-semibold text-on-surface outline-none w-full pointer-events-none truncate"
+              />
             </div>
             <div className="flex items-center gap-3 bg-surface-container-low rounded-xl p-2 border border-outline-variant/30 transition-all hover:bg-surface-container-high">
               <div className="w-3.5 h-3.5 rounded-full shadow-sm shrink-0 bg-[#10b981]" />
-              <input type="text" readOnly value="Cliente" className="bg-transparent border-none p-0 text-xs font-semibold text-on-surface outline-none w-full pointer-events-none truncate" />
+              <input
+                type="text"
+                readOnly
+                value="Cliente"
+                className="bg-transparent border-none p-0 text-xs font-semibold text-on-surface outline-none w-full pointer-events-none truncate"
+              />
             </div>
             {legendTags.map((tag) => (
-              <div key={tag.id} className="flex items-center gap-3 bg-surface-container-low rounded-xl p-2 border border-outline-variant/30 transition-all hover:bg-surface-container-high">
-                <div className="w-3.5 h-3.5 rounded-full shadow-sm shrink-0" style={{ backgroundColor: tag.color }} />
+              <div
+                key={tag.id}
+                className="flex items-center gap-3 bg-surface-container-low rounded-xl p-2 border border-outline-variant/30 transition-all hover:bg-surface-container-high"
+              >
+                <div
+                  className="w-3.5 h-3.5 rounded-full shadow-sm shrink-0"
+                  style={{ backgroundColor: tag.color }}
+                />
                 <input
                   type="text"
                   readOnly
