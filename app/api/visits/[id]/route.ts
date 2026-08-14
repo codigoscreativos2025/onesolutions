@@ -243,7 +243,8 @@ export async function PATCH(
         });
       }
     }
-    if (closerId !== undefined && closerId !== setterId) {
+    const effectiveSetterId = setterId !== undefined ? setterId : visit.setterId;
+    if (closerId !== undefined && closerId !== effectiveSetterId) {
       let isPanelSolarAssignment = false;
       const visitProjects = await prisma.visitProject.findMany({
         where: { visitId },
@@ -268,14 +269,17 @@ export async function PATCH(
           },
         });
       } else {
-        await prisma.notification.create({
-          data: {
-            userId: closerId,
-            title: 'Lead Transferido',
-            body: `Se te ha asignado un nuevo lead como closer.`,
-            link: `/lead/${visitId}`,
-          },
-        });
+        const targetCloser = await prisma.user.findUnique({ where: { id: closerId }, select: { role: true } });
+        if (targetCloser && (targetCloser.role === "CLOSER" || targetCloser.role === "ADMIN")) {
+          await prisma.notification.create({
+            data: {
+              userId: closerId,
+              title: 'Lead Transferido',
+              body: `Se te ha asignado un nuevo lead como closer.`,
+              link: `/lead/${visitId}`,
+            },
+          });
+        }
       }
     }
 

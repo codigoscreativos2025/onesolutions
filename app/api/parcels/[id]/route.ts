@@ -71,7 +71,7 @@ export async function GET(
                     parcel.visits?.some((v: any) => v.setterId === userId || v.closerId === userId) ||
                     parcel.visitHistory?.some((h: any) => h.setterId === userId);
     if (!isOwner) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      parcel.visits = [];
     }
   } else if (role === 'PARTNER') {
     if (parcel.partnerId !== userId) {
