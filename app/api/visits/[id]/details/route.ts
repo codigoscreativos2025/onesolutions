@@ -122,7 +122,7 @@ export async function GET(
         return NextResponse.json({ error: 'Forbidden: You can only view your own projects' }, { status: 403 });
       }
       
-      if (role === 'TRAINEE' && visit.stage === 'CLOSED') {
+      if ((role === 'SETTER' || role === 'SETTER_JR' || role === 'TRAINEE') && visit.stage === 'CLOSED') {
         const hasSolar = visit.projects?.some((p: any) => p.projectType?.name?.toLowerCase().includes("solar"));
         if (hasSolar) {
           return NextResponse.json({ error: 'Forbidden: Los proyectos solares cerrados pertenecen al Closer.' }, { status: 403 });
