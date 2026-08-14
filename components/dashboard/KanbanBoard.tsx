@@ -748,7 +748,12 @@ function KanbanCard({
     : undefined;
 
   const isOpen = transferOpen === visit.id;
-  const isBlockedForTrainee = isTrainee && visit.closer != null;
+  const isBlockedForTrainee =
+    isTrainee &&
+    visit.closer != null &&
+    visit.projects.some((p) =>
+      p.projectType.name.toLowerCase().includes("panel solar"),
+    );
 
   return (
     <div
