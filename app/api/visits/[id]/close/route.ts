@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { verifyApiAuth } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { emailTemplates } from "@/lib/email-templates";
@@ -8,10 +8,11 @@ export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authRes = await verifyApiAuth();
+  if (authRes.error) {
+    return NextResponse.json({ error: authRes.error }, { status: authRes.status });
   }
+  const session = authRes.session!;
 
   const body = await request.json();
   const { notes, billImageUrl, billFileName, action, clientName, clientEmail, clientPhone, projectTypeIds, commissions } = body;
@@ -37,11 +38,17 @@ export async function PATCH(
 
     const existingVisit = await prisma.visit.findUnique({
       where: { id: parseInt(id) },
-      include: { slot: true, chatRooms: true },
+      include: { slot: true, chatRooms: true, parcel: { select: { visitHistory: { include: { setter: { select: { name: true } } } } } } },
     });
 
     if (!existingVisit) {
       return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+    }
+
+    const role = session.user.role;
+    if (role !== 'ADMIN') {
+      const isOwner = existingVisit.setterId === userId || existingVisit.closerId === userId || existingVisit.parcel?.visitHistory?.some((h: any) => h.setter?.name === session.user.name);
+      if (!isOwner) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     let newStage = "CLOSED";
@@ -153,17 +160,47 @@ export async function PATCH(
           });
         }
 
-        if (visit.setter.email && visit.setter.role !== "SETTER") {
-          await sendEmail({
-            to: visit.setter.email,
-            subject: "Proyecto Cerrado - One Solutions",
-            html: emailTemplates.projectProgress(visit.setter.name, visit.parcel.address, "Proyecto Cerrado"),
-          });
+        if (visit.setter && visit.setter.id) {
+          if (visit.setter.email) {
+            await sendEmail({
+              to: visit.setter.email,
+              subject: "Proyecto Cerrado - One Solutions",
+              html: emailTemplates.projectProgress(visit.setter.name, visit.parcel.address, "Proyecto Cerrado"),
+            });
+          }
           await prisma.notification.create({
             data: {
               userId: visit.setter.id,
               title: "Proyecto Cerrado",
               body: `Tu proyecto en ${visit.parcel.address} ha sido cerrado.`,
+              link: `/lead/${visit.id}`,
+            },
+          });
+        }
+        
+        // Notify the closer
+        if (visit.closer && visit.closer.id) {
+          let hasSolar = false;
+          if (projectTypeIds && Array.isArray(projectTypeIds) && projectTypeIds.length > 0) {
+            const types = await prisma.projectType.findMany({ where: { id: { in: projectTypeIds } } });
+            hasSolar = types.some((t: any) => t.name.toLowerCase().includes("solar"));
+          }
+          
+          const closerUser = await prisma.user.findUnique({ where: { id: visit.closer.id } });
+          if (closerUser?.email) {
+            await sendEmail({
+              to: closerUser.email,
+              subject: hasSolar ? "Proyecto Solar Transferido - One Solutions" : "Proyecto Cerrado - One Solutions",
+              html: emailTemplates.projectProgress(closerUser.name, visit.parcel.address, hasSolar ? "Proyecto Solar Transferido" : "Proyecto Cerrado"),
+            });
+          }
+          await prisma.notification.create({
+            data: {
+              userId: visit.closer.id,
+              title: hasSolar ? "Proyecto Solar Transferido" : "Proyecto Cerrado",
+              body: hasSolar 
+                ? `Se te ha transferido un proyecto cerrado con paneles solares en ${visit.parcel.address}.`
+                : `Tu proyecto en ${visit.parcel.address} ha sido cerrado.`,
               link: `/lead/${visit.id}`,
             },
           });

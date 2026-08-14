@@ -24,8 +24,16 @@ export function NotificationsDropdown() {
   useEffect(() => {
     if (session) {
       fetchNotifications();
+      const interval = setInterval(fetchNotifications, 30000); // Poll every 30 seconds
+      return () => clearInterval(interval);
     }
   }, [session]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchNotifications();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

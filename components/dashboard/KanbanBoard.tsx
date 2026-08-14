@@ -16,15 +16,49 @@ import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { MapPin, User, GripVertical, ArrowLeftRight, X, Clock, Undo2, CheckCircle } from "lucide-react";
+import {
+  MapPin,
+  User,
+  GripVertical,
+  ArrowLeftRight,
+  X,
+  Clock,
+  Undo2,
+  CheckCircle,
+} from "lucide-react";
 import { useLocale } from "@/lib/locale-context";
 
 const COLS = [
-  { stage: "IN_PROGRESS", title: "Leads", color: "bg-blue-500", colorBar: "bg-blue-500" },
-  { stage: "PROPOSAL_ACCEPTED", title: "Leads Potenciales", color: "bg-amber-500", colorBar: "bg-amber-500" },
-  { stage: "PROJECT", title: "En Proyecto", color: "bg-purple-500", colorBar: "bg-purple-500" },
-  { stage: "CLOSED", title: "Proyecto Cerrado", color: "bg-green-500", colorBar: "bg-green-500" },
-  { stage: "CANCELLED", title: "Proyecto Cancelado", color: "bg-red-500", colorBar: "bg-red-500" },
+  {
+    stage: "IN_PROGRESS",
+    title: "Leads",
+    color: "bg-blue-500",
+    colorBar: "bg-blue-500",
+  },
+  {
+    stage: "PROPOSAL_ACCEPTED",
+    title: "Leads Potenciales",
+    color: "bg-amber-500",
+    colorBar: "bg-amber-500",
+  },
+  {
+    stage: "PROJECT",
+    title: "En Proyecto",
+    color: "bg-purple-500",
+    colorBar: "bg-purple-500",
+  },
+  {
+    stage: "CLOSED",
+    title: "Proyecto Cerrado",
+    color: "bg-green-500",
+    colorBar: "bg-green-500",
+  },
+  {
+    stage: "CANCELLED",
+    title: "Proyecto Cancelado",
+    color: "bg-red-500",
+    colorBar: "bg-red-500",
+  },
 ] as const;
 
 const STAGE_SET = new Set<string>(COLS.map((c) => c.stage));
@@ -33,6 +67,7 @@ interface KanbanVisit {
   id: number;
   stage: string;
   createdAt: string;
+  assignedAt?: string | null;
   contractFields?: string | null;
   parcel: { id: string; address: string; ownerName: string | null };
   setter: { id: number; name: string };
@@ -57,7 +92,12 @@ interface KanbanBoardProps {
   isPartner?: boolean;
 }
 
-export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: KanbanBoardProps) {
+export function KanbanBoard({
+  isAdmin,
+  isSetterJr,
+  isSetter,
+  isPartner,
+}: KanbanBoardProps) {
   const { t } = useLocale();
   const router = useRouter();
   const [data, setData] = useState<GroupedVisits>({});
@@ -76,10 +116,13 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
   }
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
-  const [partnerFilter, setPartnerFilter] = useState({ address: "", client: "" });
+  const [partnerFilter, setPartnerFilter] = useState({
+    address: "",
+    client: "",
+  });
   const [projectTypeFilter, setProjectTypeFilter] = useState("");
   const [addressFilter, setAddressFilter] = useState("");
   const [clientFilter, setClientFilter] = useState("");
@@ -130,8 +173,13 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
 
       setData((prev) => {
         const next = { ...prev };
-        next[sourceStage] = (next[sourceStage] || []).filter((v) => v.id !== visitId);
-        next[targetStage] = [{ ...visit, stage: targetStage }, ...(next[targetStage] || [])];
+        next[sourceStage] = (next[sourceStage] || []).filter(
+          (v) => v.id !== visitId,
+        );
+        next[targetStage] = [
+          { ...visit, stage: targetStage },
+          ...(next[targetStage] || []),
+        ];
         return next;
       });
 
@@ -144,13 +192,15 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
         if (!res.ok) {
           throw new Error("Failed to update");
         }
-        toast.success(`Lead movido a "${COLS.find((c) => c.stage === targetStage)?.title}"`);
+        toast.success(
+          `Lead movido a "${COLS.find((c) => c.stage === targetStage)?.title}"`,
+        );
       } catch {
         toast.error("Error al mover el lead. Reintenta.");
         fetchData();
       }
     },
-    [data, visitStageMap, fetchData]
+    [data, visitStageMap, fetchData],
   );
 
   function handleDragStart(event: DragStartEvent) {
@@ -237,12 +287,17 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
 
   const filterVisits = (visits: KanbanVisit[]) => {
     return visits.filter((v) => {
-      const pt = v.projects?.map((p) => p.projectType.name.toLowerCase()).join(" ") || "";
+      const pt =
+        v.projects?.map((p) => p.projectType.name.toLowerCase()).join(" ") ||
+        "";
       const addr = v.parcel.address?.toLowerCase() || "";
       const client = (v.parcel.ownerName || "").toLowerCase();
-      const matchesType = !projectTypeFilter || pt.includes(projectTypeFilter.toLowerCase());
-      const matchesAddr = !addressFilter || addr.includes(addressFilter.toLowerCase());
-      const matchesClient = !clientFilter || client.includes(clientFilter.toLowerCase());
+      const matchesType =
+        !projectTypeFilter || pt.includes(projectTypeFilter.toLowerCase());
+      const matchesAddr =
+        !addressFilter || addr.includes(addressFilter.toLowerCase());
+      const matchesClient =
+        !clientFilter || client.includes(clientFilter.toLowerCase());
       if (!matchesType || !matchesAddr || !matchesClient) return false;
 
       if (userTypeFilter) {
@@ -270,7 +325,9 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
             const cf = JSON.parse(v.contractFields);
             tag = cf.postCloseTags || "";
           }
-        } catch { /* */ }
+        } catch {
+          /* */
+        }
         if (tag !== postCloseFilter) return false;
       }
 
@@ -309,33 +366,69 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
     return (
       <div className="space-y-4">
         <div className="flex gap-3 flex-wrap">
-          <input type="text" placeholder="Filtrar por direccion..." value={partnerFilter.address}
-            onChange={(e) => setPartnerFilter((p) => ({ ...p, address: e.target.value }))}
-            className="h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface flex-1 min-w-[200px]" />
-          <input type="text" placeholder="Filtrar por cliente..." value={partnerFilter.client}
-            onChange={(e) => setPartnerFilter((p) => ({ ...p, client: e.target.value }))}
-            className="h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface flex-1 min-w-[200px]" />
+          <input
+            type="text"
+            placeholder="Filtrar por direccion..."
+            value={partnerFilter.address}
+            onChange={(e) =>
+              setPartnerFilter((p) => ({ ...p, address: e.target.value }))
+            }
+            className="h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface flex-1 min-w-[200px]"
+          />
+          <input
+            type="text"
+            placeholder="Filtrar por cliente..."
+            value={partnerFilter.client}
+            onChange={(e) =>
+              setPartnerFilter((p) => ({ ...p, client: e.target.value }))
+            }
+            className="h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface flex-1 min-w-[200px]"
+          />
         </div>
         <div className="glass-panel rounded-2xl border-t-4 border-t-primary">
           <div className="p-4 border-b border-outline-variant">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-on-surface">{t.chat.projects}</h3>
-              <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">{filtered.length}</span>
+              <h3 className="font-semibold text-on-surface">
+                {t.chat.projects}
+              </h3>
+              <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                {filtered.length}
+              </span>
             </div>
           </div>
           <div className="p-3 space-y-2 max-h-[70vh] overflow-y-auto">
             {filtered.map((visit) => (
-              <button key={visit.id} onClick={() => router.push(`/lead/${visit.id}`)}
-                className="w-full text-left glass-panel p-4 rounded-xl hover:border-primary/40 transition-all cursor-pointer">
-                <p className="font-semibold text-sm text-on-surface">{visit.parcel.ownerName || "Sin nombre"}</p>
+              <button
+                key={visit.id}
+                onClick={() => router.push(`/lead/${visit.id}`)}
+                className="w-full text-left glass-panel p-4 rounded-xl hover:border-primary/40 transition-all cursor-pointer"
+              >
+                <p className="font-semibold text-sm text-on-surface">
+                  {visit.parcel.ownerName || "Sin nombre"}
+                </p>
                 <div className="flex items-center gap-2 mt-1 text-xs text-on-surface-variant">
                   <MapPin className="w-3 h-3 flex-shrink-0" />
                   <span className="truncate">{visit.parcel.address}</span>
                 </div>
+                {visit.assignedAt && (
+                  <div className="flex items-center gap-2 mt-1 text-xs text-primary font-medium">
+                    <Clock className="w-3 h-3 flex-shrink-0" />
+                    <span>
+                      Asignado:{" "}
+                      {new Date(visit.assignedAt).toLocaleString("es-ES", {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      })}
+                    </span>
+                  </div>
+                )}
                 {visit.projects?.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2">
                     {visit.projects.map((p) => (
-                      <span key={p.projectType.id} className="px-2 py-0.5 rounded-full bg-primary/5 text-primary text-[10px] font-medium">
+                      <span
+                        key={p.projectType.id}
+                        className="px-2 py-0.5 rounded-full bg-primary/5 text-primary text-[10px] font-medium"
+                      >
                         {p.projectType.name}
                       </span>
                     ))}
@@ -344,7 +437,9 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
               </button>
             ))}
             {filtered.length === 0 && (
-              <p className="text-center py-8 text-sm text-on-surface-variant">No tienes proyectos asignados.</p>
+              <p className="text-center py-8 text-sm text-on-surface-variant">
+                No tienes proyectos asignados.
+              </p>
             )}
           </div>
         </div>
@@ -352,15 +447,27 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
     );
   }
 
-  const hasActiveFilters = projectTypeFilter || addressFilter || clientFilter || activeColumn !== null || userTypeFilter || specificUserFilter || postCloseFilter;
+  const hasActiveFilters =
+    projectTypeFilter ||
+    addressFilter ||
+    clientFilter ||
+    activeColumn !== null ||
+    userTypeFilter ||
+    specificUserFilter ||
+    postCloseFilter;
 
   return (
     <div className="space-y-4">
       <div className="glass-panel rounded-2xl p-4">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Filtros</span>
+          <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+            Filtros
+          </span>
           {hasActiveFilters && (
-            <button onClick={clearFilters} className="text-xs text-primary font-medium hover:underline flex items-center gap-1">
+            <button
+              onClick={clearFilters}
+              className="text-xs text-primary font-medium hover:underline flex items-center gap-1"
+            >
               <X className="w-3 h-3" /> Limpiar
             </button>
           )}
@@ -377,8 +484,8 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
                   dimmed
                     ? "bg-transparent text-on-surface-variant border-outline-variant opacity-40"
                     : isActive
-                    ? "bg-primary/10 text-primary border-primary/30"
-                    : "bg-transparent text-on-surface-variant border-outline-variant"
+                      ? "bg-primary/10 text-primary border-primary/30"
+                      : "bg-transparent text-on-surface-variant border-outline-variant"
                 }`}
               >
                 <span className="flex items-center gap-1.5">
@@ -397,7 +504,9 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
           >
             <option value="">Todos los proyectos</option>
             {projectTypeOptions.map((name) => (
-              <option key={name} value={name}>{name}</option>
+              <option key={name} value={name}>
+                {name}
+              </option>
             ))}
           </select>
           <input
@@ -419,7 +528,10 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
           <div className="flex flex-wrap gap-3 mt-3">
             <select
               value={userTypeFilter}
-              onChange={(e) => { setUserTypeFilter(e.target.value); setSpecificUserFilter(""); }}
+              onChange={(e) => {
+                setUserTypeFilter(e.target.value);
+                setSpecificUserFilter("");
+              }}
               className="h-9 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface flex-1 min-w-[140px]"
             >
               <option value="">{t.common.all}</option>
@@ -429,19 +541,26 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
             </select>
             <select
               value={specificUserFilter}
-              onChange={(e) => { setSpecificUserFilter(e.target.value); setUserTypeFilter(""); }}
+              onChange={(e) => {
+                setSpecificUserFilter(e.target.value);
+                setUserTypeFilter("");
+              }}
               className="h-9 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface flex-1 min-w-[160px]"
             >
               <option value="">Todos los usuarios</option>
               {allUsers.map((u) => (
-                <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                <option key={u.id} value={u.id}>
+                  {u.name} ({u.role})
+                </option>
               ))}
             </select>
           </div>
         )}
         {activeColumn === "CLOSED" && (
           <div className="flex flex-wrap gap-2 mt-3">
-            <span className="text-xs text-on-surface-variant self-center mr-1">Estado:</span>
+            <span className="text-xs text-on-surface-variant self-center mr-1">
+              Estado:
+            </span>
             {["En permisos", "En instalacion", "Finalizado"].map((tag) => {
               const isActive = postCloseFilter === tag;
               return (
@@ -479,7 +598,8 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
       >
         <div className="flex gap-4 overflow-x-auto pb-4 min-h-[60vh]">
           {COLS.map((col, idx) => {
-            if (activeColumn !== null && activeColumn !== col.stage) return null;
+            if (activeColumn !== null && activeColumn !== col.stage)
+              return null;
             const rawVisits = data[col.stage] || [];
             const visits = filterVisits(rawVisits);
             const isLeads = col.stage === "IN_PROGRESS";
@@ -498,14 +618,13 @@ export function KanbanBoard({ isAdmin, isSetterJr, isSetter, isPartner }: Kanban
                 setTransferOpen={setTransferOpen}
                 transferUsers={transferUsers}
                 onTransfer={handleTransfer}
+                isTrainee={isSetter || isSetterJr}
               />
             );
           })}
         </div>
         <DragOverlay>
-          {activeVisit ? (
-            <KanbanCardOverlay visit={activeVisit} />
-          ) : null}
+          {activeVisit ? <KanbanCardOverlay visit={activeVisit} /> : null}
         </DragOverlay>
       </DndContext>
     </div>
@@ -523,6 +642,7 @@ function KanbanColumn({
   setTransferOpen,
   transferUsers,
   onTransfer,
+  isTrainee,
 }: {
   col: (typeof COLS)[number];
   visits: KanbanVisit[];
@@ -534,6 +654,7 @@ function KanbanColumn({
   setTransferOpen: (id: number | null) => void;
   transferUsers: TransferUser[];
   onTransfer: (visitId: number, newUserId: number) => void;
+  isTrainee?: boolean;
 }) {
   const { isOver, setNodeRef } = useDroppable({
     id: col.stage,
@@ -588,6 +709,7 @@ function KanbanColumn({
               setTransferOpen={setTransferOpen}
               transferUsers={transferUsers}
               onTransfer={onTransfer}
+              isTrainee={isTrainee}
             />
           ))}
       </div>
@@ -603,6 +725,7 @@ function KanbanCard({
   setTransferOpen,
   transferUsers,
   onTransfer,
+  isTrainee,
 }: {
   visit: KanbanVisit;
   isAdmin: boolean;
@@ -611,6 +734,7 @@ function KanbanCard({
   setTransferOpen: (id: number | null) => void;
   transferUsers: TransferUser[];
   onTransfer: (visitId: number, newUserId: number) => void;
+  isTrainee?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
@@ -624,15 +748,34 @@ function KanbanCard({
     : undefined;
 
   const isOpen = transferOpen === visit.id;
+  const isBlockedForTrainee =
+    isTrainee &&
+    visit.closer != null &&
+    visit.projects.some((p) =>
+      p.projectType.name.toLowerCase().includes("panel solar"),
+    );
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`glass-panel rounded-xl p-3 cursor-pointer transition-all hover:shadow-md relative ${
+      className={`glass-panel rounded-xl p-3 transition-all relative ${
         isDragging ? "opacity-50 shadow-lg ring-2 ring-primary" : ""
+      } ${
+        isBlockedForTrainee
+          ? "opacity-60 cursor-not-allowed bg-surface-container"
+          : "cursor-pointer hover:shadow-md"
       }`}
-      onClick={onClick}
+      onClick={(e) => {
+        if (isBlockedForTrainee) {
+          e.preventDefault();
+          toast.info(
+            "No puedes acceder a este proyecto porque ya fue asignado a un Closer.",
+          );
+          return;
+        }
+        onClick();
+      }}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
@@ -670,7 +813,9 @@ function KanbanCard({
                         }}
                       >
                         <span>{user.name}</span>
-                        <span className="text-xs text-gray-400 ml-auto">{user.role}</span>
+                        <span className="text-xs text-gray-400 ml-auto">
+                          {user.role}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -700,18 +845,31 @@ function KanbanCard({
         </div>
         <span className="text-outline-variant">|</span>
         <span className="truncate max-w-[100px]">
-          {visit.createdAt ? new Date(visit.createdAt).toLocaleDateString() : "—"}
+          {visit.createdAt
+            ? new Date(visit.createdAt).toLocaleDateString()
+            : "—"}
         </span>
       </div>
 
-      {visit.stage === "IN_PROGRESS" && visit.createdAt && (() => {
-        const daysLeft = Math.max(0, 30 - Math.floor((Date.now() - new Date(visit.createdAt).getTime()) / (1000 * 60 * 60 * 24)));
-        return (
-          <p className={`text-xs mt-1 font-medium ${daysLeft <= 5 ? "text-red-500" : "text-orange-500"}`}>
-            Expira en {daysLeft} días
-          </p>
-        );
-      })()}
+      {visit.stage === "IN_PROGRESS" &&
+        visit.createdAt &&
+        (() => {
+          const daysLeft = Math.max(
+            0,
+            30 -
+              Math.floor(
+                (Date.now() - new Date(visit.createdAt).getTime()) /
+                  (1000 * 60 * 60 * 24),
+              ),
+          );
+          return (
+            <p
+              className={`text-xs mt-1 font-medium ${daysLeft <= 5 ? "text-red-500" : "text-orange-500"}`}
+            >
+              Expira en {daysLeft} días
+            </p>
+          );
+        })()}
 
       {visit.projects.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
@@ -726,68 +884,102 @@ function KanbanCard({
         </div>
       )}
 
-      {visit.stage === "PROJECT" && (() => {
-        const parsedCF = (() => {
-          if (!visit.contractFields) return {};
-          try { return JSON.parse(visit.contractFields); } catch { return {}; }
-        })();
-        const isCloseRequested = !!parsedCF.closeRequestedAt;
-        const isReturned = !isCloseRequested && !!parsedCF.returnedAt;
+      {visit.stage === "PROJECT" &&
+        (() => {
+          const parsedCF = (() => {
+            if (!visit.contractFields) return {};
+            try {
+              return JSON.parse(visit.contractFields);
+            } catch {
+              return {};
+            }
+          })();
+          const isCloseRequested = !!parsedCF.closeRequestedAt;
+          const isReturned = !isCloseRequested && !!parsedCF.returnedAt;
 
-        if (isCloseRequested) {
+          if (isCloseRequested) {
+            return (
+              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-semibold mt-2">
+                <Clock className="w-3 h-3" />
+                <span>Cierre Solicitado</span>
+              </div>
+            );
+          }
+          if (isReturned) {
+            return (
+              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/30 text-[10px] font-semibold mt-2">
+                <Undo2 className="w-3 h-3" />
+                <span>Proyecto devuelto</span>
+              </div>
+            );
+          }
+          return null;
+        })()}
+
+      {visit.stage === "PROJECT" &&
+        visit.progress !== undefined &&
+        (() => {
+          const pct = visit.progress ?? 0;
           return (
-            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-semibold mt-2">
-              <Clock className="w-3 h-3" />
-              <span>Cierre Solicitado</span>
+            <div className="mt-2">
+              <div className="flex justify-between items-center mb-0.5">
+                <span className="text-[10px] text-on-surface-variant">
+                  Progreso
+                </span>
+                <span className="text-[10px] font-semibold text-on-surface">
+                  {pct}%
+                </span>
+              </div>
+              <div className="w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-300 ${
+                    pct === 100
+                      ? "bg-primary"
+                      : pct >= 50
+                        ? "bg-secondary"
+                        : "bg-tertiary"
+                  }`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
             </div>
           );
-        }
-        if (isReturned) {
+        })()}
+
+      {visit.stage === "CLOSED" &&
+        (() => {
+          const parsedCF = (() => {
+            if (!visit.contractFields) return {};
+            try {
+              return JSON.parse(visit.contractFields);
+            } catch {
+              return {};
+            }
+          })();
+          const tag = parsedCF.postCloseTags;
+          if (!tag || typeof tag !== "string") return null;
+          const tagColor =
+            tag === "En permisos"
+              ? "#f59e0b"
+              : tag === "En instalacion"
+                ? "#06b6d4"
+                : tag === "Finalizado"
+                  ? "#22c55e"
+                  : "#6b7280";
           return (
-            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/30 text-[10px] font-semibold mt-2">
-              <Undo2 className="w-3 h-3" />
-              <span>Proyecto devuelto</span>
+            <div
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold mt-2"
+              style={{
+                backgroundColor: tagColor + "15",
+                color: tagColor,
+                border: `1px solid ${tagColor}30`,
+              }}
+            >
+              <CheckCircle className="w-3 h-3" />
+              <span>{tag}</span>
             </div>
           );
-        }
-        return null;
-      })()}
-
-      {visit.stage === "PROJECT" && visit.progress !== undefined && (() => {
-        const pct = visit.progress ?? 0;
-        return (
-          <div className="mt-2">
-            <div className="flex justify-between items-center mb-0.5">
-              <span className="text-[10px] text-on-surface-variant">Progreso</span>
-              <span className="text-[10px] font-semibold text-on-surface">{pct}%</span>
-            </div>
-            <div className="w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-300 ${
-                  pct === 100 ? "bg-primary" : pct >= 50 ? "bg-secondary" : "bg-tertiary"
-                }`}
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-          </div>
-        );
-      })()}
-
-      {visit.stage === "CLOSED" && (() => {
-        const parsedCF = (() => {
-          if (!visit.contractFields) return {};
-          try { return JSON.parse(visit.contractFields); } catch { return {}; }
-        })();
-        const tag = parsedCF.postCloseTags;
-        if (!tag || typeof tag !== "string") return null;
-        const tagColor = tag === "En permisos" ? "#f59e0b" : tag === "En instalacion" ? "#06b6d4" : tag === "Finalizado" ? "#22c55e" : "#6b7280";
-        return (
-          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold mt-2" style={{ backgroundColor: tagColor + "15", color: tagColor, border: `1px solid ${tagColor}30` }}>
-            <CheckCircle className="w-3 h-3" />
-            <span>{tag}</span>
-          </div>
-        );
-      })()}
+        })()}
     </div>
   );
 }
@@ -811,7 +1003,9 @@ function KanbanCardOverlay({ visit }: { visit: KanbanVisit }) {
       <div className="flex items-center gap-2 mt-2 text-xs text-on-surface-variant">
         <div className="flex items-center gap-1">
           <User className="w-3 h-3" />
-          <span className="truncate max-w-[80px]">{visit.setter?.name || "—"}</span>
+          <span className="truncate max-w-[80px]">
+            {visit.setter?.name || "—"}
+          </span>
         </div>
         {visit.closer && (
           <>
@@ -836,32 +1030,37 @@ function KanbanCardOverlay({ visit }: { visit: KanbanVisit }) {
         </div>
       )}
 
-      {visit.stage === "PROJECT" && (() => {
-        const parsedCF = (() => {
-          if (!visit.contractFields) return {};
-          try { return JSON.parse(visit.contractFields); } catch { return {}; }
-        })();
-        const isCloseRequested = !!parsedCF.closeRequestedAt;
-        const isReturned = !isCloseRequested && !!parsedCF.returnedAt;
+      {visit.stage === "PROJECT" &&
+        (() => {
+          const parsedCF = (() => {
+            if (!visit.contractFields) return {};
+            try {
+              return JSON.parse(visit.contractFields);
+            } catch {
+              return {};
+            }
+          })();
+          const isCloseRequested = !!parsedCF.closeRequestedAt;
+          const isReturned = !isCloseRequested && !!parsedCF.returnedAt;
 
-        if (isCloseRequested) {
-          return (
-            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-semibold mt-2">
-              <Clock className="w-3 h-3" />
-              <span>Cierre Solicitado</span>
-            </div>
-          );
-        }
-        if (isReturned) {
-          return (
-            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/30 text-[10px] font-semibold mt-2">
-              <Undo2 className="w-3 h-3" />
-              <span>Proyecto devuelto</span>
-            </div>
-          );
-        }
-        return null;
-      })()}
+          if (isCloseRequested) {
+            return (
+              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-semibold mt-2">
+                <Clock className="w-3 h-3" />
+                <span>Cierre Solicitado</span>
+              </div>
+            );
+          }
+          if (isReturned) {
+            return (
+              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/30 text-[10px] font-semibold mt-2">
+                <Undo2 className="w-3 h-3" />
+                <span>Proyecto devuelto</span>
+              </div>
+            );
+          }
+          return null;
+        })()}
     </div>
   );
 }

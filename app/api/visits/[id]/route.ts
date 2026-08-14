@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { verifyApiAuth } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
@@ -7,21 +7,37 @@ export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authRes = await verifyApiAuth();
+  if (authRes.error) {
+    return NextResponse.json({ error: authRes.error }, { status: authRes.status });
   }
+  const session = authRes.session!;
 
   const { id } = await params;
   const visitId = parseInt(id);
 
   const visit = await prisma.visit.findUnique({
     where: { id: visitId },
-    include: { slot: true, parcel: { select: { address: true } } },
+    include: { slot: true, parcel: { select: { address: true, visitHistory: { include: { setter: { select: { name: true } } } } } } },
   });
 
   if (!visit) {
     return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+  }
+
+  const role = session.user.role;
+  const userId = parseInt(session.user.id);
+  if (role === 'SETTER' || role === 'SETTER_JR' || role === 'TRAINEE') {
+    const isOwner = visit.setterId === userId || visit.closerId === userId || visit.parcel?.visitHistory?.some((h: any) => h.setter?.name === session.user.name);
+    if (!isOwner) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  } else if (role === 'PARTNER') {
+    // Basic block for partner updating core visit fields (partner only updates details usually)
+    const bodyTest = await request.clone().json().catch(() => ({}));
+    if (bodyTest.stage || bodyTest.setterId || bodyTest.closerId) {
+      return NextResponse.json({ error: "Forbidden: Partners cannot modify core visit data" }, { status: 403 });
+    }
   }
 
   const body = await request.json();
@@ -80,6 +96,15 @@ export async function PATCH(
             },
           },
         });
+        
+        await prisma.notification.create({
+          data: {
+            userId: pid,
+            title: "Nuevo proyecto asignado",
+            body: `Se te ha asignado el proyecto en ${visit.parcel?.address || 'la parcela'}`,
+            link: `/lead/${visit.id}`,
+          },
+        });
       }
     }
   }
@@ -106,6 +131,15 @@ export async function PATCH(
                 body: "Chat de proyecto con Partner iniciado",
               },
             },
+          },
+        });
+
+        await prisma.notification.create({
+          data: {
+            userId: partnerId,
+            title: "Nuevo proyecto asignado",
+            body: `Se te ha asignado el proyecto en ${visit.parcel?.address || 'la parcela'}`,
+            link: `/lead/${visit.id}`,
           },
         });
       }
@@ -227,35 +261,43 @@ export async function PATCH(
         });
       }
     }
-    if (closerId !== undefined && closerId !== setterId) {
+    const effectiveSetterId = setterId !== undefined ? setterId : visit.setterId;
+    if (closerId !== undefined && closerId !== effectiveSetterId) {
       let isPanelSolarAssignment = false;
-      if (session.user.role === "SETTER_JR") {
-        const visitProjects = await prisma.visitProject.findMany({
-          where: { visitId },
-          include: { projectType: true }
-        });
-        isPanelSolarAssignment = visitProjects.some(vp => vp.projectType.name.toLowerCase().includes("panel solar"));
-      }
+      const visitProjects = await prisma.visitProject.findMany({
+        where: { visitId },
+        include: { projectType: true }
+      });
+      isPanelSolarAssignment = visitProjects.some(vp => vp.projectType.name.toLowerCase().includes("panel solar"));
 
       if (isPanelSolarAssignment) {
         const address = visit.parcel?.address || "el lead";
+        let roleName = "Usuario";
+        if (session.user.role === "SETTER") roleName = "Trainee";
+        else if (session.user.role === "SETTER_JR") roleName = "Setter";
+        else if (session.user.role === "TRAINEE") roleName = "Trainee";
+        else if (session.user.role === "ADMIN") roleName = "Admin";
+        
         await prisma.notification.create({
           data: {
             userId: closerId,
             title: "Asignado a Panel Solar",
-            body: `El ${session.user.role === "SETTER_JR" ? "Setter" : "Trainee"} ${session.user.name} te ha seleccionado para el proyecto Panel Solar en ${address}.`,
+            body: `El ${roleName} ${session.user.name} te ha seleccionado para el proyecto Panel Solar en ${address}.`,
             link: `/lead/${visitId}`,
           },
         });
       } else {
-        await prisma.notification.create({
-          data: {
-            userId: closerId,
-            title: 'Lead Transferido',
-            body: `Se te ha asignado un nuevo lead como closer.`,
-            link: `/lead/${visitId}`,
-          },
-        });
+        const targetCloser = await prisma.user.findUnique({ where: { id: closerId }, select: { role: true } });
+        if (targetCloser && (targetCloser.role === "CLOSER" || targetCloser.role === "ADMIN")) {
+          await prisma.notification.create({
+            data: {
+              userId: closerId,
+              title: 'Lead Transferido',
+              body: `Se te ha asignado un nuevo lead como closer.`,
+              link: `/lead/${visitId}`,
+            },
+          });
+        }
       }
     }
 
@@ -324,6 +366,25 @@ export async function PATCH(
         data: { parcelTags: null },
       });
     }
+    
+    if (updateData.stage === "CLOSED" && session.user.role === "ADMIN") {
+      const address = visit.parcel?.address || "un proyecto";
+      const userIdsToNotify = [];
+      if (visit.setterId) userIdsToNotify.push(visit.setterId);
+      if (visit.closerId) userIdsToNotify.push(visit.closerId);
+      
+      const uniqueIds = Array.from(new Set(userIdsToNotify));
+      for (const id of uniqueIds) {
+        await prisma.notification.create({
+          data: {
+            userId: id,
+            title: "Proyecto Cerrado",
+            body: `El proyecto en ${address} ha sido cerrado por el Admin.`,
+            link: `/lead/${visitId}`,
+          }
+        });
+      }
+    }
   }
 
   return NextResponse.json({ success: true });
@@ -333,9 +394,9 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authRes = await verifyApiAuth(['ADMIN']);
+  if (authRes.error) {
+    return NextResponse.json({ error: authRes.error }, { status: authRes.status });
   }
 
   const { id } = await params;

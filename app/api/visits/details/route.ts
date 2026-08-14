@@ -159,16 +159,20 @@ export async function GET(request: Request) {
           },
         },
         chatRooms: {
-          select: { id: true, type: true },
+          select: { id: true, type: true, createdAt: true, partnerId: true },
         },
       },
     });
 
-    return NextResponse.json(visits.map(v => ({
-      ...v,
-      chatRoom: v.chatRooms?.find(r => r.type === "GENERAL") || null,
-      chatRooms: undefined,
-    })));
+    return NextResponse.json(visits.map(v => {
+      const partnerChat = v.chatRooms?.find(r => r.type === "PARTNER" && r.partnerId === currentUserId);
+      return {
+        ...v,
+        chatRoom: v.chatRooms?.find(r => r.type === "GENERAL") || null,
+        assignedAt: partnerChat ? partnerChat.createdAt : null,
+        chatRooms: undefined,
+      };
+    }));
   } catch (error) {
     console.error('Error fetching visit details:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -1,17 +1,72 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { toast } from "sonner";
+import { format } from "date-fns";
 import { useSession } from "next-auth/react";
+import { formatPhoneNumber } from "@/lib/utils";
 import Link from "next/link";
 import Image from "next/image";
 import { useLocale } from "@/lib/locale-context";
-import { COMMON_FIELDS, OPTIONAL_FIELDS, FILE_FIELD_KEYS } from "@/lib/project-constants";
+import {
+  COMMON_FIELDS,
+  OPTIONAL_FIELDS,
+  FILE_FIELD_KEYS,
+} from "@/lib/project-constants";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Send, Paperclip, Loader2, MessageSquare, Package, FileText, Pencil, CheckCheck, Search, ArrowLeft, Info, List, X, MapPin, User, PlusCircle, Phone, Folder, Calendar, Activity } from "lucide-react";
+import {
+  Send,
+  Paperclip,
+  Loader2,
+  MessageSquare,
+  Package,
+  FileText,
+  Pencil,
+  CheckCheck,
+  Search,
+  ArrowLeft,
+  Info,
+  List,
+  X,
+  MapPin,
+  User,
+  PlusCircle,
+  Phone,
+  Folder,
+  Calendar,
+  Activity,
+  CheckCircle,
+} from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { ContractModal } from "@/components/quote/ContractModal";
 
+const getStageBadge = (stage?: string) => {
+  const stageMap: Record<string, { label: string; color: string }> = {
+    IN_PROGRESS: { label: "Leads", color: "#3b82f6" },
+    POTENTIAL_LEAD: { label: "Lead Potencial", color: "#f59e0b" },
+    PROPOSAL_ACCEPTED: { label: "Leads Potenciales", color: "#f59e0b" },
+    PROJECT: { label: "En Proyecto", color: "#a855f7" },
+    CLOSED: { label: "Proyecto Finalizado", color: "#22c55e" },
+    CANCELLED: { label: "Proyecto Cancelado", color: "#ef4444" },
+  };
+  const s = stageMap[stage || ""] || {
+    label: stage || "Desconocido",
+    color: "#6b7280",
+  };
+  return (
+    <span
+      className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide"
+      style={{
+        backgroundColor: `${s.color}20`,
+        color: s.color,
+        border: `1px solid ${s.color}40`,
+      }}
+    >
+      {s.label}
+    </span>
+  );
+};
 interface ProjectDetails {
   [key: string]: string | number | boolean | undefined;
   clientName?: string;
@@ -57,15 +112,35 @@ interface Room {
     createdAt?: string;
     finalizedAt?: string;
     contractFields?: string | null;
-    parcel: { id: string; address: string; ownerName?: string; parcelTags?: string | null };
+    parcel: {
+      id: string;
+      address: string;
+      ownerName?: string;
+      parcelTags?: string | null;
+    };
     setter: { id: number; name: string };
     closer?: { id: number; name: string };
-    bill?: { imageUrl: string; phone: string; clientName: string; clientEmail: string; additionalFileUrl?: string; additionalFileName?: string };
+    bill?: {
+      imageUrl: string;
+      phone: string;
+      clientName: string;
+      clientEmail: string;
+      additionalFileUrl?: string;
+      additionalFileName?: string;
+    };
     projectDetails?: ProjectDetails;
-    projects?: { projectType: ProjectType; partner?: { id: number; name: string } | null }[];
+    projects?: {
+      projectType: ProjectType;
+      partner?: { id: number; name: string } | null;
+    }[];
     objections?: ObjectionEntry[];
     closerObjections?: ObjectionEntry[];
-    commissions?: { id: number; percentage: number; role: string; user: { id: number; name: string } }[];
+    commissions?: {
+      id: number;
+      percentage: number;
+      role: string;
+      user: { id: number; name: string };
+    }[];
     notes?: string;
     cancelledAt?: string;
     cancellationReason?: string;
@@ -108,7 +183,10 @@ function parseParcelTags(raw?: string | null): ParcelTag[] {
   }
 }
 
-function getVisitSpecialTag(visit: { stage?: string; contractFields?: string | null }): string {
+function getVisitSpecialTag(visit: {
+  stage?: string;
+  contractFields?: string | null;
+}): string {
   if (!visit.contractFields) return "";
   try {
     const cf = JSON.parse(visit.contractFields);
@@ -126,13 +204,23 @@ function getVisitSpecialTag(visit: { stage?: string; contractFields?: string | n
   }
 }
 
-export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomList = false }: { isAdmin?: boolean; initialRoomId?: number | null; hideRoomList?: boolean }) {
+export function ChatInterface({
+  isAdmin = false,
+  initialRoomId = null,
+  hideRoomList = false,
+}: {
+  isAdmin?: boolean;
+  initialRoomId?: number | null;
+  hideRoomList?: boolean;
+}) {
   const { data: session } = useSession();
   const role = session?.user?.role ?? "";
   const { t } = useLocale();
 
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(initialRoomId);
+  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(
+    initialRoomId,
+  );
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -143,7 +231,9 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
   const [showContractModal, setShowContractModal] = useState(false);
   const [editForm, setEditForm] = useState<ProjectDetails>({});
   const [saving, setSaving] = useState(false);
-  const [mentionUsers, setMentionUsers] = useState<{ id: number; name: string; role: string }[]>([]);
+  const [mentionUsers, setMentionUsers] = useState<
+    { id: number; name: string; role: string }[]
+  >([]);
   const [showMentionDropdown, setShowMentionDropdown] = useState(false);
   const [mentionSearch, setMentionSearch] = useState("");
   const [commonFields, setCommonFields] = useState<CommonField[]>([]);
@@ -152,7 +242,9 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
   const [tagFilter, setTagFilter] = useState("");
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [mobileColumn, setMobileColumn] = useState<ColumnView>("list");
-  const [fieldMetas, setFieldMetas] = useState<{ fieldName: string; isRequired?: boolean }[]>([]);
+  const [fieldMetas, setFieldMetas] = useState<
+    { fieldName: string; isRequired?: boolean }[]
+  >([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -162,7 +254,7 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
 
   useEffect(() => {
     if (initialRoomId && rooms.length > 0) {
-      const room = rooms.find(r => r.id === initialRoomId);
+      const room = rooms.find((r) => r.id === initialRoomId);
       if (room) {
         setSelectedRoomId(room.id);
         setSelectedRoom(room);
@@ -181,26 +273,40 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
   }, [selectedRoomId]);
 
   useEffect(() => {
-    if (selectedRoom?.visit?.projects && selectedRoom?.visit?.projects.length > 0) {
+    if (
+      selectedRoom?.visit?.projects &&
+      selectedRoom?.visit?.projects.length > 0
+    ) {
       const fetchFieldMetas = async () => {
         const allMetas: { fieldName: string; isRequired?: boolean }[] = [];
-        const uniqueIds = Array.from(new Set(selectedRoom?.visit?.projects!.map((p) => p.projectType.id)));
+        const uniqueIds = Array.from(
+          new Set(selectedRoom?.visit?.projects!.map((p) => p.projectType.id)),
+        );
         for (const typeId of uniqueIds) {
           try {
-            const res = await fetch(`/api/admin/project-type-fields?projectTypeId=${typeId}`);
+            const res = await fetch(
+              `/api/admin/project-type-fields?projectTypeId=${typeId}`,
+            );
             const fields = await res.json();
             if (Array.isArray(fields)) allMetas.push(...fields);
-          } catch { /* */ }
+          } catch {
+            /* */
+          }
         }
 
         try {
           const typesRes = await fetch("/api/project-types");
           const types = await typesRes.json();
           const commons = Array.isArray(types)
-            ? types.find((t: { id: number; name: string }) => t.name === "Campos Comunes")
+            ? types.find(
+                (t: { id: number; name: string }) =>
+                  t.name === "Campos Comunes",
+              )
             : null;
           if (commons) {
-            const res = await fetch(`/api/admin/project-type-fields?projectTypeId=${commons.id}`);
+            const res = await fetch(
+              `/api/admin/project-type-fields?projectTypeId=${commons.id}`,
+            );
             const fields = await res.json();
             if (Array.isArray(fields)) {
               for (const f of fields) {
@@ -210,7 +316,9 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
               }
             }
           }
-        } catch { /* */ }
+        } catch {
+          /* */
+        }
 
         setFieldMetas(allMetas);
       };
@@ -238,7 +346,9 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
 
   const fetchMentionUsers = async (roomId?: number) => {
     try {
-      const url = roomId ? `/api/users/mentionable?roomId=${roomId}` : "/api/users/mentionable";
+      const url = roomId
+        ? `/api/users/mentionable?roomId=${roomId}`
+        : "/api/users/mentionable";
       const res = await fetch(url);
       const data = await res.json();
       setMentionUsers(data);
@@ -273,9 +383,13 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
     try {
       const typesRes = await fetch("/api/project-types");
       const types = await typesRes.json();
-      const comunes = types.find((t: { id: number; name: string }) => t.name === "Campos Comunes");
+      const comunes = types.find(
+        (t: { id: number; name: string }) => t.name === "Campos Comunes",
+      );
       if (comunes) {
-        const fieldsRes = await fetch(`/api/admin/project-type-fields?projectTypeId=${comunes.id}`);
+        const fieldsRes = await fetch(
+          `/api/admin/project-type-fields?projectTypeId=${comunes.id}`,
+        );
         const fields = await fieldsRes.json();
         setCommonFields(fields);
       }
@@ -330,12 +444,27 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
   const handleFinalize = async () => {
     if (!selectedRoom) return;
     try {
-      const res = await fetch(`/api/visits/${selectedRoom?.visit?.id}/finalize`, { method: 'PATCH' });
+      const res = await fetch(
+        `/api/visits/${selectedRoom?.visit?.id}/finalize`,
+        { method: "PATCH" },
+      );
       if (res.ok) {
         const updated = await res.json();
         if (selectedRoom) {
-          setSelectedRoom({ ...selectedRoom, visit: { ...selectedRoom.visit, finalizedAt: updated.finalizedAt } });
-          setRooms(prev => prev.map(r => r.id === selectedRoom.id ? { ...r, visit: { ...r.visit, finalizedAt: updated.finalizedAt } } : r));
+          setSelectedRoom({
+            ...selectedRoom,
+            visit: { ...selectedRoom.visit, finalizedAt: updated.finalizedAt },
+          });
+          setRooms((prev) =>
+            prev.map((r) =>
+              r.id === selectedRoom.id
+                ? {
+                    ...r,
+                    visit: { ...r.visit, finalizedAt: updated.finalizedAt },
+                  }
+                : r,
+            ),
+          );
         }
       }
     } catch (error) {
@@ -367,7 +496,8 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
     const value = e.target.value;
     setNewMessage(value);
 
-    const isPartnerRoom = (selectedRoom as any)?.type === "PARTNER" || role === "PARTNER";
+    const isPartnerRoom =
+      (selectedRoom as any)?.type === "PARTNER" || role === "PARTNER";
     if (isPartnerRoom) {
       setShowMentionDropdown(false);
       return;
@@ -399,13 +529,13 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
   };
 
   const filteredMentionUsers = mentionUsers.filter((user) =>
-    user.name.toLowerCase().includes(mentionSearch.toLowerCase())
+    user.name.toLowerCase().includes(mentionSearch.toLowerCase()),
   );
 
   const renderMessageWithMentions = (text: string) => {
     const parts = text.split(/(@\w+)/g);
     return parts.map((part, index) => {
-      if (part.startsWith('@')) {
+      if (part.startsWith("@")) {
         return (
           <span
             key={index}
@@ -458,7 +588,8 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
     const clientName = (room.visit?.bill?.clientName || "").toLowerCase();
     const matchesSearch = !q || address.includes(q) || clientName.includes(q);
     const matchesStage = !stageFilter || room.visit?.stage === stageFilter;
-    const matchesTag = !tagFilter || getVisitSpecialTag(room.visit) === tagFilter;
+    const matchesTag =
+      !tagFilter || getVisitSpecialTag(room.visit) === tagFilter;
     return matchesSearch && matchesStage && matchesTag;
   });
 
@@ -466,9 +597,13 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
 
   const adminGroups = useMemo(() => {
     if (!isAdminRole) return [];
-    const map = new Map<number, { visit: Room["visit"]; general?: Room; partners: Room[] }>();
+    const map = new Map<
+      number,
+      { visit: Room["visit"]; general?: Room; partners: Room[] }
+    >();
     for (const r of rooms) {
-      if (!map.has(r.visit.id)) map.set(r.visit.id, { visit: r.visit, partners: [] });
+      if (!map.has(r.visit.id))
+        map.set(r.visit.id, { visit: r.visit, partners: [] });
       const g = map.get(r.visit.id)!;
       if (r.type === "GENERAL") g.general = r;
       else g.partners.push(r);
@@ -531,29 +666,40 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
   const bill = selectedRoom?.visit?.bill;
   const mergedProjectDetails: Record<string, unknown> = {
     ...projectDetails,
-    _billClientName: bill?.clientName || (projectDetails as Record<string, unknown>).clientName,
-    _billClientEmail: bill?.clientEmail || (projectDetails as Record<string, unknown>).clientEmail,
+    _billClientName:
+      bill?.clientName ||
+      (projectDetails as Record<string, unknown>).clientName,
+    _billClientEmail:
+      bill?.clientEmail ||
+      (projectDetails as Record<string, unknown>).clientEmail,
     _billPhone: bill?.phone || "",
-    electricBillUrl: (projectDetails as Record<string, unknown>).electricBillUrl || bill?.imageUrl,
-    idDocumentUrl: (projectDetails as Record<string, unknown>).idDocumentUrl || bill?.additionalFileUrl,
+    electricBillUrl:
+      (projectDetails as Record<string, unknown>).electricBillUrl ||
+      bill?.imageUrl,
+    idDocumentUrl:
+      (projectDetails as Record<string, unknown>).idDocumentUrl ||
+      bill?.additionalFileUrl,
   };
 
   const calculateCompletion = (): number => {
-    if (!mergedProjectDetails || Object.keys(mergedProjectDetails).length === 0) return 0;
+    if (!mergedProjectDetails || Object.keys(mergedProjectDetails).length === 0)
+      return 0;
 
     const isValid = (val: unknown) => {
       if (val === undefined || val === null) return false;
-      if (typeof val === 'string' && val.trim() === "") return false;
+      if (typeof val === "string" && val.trim() === "") return false;
       return true;
     };
 
-
-
-    const requiredCommonFields = COMMON_FIELDS.filter((f) => !OPTIONAL_FIELDS.includes(f));
+    const requiredCommonFields = COMMON_FIELDS.filter(
+      (f) => !OPTIONAL_FIELDS.includes(f),
+    );
     let totalFields = requiredCommonFields.length;
-    let completedFields = requiredCommonFields.filter((f) => isValid(mergedProjectDetails[f])).length;
+    let completedFields = requiredCommonFields.filter((f) =>
+      isValid(mergedProjectDetails[f]),
+    ).length;
 
-    const billFields = ['_billClientName', '_billClientEmail', '_billPhone'];
+    const billFields = ["_billClientName", "_billClientEmail", "_billPhone"];
     for (const field of billFields) {
       totalFields++;
       if (isValid(mergedProjectDetails[field])) {
@@ -569,7 +715,11 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
     }
 
     for (const meta of fieldMetas) {
-      if (COMMON_FIELDS.includes(meta.fieldName) || FILE_FIELD_KEYS.has(meta.fieldName)) continue;
+      if (
+        COMMON_FIELDS.includes(meta.fieldName) ||
+        FILE_FIELD_KEYS.has(meta.fieldName)
+      )
+        continue;
 
       if (meta.isRequired === false) {
         if (isValid(mergedProjectDetails[meta.fieldName])) {
@@ -582,13 +732,18 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
       }
     }
 
-    if (selectedRoom?.visit?.stage === "PROJECT" || selectedRoom?.visit?.stage === "CLOSED") {
+    if (
+      selectedRoom?.visit?.stage === "PROJECT" ||
+      selectedRoom?.visit?.stage === "CLOSED"
+    ) {
       totalFields += 2;
       if (isValid(mergedProjectDetails["idDocumentUrl"])) completedFields++;
       if (isValid(mergedProjectDetails["electricBillUrl"])) completedFields++;
     }
 
-    return totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
+    return totalFields > 0
+      ? Math.round((completedFields / totalFields) * 100)
+      : 0;
   };
 
   const completionPercentage = calculateCompletion();
@@ -630,7 +785,10 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
           </button>
           {selectedRoom && (
             <button
-              onClick={() => { setShowInfoPanel(!showInfoPanel); setMobileColumn("info"); }}
+              onClick={() => {
+                setShowInfoPanel(!showInfoPanel);
+                setMobileColumn("info");
+              }}
               className={`p-2 rounded-lg ${mobileColumn === "info" && showInfoPanel ? "bg-primary/10 text-primary" : "text-on-surface-variant"}`}
             >
               <Info className="w-5 h-5" />
@@ -648,158 +806,277 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
         <div className="glass-panel rounded-2xl overflow-hidden flex h-full">
           {/* LEFT COLUMN: Chat list */}
           {!hideRoomList && (
-          <div className={`w-full lg:w-72 border-r border-outline-variant/30 flex-shrink-0 min-h-0
+            <div
+              className={`w-full lg:w-72 border-r border-outline-variant/30 flex-shrink-0 min-h-0
             ${mobileColumn !== "list" ? "hidden lg:flex lg:flex-col" : "flex flex-col"}
-          `}>
-            {/* Search input */}
-            <div className="p-3 border-b border-outline-variant/20 flex-shrink-0">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
-                <input
-                  type="text"
-                  placeholder={isAdminRole ? t.common.search + "..." : t.common.search + "..."}
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  className="w-full h-10 pl-9 pr-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-sm text-on-surface"
-                />
-              </div>
-              {role !== "PARTNER" && (
-                <div className="flex gap-2 mt-2">
-                  <select
-                    value={stageFilter}
-                    onChange={(e) => { setStageFilter(e.target.value); setTagFilter(""); }}
-                    className="h-9 px-2 rounded-lg bg-surface-container-low border border-outline-variant text-xs text-on-surface flex-1 min-w-0"
-                  >
-                    <option value="">Todas las etapas</option>
-                    <option value="PROJECT">En Proyecto</option>
-                    <option value="CLOSED">Proyecto Finalizado</option>
-                  </select>
-                  <select
-                    value={tagFilter}
-                    onChange={(e) => setTagFilter(e.target.value)}
-                    className="h-9 px-2 rounded-lg bg-surface-container-low border border-outline-variant text-xs text-on-surface flex-1 min-w-0"
-                    disabled={!stageFilter}
-                  >
-                    <option value="">Todas las etiquetas</option>
-                    {availableTags.map((t) => (
-                      <option key={t.name} value={t.name}>{t.name}</option>
-                    ))}
-                  </select>
-                  {(stageFilter || tagFilter) && (
-                    <button
-                      onClick={() => { setStageFilter(""); setTagFilter(""); }}
-                      className="px-2 rounded-lg text-on-surface-variant hover:text-primary flex-shrink-0"
-                      title="Limpiar filtros"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
+          `}
+            >
+              {/* Search input */}
+              <div className="p-3 border-b border-outline-variant/20 flex-shrink-0">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
+                  <input
+                    type="text"
+                    placeholder={
+                      isAdminRole
+                        ? t.common.search + "..."
+                        : t.common.search + "..."
+                    }
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    className="w-full h-10 pl-9 pr-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-sm text-on-surface"
+                  />
                 </div>
-              )}
-            </div>
-            
-            <div className="flex-1 overflow-y-auto min-h-0">
-              {isAdminRole ? (
-                filteredAdminGroups.map((g) => {
-                  const partnerNames = g.partners.map((pr) => {
-                    const pp = pr.visit.projects?.find((p) => p.partner?.id === pr.partnerId);
-                    return pp?.partner?.name || "Partner";
-                  });
-                      const uniqPartnerNames = Array.from(new Set(partnerNames));
-                  return (
-                    <button
-                      key={g.visit.id}
-                      onClick={() => handleSelectVisit(g.visit.id)}
-                      className={`w-full text-left p-4 border-b border-outline-variant/20 last:border-0 transition-colors ${
-                        selectedVisitId === g.visit.id ? "bg-primary/10 text-on-surface" : "hover:bg-surface-container-low text-on-surface"
-                      }`}
+                {role !== "PARTNER" && (
+                  <div className="flex gap-2 mt-2">
+                    <select
+                      value={stageFilter}
+                      onChange={(e) => {
+                        setStageFilter(e.target.value);
+                        setTagFilter("");
+                      }}
+                      className="h-9 px-2 rounded-lg bg-surface-container-low border border-outline-variant text-xs text-on-surface flex-1 min-w-0"
                     >
-                      <p className="font-semibold text-sm truncate">
-                        {g.visit.bill?.clientName || g.visit.projectDetails?.clientName || g.visit.parcel.ownerName || t.common.none}
-                      </p>
-                      <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title={t.chat.address}>
-                        <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                        <span>{g.visit.parcel.address}</span>
-                      </p>
-                      <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Iniciado por">
-                        <User className="w-3.5 h-3.5 flex-shrink-0" />
-                        <span>
-                          Iniciado por {g.visit.setter?.name || "Desconocido"}{g.visit.closer ? ` • ${g.visit.closer.name}` : ""}
-                        </span>
-                      </p>
-                      <p className="text-xs mt-1 truncate flex items-center gap-1.5" title="Partner">
-                        <span className="text-amber-500 font-medium">🤝</span>
-                        <span className={uniqPartnerNames.length > 0 ? "text-amber-600" : "text-on-surface-variant"}>
-                          {uniqPartnerNames.length > 0 ? uniqPartnerNames.join(", ") : "En espera del partner"}
-                        </span>
-                      </p>
-                    </button>
-                  );
-                })
-              ) : (
-                filteredRooms.map((room) => (
-                  <button
-                    key={room.id}
-                    onClick={() => handleSelectRoom(room)}
-                    className={`w-full text-left p-4 border-b border-outline-variant/20 last:border-0 transition-colors ${
-                      selectedRoomId === room.id
-                        ? "bg-primary/10 text-on-surface"
-                        : (room.messages && room.messages.length > 0 && !room.messages[0].isRead && room.messages[0].userId !== parseInt(session?.user?.id || "0"))
-                        ? "bg-primary text-on-primary"
-                        : "hover:bg-surface-container-low text-on-surface"
-                    }`}
-                  >
-                    <div className="flex justify-between items-start mb-1 gap-2">
-                      <p className="font-semibold text-sm truncate">
-                        {(room as any).type === "PARTNER" ? "🤝 " : ""}
-                        {room.visit?.bill?.clientName || room.visit?.projectDetails?.clientName || room.visit?.parcel.ownerName || t.common.none}
-                      </p>
-                      <span className="text-[10px] opacity-70 whitespace-nowrap flex-shrink-0 mt-0.5">
-                        {room.messages && room.messages.length > 0
-                          ? new Date(room.messages[0].createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                          : (room.visit?.createdAt ? new Date(room.visit?.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "")}
-                      </span>
-                    </div>
-                    <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title={t.chat.address}>
-                      <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                      <span>{room.visit?.parcel.address}</span>
-                    </p>
-                    <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Status">
-                      <Activity className="w-3.5 h-3.5 flex-shrink-0" />
-                      <span>
-                        {room.visit?.stage === "POTENTIAL_LEAD" ? "Lead Potencial" :
-                         room.visit?.stage === "IN_PROGRESS" ? "Agendado" :
-                         room.visit?.stage === "PROJECT" ? "En Proyecto" :
-                         room.visit?.stage === "CLOSED" ? "Proyecto Cerrado" :
-                         room.visit?.stage === "CANCELLED" ? "Proyecto Cancelado" : room.visit?.stage || "Desconocido"}
-                      </span>
-                    </p>
-                    <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Fecha">
-                      <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
-                      <span>{room.visit?.createdAt ? new Date(room.visit?.createdAt).toLocaleDateString() : "N/A"}</span>
-                    </p>
-                    <p className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5" title="Registrado por">
-                      <User className="w-3.5 h-3.5 flex-shrink-0" />
-                      <span>{room.visit?.setter?.name || "Desconocido"}</span>
-                    </p>
-                  </button>
-                ))
-              )}
-              {isAdminRole
-                ? (filteredAdminGroups.length === 0 && (
-                    <div className="p-4 text-center text-sm text-on-surface-variant">Sin resultados</div>
-                  ))
-                : (filteredRooms.length === 0 && (
-                    <div className="p-4 text-center text-sm text-on-surface-variant">Sin resultados</div>
-                  ))}
+                      <option value="">Todas las etapas</option>
+                      <option value="PROJECT">En Proyecto</option>
+                      <option value="CLOSED">Proyecto finalizado</option>
+                    </select>
+                    <select
+                      value={tagFilter}
+                      onChange={(e) => setTagFilter(e.target.value)}
+                      className="h-9 px-2 rounded-lg bg-surface-container-low border border-outline-variant text-xs text-on-surface flex-1 min-w-0"
+                      disabled={!stageFilter}
+                    >
+                      <option value="">Todas las etiquetas</option>
+                      {availableTags.map((t) => (
+                        <option key={t.name} value={t.name}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                    {(stageFilter || tagFilter) && (
+                      <button
+                        onClick={() => {
+                          setStageFilter("");
+                          setTagFilter("");
+                        }}
+                        className="px-2 rounded-lg text-on-surface-variant hover:text-primary flex-shrink-0"
+                        title="Limpiar filtros"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 overflow-y-auto min-h-0">
+                {isAdminRole
+                  ? filteredAdminGroups.map((g) => {
+                      const partnerNames = g.partners.map((pr) => {
+                        const pp = pr.visit.projects?.find(
+                          (p) => p.partner?.id === pr.partnerId,
+                        );
+                        return pp?.partner?.name || "Partner";
+                      });
+                      const uniqPartnerNames = Array.from(
+                        new Set(partnerNames),
+                      );
+                      return (
+                        <button
+                          key={g.visit.id}
+                          onClick={() => handleSelectVisit(g.visit.id)}
+                          className={`w-full text-left p-4 border-b border-outline-variant/20 last:border-0 transition-colors ${
+                            selectedVisitId === g.visit.id
+                              ? "bg-primary/10 text-on-surface"
+                              : "hover:bg-surface-container-low text-on-surface"
+                          }`}
+                        >
+                          <p className="font-semibold text-sm truncate">
+                            {g.visit.bill?.clientName ||
+                              g.visit.projectDetails?.clientName ||
+                              g.visit.parcel.ownerName ||
+                              t.common.none}
+                          </p>
+                          <p
+                            className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5"
+                            title={t.chat.address}
+                          >
+                            <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span>{g.visit.parcel.address}</span>
+                          </p>
+                          <p
+                            className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5"
+                            title="Iniciado por"
+                          >
+                            <User className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span>
+                              Iniciado por{" "}
+                              {g.visit.setter?.name || "Desconocido"}
+                              {g.visit.closer
+                                ? ` • ${g.visit.closer.name}`
+                                : ""}
+                            </span>
+                          </p>
+                          <p
+                            className="text-xs mt-1 truncate flex items-center gap-1.5"
+                            title="Partner"
+                          >
+                            <span className="text-amber-500 font-medium">
+                              🤝
+                            </span>
+                            <span
+                              className={
+                                uniqPartnerNames.length > 0
+                                  ? "text-amber-600"
+                                  : "text-on-surface-variant"
+                              }
+                            >
+                              {uniqPartnerNames.length > 0
+                                ? uniqPartnerNames.join(", ")
+                                : "En espera del partner"}
+                            </span>
+                          </p>
+                          <div className="mt-2 flex items-center gap-2">
+                            {getStageBadge(g.visit.stage)}
+                          </div>
+                        </button>
+                      );
+                    })
+                  : filteredRooms.map((room) => (
+                      <button
+                        key={room.id}
+                        onClick={() => handleSelectRoom(room)}
+                        className={`w-full text-left p-4 border-b border-outline-variant/20 last:border-0 transition-colors ${
+                          selectedRoomId === room.id
+                            ? "bg-primary/10 text-on-surface"
+                            : room.messages &&
+                                room.messages.length > 0 &&
+                                !room.messages[0].isRead &&
+                                room.messages[0].userId !==
+                                  parseInt(session?.user?.id || "0")
+                              ? "bg-primary text-on-primary"
+                              : "hover:bg-surface-container-low text-on-surface"
+                        }`}
+                      >
+                        <div className="flex justify-between items-start mb-1 gap-2">
+                          <p className="font-semibold text-sm truncate">
+                            {(room as any).type === "PARTNER" ? "🤝 " : ""}
+                            {room.visit?.bill?.clientName ||
+                              room.visit?.projectDetails?.clientName ||
+                              room.visit?.parcel.ownerName ||
+                              t.common.none}
+                          </p>
+                          <span className="text-[10px] opacity-70 whitespace-nowrap flex-shrink-0 mt-0.5">
+                            {room.messages && room.messages.length > 0
+                              ? new Date(
+                                  room.messages[0].createdAt,
+                                ).toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : room.visit?.createdAt
+                                ? new Date(
+                                    room.visit?.createdAt,
+                                  ).toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })
+                                : ""}
+                          </span>
+                        </div>
+                        <p
+                          className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5"
+                          title={t.chat.address}
+                        >
+                          <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span>{room.visit?.parcel.address}</span>
+                        </p>
+                        <p
+                          className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5"
+                          title="Status"
+                        >
+                          <Activity className="w-3.5 h-3.5 flex-shrink-0" />
+                          {getStageBadge(room.visit?.stage)}
+                        </p>
+                        {room.visit?.stage === "CLOSED" &&
+                          (() => {
+                            try {
+                              const cf = room.visit.contractFields
+                                ? JSON.parse(room.visit.contractFields)
+                                : {};
+                              const tag = cf.postCloseTags;
+                              if (tag && typeof tag === "string") {
+                                const tagColor =
+                                  tag === "En permisos"
+                                    ? "#f59e0b"
+                                    : tag === "En instalacion"
+                                      ? "#06b6d4"
+                                      : tag === "Finalizado"
+                                        ? "#22c55e"
+                                        : "#6b7280";
+                                return (
+                                  <p
+                                    className="text-[10px] font-semibold mt-1 px-1.5 py-0.5 rounded-full inline-flex w-fit items-center gap-1"
+                                    style={{
+                                      backgroundColor: tagColor + "15",
+                                      color: tagColor,
+                                      border: `1px solid ${tagColor}30`,
+                                    }}
+                                  >
+                                    <CheckCircle className="w-3 h-3 flex-shrink-0" />
+                                    <span>{tag}</span>
+                                  </p>
+                                );
+                              }
+                            } catch {}
+                            return null;
+                          })()}
+                        <p
+                          className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5"
+                          title="Fecha"
+                        >
+                          <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span>
+                            {room.visit?.createdAt
+                              ? new Date(
+                                  room.visit?.createdAt,
+                                ).toLocaleDateString()
+                              : "N/A"}
+                          </span>
+                        </p>
+                        <p
+                          className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5"
+                          title="Registrado por"
+                        >
+                          <User className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span>
+                            {room.visit?.setter?.name || "Desconocido"}
+                          </span>
+                        </p>
+                      </button>
+                    ))}
+                {isAdminRole
+                  ? filteredAdminGroups.length === 0 && (
+                      <div className="p-4 text-center text-sm text-on-surface-variant">
+                        Sin resultados
+                      </div>
+                    )
+                  : filteredRooms.length === 0 && (
+                      <div className="p-4 text-center text-sm text-on-surface-variant">
+                        Sin resultados
+                      </div>
+                    )}
+              </div>
             </div>
-          </div>
           )}
 
           {/* CENTER COLUMN: Conversation */}
-          <div className={`flex-1 flex flex-col min-h-0
+          <div
+            className={`flex-1 flex flex-col min-h-0
             ${mobileColumn !== "conversation" ? "hidden lg:flex" : "flex"}
-          `}>
+          `}
+          >
             {isAdminRole && selectedVisitId && !selectedRoom ? (
               <AdminRoomSelector
                 group={adminGroups.find((g) => g.visit.id === selectedVisitId)}
@@ -812,38 +1089,52 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                     <div>
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => { setMobileColumn("list"); }}
+                          onClick={() => {
+                            setMobileColumn("list");
+                          }}
                           className="lg:hidden p-1 -ml-1 rounded-lg hover:bg-surface-container-high text-on-surface-variant"
                         >
                           <ArrowLeft className="w-4 h-4" />
                         </button>
                         <p className="font-semibold text-on-surface">
-                          {selectedRoom?.visit?.bill?.clientName || selectedRoom?.visit?.projectDetails?.clientName || selectedRoom?.visit?.parcel.ownerName || t.common.none}
+                          {selectedRoom?.visit?.bill?.clientName ||
+                            selectedRoom?.visit?.projectDetails?.clientName ||
+                            selectedRoom?.visit?.parcel.ownerName ||
+                            t.common.none}
                         </p>
                       </div>
                       <p className="text-xs text-on-surface-variant ml-0 lg:ml-0 mt-1">
                         {selectedRoom?.visit?.parcel.address}
                       </p>
-                      {selectedRoom?.type === "PARTNER" && (() => {
-                        const covered = selectedRoom?.visit?.projects
-                          ?.filter((p) => p.partner?.id === selectedRoom?.partnerId)
-                          .map((p) => p.projectType.name)
-                          .join(", ");
-                        return covered ? (
-                          <p className="text-xs text-orange-600 font-medium mt-1">
-                            Cubre: {covered}
-                          </p>
-                        ) : null;
-                      })()}
+                      {selectedRoom?.type === "PARTNER" &&
+                        (() => {
+                          const covered = selectedRoom?.visit?.projects
+                            ?.filter(
+                              (p) => p.partner?.id === selectedRoom?.partnerId,
+                            )
+                            .map((p) => p.projectType.name)
+                            .join(", ");
+                          return covered ? (
+                            <p className="text-xs text-orange-600 font-medium mt-1">
+                              Cubre: {covered}
+                            </p>
+                          ) : null;
+                        })()}
                       <p className="text-xs text-on-surface-variant">
-                        Trainee:{' '}
-                        <Link href={`/profile/${selectedRoom?.visit?.setter.id}`} className="hover:underline">
+                        Trainee:{" "}
+                        <Link
+                          href={`/profile/${selectedRoom?.visit?.setter.id}`}
+                          className="hover:underline"
+                        >
                           {selectedRoom?.visit?.setter.name}
                         </Link>
                         {selectedRoom?.visit?.closer && (
                           <>
-                            {' • Closer: '}
-                            <Link href={`/profile/${selectedRoom?.visit?.closer.id}`} className="hover:underline">
+                            {" • Closer: "}
+                            <Link
+                              href={`/profile/${selectedRoom?.visit?.closer.id}`}
+                              className="hover:underline"
+                            >
                               {selectedRoom?.visit?.closer.name}
                             </Link>
                           </>
@@ -863,18 +1154,25 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                         <button
                           onClick={() => setShowContractModal(true)}
                           className="px-3 py-1 text-xs font-medium rounded-full transition-colors flex items-center gap-1"
-                          style={{ backgroundColor: "#f4822120", color: "#f48221" }}
+                          style={{
+                            backgroundColor: "#f4822120",
+                            color: "#f48221",
+                          }}
                         >
                           <FileText className="w-3 h-3" />
                           Contratos
                         </button>
                       )}
-                      {(session?.user?.role === "ADMIN" || session?.user?.role === "CLOSER") && (
+                      {(session?.user?.role === "ADMIN" ||
+                        session?.user?.role === "CLOSER") && (
                         <>
                           <Link
                             href={`/lead/${selectedRoom?.visit?.id}?tab=archivos`}
                             className="px-3 py-1 text-xs font-medium rounded-full transition-colors flex items-center gap-1 hover:bg-[#f4822130]"
-                            style={{ backgroundColor: "#f4822120", color: "#f48221" }}
+                            style={{
+                              backgroundColor: "#f4822120",
+                              color: "#f48221",
+                            }}
                           >
                             <Folder className="w-3 h-3" />
                             Archivos
@@ -882,29 +1180,76 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                           <Link
                             href={`/lead/${selectedRoom?.visit?.id}?tab=datos`}
                             className={`px-3 py-1 text-xs font-medium rounded-full transition-colors flex items-center gap-1 ${
-                              session?.user?.role === "ADMIN" ? "hover:bg-emerald-100" : "hover:bg-[#f4822130]"
+                              session?.user?.role === "ADMIN"
+                                ? "hover:bg-emerald-100"
+                                : "hover:bg-[#f4822130]"
                             }`}
                             style={{
-                              backgroundColor: session?.user?.role === "ADMIN" ? "#10b98120" : "#f4822120",
-                              color: session?.user?.role === "ADMIN" ? "#10b981" : "#f48221"
+                              backgroundColor:
+                                session?.user?.role === "ADMIN"
+                                  ? "#10b98120"
+                                  : "#f4822120",
+                              color:
+                                session?.user?.role === "ADMIN"
+                                  ? "#10b981"
+                                  : "#f48221",
                             }}
                           >
-                            {session?.user?.role === "ADMIN" ? <FileText className="w-3 h-3" /> : <Pencil className="w-3 h-3" />}
-                            {session?.user?.role === "ADMIN" ? "Datos" : t.chat.editProject}
+                            {session?.user?.role === "ADMIN" ? (
+                              <FileText className="w-3 h-3" />
+                            ) : (
+                              <Pencil className="w-3 h-3" />
+                            )}
+                            {session?.user?.role === "ADMIN"
+                              ? "Datos"
+                              : t.chat.editProject}
                           </Link>
                         </>
                       )}
-                      {(session?.user?.role === "ADMIN" || session?.user?.role === "CLOSER") && selectedRoom?.visit?.stage === 'CLOSED' && !selectedRoom?.visit?.finalizedAt && (
-                        <button
-                          onClick={handleFinalize}
-                          className="px-3 py-1 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-full hover:bg-emerald-200 transition-colors"
-                        >
-                          <CheckCheck className="w-3 h-3" />
-                        </button>
-                      )}
+                      {(session?.user?.role === "ADMIN" ||
+                        session?.user?.role === "CLOSER") &&
+                        selectedRoom?.visit?.stage === "CLOSED" &&
+                        !selectedRoom?.visit?.finalizedAt && (
+                          <button
+                            onClick={handleFinalize}
+                            className="px-3 py-1 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-full hover:bg-emerald-200 transition-colors"
+                          >
+                            <CheckCheck className="w-3 h-3" />
+                          </button>
+                        )}
                     </div>
                   </div>
-                  
+
+                  <div className="mt-3 flex items-center">
+                    {selectedRoom?.type === "PARTNER" ? (
+                      <span
+                        className="px-3 py-1 rounded-full text-xs font-bold tracking-wider"
+                        style={{
+                          backgroundColor: "#f4822120",
+                          color: "#f48221",
+                          border: "1px solid #f4822140",
+                        }}
+                      >
+                        CHAT PARTNER '
+                        {selectedRoom?.visit?.projects?.find(
+                          (p) => p.partner?.id === selectedRoom.partnerId,
+                        )?.partner?.name || "Desconocido"}
+                        '
+                      </span>
+                    ) : (
+                      <span
+                        className="px-3 py-1 rounded-full text-xs font-bold tracking-wider"
+                        style={{
+                          backgroundColor: "#22c55e20",
+                          color: "#22c55e",
+                          border: "1px solid #22c55e40",
+                        }}
+                      >
+                        CHAT INTERNO
+                      </span>
+                    )}
+                  </div>
+
                   {projectDetails && (
                     <div className="mt-3">
                       <div className="flex justify-between items-center mb-1">
@@ -919,10 +1264,10 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                         <div
                           className={`h-full rounded-full transition-all duration-300 ${
                             completionPercentage === 100
-                              ? 'bg-primary'
+                              ? "bg-primary"
                               : completionPercentage >= 50
-                              ? 'bg-secondary'
-                              : 'bg-tertiary'
+                                ? "bg-secondary"
+                                : "bg-tertiary"
                           }`}
                           style={{ width: `${completionPercentage}%` }}
                         />
@@ -1001,26 +1346,34 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
                     <Input
                       value={newMessage}
                       onChange={handleMessageChange}
-                      placeholder={((selectedRoom as any)?.type === "PARTNER" || role === "PARTNER") ? t.chat.writeMessage : `${t.chat.writeMessage} usa @ para mencionar`}
+                      placeholder={
+                        (selectedRoom as any)?.type === "PARTNER" ||
+                        role === "PARTNER"
+                          ? t.chat.writeMessage
+                          : `${t.chat.writeMessage} usa @ para mencionar`
+                      }
                       className="w-full"
                     />
-                    {showMentionDropdown && (selectedRoom as any)?.type !== "PARTNER" && role !== "PARTNER" && filteredMentionUsers.length > 0 && (
-                      <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto z-10">
-                        {filteredMentionUsers.map((user) => (
-                          <button
-                            key={user.id}
-                            type="button"
-                            onClick={() => handleMentionSelect(user)}
-                            className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                          >
-                            <span className="font-medium">{user.name}</span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {user.role}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                    {showMentionDropdown &&
+                      (selectedRoom as any)?.type !== "PARTNER" &&
+                      role !== "PARTNER" &&
+                      filteredMentionUsers.length > 0 && (
+                        <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto z-10">
+                          {filteredMentionUsers.map((user) => (
+                            <button
+                              key={user.id}
+                              type="button"
+                              onClick={() => handleMentionSelect(user)}
+                              className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                            >
+                              <span className="font-medium">{user.name}</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                {user.role}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                   </div>
                   <Button
                     type="submit"
@@ -1040,13 +1393,20 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
 
           {/* RIGHT COLUMN: Info Panel */}
           {selectedRoom && (
-            <div className={`w-full lg:w-80 border-l border-outline-variant/30 bg-surface-container-low/30 flex-shrink-0 min-h-0 flex flex-col
-              ${(!showInfoPanel && mobileColumn !== "info") ? "hidden lg:flex" : "flex"}
-            `}>
+            <div
+              className={`w-full lg:w-80 border-l border-outline-variant/30 bg-surface-container-low/30 flex-shrink-0 min-h-0 flex flex-col
+              ${!showInfoPanel && mobileColumn !== "info" ? "hidden lg:flex" : "flex"}
+            `}
+            >
               <div className="p-4 border-b border-outline-variant/20 flex items-center justify-between flex-shrink-0">
-                <h3 className="font-semibold text-on-surface text-sm">{t.chat.projectInfo}</h3>
+                <h3 className="font-semibold text-on-surface text-sm">
+                  {t.chat.projectInfo}
+                </h3>
                 <button
-                  onClick={() => { setShowInfoPanel(false); setMobileColumn("conversation"); }}
+                  onClick={() => {
+                    setShowInfoPanel(false);
+                    setMobileColumn("conversation");
+                  }}
                   className="lg:hidden p-1 rounded-lg hover:bg-surface-container-high text-on-surface-variant"
                 >
                   <X className="w-4 h-4" />
@@ -1076,130 +1436,208 @@ export function ChatInterface({ isAdmin = false, initialRoomId = null, hideRoomL
             <Input
               label={t.chat.clientName}
               value={editForm.clientName || ""}
-              onChange={(e) => setEditForm({ ...editForm, clientName: e.target.value })}
+              onChange={(e) =>
+                setEditForm({ ...editForm, clientName: e.target.value })
+              }
             />
             <Input
               label={t.chat.clientEmail}
               type="email"
               value={editForm.clientEmail || ""}
-              onChange={(e) => setEditForm({ ...editForm, clientEmail: e.target.value })}
+              onChange={(e) =>
+                setEditForm({ ...editForm, clientEmail: e.target.value })
+              }
             />
           </div>
 
           <Input
             label={t.chat.address}
             value={editForm.address || ""}
-            onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+            onChange={(e) =>
+              setEditForm({ ...editForm, address: e.target.value })
+            }
           />
 
           <Input
             label="Teléfono del Cliente"
             type="tel"
             value={(editForm.phone as string) || bill?.phone || ""}
-            onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+            onChange={(e) =>
+              setEditForm({
+                ...editForm,
+                phone: formatPhoneNumber(e.target.value),
+              })
+            }
           />
 
           <div className="grid grid-cols-2 gap-4">
             <Input
               label={t.chat.closingDate}
               type="date"
-              value={editForm.closingDate ? new Date(editForm.closingDate).toISOString().split("T")[0] : ""}
-              onChange={(e) => setEditForm({ ...editForm, closingDate: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
+              value={
+                editForm.closingDate
+                  ? new Date(editForm.closingDate).toISOString().split("T")[0]
+                  : ""
+              }
+              onChange={(e) =>
+                setEditForm({
+                  ...editForm,
+                  closingDate: e.target.value
+                    ? new Date(e.target.value).toISOString()
+                    : undefined,
+                })
+              }
             />
           </div>
 
-          {projects.some(p => p.projectType.name === "Panel Solar") && (
+          {projects.some((p) => p.projectType.name === "Panel Solar") && (
             <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-3">
-              <p className="text-sm font-semibold text-on-surface">{t.chat.solarPanel}</p>
+              <p className="text-sm font-semibold text-on-surface">
+                {t.chat.solarPanel}
+              </p>
               <div className="grid grid-cols-2 gap-3">
                 <Input
                   label={t.chat.financier}
                   value={editForm.solarFinancier || ""}
-                  onChange={(e) => setEditForm({ ...editForm, solarFinancier: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, solarFinancier: e.target.value })
+                  }
                 />
                 <Input
                   label={t.chat.systemSize}
                   value={editForm.systemSize || ""}
-                  onChange={(e) => setEditForm({ ...editForm, systemSize: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, systemSize: e.target.value })
+                  }
                 />
               </div>
             </div>
           )}
 
           <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-3">
-            <p className="text-sm font-semibold text-on-surface">{t.chat.commissions}</p>
+            <p className="text-sm font-semibold text-on-surface">
+              {t.chat.commissions}
+            </p>
             <div className="grid grid-cols-2 gap-3">
               <Input
                 label="Representante Principal"
                 value={editForm.primaryRep || ""}
-                onChange={(e) => setEditForm({ ...editForm, primaryRep: e.target.value })}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, primaryRep: e.target.value })
+                }
               />
               <Input
                 label="Comisión %"
                 type="number"
                 value={editForm.primaryRepCommPct?.toString() || ""}
-                onChange={(e) => setEditForm({ ...editForm, primaryRepCommPct: parseFloat(e.target.value) || undefined })}
+                onChange={(e) =>
+                  setEditForm({
+                    ...editForm,
+                    primaryRepCommPct: parseFloat(e.target.value) || undefined,
+                  })
+                }
               />
             </div>
           </div>
 
-          {commonFields.length > 0 && (() => {
-            const alreadyShown = new Set([
-              "clientName", "clientEmail", "address", "phone",
-              "closingDate",
-              "primaryRep", "primaryRepCommPct",
-            ]);
-            const filtered = commonFields.filter((f) => !alreadyShown.has(f.fieldName));
-            if (filtered.length === 0) return null;
-            return (
-            <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-3">
-              <p className="text-sm font-semibold text-on-surface">Campos Comunes</p>
-              <div className="grid grid-cols-2 gap-3">
-                {filtered.map((field) => (
-                  <div key={field.id}>
-                    {field.fieldType === "select" ? (
-                      <div>
-                        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                          {field.fieldLabel}
-                        </label>
-                        <select
-                          value={editForm[field.fieldName] as string || ""}
-                          onChange={(e) => setEditForm({ ...editForm, [field.fieldName]: e.target.value })}
-                          className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface mt-1"
-                        >
-                          <option value="">{t.common.selectOption}</option>
-                          {field.options && JSON.parse(field.options).map((opt: string) => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
+          {commonFields.length > 0 &&
+            (() => {
+              const alreadyShown = new Set([
+                "clientName",
+                "clientEmail",
+                "address",
+                "phone",
+                "closingDate",
+                "primaryRep",
+                "primaryRepCommPct",
+              ]);
+              const filtered = commonFields.filter(
+                (f) => !alreadyShown.has(f.fieldName),
+              );
+              if (filtered.length === 0) return null;
+              return (
+                <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-3">
+                  <p className="text-sm font-semibold text-on-surface">
+                    Campos Comunes
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {filtered.map((field) => (
+                      <div key={field.id}>
+                        {field.fieldType === "select" ? (
+                          <div>
+                            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                              {field.fieldLabel}
+                            </label>
+                            <select
+                              value={
+                                (editForm[field.fieldName] as string) || ""
+                              }
+                              onChange={(e) =>
+                                setEditForm({
+                                  ...editForm,
+                                  [field.fieldName]: e.target.value,
+                                })
+                              }
+                              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface mt-1"
+                            >
+                              <option value="">{t.common.selectOption}</option>
+                              {field.options &&
+                                JSON.parse(field.options).map((opt: string) => (
+                                  <option key={opt} value={opt}>
+                                    {opt}
+                                  </option>
+                                ))}
+                            </select>
+                          </div>
+                        ) : field.fieldType === "date" ? (
+                          <Input
+                            label={field.fieldLabel}
+                            type="date"
+                            value={
+                              editForm[field.fieldName]
+                                ? new Date(editForm[field.fieldName] as string)
+                                    .toISOString()
+                                    .split("T")[0]
+                                : ""
+                            }
+                            onChange={(e) =>
+                              setEditForm({
+                                ...editForm,
+                                [field.fieldName]: e.target.value,
+                              })
+                            }
+                          />
+                        ) : field.fieldType === "number" ? (
+                          <Input
+                            label={field.fieldLabel}
+                            type="number"
+                            value={(editForm[field.fieldName] as string) || ""}
+                            onChange={(e) =>
+                              setEditForm({
+                                ...editForm,
+                                [field.fieldName]:
+                                  parseFloat(e.target.value) || undefined,
+                              })
+                            }
+                          />
+                        ) : (
+                          <Input
+                            label={field.fieldLabel}
+                            value={(editForm[field.fieldName] as string) || ""}
+                            onChange={(e) =>
+                              setEditForm({
+                                ...editForm,
+                                [field.fieldName]: e.target.value,
+                              })
+                            }
+                          />
+                        )}
                       </div>
-                    ) : field.fieldType === "date" ? (
-                      <Input
-                        label={field.fieldLabel}
-                        type="date"
-                        value={editForm[field.fieldName] ? new Date(editForm[field.fieldName] as string).toISOString().split("T")[0] : ""}
-                        onChange={(e) => setEditForm({ ...editForm, [field.fieldName]: e.target.value })}
-                      />
-                    ) : field.fieldType === "number" ? (
-                      <Input
-                        label={field.fieldLabel}
-                        type="number"
-                        value={editForm[field.fieldName] as string || ""}
-                        onChange={(e) => setEditForm({ ...editForm, [field.fieldName]: parseFloat(e.target.value) || undefined })}
-                      />
-                    ) : (
-                      <Input
-                        label={field.fieldLabel}
-                        value={editForm[field.fieldName] as string || ""}
-                        onChange={(e) => setEditForm({ ...editForm, [field.fieldName]: e.target.value })}
-                      />
-                    )}
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-            );
-          })()}
+                </div>
+              );
+            })()}
 
           <div className="flex gap-3 pt-4">
             <Button
@@ -1239,28 +1677,41 @@ function InfoPanelContent({
 }: {
   room: Room;
   projects: { projectType: ProjectType }[];
-  bill?: { imageUrl: string; phone: string; clientName: string; clientEmail: string; additionalFileUrl?: string; additionalFileName?: string };
+  bill?: {
+    imageUrl: string;
+    phone: string;
+    clientName: string;
+    clientEmail: string;
+    additionalFileUrl?: string;
+    additionalFileName?: string;
+  };
   stageLabels: Record<string, string>;
 }) {
   const { data: session } = useSession();
   const { t } = useLocale();
   const isPartner = session?.user?.role === "PARTNER";
   const { visit } = room;
-  const [projectDetails, setProjectDetails] = useState<any>(visit.projectDetails);
+  const [projectDetails, setProjectDetails] = useState<any>(
+    visit.projectDetails,
+  );
   useEffect(() => {
     // Initial fetch
-    fetch(`/api/project-details?visitId=${visit.id}&t=${Date.now()}`, { cache: 'no-store' })
-      .then(res => res.json())
-      .then(data => {
+    fetch(`/api/project-details?visitId=${visit.id}&t=${Date.now()}`, {
+      cache: "no-store",
+    })
+      .then((res) => res.json())
+      .then((data) => {
         if (data && !data.error) setProjectDetails(data);
       })
       .catch(() => {});
 
     // Polling every 2 seconds to adapt instantly
     const interval = setInterval(() => {
-      fetch(`/api/project-details?visitId=${visit.id}&t=${Date.now()}`, { cache: 'no-store' })
-        .then(res => res.json())
-        .then(data => {
+      fetch(`/api/project-details?visitId=${visit.id}&t=${Date.now()}`, {
+        cache: "no-store",
+      })
+        .then((res) => res.json())
+        .then((data) => {
           if (data && !data.error) setProjectDetails(data);
         })
         .catch(() => {});
@@ -1271,22 +1722,64 @@ function InfoPanelContent({
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="p-4 border-b border-outline-variant/30 flex-shrink-0">
-        <h3 className="font-headline text-lg font-bold text-on-surface">{t.chat.projectInfo}</h3>
+        <h3 className="font-headline text-lg font-bold text-on-surface">
+          {t.chat.projectInfo}
+        </h3>
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0 p-4">
         <div className="flex flex-col space-y-3 text-xs">
-            {visit.stage && (
-              <span className={`self-start px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
-                visit.stage === 'CLOSED' ? 'bg-primary/10 text-primary' :
-                visit.stage === 'CANCELLED' ? 'bg-error/10 text-error' :
-                'bg-secondary/10 text-secondary'
-              }`}>
+          {visit.stage && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span
+                className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
+                  visit.stage === "CLOSED"
+                    ? "bg-primary/10 text-primary"
+                    : visit.stage === "CANCELLED"
+                      ? "bg-error/10 text-error"
+                      : "bg-secondary/10 text-secondary"
+                }`}
+              >
                 {stageLabels[visit.stage] || visit.stage}
               </span>
-            )}
+              {visit.stage === "CLOSED" &&
+                (() => {
+                  try {
+                    const cf = visit.contractFields
+                      ? JSON.parse(visit.contractFields)
+                      : {};
+                    const tag = cf.postCloseTags;
+                    if (tag && typeof tag === "string") {
+                      const tagColor =
+                        tag === "En permisos"
+                          ? "#f59e0b"
+                          : tag === "En instalacion"
+                            ? "#06b6d4"
+                            : tag === "Finalizado"
+                              ? "#22c55e"
+                              : "#6b7280";
+                      return (
+                        <span
+                          className="px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1"
+                          style={{
+                            backgroundColor: tagColor + "15",
+                            color: tagColor,
+                            border: `1px solid ${tagColor}30`,
+                          }}
+                        >
+                          <CheckCircle className="w-3 h-3 flex-shrink-0" />
+                          {tag}
+                        </span>
+                      );
+                    }
+                  } catch {}
+                  return null;
+                })()}
+            </div>
+          )}
 
-            {!isPartner && parseParcelTags(visit.parcel.parcelTags).length > 0 && (
+          {!isPartner &&
+            parseParcelTags(visit.parcel.parcelTags).length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {parseParcelTags(visit.parcel.parcelTags).map((tag, i) => (
                   <span
@@ -1303,61 +1796,109 @@ function InfoPanelContent({
                 ))}
               </div>
             )}
-            
-            <div className="flex justify-between items-start gap-4">
-              <span className="text-on-surface-variant font-medium flex-shrink-0">{t.chat.projects}:</span>
-              <span className="text-on-surface text-right break-words">{projects.length > 0 ? projects.map(p => p.projectType.name).join(", ") : t.common.none}</span>
-            </div>
 
-            <div className="flex justify-between items-start gap-4">
-              <span className="text-on-surface-variant font-medium flex-shrink-0">{t.chat.client}:</span>
-              <span className="text-on-surface text-right break-words">{bill?.clientName || projectDetails?.clientName || visit.parcel.ownerName || t.common.none}</span>
-            </div>
-
-            {!isPartner && (
-              <div className="flex justify-between items-start gap-4">
-                <span className="text-on-surface-variant font-medium flex-shrink-0">Teléfono:</span>
-                <span className="text-on-surface text-right break-words">{bill?.phone || projectDetails?.phone || "N/A"}</span>
-              </div>
-            )}
-
-            {!isPartner && (
-              <div className="flex justify-between items-start gap-4">
-                <span className="text-on-surface-variant font-medium flex-shrink-0">{t.chat.email}:</span>
-                <span className="text-on-surface text-right break-words">{bill?.clientEmail || projectDetails?.clientEmail || "N/A"}</span>
-              </div>
-            )}
-
-            <div className="flex justify-between items-start gap-4">
-              <span className="text-on-surface-variant font-medium flex-shrink-0">{t.chat.address}:</span>
-              <span className="text-on-surface text-right break-words">{visit.parcel.address}</span>
-            </div>
-
-            <div className="flex justify-between items-start gap-4">
-              <span className="text-on-surface-variant font-medium flex-shrink-0">{t.chat.closingDate}:</span>
-              <span className="text-on-surface text-right break-words">{projectDetails?.closingDate ? new Date(String(projectDetails.closingDate)).toLocaleDateString() : "En proceso"}</span>
-            </div>
-
-            <div className="flex justify-between items-start gap-4">
-              <span className="text-on-surface-variant font-medium flex-shrink-0">Creación del lead:</span>
-              <span className="text-on-surface text-right break-words">{visit.createdAt ? new Date(visit.createdAt).toLocaleDateString() : "N/A"}</span>
-            </div>
-
-            <div className="flex justify-between items-start gap-4">
-              <span className="text-on-surface-variant font-medium flex-shrink-0">Rep. principal:</span>
-              <span className="text-on-surface text-right break-words">{projectDetails?.primaryRep || "N/A"}</span>
-            </div>
-
-            {!isPartner && (
-              <div className="flex justify-between items-start gap-4">
-                <span className="text-on-surface-variant font-medium flex-shrink-0">{t.chat.commissions} (%):</span>
-                <span className="text-on-surface text-right break-words">{projectDetails?.primaryRepCommPct != null ? `${projectDetails.primaryRepCommPct}%` : "N/A"}</span>
-              </div>
-            )}
-
+          <div className="flex justify-between items-start gap-4">
+            <span className="text-on-surface-variant font-medium flex-shrink-0">
+              {t.chat.projects}:
+            </span>
+            <span className="text-on-surface text-right break-words">
+              {projects.length > 0
+                ? projects.map((p) => p.projectType.name).join(", ")
+                : t.common.none}
+            </span>
           </div>
+
+          <div className="flex justify-between items-start gap-4">
+            <span className="text-on-surface-variant font-medium flex-shrink-0">
+              {t.chat.client}:
+            </span>
+            <span className="text-on-surface text-right break-words">
+              {bill?.clientName ||
+                projectDetails?.clientName ||
+                visit.parcel.ownerName ||
+                t.common.none}
+            </span>
+          </div>
+
+          {!isPartner && (
+            <div className="flex justify-between items-start gap-4">
+              <span className="text-on-surface-variant font-medium flex-shrink-0">
+                Teléfono:
+              </span>
+              <span className="text-on-surface text-right break-words">
+                {bill?.phone || projectDetails?.phone || "N/A"}
+              </span>
+            </div>
+          )}
+
+          {!isPartner && (
+            <div className="flex justify-between items-start gap-4">
+              <span className="text-on-surface-variant font-medium flex-shrink-0">
+                {t.chat.email}:
+              </span>
+              <span className="text-on-surface text-right break-words">
+                {bill?.clientEmail || projectDetails?.clientEmail || "N/A"}
+              </span>
+            </div>
+          )}
+
+          <div className="flex justify-between items-start gap-4">
+            <span className="text-on-surface-variant font-medium flex-shrink-0">
+              {t.chat.address}:
+            </span>
+            <span className="text-on-surface text-right break-words">
+              {visit.parcel.address}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-start gap-4">
+            <span className="text-on-surface-variant font-medium flex-shrink-0">
+              {t.chat.closingDate}:
+            </span>
+            <span className="text-on-surface text-right break-words">
+              {projectDetails?.closingDate
+                ? new Date(
+                    String(projectDetails.closingDate),
+                  ).toLocaleDateString()
+                : "En proceso"}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-start gap-4">
+            <span className="text-on-surface-variant font-medium flex-shrink-0">
+              Creación del lead:
+            </span>
+            <span className="text-on-surface text-right break-words">
+              {visit.createdAt
+                ? new Date(visit.createdAt).toLocaleDateString()
+                : "N/A"}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-start gap-4">
+            <span className="text-on-surface-variant font-medium flex-shrink-0">
+              Rep. principal:
+            </span>
+            <span className="text-on-surface text-right break-words">
+              {projectDetails?.primaryRep || "N/A"}
+            </span>
+          </div>
+
+          {!isPartner && (
+            <div className="flex justify-between items-start gap-4">
+              <span className="text-on-surface-variant font-medium flex-shrink-0">
+                {t.chat.commissions} (%):
+              </span>
+              <span className="text-on-surface text-right break-words">
+                {projectDetails?.primaryRepCommPct != null
+                  ? `${projectDetails.primaryRepCommPct}%`
+                  : "N/A"}
+              </span>
+            </div>
+          )}
         </div>
       </div>
+    </div>
   );
 }
 
@@ -1378,13 +1919,18 @@ function AdminRoomSelector({
   }
 
   const clientName =
-    group.visit.bill?.clientName || group.visit.projectDetails?.clientName || group.visit.parcel.ownerName || t.common.none;
+    group.visit.bill?.clientName ||
+    group.visit.projectDetails?.clientName ||
+    group.visit.parcel.ownerName ||
+    t.common.none;
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-6 gap-4">
       <div className="text-center">
         <p className="font-semibold text-lg text-on-surface">{clientName}</p>
-        <p className="text-sm text-on-surface-variant">{group.visit.parcel.address}</p>
+        <p className="text-sm text-on-surface-variant">
+          {group.visit.parcel.address}
+        </p>
       </div>
 
       <button
@@ -1395,12 +1941,16 @@ function AdminRoomSelector({
         <MessageSquare className="w-6 h-6 text-green-600" />
         <div>
           <p className="font-semibold text-green-700">Interno</p>
-          <p className="text-xs text-on-surface-variant">Chat con setter/closer/trainee</p>
+          <p className="text-xs text-on-surface-variant">
+            Chat con setter/closer/trainee
+          </p>
         </div>
       </button>
 
       {group.partners.map((pr) => {
-        const pp = pr.visit.projects?.find((p) => p.partner?.id === pr.partnerId);
+        const pp = pr.visit.projects?.find(
+          (p) => p.partner?.id === pr.partnerId,
+        );
         const partnerName = pp?.partner?.name || "Partner";
         const coveredContracts = pr.visit.projects
           ?.filter((p) => p.partner?.id === pr.partnerId)

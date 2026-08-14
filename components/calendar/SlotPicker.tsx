@@ -56,6 +56,7 @@ function generateSlotsFromRanges(ranges: { start: string; end: string }[]): { di
 export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: SlotPickerProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [dayAvailability, setDayAvailability] = useState<Record<string, DayData>>({});
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [internalSelectedDate, setInternalSelectedDate] = useState<Date | null>(null);
   const [loadingAvail, setLoadingAvail] = useState(false);
 
@@ -70,6 +71,9 @@ export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: Slo
         if (data.availability) {
           setDayAvailability(data.availability);
         }
+        if (data.bookedSlots) {
+          setBookedSlots(data.bookedSlots);
+        }
       }
     } catch {
       // ignore
@@ -80,7 +84,7 @@ export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: Slo
 
   useEffect(() => {
     fetchAvailability(currentMonth);
-  }, []); // eslint-disable-line
+  }, [fetchAvailability, currentMonth]);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -130,7 +134,19 @@ export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: Slo
     }
   };
 
-  const slots = internalSelectedDate ? generateSlotsFromRanges(getDayRanges(internalSelectedDate)) : [];
+  const isSlotBooked = (dateKey: string, timeValue: string) => {
+    const slotDate = new Date(`${dateKey}T${timeValue}:00`);
+    return bookedSlots.some(bookedIso => {
+      const bookedDate = new Date(bookedIso);
+      return bookedDate.getTime() === slotDate.getTime();
+    });
+  };
+
+  const slots = internalSelectedDate 
+    ? generateSlotsFromRanges(getDayRanges(internalSelectedDate)).filter(
+        slot => !isSlotBooked(format(internalSelectedDate, 'yyyy-MM-dd'), slot.value)
+      )
+    : [];
 
   return (
     <div className="bg-surface-container-low rounded-xl p-4">

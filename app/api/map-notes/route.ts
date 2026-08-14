@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { verifyApiAuth } from '@/lib/auth-utils';
 
 const globalForNotes = global as unknown as { mapNotesCache: Record<string, string> };
 
@@ -7,6 +8,10 @@ if (!globalForNotes.mapNotesCache) {
 }
 
 export async function GET(request: Request) {
+  const authRes = await verifyApiAuth();
+  if (authRes.error) {
+    return NextResponse.json({ error: authRes.error }, { status: authRes.status });
+  }
   const { searchParams } = new URL(request.url);
   const parcelId = searchParams.get('parcelId');
   if (!parcelId) return NextResponse.json({ note: "" });
@@ -15,6 +20,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const authRes = await verifyApiAuth();
+  if (authRes.error) {
+    return NextResponse.json({ error: authRes.error }, { status: authRes.status });
+  }
   try {
     const { parcelId, note } = await request.json();
     if (!parcelId) return NextResponse.json({ error: "Missing parcelId" }, { status: 400 });

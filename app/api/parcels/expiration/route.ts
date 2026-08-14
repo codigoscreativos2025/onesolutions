@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { auth } from '@/auth';
+import { verifyApiAuth } from '@/lib/auth-utils';
 export const dynamic = 'force-dynamic';
 
 export async function POST() {
+  const authRes = await verifyApiAuth();
+  if (authRes.error) {
+    return NextResponse.json({ error: authRes.error }, { status: authRes.status });
+  }
+
   try {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -83,10 +88,11 @@ export async function POST() {
 }
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const authRes = await verifyApiAuth();
+  if (authRes.error) {
+    return NextResponse.json({ error: authRes.error }, { status: authRes.status });
   }
+  const session = authRes.session!;
 
   const userId = parseInt(session.user.id);
   const role = session.user.role;

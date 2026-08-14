@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { SlotPicker } from '@/components/calendar/SlotPicker';
 import { toast } from 'sonner';
 import { useLocale } from '@/lib/locale-context';
+import { formatPhoneNumber } from '@/lib/utils';
 
 interface CreateLeadModalProps {
   isOpen: boolean;
@@ -232,7 +233,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
             </label>
             <Input
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, phone: formatPhoneNumber(e.target.value) })}
               placeholder="(407) 555-0123"
               type="tel"
               inputMode="tel"

@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { auth } from '@/auth';
+import { verifyApiAuth } from '@/lib/auth-utils';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const authRes = await verifyApiAuth();
+  if (authRes.error) {
+    return NextResponse.json({ error: authRes.error }, { status: authRes.status });
   }
+  const session = authRes.session!;
 
   const userId = parseInt(session.user.id);
 
@@ -46,6 +47,10 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
+  const authRes = await verifyApiAuth();
+  if (authRes.error) {
+    return NextResponse.json({ error: authRes.error }, { status: authRes.status });
+  }
   const { searchParams } = new URL(request.url);
   const parcelId = searchParams.get('parcelId');
 
