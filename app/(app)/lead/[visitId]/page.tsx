@@ -2263,13 +2263,17 @@ function DatosClosedPanel({
   const { data: session } = useSession();
 
   useEffect(() => {
-    fetch("/api/users/transferable?all=true")
-      .then((r) => r.json())
-      .then((users) => {
-        setPartners(users.filter((u: { role: string }) => u.role === "PARTNER"));
-      })
-      .catch(() => {});
-  }, []);
+    if (isAdmin) {
+      fetch("/api/users/transferable?all=true")
+        .then((r) => r.json())
+        .then((users) => {
+          if (Array.isArray(users)) {
+            setPartners(users.filter((u: { role: string }) => u.role === "PARTNER"));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isAdmin]);
 
   const handleAssignPartner = async (projectTypeId: number, partnerId: number | null) => {
     setPartnerSaving(projectTypeId);

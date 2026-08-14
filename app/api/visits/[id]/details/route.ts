@@ -139,9 +139,12 @@ export async function GET(
       }
 
       // Filtrar para que el partner solo reciba los proyectos que se le asignaron
-      visit.projects = visit.projects.filter(
-        (vp) => vp.partnerId === parseInt(session.user.id)
-      );
+      // Si está asignado a la parcela entera (legado), ve todos los proyectos
+      if (visit.parcel?.partnerId !== parseInt(session.user.id)) {
+        visit.projects = visit.projects.filter(
+          (vp) => vp.partnerId === parseInt(session.user.id)
+        );
+      }
     }
 
     return NextResponse.json({
