@@ -137,6 +137,11 @@ export async function GET(
       if (!isAssignedProject && visit.parcel?.partnerId !== parseInt(session.user.id)) {
         return NextResponse.json({ error: 'Forbidden: Partners can only view assigned projects' }, { status: 403 });
       }
+
+      // Filtrar para que el partner solo reciba los proyectos que se le asignaron
+      visit.projects = visit.projects.filter(
+        (vp) => vp.partnerId === parseInt(session.user.id)
+      );
     }
 
     return NextResponse.json({
