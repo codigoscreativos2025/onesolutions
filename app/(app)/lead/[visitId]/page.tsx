@@ -105,7 +105,11 @@ const STAGE_COLORS: Record<string, string> = {
   CANCELLED: "bg-red-100 text-red-700 border-red-300",
 };
 
-import { COMMON_FIELDS, OPTIONAL_FIELDS, FILE_FIELD_KEYS } from '@/lib/project-constants';
+import {
+  COMMON_FIELDS,
+  OPTIONAL_FIELDS,
+  FILE_FIELD_KEYS,
+} from "@/lib/project-constants";
 
 const FIELD_TYPES: Record<string, string> = {
   closingDate: "date",
@@ -129,7 +133,6 @@ const FIELD_TYPES: Record<string, string> = {
   hoaInfo: "text",
 };
 
-
 const FIELD_GROUPS: Record<string, { label: string; prefix: string }> = {
   solar: { label: "Panel Solar", prefix: "solar" },
   roof: { label: "Techo", prefix: "roof" },
@@ -147,8 +150,13 @@ const FIELD_GROUPS: Record<string, { label: string; prefix: string }> = {
 
 const POST_CLOSURE_TAGS = ["En permisos", "En instalacion", "Finalizado"];
 
-function groupFieldsByType(fields: { fieldName: string; fieldLabel?: string; fieldType?: string }[]) {
-  const groups: Record<string, { fieldName: string; fieldLabel?: string; fieldType?: string }[]> = {};
+function groupFieldsByType(
+  fields: { fieldName: string; fieldLabel?: string; fieldType?: string }[],
+) {
+  const groups: Record<
+    string,
+    { fieldName: string; fieldLabel?: string; fieldType?: string }[]
+  > = {};
   const other: typeof fields = [];
   for (const f of fields) {
     let grouped = false;
@@ -165,10 +173,11 @@ function groupFieldsByType(fields: { fieldName: string; fieldLabel?: string; fie
   return { groups, other };
 }
 
-
-
 function fieldLabel(key: string): string {
-  return FIELD_LABEL_MAP[key] || key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase());
+  return (
+    FIELD_LABEL_MAP[key] ||
+    key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase())
+  );
 }
 
 function isFileFieldKey(key: string): boolean {
@@ -186,16 +195,25 @@ function getTimelineColor(action: string): string {
   return "#6b7280";
 }
 
-function isFieldHiddenForPartner(fieldName: string, fieldLabelStr?: string): boolean {
+function isFieldHiddenForPartner(
+  fieldName: string,
+  fieldLabelStr?: string,
+): boolean {
   const name = fieldName.toLowerCase();
   const label = (fieldLabelStr || "").toLowerCase();
 
   const sensitiveKeywords = [
-    "comm", "comision", "comisión",
-    "cost", "costo",
-    "price", "precio",
-    "incentive", "incentivo",
-    "sale", "venta",
+    "comm",
+    "comision",
+    "comisión",
+    "cost",
+    "costo",
+    "price",
+    "precio",
+    "incentive",
+    "incentivo",
+    "sale",
+    "venta",
   ];
 
   for (const kw of sensitiveKeywords) {
@@ -206,12 +224,15 @@ function isFieldHiddenForPartner(fieldName: string, fieldLabelStr?: string): boo
 
   if (name.includes("repcomm") || name.includes("commpct")) return true;
 
-  if (name === "primaryrep" || name === "secondaryrep" || name === "tertiaryrep") return true;
+  if (
+    name === "primaryrep" ||
+    name === "secondaryrep" ||
+    name === "tertiaryrep"
+  )
+    return true;
 
   return false;
 }
-
-
 
 // Campos obligatorios para llegar al 100%
 const REQUIRED_COMMON_FIELDS = new Set([
@@ -222,25 +243,28 @@ const REQUIRED_COMMON_FIELDS = new Set([
 // Campos secundarios opcionales de COMMON_FIELDS
 // (secondaryRep, tertiaryRep, generalCostPrice, generalSalePrice son opcionales)
 
-
 function calculateProjectCompletion(
   projectDetails: Record<string, unknown> | null | undefined,
   fieldMetas: FieldMeta[],
-  stage?: string
+  stage?: string,
 ): number {
   if (!projectDetails) return 0;
 
   const isValid = (val: unknown) => {
     if (val === undefined || val === null) return false;
-    if (typeof val === 'string' && val.trim() === "") return false;
+    if (typeof val === "string" && val.trim() === "") return false;
     return true;
   };
 
-  const requiredCommonFields = COMMON_FIELDS.filter((f) => !OPTIONAL_FIELDS.includes(f));
+  const requiredCommonFields = COMMON_FIELDS.filter(
+    (f) => !OPTIONAL_FIELDS.includes(f),
+  );
   let totalFields = requiredCommonFields.length;
-  let completedFields = requiredCommonFields.filter((f) => isValid(projectDetails[f])).length;
+  let completedFields = requiredCommonFields.filter((f) =>
+    isValid(projectDetails[f]),
+  ).length;
 
-  const billFields = ['_billClientName', '_billClientEmail', '_billPhone'];
+  const billFields = ["_billClientName", "_billClientEmail", "_billPhone"];
   for (const field of billFields) {
     totalFields++;
     if (isValid(projectDetails[field])) {
@@ -248,11 +272,13 @@ function calculateProjectCompletion(
     }
   }
 
-
-
   for (const meta of fieldMetas) {
-    if (COMMON_FIELDS.includes(meta.fieldName) || FILE_FIELD_KEYS.has(meta.fieldName)) continue;
-    
+    if (
+      COMMON_FIELDS.includes(meta.fieldName) ||
+      FILE_FIELD_KEYS.has(meta.fieldName)
+    )
+      continue;
+
     if (meta.isRequired !== false) {
       totalFields++;
       if (isValid(projectDetails[meta.fieldName])) completedFields++;
@@ -265,7 +291,9 @@ function calculateProjectCompletion(
     if (isValid(projectDetails["electricBillUrl"])) completedFields++;
   }
 
-  return totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
+  return totalFields > 0
+    ? Math.round((completedFields / totalFields) * 100)
+    : 0;
 }
 
 interface VisitDetails {
@@ -307,13 +335,25 @@ interface VisitDetails {
     additionalFileName?: string | null;
   } | null;
   projectDetails?: Record<string, unknown> & { createdAt?: string };
-  projects: { projectType: { id: number; name: string }; partnerId?: number | null; partner?: { id: number; name: string } | null }[];
-  objections: { objection: { id: number; name: string; color: string }; notes: string | null }[];
+  projects: {
+    projectType: { id: number; name: string };
+    partnerId?: number | null;
+    partner?: { id: number; name: string } | null;
+  }[];
+  objections: {
+    objection: { id: number; name: string; color: string };
+    notes: string | null;
+  }[];
   closerObjections: {
     closerObjection: { id: number; name: string; color: string };
     notes: string | null;
   }[];
-  commissions?: { id: number; percentage: number; role: string; user: { id: number; name: string } }[];
+  commissions?: {
+    id: number;
+    percentage: number;
+    role: string;
+    user: { id: number; name: string };
+  }[];
   chatRoom?: { id: number } | null;
 }
 
@@ -339,7 +379,11 @@ export default function LeadDetailPage() {
   const { data: session } = useSession();
   const visitId = Number(params.visitId);
   if (isNaN(visitId)) {
-    return <div className="text-center py-12"><p className="text-on-surface-variant">ID de proyecto inválido</p></div>;
+    return (
+      <div className="text-center py-12">
+        <p className="text-on-surface-variant">ID de proyecto inválido</p>
+      </div>
+    );
   }
   const role = session?.user?.role ?? "";
 
@@ -348,7 +392,9 @@ export default function LeadDetailPage() {
   const [saving, setSaving] = useState(false);
   const [startingProject, setStartingProject] = useState(false);
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "datos");
+  const [activeTab, setActiveTab] = useState(
+    searchParams.get("tab") || "datos",
+  );
 
   useEffect(() => {
     const tabParam = searchParams.get("tab");
@@ -382,7 +428,9 @@ export default function LeadDetailPage() {
   }, []);
 
   const [fieldMetas, setFieldMetas] = useState<FieldMeta[]>([]);
-  const [fieldMetasByProject, setFieldMetasByProject] = useState<{ projectTypeName: string; projectTypeId: number; fields: FieldMeta[] }[]>([]);
+  const [fieldMetasByProject, setFieldMetasByProject] = useState<
+    { projectTypeName: string; projectTypeId: number; fields: FieldMeta[] }[]
+  >([]);
 
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -390,7 +438,9 @@ export default function LeadDetailPage() {
   const [postCloseTags, setPostCloseTags] = useState("");
   const [tagSaving, setTagSaving] = useState(false);
   const [showContractModal, setShowContractModal] = useState(false);
-  const [leadTags, setLeadTags] = useState<{ name: string; color: string }[]>([]);
+  const [leadTags, setLeadTags] = useState<{ name: string; color: string }[]>(
+    [],
+  );
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [notAvailTags, setNotAvailTags] = useState<any[]>([]);
   const hasInitializedEditFields = useRef(false);
@@ -445,7 +495,8 @@ export default function LeadDetailPage() {
     if (visit.bill) {
       if (visit.bill.clientName) fields._billClientName = visit.bill.clientName;
       else if (pd.clientName) fields._billClientName = String(pd.clientName);
-      if (visit.bill.clientEmail) fields._billClientEmail = visit.bill.clientEmail;
+      if (visit.bill.clientEmail)
+        fields._billClientEmail = visit.bill.clientEmail;
       else if (pd.clientEmail) fields._billClientEmail = String(pd.clientEmail);
       if (visit.bill.phone) fields._billPhone = visit.bill.phone;
       if (visit.bill.notes) fields._billNotes = visit.bill.notes;
@@ -461,30 +512,46 @@ export default function LeadDetailPage() {
   const fetchFieldMetas = useCallback(async () => {
     if (!visit?.projects?.length) return;
     const allMetas: FieldMeta[] = [];
-    const byProject: { projectTypeName: string; projectTypeId: number; fields: FieldMeta[] }[] = [];
+    const byProject: {
+      projectTypeName: string;
+      projectTypeId: number;
+      fields: FieldMeta[];
+    }[] = [];
     const seen = new Set<number>();
     for (const project of visit.projects) {
       const ptId = project.projectType.id;
       if (seen.has(ptId)) continue;
       seen.add(ptId);
       try {
-        const res = await fetch(`/api/admin/project-type-fields?projectTypeId=${ptId}`);
+        const res = await fetch(
+          `/api/admin/project-type-fields?projectTypeId=${ptId}`,
+        );
         const fields = await res.json();
         if (Array.isArray(fields)) {
           allMetas.push(...fields);
-          byProject.push({ projectTypeName: project.projectType.name, projectTypeId: ptId, fields });
+          byProject.push({
+            projectTypeName: project.projectType.name,
+            projectTypeId: ptId,
+            fields,
+          });
         }
-      } catch { /* skip */ }
+      } catch {
+        /* skip */
+      }
     }
 
     try {
       const typesRes = await fetch("/api/project-types");
       const types = await typesRes.json();
       const commons = Array.isArray(types)
-        ? types.find((t: { id: number; name: string }) => t.name === "Campos Comunes")
+        ? types.find(
+            (t: { id: number; name: string }) => t.name === "Campos Comunes",
+          )
         : null;
       if (commons) {
-        const res = await fetch(`/api/admin/project-type-fields?projectTypeId=${commons.id}`);
+        const res = await fetch(
+          `/api/admin/project-type-fields?projectTypeId=${commons.id}`,
+        );
         const fields = await res.json();
         if (Array.isArray(fields)) {
           for (const f of fields) {
@@ -494,7 +561,9 @@ export default function LeadDetailPage() {
           }
         }
       }
-    } catch { /* skip */ }
+    } catch {
+      /* skip */
+    }
 
     setFieldMetas(allMetas);
     setFieldMetasByProject(byProject);
@@ -509,15 +578,22 @@ export default function LeadDetailPage() {
         if (data.history) {
           setHistory(
             data.history.map(
-              (h: { date: string; action: string; userName: string; details: string }) => ({
+              (h: {
+                date: string;
+                action: string;
+                userName: string;
+                details: string;
+              }) => ({
                 ...h,
                 date: new Date(h.date).toLocaleString(),
-              })
-            )
+              }),
+            ),
           );
         }
       }
-    } catch { /* skip */ } finally {
+    } catch {
+      /* skip */
+    } finally {
       setHistoryLoading(false);
     }
   };
@@ -528,22 +604,33 @@ export default function LeadDetailPage() {
       if (visit.contractFields) {
         const parsed = JSON.parse(visit.contractFields);
         if (parsed.postCloseTags) {
-          setPostCloseTags(typeof parsed.postCloseTags === "string" ? parsed.postCloseTags : "");
+          setPostCloseTags(
+            typeof parsed.postCloseTags === "string"
+              ? parsed.postCloseTags
+              : "",
+          );
         } else {
           setPostCloseTags("");
         }
         if (parsed.draftSchedule && !visit.scheduledAt) {
-          if (parsed.draftSchedule.date) setScheduleDate(parsed.draftSchedule.date);
-          if (parsed.draftSchedule.time) setScheduleTime(parsed.draftSchedule.time);
-          if (parsed.draftSchedule.closerId) setScheduleCloserId(parsed.draftSchedule.closerId);
+          if (parsed.draftSchedule.date)
+            setScheduleDate(parsed.draftSchedule.date);
+          if (parsed.draftSchedule.time)
+            setScheduleTime(parsed.draftSchedule.time);
+          if (parsed.draftSchedule.closerId)
+            setScheduleCloserId(parsed.draftSchedule.closerId);
         }
         return;
       }
-    } catch { /* */ }
-          setPostCloseTags("");
+    } catch {
+      /* */
+    }
+    setPostCloseTags("");
   }, [visit]);
 
-  useEffect(() => { fetchVisitDetails(); }, [visitId]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    fetchVisitDetails();
+  }, [visitId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (visit) {
@@ -560,8 +647,8 @@ export default function LeadDetailPage() {
   useEffect(() => {
     if (visit?.parcel?.id) {
       fetch(`/api/parcels/${visit.parcel.id}`)
-        .then(r => r.json())
-        .then(data => {
+        .then((r) => r.json())
+        .then((data) => {
           if (data.parcelTags) setLeadTags(JSON.parse(data.parcelTags));
         })
         .catch(() => {});
@@ -570,8 +657,10 @@ export default function LeadDetailPage() {
 
   useEffect(() => {
     fetch("/api/admin/not-available-tags")
-      .then(r => r.json())
-      .then(d => { if (Array.isArray(d)) setNotAvailTags(d); })
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d)) setNotAvailTags(d);
+      })
       .catch(() => {});
   }, []);
 
@@ -583,13 +672,21 @@ export default function LeadDetailPage() {
       if (data?.length === 1) {
         setScheduleCloserId(String(data[0].id));
       }
-    } catch { /* */ }
+    } catch {
+      /* */
+    }
   };
 
-  const hasPanelSolarForSchedule = visit?.projects?.some((p) => p.projectType.name.toLowerCase().includes("panel solar")) ?? false;
-  const showScheduleCloserDropdown = role === "SETTER_JR" || (role === "SETTER" && hasPanelSolarForSchedule);
-  const scheduleIsSelfAssigned = role === "CLOSER" || (role === "SETTER" && !hasPanelSolarForSchedule);
-  const scheduleCloser = scheduleClosers.find((c: any) => c.id === Number(scheduleCloserId)) ?? null;
+  const hasPanelSolarForSchedule =
+    visit?.projects?.some((p) =>
+      p.projectType.name.toLowerCase().includes("panel solar"),
+    ) ?? false;
+  const showScheduleCloserDropdown =
+    role === "SETTER_JR" || (role === "SETTER" && hasPanelSolarForSchedule);
+  const scheduleIsSelfAssigned =
+    role === "CLOSER" || (role === "SETTER" && !hasPanelSolarForSchedule);
+  const scheduleCloser =
+    scheduleClosers.find((c: any) => c.id === Number(scheduleCloserId)) ?? null;
 
   const handleScheduleVisit = async () => {
     if (!visit || !scheduleDate || !scheduleTime) {
@@ -606,14 +703,18 @@ export default function LeadDetailPage() {
     }
     setScheduleSaving(true);
     try {
-      const scheduledAt = new Date(`${scheduleDate}T${scheduleTime}:00`).toISOString();
+      const scheduledAt = new Date(
+        `${scheduleDate}T${scheduleTime}:00`,
+      ).toISOString();
       const patchRes = await fetch(`/api/visits/${visit.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           stage: "PROPOSAL_ACCEPTED",
           scheduledAt,
-          ...(scheduleIsSelfAssigned ? { closerId: Number(session?.user?.id) } : { closerId: Number(scheduleCloserId) }),
+          ...(scheduleIsSelfAssigned
+            ? { closerId: Number(session?.user?.id) }
+            : { closerId: Number(scheduleCloserId) }),
         }),
       });
 
@@ -643,35 +744,56 @@ export default function LeadDetailPage() {
     try {
       const payload: Record<string, unknown> = {};
       if (visit?.bill?.imageUrl) payload.electricBillUrl = visit.bill.imageUrl;
-      if (visit?.bill?.additionalFileUrl) payload.idDocumentUrl = visit.bill.additionalFileUrl;
+      if (visit?.bill?.additionalFileUrl)
+        payload.idDocumentUrl = visit.bill.additionalFileUrl;
       if (visit?.bill?.clientName) payload.clientName = visit.bill.clientName;
-      if (visit?.bill?.clientEmail) payload.clientEmail = visit.bill.clientEmail;
+      if (visit?.bill?.clientEmail)
+        payload.clientEmail = visit.bill.clientEmail;
       if (visit?.parcel?.address) payload.address = visit.parcel.address;
       for (const [key, value] of Object.entries(editFieldsRef.current)) {
         if (key.startsWith("_bill")) continue;
         if (value !== undefined) {
-          const trimmed = typeof value === 'string' ? value.trim() : value;
-          if ((key === "electricBillUrl" || key === "idDocumentUrl") && trimmed === "" && payload[key]) continue;
+          const trimmed = typeof value === "string" ? value.trim() : value;
+          if (
+            (key === "electricBillUrl" || key === "idDocumentUrl") &&
+            trimmed === "" &&
+            payload[key]
+          )
+            continue;
           payload[key] = trimmed === "" ? null : trimmed;
         }
       }
       if (payload.closingDate && typeof payload.closingDate === "string") {
         payload.closingDate = new Date(payload.closingDate).toISOString();
       }
-      if (payload.siteSurveyDate && typeof payload.siteSurveyDate === "string") {
+      if (
+        payload.siteSurveyDate &&
+        typeof payload.siteSurveyDate === "string"
+      ) {
         payload.siteSurveyDate = new Date(payload.siteSurveyDate).toISOString();
       }
-      if (Object.keys(payload).length === 0 && !Object.keys(editFieldsRef.current).some(k => k.startsWith('_bill'))) {
+      if (
+        Object.keys(payload).length === 0 &&
+        !Object.keys(editFieldsRef.current).some((k) => k.startsWith("_bill"))
+      ) {
         setSaving(false);
         return;
       }
 
       // Save Bill data
       const billData: Record<string, string | null> = {
-        phone: editFieldsRef.current._billPhone?.trim() || visit.bill?.phone || "",
-        clientName: editFieldsRef.current._billClientName?.trim() || visit.bill?.clientName || null,
-        clientEmail: editFieldsRef.current._billClientEmail?.trim() || visit.bill?.clientEmail || null,
-        notes: editFieldsRef.current._billNotes?.trim() || visit.bill?.notes || null,
+        phone:
+          editFieldsRef.current._billPhone?.trim() || visit.bill?.phone || "",
+        clientName:
+          editFieldsRef.current._billClientName?.trim() ||
+          visit.bill?.clientName ||
+          null,
+        clientEmail:
+          editFieldsRef.current._billClientEmail?.trim() ||
+          visit.bill?.clientEmail ||
+          null,
+        notes:
+          editFieldsRef.current._billNotes?.trim() || visit.bill?.notes || null,
         imageUrl: visit.bill?.imageUrl || null,
         additionalFileUrl: visit.bill?.additionalFileUrl || null,
         additionalFileName: visit.bill?.additionalFileName || null,
@@ -680,7 +802,9 @@ export default function LeadDetailPage() {
       await fetch(`/api/visits/${visit.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bill: { upsert: { create: billData, update: billData } } }),
+        body: JSON.stringify({
+          bill: { upsert: { create: billData, update: billData } },
+        }),
       });
 
       if (Object.keys(payload).length > 0) {
@@ -693,13 +817,18 @@ export default function LeadDetailPage() {
         if (res.ok) {
           const updated = await res.json();
           setVisit((prev) =>
-            prev ? { ...prev, projectDetails: { ...prev.projectDetails, ...updated } } : prev
+            prev
+              ? {
+                  ...prev,
+                  projectDetails: { ...prev.projectDetails, ...updated },
+                }
+              : prev,
           );
         } else {
           if (!silent) toast.error("Error al guardar detalles");
         }
       }
-      
+
       if (!silent) toast.success("Datos guardados");
     } catch {
       if (!silent) toast.error("Error al guardar");
@@ -717,20 +846,27 @@ export default function LeadDetailPage() {
     return data.url;
   };
 
-  const handleBillFileUpload = async (type: "imageUrl" | "additionalFileUrl", file: File) => {
+  const handleBillFileUpload = async (
+    type: "imageUrl" | "additionalFileUrl",
+    file: File,
+  ) => {
     try {
       const url = await handleUpload(file);
       const billData = { [type]: url };
       await fetch(`/api/visits/${visit?.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bill: { upsert: { create: billData, update: billData } } }),
+        body: JSON.stringify({
+          bill: { upsert: { create: billData, update: billData } },
+        }),
       });
       setVisit((prev) => {
         if (!prev) return prev;
         return {
           ...prev,
-          bill: prev.bill ? { ...prev.bill, ...billData } : { ...billData } as any
+          bill: prev.bill
+            ? { ...prev.bill, ...billData }
+            : ({ ...billData } as any),
         };
       });
       toast.success("Archivo subido");
@@ -744,7 +880,7 @@ export default function LeadDetailPage() {
       const url = await handleUpload(file);
       const updated = { ...(visit?.projectDetails || {}), [fieldName]: url };
       setVisit((prev) => (prev ? { ...prev, projectDetails: updated } : prev));
-      
+
       setEditFields((prev) => ({ ...prev, [fieldName]: url }));
       if (editFieldsRef.current) {
         editFieldsRef.current[fieldName] = url;
@@ -763,12 +899,18 @@ export default function LeadDetailPage() {
 
   const handleRequestClose = async () => {
     try {
-      const res = await fetch(`/api/visits/${visitId}/request-close`, { method: "POST" });
+      const res = await fetch(`/api/visits/${visitId}/request-close`, {
+        method: "POST",
+      });
       if (res.ok) {
         // Persistir timestamp en contractFields para saber que fue solicitado
         let existing: Record<string, unknown> = {};
         if (visit?.contractFields) {
-          try { existing = JSON.parse(visit.contractFields); } catch { /* */ }
+          try {
+            existing = JSON.parse(visit.contractFields);
+          } catch {
+            /* */
+          }
         }
         existing.closeRequestedAt = new Date().toISOString();
         await fetch(`/api/visits/${visitId}`, {
@@ -845,7 +987,11 @@ export default function LeadDetailPage() {
       const res = await fetch(`/api/visits/${visitId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stage: "PROJECT", cancelledAt: null, cancellationReason: null }),
+        body: JSON.stringify({
+          stage: "PROJECT",
+          cancelledAt: null,
+          cancellationReason: null,
+        }),
       });
       if (res.ok) {
         toast.success("Proyecto descancelado");
@@ -859,7 +1005,12 @@ export default function LeadDetailPage() {
   };
 
   const handleDeleteProject = async () => {
-    if (!confirm("¿Estás seguro de eliminar este proyecto? Esta acción no se puede deshacer.")) return;
+    if (
+      !confirm(
+        "¿Estás seguro de eliminar este proyecto? Esta acción no se puede deshacer.",
+      )
+    )
+      return;
     try {
       const res = await fetch(`/api/visits/${visitId}`, { method: "DELETE" });
       if (res.ok) {
@@ -876,7 +1027,9 @@ export default function LeadDetailPage() {
   const handleStartProject = async () => {
     if (!visit || startingProject) return;
     if (!visit.projects?.length) {
-      toast.error("Debes seleccionar al menos un tipo de proyecto antes de iniciar el proyecto");
+      toast.error(
+        "Debes seleccionar al menos un tipo de proyecto antes de iniciar el proyecto",
+      );
       return;
     }
     setStartingProject(true);
@@ -886,9 +1039,12 @@ export default function LeadDetailPage() {
 
       editFieldsRef.current.electricBillUrl = uploadedBillUrl || "";
       editFieldsRef.current.idDocumentUrl = uploadedIdUrl || "";
-      editFieldsRef.current.clientName = visit.bill?.clientName || editFieldsRef.current.clientName || "";
-      editFieldsRef.current.clientEmail = visit.bill?.clientEmail || editFieldsRef.current.clientEmail || "";
-      editFieldsRef.current.address = visit.parcel?.address || editFieldsRef.current.address || "";
+      editFieldsRef.current.clientName =
+        visit.bill?.clientName || editFieldsRef.current.clientName || "";
+      editFieldsRef.current.clientEmail =
+        visit.bill?.clientEmail || editFieldsRef.current.clientEmail || "";
+      editFieldsRef.current.address =
+        visit.parcel?.address || editFieldsRef.current.address || "";
 
       await saveProjectDetailsAction(true);
 
@@ -901,14 +1057,19 @@ export default function LeadDetailPage() {
         toast.success("Proyecto iniciado");
         fetchVisitDetails();
 
-        const chatRes = await fetch(`/api/visits/${visit.id}/create-chat`, { method: "POST" });
+        const chatRes = await fetch(`/api/visits/${visit.id}/create-chat`, {
+          method: "POST",
+        });
         if (chatRes.ok) {
           const chatRoom = await chatRes.json();
           setVisit((prev) =>
-            prev ? { ...prev, chatRoom: { id: chatRoom.id } } : prev
+            prev ? { ...prev, chatRoom: { id: chatRoom.id } } : prev,
           );
 
-          const hasSolar = visit.projects?.some((p) => p.projectType.name.toLowerCase().includes("panel solar")) ?? false;
+          const hasSolar =
+            visit.projects?.some((p) =>
+              p.projectType.name.toLowerCase().includes("panel solar"),
+            ) ?? false;
 
           if (role === "CLOSER") {
             fetch("/api/notifications", {
@@ -964,7 +1125,7 @@ export default function LeadDetailPage() {
 
   const handleAddLeadTag = async (tag: { name: string; color: string }) => {
     if (!visit?.parcel?.id) return;
-    if (leadTags.some(t => t.name === tag.name)) return;
+    if (leadTags.some((t) => t.name === tag.name)) return;
     const newTags = [...leadTags, { name: tag.name, color: tag.color }];
     setLeadTags(newTags);
     try {
@@ -981,7 +1142,7 @@ export default function LeadDetailPage() {
 
   const handleRemoveLeadTag = async (tagName: string) => {
     if (!visit?.parcel?.id) return;
-    const newTags = leadTags.filter(t => t.name !== tagName);
+    const newTags = leadTags.filter((t) => t.name !== tagName);
     setLeadTags(newTags);
     try {
       await fetch(`/api/parcels/${visit.parcel.id}`, {
@@ -998,13 +1159,24 @@ export default function LeadDetailPage() {
   const handleToggleTag = async (tag: string) => {
     if (tagSaving) return;
     const newTag = postCloseTags === tag ? "" : tag;
+
+    if (newTag === "Finalizado") {
+      if (!window.confirm("¿Quiere finalizar este proyecto?")) {
+        return;
+      }
+    }
+
     const prevTags = postCloseTags;
     setPostCloseTags(newTag);
     setTagSaving(true);
     try {
       let existing: Record<string, unknown> = {};
       if (visit?.contractFields) {
-        try { existing = JSON.parse(visit.contractFields); } catch { /* */ }
+        try {
+          existing = JSON.parse(visit.contractFields);
+        } catch {
+          /* */
+        }
       }
       existing.postCloseTags = newTag;
       await fetch(`/api/visits/${visitId}`, {
@@ -1026,39 +1198,63 @@ export default function LeadDetailPage() {
     if (visit.chatRoom?.id) return;
     if (visit.stage !== "PROJECT" && visit.stage !== "CLOSED") return;
     try {
-      const res = await fetch(`/api/visits/${visitId}/create-chat`, { method: "POST" });
+      const res = await fetch(`/api/visits/${visitId}/create-chat`, {
+        method: "POST",
+      });
       if (res.ok) {
         const chatRoom = await res.json();
         setVisit((prev) =>
-          prev ? { ...prev, chatRoom: { id: chatRoom.id } } : prev
+          prev ? { ...prev, chatRoom: { id: chatRoom.id } } : prev,
         );
         toast.success("Chat creado");
       }
-    } catch { /* skip */ }
+    } catch {
+      /* skip */
+    }
   };
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     router.replace(`?tab=${tab}`, { scroll: false });
-    if (tab === "chat" && visit && !visit.chatRoom?.id && (visit.stage === "PROJECT" || visit.stage === "CLOSED")) {
+    if (
+      tab === "chat" &&
+      visit &&
+      !visit.chatRoom?.id &&
+      (visit.stage === "PROJECT" || visit.stage === "CLOSED")
+    ) {
       createChatIfNeeded();
     }
   };
 
-  const mergedDetails = { 
-    ...(visit?.projectDetails as Record<string, unknown> || {}), 
+  const mergedDetails = {
+    ...((visit?.projectDetails as Record<string, unknown>) || {}),
     ...editFields,
-    electricBillUrl: editFields.electricBillUrl || (visit?.projectDetails as Record<string, unknown>)?.electricBillUrl || visit?.bill?.imageUrl,
-    idDocumentUrl: editFields.idDocumentUrl || (visit?.projectDetails as Record<string, unknown>)?.idDocumentUrl || visit?.bill?.additionalFileUrl,
+    electricBillUrl:
+      editFields.electricBillUrl ||
+      (visit?.projectDetails as Record<string, unknown>)?.electricBillUrl ||
+      visit?.bill?.imageUrl,
+    idDocumentUrl:
+      editFields.idDocumentUrl ||
+      (visit?.projectDetails as Record<string, unknown>)?.idDocumentUrl ||
+      visit?.bill?.additionalFileUrl,
   };
-  const progress = calculateProjectCompletion(mergedDetails as Record<string, unknown>, fieldMetas, visit?.stage);
-  const selectedProjectNames = visit?.projects?.map((p) => p.projectType.name) || [];
+  const progress = calculateProjectCompletion(
+    mergedDetails as Record<string, unknown>,
+    fieldMetas,
+    visit?.stage,
+  );
+  const selectedProjectNames =
+    visit?.projects?.map((p) => p.projectType.name) || [];
   const isAdmin = role === "ADMIN";
 
   // Detectar si ya se solicitó el cierre
   const closeRequested = (() => {
     if (!visit?.contractFields) return false;
-    try { return !!(JSON.parse(visit.contractFields)?.closeRequestedAt); } catch { return false; }
+    try {
+      return !!JSON.parse(visit.contractFields)?.closeRequestedAt;
+    } catch {
+      return false;
+    }
   })();
 
   if (loading) {
@@ -1071,9 +1267,17 @@ export default function LeadDetailPage() {
 
   if (!visit) {
     return (
-      <motion.div className="text-center py-12" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <motion.div
+        className="text-center py-12"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
         <p className="text-on-surface-variant">No se encontró el proyecto</p>
-        <Button variant="outline" className="mt-4" onClick={() => router.push("/dashboard")}>
+        <Button
+          variant="outline"
+          className="mt-4"
+          onClick={() => router.push("/dashboard")}
+        >
           Volver
         </Button>
       </motion.div>
@@ -1081,7 +1285,8 @@ export default function LeadDetailPage() {
   }
 
   const stageLabel = STAGE_LABELS[visit.stage] || visit.stage;
-  const stageColor = STAGE_COLORS[visit.stage] || "bg-gray-100 text-gray-700 border-gray-300";
+  const stageColor =
+    STAGE_COLORS[visit.stage] || "bg-gray-100 text-gray-700 border-gray-300";
 
   return (
     <div className="space-y-6 pb-8">
@@ -1102,7 +1307,9 @@ export default function LeadDetailPage() {
             <h1 className="font-headline text-xl font-bold text-on-surface">
               {visit.parcel.address}
             </h1>
-            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${stageColor}`}>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${stageColor}`}
+            >
               {stageLabel}
             </span>
           </div>
@@ -1121,63 +1328,106 @@ export default function LeadDetailPage() {
           { key: "contratos", label: "Contratos", icon: FileText },
           { key: "chat", label: "Chat", icon: MessageSquare },
           { key: "historial", label: "Historial", icon: Clock },
-        ].filter(tab => {
-          if ((tab.key === "contratos" || tab.key === "historial") && role === "PARTNER") return false;
-          if (visit?.stage === "CANCELLED" && role !== "ADMIN" && tab.key !== "datos" && tab.key !== "historial") return false;
-          return true;
-        }).map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => handleTabChange(tab.key)}
-            className={`flex items-center gap-1.5 px-4 py-3 text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
-              activeTab === tab.key
-                ? "border-primary text-primary"
-                : "border-transparent text-on-surface-variant hover:text-on-surface"
-            }`}
-          >
-            <tab.icon className="w-4 h-4" />
-            {tab.label}
-          </button>
-        ))}
+        ]
+          .filter((tab) => {
+            if (
+              (tab.key === "contratos" || tab.key === "historial") &&
+              role === "PARTNER"
+            )
+              return false;
+            if (
+              visit?.stage === "CANCELLED" &&
+              role !== "ADMIN" &&
+              tab.key !== "datos" &&
+              tab.key !== "historial"
+            )
+              return false;
+            return true;
+          })
+          .map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => handleTabChange(tab.key)}
+              className={`flex items-center gap-1.5 px-4 py-3 text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
+                activeTab === tab.key
+                  ? "border-primary text-primary"
+                  : "border-transparent text-on-surface-variant hover:text-on-surface"
+              }`}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          ))}
         {role !== "PARTNER" && (
-        <button
-          onClick={() => {
-            const metadata = visit.parcel?.metadata ? (() => { try { return JSON.parse(visit.parcel.metadata); } catch { return null; } })() : null;
-            if (metadata?.isManual) {
-              toast.info("Lead creado manualmente, no tiene parcela");
-            } else if (visit.parcel?.id) {
-                router.push(`/map?highlight=${visit.parcel.id}&autoOpen=true`);
-            }
-          }}
-          className="flex items-center gap-1.5 px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-on-surface-variant hover:text-on-surface transition-all whitespace-nowrap"
-        >
-          <MapPin className="w-4 h-4" />
-          Ver en mapa
-        </button>
-        )}
-        {visit.stage === "PROPOSAL_ACCEPTED" && role !== "ADMIN" && role !== "PARTNER" && (
           <button
-            onClick={handleStartProject}
-            disabled={startingProject}
-            className="ml-auto flex items-center gap-1.5 px-4 py-3 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-all whitespace-nowrap shrink-0"
+            onClick={() => {
+              const metadata = visit.parcel?.metadata
+                ? (() => {
+                    try {
+                      return JSON.parse(visit.parcel.metadata);
+                    } catch {
+                      return null;
+                    }
+                  })()
+                : null;
+              if (metadata?.isManual) {
+                toast.info("Lead creado manualmente, no tiene parcela");
+              } else if (visit.parcel?.id) {
+                router.push(`/map?highlight=${visit.parcel.id}&autoOpen=true`);
+              }
+            }}
+            className="flex items-center gap-1.5 px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-on-surface-variant hover:text-on-surface transition-all whitespace-nowrap"
           >
-            {startingProject ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Play className="w-4 h-4" />}
-            {startingProject ? "Iniciando..." : "Comenzar Proyecto"}
+            <MapPin className="w-4 h-4" />
+            Ver en mapa
           </button>
         )}
+        {visit.stage === "PROPOSAL_ACCEPTED" &&
+          role !== "ADMIN" &&
+          role !== "PARTNER" && (
+            <button
+              onClick={handleStartProject}
+              disabled={startingProject}
+              className="ml-auto flex items-center gap-1.5 px-4 py-3 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-all whitespace-nowrap shrink-0"
+            >
+              {startingProject ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Play className="w-4 h-4" />
+              )}
+              {startingProject ? "Iniciando..." : "Comenzar Proyecto"}
+            </button>
+          )}
       </div>
 
       <AnimatePresence mode="wait">
         {activeTab === "datos" && (
           <TabContent key="datos">
-            {visit.stage !== "PROJECT" && visit.stage !== "CLOSED" && visit.stage !== "PROPOSAL_ACCEPTED" && (
-              <>
-                <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={handleFieldChange} onUpload={handleUpload} onRefresh={() => fetchVisitDetails(true)} leadTags={leadTags} notAvailTags={notAvailTags} onAddTag={handleAddLeadTag} onRemoveTag={handleRemoveLeadTag} onBillFileUpload={handleBillFileUpload} role={role} />
-                <div className="mt-6">
-                  <NotesPanel visitId={visitId} visitCreatedAt={visit?.createdAt} />
-                </div>
-              </>
-            )}
+            {visit.stage !== "PROJECT" &&
+              visit.stage !== "CLOSED" &&
+              visit.stage !== "PROPOSAL_ACCEPTED" && (
+                <>
+                  <DatosLeadPanel
+                    visit={visit}
+                    editFields={editFields}
+                    onFieldChange={handleFieldChange}
+                    onUpload={handleUpload}
+                    onRefresh={() => fetchVisitDetails(true)}
+                    leadTags={leadTags}
+                    notAvailTags={notAvailTags}
+                    onAddTag={handleAddLeadTag}
+                    onRemoveTag={handleRemoveLeadTag}
+                    onBillFileUpload={handleBillFileUpload}
+                    role={role}
+                  />
+                  <div className="mt-6">
+                    <NotesPanel
+                      visitId={visitId}
+                      visitCreatedAt={visit?.createdAt}
+                    />
+                  </div>
+                </>
+              )}
 
             {visit.stage === "IN_PROGRESS" && !visit.scheduledAt && (
               <div className="mt-6 glass-panel rounded-xl p-6 space-y-4">
@@ -1189,19 +1439,30 @@ export default function LeadDetailPage() {
                 {showScheduleCloserDropdown && (
                   <select
                     value={scheduleCloserId}
-                    onChange={(e) => { setScheduleCloserId(e.target.value); setScheduleDate(""); setScheduleTime(""); }}
+                    onChange={(e) => {
+                      setScheduleCloserId(e.target.value);
+                      setScheduleDate("");
+                      setScheduleTime("");
+                    }}
                     className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
                   >
                     <option value="">-- Selecciona un Closer --</option>
                     {scheduleClosers.map((c: any) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
                     ))}
                   </select>
                 )}
 
-                {((showScheduleCloserDropdown && scheduleCloserId) || scheduleIsSelfAssigned) && (
+                {((showScheduleCloserDropdown && scheduleCloserId) ||
+                  scheduleIsSelfAssigned) && (
                   <SlotPicker
-                    userId={scheduleIsSelfAssigned ? Number(session?.user?.id) : Number(scheduleCloserId)}
+                    userId={
+                      scheduleIsSelfAssigned
+                        ? Number(session?.user?.id)
+                        : Number(scheduleCloserId)
+                    }
                     selectedDate={scheduleDate || undefined}
                     selectedTime={scheduleTime || undefined}
                     onSelect={(date, time) => {
@@ -1211,8 +1472,16 @@ export default function LeadDetailPage() {
                   />
                 )}
 
-                <Button onClick={handleScheduleVisit} disabled={scheduleSaving || !scheduleDate || !scheduleTime} className="w-full">
-                  {scheduleSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Calendar className="w-5 h-5" />}
+                <Button
+                  onClick={handleScheduleVisit}
+                  disabled={scheduleSaving || !scheduleDate || !scheduleTime}
+                  className="w-full"
+                >
+                  {scheduleSaving ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Calendar className="w-5 h-5" />
+                  )}
                   Crear Lead Potencial
                 </Button>
               </div>
@@ -1241,7 +1510,10 @@ export default function LeadDetailPage() {
                   onBillFileUpload={handleBillFileUpload}
                 />
                 <div className="mt-6">
-                  <NotesPanel visitId={visitId} visitCreatedAt={visit?.createdAt} />
+                  <NotesPanel
+                    visitId={visitId}
+                    visitCreatedAt={visit?.createdAt}
+                  />
                 </div>
               </>
             )}
@@ -1267,11 +1539,20 @@ export default function LeadDetailPage() {
                   onFileFieldUpload={handleFileUploadField}
                 />
                 <div className="mt-6">
-                  <NotesPanel visitId={visitId} visitCreatedAt={visit?.createdAt} disabled={closeRequested} />
+                  <NotesPanel
+                    visitId={visitId}
+                    visitCreatedAt={visit?.createdAt}
+                    disabled={closeRequested}
+                  />
                 </div>
                 {isAdmin && (
                   <div className="mt-6 flex gap-3">
-                    <Button onClick={handleCancelProjectAction} variant="danger" disabled={saving} className="flex-1">
+                    <Button
+                      onClick={handleCancelProjectAction}
+                      variant="danger"
+                      disabled={saving}
+                      className="flex-1"
+                    >
                       <X className="w-4 h-4" />
                       Cancelar Proyecto
                     </Button>
@@ -1283,21 +1564,25 @@ export default function LeadDetailPage() {
             {visit.stage === "CLOSED" && (
               <>
                 <DatosClosedPanel
-                visit={visit}
-                fieldMetas={fieldMetas}
-                fieldMetasByProject={fieldMetasByProject}
-                selectedProjectNames={selectedProjectNames}
-                postCloseTags={postCloseTags}
-                onToggleTag={handleToggleTag}
-                tagSaving={tagSaving}
-                isAdmin={isAdmin}
-                role={role}
-                onRefresh={fetchVisitDetails}
-              />
-              <div className="mt-6">
-                <NotesPanel visitId={visitId} visitCreatedAt={visit?.createdAt} disabled={true} />
-              </div>
-            </>
+                  visit={visit}
+                  fieldMetas={fieldMetas}
+                  fieldMetasByProject={fieldMetasByProject}
+                  selectedProjectNames={selectedProjectNames}
+                  postCloseTags={postCloseTags}
+                  onToggleTag={handleToggleTag}
+                  tagSaving={tagSaving}
+                  isAdmin={isAdmin}
+                  role={role}
+                  onRefresh={fetchVisitDetails}
+                />
+                <div className="mt-6">
+                  <NotesPanel
+                    visitId={visitId}
+                    visitCreatedAt={visit?.createdAt}
+                    disabled={true}
+                  />
+                </div>
+              </>
             )}
 
             {visit.stage === "CANCELLED" && (
@@ -1313,19 +1598,29 @@ export default function LeadDetailPage() {
 
         {activeTab === "archivos" && (
           <TabContent key="archivos">
-            <ArchivosPanel visit={visit} role={role} onUpdate={async () => {
-              try {
-                const res = await fetch(`/api/visits/${visitId}/details`);
-                if (res.ok) setVisit(await res.json());
-              } catch {}
-            }} />
+            <ArchivosPanel
+              visit={visit}
+              role={role}
+              onUpdate={async () => {
+                try {
+                  const res = await fetch(`/api/visits/${visitId}/details`);
+                  if (res.ok) setVisit(await res.json());
+                } catch {}
+              }}
+            />
           </TabContent>
         )}
 
         {activeTab === "contratos" && (
           <TabContent key="contratos">
             <div className="w-full">
-              <ContractModal isOpen={true} onClose={() => {}} visitId={visitId} inline={true} isTraineeLead={visit.setter?.role === "SETTER"} />
+              <ContractModal
+                isOpen={true}
+                onClose={() => {}}
+                visitId={visitId}
+                inline={true}
+                isTraineeLead={visit.setter?.role === "SETTER"}
+              />
             </div>
           </TabContent>
         )}
@@ -1335,10 +1630,15 @@ export default function LeadDetailPage() {
             {visit.stage !== "PROJECT" && visit.stage !== "CLOSED" ? (
               <div className="flex flex-col items-center justify-center py-12 glass-panel rounded-xl">
                 <MessageSquare className="w-16 h-16 mb-4 opacity-30" />
-                <p className="text-lg font-medium text-on-surface">Chat solo disponible en la etapa En Proyecto</p>
+                <p className="text-lg font-medium text-on-surface">
+                  Chat solo disponible en la etapa En Proyecto
+                </p>
               </div>
             ) : (
-              <ChatInterface initialRoomId={visit.chatRoom?.id ?? null} hideRoomList />
+              <ChatInterface
+                initialRoomId={visit.chatRoom?.id ?? null}
+                hideRoomList
+              />
             )}
           </TabContent>
         )}
@@ -1350,59 +1650,179 @@ export default function LeadDetailPage() {
         )}
       </AnimatePresence>
 
-      {activeTab !== "chat" && !closeRequested && visit?.stage !== "CANCELLED" && role !== "ADMIN" && (
-        <>
-          <div className="fixed bottom-24 right-6 z-[60]">
-            <Button onClick={() => setShowSaveConfirm(true)} className="shadow-xl rounded-full px-6 py-3 gap-2">
-              <Save className="w-5 h-5" />
-              Guardar Cambios
-            </Button>
-          </div>
-          <Modal isOpen={showSaveConfirm} onClose={() => setShowSaveConfirm(false)} title="Guardar Cambios">
-            <div className="space-y-4">
-              <p className="text-on-surface">Quieres guardar los cambios realizados?</p>
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setShowSaveConfirm(false)} className="flex-1">Cancelar</Button>
-                <Button
-                  onClick={async () => {
-                    setShowSaveConfirm(false);
-                    setSaving(true);
-                    try {
-                      let billUrl = editFields.electricBillUrl || visit?.bill?.imageUrl || "";
-                      let idUrl = editFields.idDocumentUrl || visit?.bill?.additionalFileUrl || "";
-                      if (pendingBillFile) { billUrl = await handleUpload(pendingBillFile); setEditFields(prev => ({ ...prev, electricBillUrl: billUrl })); setPendingBillFile(null); }
-                      if (pendingIdFile) { idUrl = await handleUpload(pendingIdFile); setEditFields(prev => ({ ...prev, idDocumentUrl: idUrl })); setPendingIdFile(null); }
-                      const payload: Record<string, unknown> = { ...editFields };
-                      if (visit?.bill?.imageUrl) payload.electricBillUrl = payload.electricBillUrl || visit.bill.imageUrl;
-                      if (visit?.bill?.additionalFileUrl) payload.idDocumentUrl = payload.idDocumentUrl || visit.bill.additionalFileUrl;
-                      if (!payload.clientName || payload.clientName === "") payload.clientName = visit?.bill?.clientName || "";
-                      if (!payload.clientEmail || payload.clientEmail === "") payload.clientEmail = visit?.bill?.clientEmail || "";
-                      if (!payload.address || payload.address === "") payload.address = visit?.parcel?.address || "";
-                      Object.keys(payload).forEach(k => { if (k.startsWith("_bill") || payload[k] === "" || payload[k] === null) delete payload[k]; });
-                      if (payload.closingDate && typeof payload.closingDate === "string") payload.closingDate = new Date(payload.closingDate).toISOString();
-                      if (payload.siteSurveyDate && typeof payload.siteSurveyDate === "string") payload.siteSurveyDate = new Date(payload.siteSurveyDate).toISOString();
-                      if (Object.keys(payload).length > 0) { await fetch("/api/project-details", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ visitId, ...payload }) }); }
-                      const billData: Record<string, string | null> = { phone: editFields._billPhone?.trim() || visit?.bill?.phone || "", clientName: editFields._billClientName?.trim() || visit?.bill?.clientName || null, clientEmail: editFields._billClientEmail?.trim() || visit?.bill?.clientEmail || null, notes: editFields._billNotes?.trim() || visit?.bill?.notes || null, imageUrl: billUrl || visit?.bill?.imageUrl || null, additionalFileUrl: idUrl || visit?.bill?.additionalFileUrl || null };
-                      let currentContractFields: any = {};
-                      try { if (visit?.contractFields) currentContractFields = JSON.parse(visit.contractFields); } catch {}
-                      currentContractFields.draftSchedule = { date: scheduleDate || "", time: scheduleTime || "", closerId: scheduleCloserId || "" };
-                      await fetch(`/api/visits/${visit?.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bill: { upsert: { create: billData, update: billData } }, contractFields: JSON.stringify(currentContractFields) }) });
-                      toast.success("Cambios guardados");
-                      fetchVisitDetails(true);
-                    } catch { toast.error("Error al guardar"); }
-                    finally { setSaving(false); }
-                  }}
-                  disabled={saving}
-                  className="flex-1"
-                >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  Si, guardar
-                </Button>
-              </div>
+      {activeTab !== "chat" &&
+        !closeRequested &&
+        visit?.stage !== "CANCELLED" &&
+        role !== "ADMIN" && (
+          <>
+            <div className="fixed bottom-24 right-6 z-[60]">
+              <Button
+                onClick={() => setShowSaveConfirm(true)}
+                className="shadow-xl rounded-full px-6 py-3 gap-2"
+              >
+                <Save className="w-5 h-5" />
+                Guardar Cambios
+              </Button>
             </div>
-          </Modal>
-        </>
-      )}
+            <Modal
+              isOpen={showSaveConfirm}
+              onClose={() => setShowSaveConfirm(false)}
+              title="Guardar Cambios"
+            >
+              <div className="space-y-4">
+                <p className="text-on-surface">
+                  Quieres guardar los cambios realizados?
+                </p>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowSaveConfirm(false)}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={async () => {
+                      setShowSaveConfirm(false);
+                      setSaving(true);
+                      try {
+                        let billUrl =
+                          editFields.electricBillUrl ||
+                          visit?.bill?.imageUrl ||
+                          "";
+                        let idUrl =
+                          editFields.idDocumentUrl ||
+                          visit?.bill?.additionalFileUrl ||
+                          "";
+                        if (pendingBillFile) {
+                          billUrl = await handleUpload(pendingBillFile);
+                          setEditFields((prev) => ({
+                            ...prev,
+                            electricBillUrl: billUrl,
+                          }));
+                          setPendingBillFile(null);
+                        }
+                        if (pendingIdFile) {
+                          idUrl = await handleUpload(pendingIdFile);
+                          setEditFields((prev) => ({
+                            ...prev,
+                            idDocumentUrl: idUrl,
+                          }));
+                          setPendingIdFile(null);
+                        }
+                        const payload: Record<string, unknown> = {
+                          ...editFields,
+                        };
+                        if (visit?.bill?.imageUrl)
+                          payload.electricBillUrl =
+                            payload.electricBillUrl || visit.bill.imageUrl;
+                        if (visit?.bill?.additionalFileUrl)
+                          payload.idDocumentUrl =
+                            payload.idDocumentUrl ||
+                            visit.bill.additionalFileUrl;
+                        if (!payload.clientName || payload.clientName === "")
+                          payload.clientName = visit?.bill?.clientName || "";
+                        if (!payload.clientEmail || payload.clientEmail === "")
+                          payload.clientEmail = visit?.bill?.clientEmail || "";
+                        if (!payload.address || payload.address === "")
+                          payload.address = visit?.parcel?.address || "";
+                        Object.keys(payload).forEach((k) => {
+                          if (
+                            k.startsWith("_bill") ||
+                            payload[k] === "" ||
+                            payload[k] === null
+                          )
+                            delete payload[k];
+                        });
+                        if (
+                          payload.closingDate &&
+                          typeof payload.closingDate === "string"
+                        )
+                          payload.closingDate = new Date(
+                            payload.closingDate,
+                          ).toISOString();
+                        if (
+                          payload.siteSurveyDate &&
+                          typeof payload.siteSurveyDate === "string"
+                        )
+                          payload.siteSurveyDate = new Date(
+                            payload.siteSurveyDate,
+                          ).toISOString();
+                        if (Object.keys(payload).length > 0) {
+                          await fetch("/api/project-details", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ visitId, ...payload }),
+                          });
+                        }
+                        const billData: Record<string, string | null> = {
+                          phone:
+                            editFields._billPhone?.trim() ||
+                            visit?.bill?.phone ||
+                            "",
+                          clientName:
+                            editFields._billClientName?.trim() ||
+                            visit?.bill?.clientName ||
+                            null,
+                          clientEmail:
+                            editFields._billClientEmail?.trim() ||
+                            visit?.bill?.clientEmail ||
+                            null,
+                          notes:
+                            editFields._billNotes?.trim() ||
+                            visit?.bill?.notes ||
+                            null,
+                          imageUrl: billUrl || visit?.bill?.imageUrl || null,
+                          additionalFileUrl:
+                            idUrl || visit?.bill?.additionalFileUrl || null,
+                        };
+                        let currentContractFields: any = {};
+                        try {
+                          if (visit?.contractFields)
+                            currentContractFields = JSON.parse(
+                              visit.contractFields,
+                            );
+                        } catch {}
+                        currentContractFields.draftSchedule = {
+                          date: scheduleDate || "",
+                          time: scheduleTime || "",
+                          closerId: scheduleCloserId || "",
+                        };
+                        await fetch(`/api/visits/${visit?.id}`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            bill: {
+                              upsert: { create: billData, update: billData },
+                            },
+                            contractFields: JSON.stringify(
+                              currentContractFields,
+                            ),
+                          }),
+                        });
+                        toast.success("Cambios guardados");
+                        fetchVisitDetails(true);
+                      } catch {
+                        toast.error("Error al guardar");
+                      } finally {
+                        setSaving(false);
+                      }
+                    }}
+                    disabled={saving}
+                    className="flex-1"
+                  >
+                    {saving ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    Si, guardar
+                  </Button>
+                </div>
+              </div>
+            </Modal>
+          </>
+        )}
     </div>
   );
 }
@@ -1471,11 +1891,17 @@ function FieldRow({
     return (
       <div className="space-y-1.5">
         <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">
-          {label}<RequiredBadge required={required} />
+          {label}
+          <RequiredBadge required={required} />
         </label>
         <div className="flex items-center gap-3">
           {fileUrl && (
-            <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm flex items-center gap-1">
+            <a
+              href={fileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline text-sm flex items-center gap-1"
+            >
               <Eye className="w-4 h-4" /> Ver
             </a>
           )}
@@ -1502,7 +1928,10 @@ function FieldRow({
   if (type === "date") {
     return (
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">{label}<RequiredBadge required={required} /></label>
+        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">
+          {label}
+          <RequiredBadge required={required} />
+        </label>
         <input
           type="date"
           value={value}
@@ -1519,9 +1948,17 @@ function FieldRow({
   if (field.endsWith("PaymentMethod")) {
     return (
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">{label}<RequiredBadge required={required} /></label>
-        <select value={value} onChange={(e) => onChange?.(field, e.target.value)} onBlur={onBlur} disabled={readOnly}
-          className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface transition-colors">
+        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">
+          {label}
+          <RequiredBadge required={required} />
+        </label>
+        <select
+          value={value}
+          onChange={(e) => onChange?.(field, e.target.value)}
+          onBlur={onBlur}
+          disabled={readOnly}
+          className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface transition-colors"
+        >
           <option value="">Seleccionar...</option>
           <option value="Cash">Cash</option>
           <option value="Transferencia">Transferencia</option>
@@ -1541,9 +1978,17 @@ function FieldRow({
   if (field === "waterSystemType") {
     return (
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">{label}<RequiredBadge required={required} /></label>
-        <select value={value} onChange={(e) => onChange?.(field, e.target.value)} onBlur={onBlur} disabled={readOnly}
-          className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface transition-colors">
+        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">
+          {label}
+          <RequiredBadge required={required} />
+        </label>
+        <select
+          value={value}
+          onChange={(e) => onChange?.(field, e.target.value)}
+          onBlur={onBlur}
+          disabled={readOnly}
+          className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface transition-colors"
+        >
           <option value="">Seleccionar...</option>
           <option value="Sistema completo">Sistema completo</option>
           <option value="Softener">Softener</option>
@@ -1554,13 +1999,25 @@ function FieldRow({
     );
   }
 
-  if (type === "number" || field.includes("CommPct") || field.includes("Price") || field.includes("Commission")) {
+  if (
+    type === "number" ||
+    field.includes("CommPct") ||
+    field.includes("Price") ||
+    field.includes("Commission")
+  ) {
     return (
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">{label}<RequiredBadge required={required} /></label>
+        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">
+          {label}
+          <RequiredBadge required={required} />
+        </label>
         <input
           type="number"
-          step={field.includes("Price") || field.includes("Commission") ? "0.01" : "1"}
+          step={
+            field.includes("Price") || field.includes("Commission")
+              ? "0.01"
+              : "1"
+          }
           value={value}
           onChange={(e) => onChange?.(field, e.target.value)}
           onBlur={onBlur}
@@ -1574,11 +2031,14 @@ function FieldRow({
   return (
     <div className="space-y-1.5">
       <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">
-        {label}<RequiredBadge required={required} />
+        {label}
+        <RequiredBadge required={required} />
       </label>
       <Input
         value={value}
-        onChange={(e) => onChange?.(field, (e.target as HTMLInputElement).value)}
+        onChange={(e) =>
+          onChange?.(field, (e.target as HTMLInputElement).value)
+        }
         onBlur={onBlur}
         readOnly={readOnly}
       />
@@ -1607,8 +2067,15 @@ function ClientInfoPanel({
       <Panel title="Información del Cliente" icon={User}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ReadOnlyField label="Nombre" value={visit.bill?.clientName || "-"} />
-          {!isPartner && <ReadOnlyField label="Correo" value={visit.bill?.clientEmail || "-"} />}
-          {!isPartner && <ReadOnlyField label="Teléfono" value={visit.bill?.phone || "-"} />}
+          {!isPartner && (
+            <ReadOnlyField
+              label="Correo"
+              value={visit.bill?.clientEmail || "-"}
+            />
+          )}
+          {!isPartner && (
+            <ReadOnlyField label="Teléfono" value={visit.bill?.phone || "-"} />
+          )}
         </div>
       </Panel>
     );
@@ -1617,19 +2084,60 @@ function ClientInfoPanel({
     <Panel title="Información del Cliente" icon={User}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">Nombre<RequiredBadge required={true} /></label>
-          <Input value={editFields?._billClientName || ""} onChange={(e) => onFieldChange?.("_billClientName", (e.target as HTMLInputElement).value)} onBlur={onSave} placeholder="Nombre del cliente" />
+          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">
+            Nombre
+            <RequiredBadge required={true} />
+          </label>
+          <Input
+            value={editFields?._billClientName || ""}
+            onChange={(e) =>
+              onFieldChange?.(
+                "_billClientName",
+                (e.target as HTMLInputElement).value,
+              )
+            }
+            onBlur={onSave}
+            placeholder="Nombre del cliente"
+          />
         </div>
         {!isPartner && (
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">Correo<RequiredBadge required={true} /></label>
-            <Input type="email" value={editFields?._billClientEmail || ""} onChange={(e) => onFieldChange?.("_billClientEmail", (e.target as HTMLInputElement).value)} onBlur={onSave} placeholder="Correo electrónico" />
+            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">
+              Correo
+              <RequiredBadge required={true} />
+            </label>
+            <Input
+              type="email"
+              value={editFields?._billClientEmail || ""}
+              onChange={(e) =>
+                onFieldChange?.(
+                  "_billClientEmail",
+                  (e.target as HTMLInputElement).value,
+                )
+              }
+              onBlur={onSave}
+              placeholder="Correo electrónico"
+            />
           </div>
         )}
         {!isPartner && (
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">Teléfono<RequiredBadge required={true} /></label>
-            <Input type="tel" value={editFields?._billPhone || ""} onChange={(e) => onFieldChange?.("_billPhone", (e.target as HTMLInputElement).value)} onBlur={onSave} placeholder="Número de teléfono" />
+            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">
+              Teléfono
+              <RequiredBadge required={true} />
+            </label>
+            <Input
+              type="tel"
+              value={editFields?._billPhone || ""}
+              onChange={(e) =>
+                onFieldChange?.(
+                  "_billPhone",
+                  (e.target as HTMLInputElement).value,
+                )
+              }
+              onBlur={onSave}
+              placeholder="Número de teléfono"
+            />
           </div>
         )}
       </div>
@@ -1659,11 +2167,16 @@ function DatosLeadPanel({
   notAvailTags: { id: number; name: string; color: string }[];
   onAddTag: (tag: { name: string; color: string }) => void;
   onRemoveTag: (tagName: string) => void;
-  onBillFileUpload?: (type: "imageUrl" | "additionalFileUrl", file: File) => Promise<void>;
+  onBillFileUpload?: (
+    type: "imageUrl" | "additionalFileUrl",
+    file: File,
+  ) => Promise<void>;
   role?: string;
 }) {
   const [saving, setSaving] = useState(false);
-  const [editProjectTypes, setEditProjectTypes] = useState<{ id: number; name: string }[]>([]);
+  const [editProjectTypes, setEditProjectTypes] = useState<
+    { id: number; name: string }[]
+  >([]);
   const [selectedPTIds, setSelectedPTIds] = useState<number[]>([]);
   const isTraineeLead = visit.setter?.role === "SETTER";
   const isReadOnly = role === "ADMIN" || visit.stage === "CANCELLED";
@@ -1671,7 +2184,16 @@ function DatosLeadPanel({
   useEffect(() => {
     fetch("/api/project-types")
       .then((r) => r.json())
-      .then((d) => { if (Array.isArray(d)) setEditProjectTypes(d.filter((pt: { name: string }) => pt.name !== "Campos Comunes").sort((a, b) => a.name === "Otros" ? 1 : b.name === "Otros" ? -1 : 0)); })
+      .then((d) => {
+        if (Array.isArray(d))
+          setEditProjectTypes(
+            d
+              .filter((pt: { name: string }) => pt.name !== "Campos Comunes")
+              .sort((a, b) =>
+                a.name === "Otros" ? 1 : b.name === "Otros" ? -1 : 0,
+              ),
+          );
+      })
       .catch(() => {});
     setSelectedPTIds(visit.projects.map((p) => p.projectType.id));
   }, [visit.id]);
@@ -1684,10 +2206,13 @@ function DatosLeadPanel({
     setSelectedPTIds(next);
     try {
       await fetch(`/api/visits/${visit.id}`, {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectTypeIds: next }),
       });
-    } catch { /* */ }
+    } catch {
+      /* */
+    }
   };
 
   const handleSaveAll = async () => {
@@ -1696,8 +2221,12 @@ function DatosLeadPanel({
     try {
       const billData: Record<string, string | null> = {
         phone: editFields._billPhone?.trim() || visit.bill?.phone || "",
-        clientName: editFields._billClientName?.trim() || visit.bill?.clientName || null,
-        clientEmail: editFields._billClientEmail?.trim() || visit.bill?.clientEmail || null,
+        clientName:
+          editFields._billClientName?.trim() || visit.bill?.clientName || null,
+        clientEmail:
+          editFields._billClientEmail?.trim() ||
+          visit.bill?.clientEmail ||
+          null,
         imageUrl: visit.bill?.imageUrl || null,
         notes: editFields._billNotes?.trim() || visit.bill?.notes || null,
         additionalFileUrl: visit.bill?.additionalFileUrl || null,
@@ -1707,14 +2236,18 @@ function DatosLeadPanel({
       await fetch(`/api/visits/${visit.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bill: { upsert: { create: billData, update: billData } } }),
+        body: JSON.stringify({
+          bill: { upsert: { create: billData, update: billData } },
+        }),
       });
 
       if (editFields._billNotes !== undefined) {
         const fetchRes = await fetch(`/api/visits/${visit.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ legacyNotes: editFields._billNotes?.trim() || null }),
+          body: JSON.stringify({
+            legacyNotes: editFields._billNotes?.trim() || null,
+          }),
         });
         if (!fetchRes.ok) throw new Error("Error al guardar notas");
       }
@@ -1729,7 +2262,13 @@ function DatosLeadPanel({
 
   return (
     <div className="space-y-6">
-      <ClientInfoPanel editFields={editFields} onFieldChange={onFieldChange} isReadOnly={isReadOnly} visit={visit} role={role} />
+      <ClientInfoPanel
+        editFields={editFields}
+        onFieldChange={onFieldChange}
+        isReadOnly={isReadOnly}
+        visit={visit}
+        role={role}
+      />
 
       <Panel title="Documentos" icon={FileText}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1739,7 +2278,8 @@ function DatosLeadPanel({
             onChange={async (e) => {
               if (isReadOnly) return;
               const f = e.target.files?.[0];
-              if (f && onBillFileUpload) await onBillFileUpload("additionalFileUrl", f);
+              if (f && onBillFileUpload)
+                await onBillFileUpload("additionalFileUrl", f);
             }}
             onClear={() => {}}
             readOnly={isReadOnly}
@@ -1763,10 +2303,15 @@ function DatosLeadPanel({
           {editProjectTypes.map((pt) => {
             const isSelected = selectedPTIds.includes(pt.id);
             return (
-              <button key={pt.id} type="button" onClick={() => isReadOnly ? null : toggleProjectType(pt.id)}
+              <button
+                key={pt.id}
+                type="button"
+                onClick={() => (isReadOnly ? null : toggleProjectType(pt.id))}
                 disabled={isReadOnly}
                 className={`px-4 py-2 rounded-full border text-sm font-medium transition-all ${
-                  isSelected ? "bg-primary/10 border-primary text-primary" : "bg-surface-container lowest border-outline-variant text-on-surface-variant hover:border-primary/30"
+                  isSelected
+                    ? "bg-primary/10 border-primary text-primary"
+                    : "bg-surface-container lowest border-outline-variant text-on-surface-variant hover:border-primary/30"
                 } ${isReadOnly ? "opacity-75 cursor-not-allowed" : ""}`}
               >
                 {isSelected && <CheckCircle className="w-3 h-3 inline mr-1" />}
@@ -1776,7 +2321,6 @@ function DatosLeadPanel({
           })}
         </div>
       </Panel>
-
     </div>
   );
 }
@@ -1807,7 +2351,11 @@ function DatosProjectFieldsPanel({
   onSave: () => void;
   saving: boolean;
   fieldMetas: FieldMeta[];
-  fieldMetasByProject: { projectTypeName: string; projectTypeId: number; fields: FieldMeta[] }[];
+  fieldMetasByProject: {
+    projectTypeName: string;
+    projectTypeId: number;
+    fields: FieldMeta[];
+  }[];
   selectedProjectNames: string[];
   onFileFieldUpload: (fieldName: string, file: File) => void;
   onUpload: (file: File) => Promise<string>;
@@ -1817,16 +2365,27 @@ function DatosProjectFieldsPanel({
   notAvailTags: { id: number; name: string; color: string }[];
   onAddTag: (tag: { name: string; color: string }) => void;
   onRemoveTag: (tagName: string) => void;
-  onBillFileUpload?: (type: "imageUrl" | "additionalFileUrl", file: File) => Promise<void>;
+  onBillFileUpload?: (
+    type: "imageUrl" | "additionalFileUrl",
+    file: File,
+  ) => Promise<void>;
   role?: string;
 }) {
   const pd = visit.projectDetails || {};
-  const nonCommonFields = fieldMetas.filter((m) => !COMMON_FIELDS.includes(m.fieldName));
+  const nonCommonFields = fieldMetas.filter(
+    (m) => !COMMON_FIELDS.includes(m.fieldName),
+  );
 
-  const [allProjectTypes, setAllProjectTypes] = useState<{ id: number; name: string }[]>([]);
-  const [selectedProjectTypeIds, setSelectedProjectTypeIds] = useState<number[]>([]);
+  const [allProjectTypes, setAllProjectTypes] = useState<
+    { id: number; name: string }[]
+  >([]);
+  const [selectedProjectTypeIds, setSelectedProjectTypeIds] = useState<
+    number[]
+  >([]);
   const [projectTypesSaving, setProjectTypesSaving] = useState(false);
-  const [expandedProjects, setExpandedProjects] = useState<Set<number>>(new Set());
+  const [expandedProjects, setExpandedProjects] = useState<Set<number>>(
+    new Set(),
+  );
 
   useEffect(() => {
     const fetchAllProjectTypes = async () => {
@@ -1834,7 +2393,9 @@ function DatosProjectFieldsPanel({
         const res = await fetch("/api/project-types");
         const data = await res.json();
         if (Array.isArray(data)) setAllProjectTypes(data);
-      } catch { /* */ }
+      } catch {
+        /* */
+      }
     };
     fetchAllProjectTypes();
     setSelectedProjectTypeIds(visit.projects.map((p) => p.projectType.id));
@@ -1866,7 +2427,8 @@ function DatosProjectFieldsPanel({
   const toggleExpandProject = (ptId: number) => {
     setExpandedProjects((prev) => {
       const next = new Set(prev);
-      if (next.has(ptId)) next.delete(ptId); else next.add(ptId);
+      if (next.has(ptId)) next.delete(ptId);
+      else next.add(ptId);
       return next;
     });
   };
@@ -1875,10 +2437,13 @@ function DatosProjectFieldsPanel({
     if (editFields[key] !== undefined) return editFields[key];
     const val = pd[key];
     if (val === undefined || val === null) return "";
-    if ((key === "closingDate" || key === "siteSurveyDate") && typeof val === "string") return val.split("T")[0];
+    if (
+      (key === "closingDate" || key === "siteSurveyDate") &&
+      typeof val === "string"
+    )
+      return val.split("T")[0];
     return String(val);
   };
-
 
   const getType = (key: string): string => {
     if (FIELD_TYPES[key]) return FIELD_TYPES[key];
@@ -1887,7 +2452,9 @@ function DatosProjectFieldsPanel({
   };
 
   let closingMinDate: string | undefined = undefined;
-  const baseDate = visit.scheduledAt ? new Date(visit.scheduledAt) : new Date(visit.createdAt);
+  const baseDate = visit.scheduledAt
+    ? new Date(visit.scheduledAt)
+    : new Date(visit.createdAt);
   if (!isNaN(baseDate.getTime())) {
     baseDate.setDate(baseDate.getDate() + 14);
     closingMinDate = baseDate.toISOString().split("T")[0];
@@ -1895,7 +2462,11 @@ function DatosProjectFieldsPanel({
 
   const isFieldFile = (key: string): boolean => {
     const meta = fieldMetas.find((m) => m.fieldName === key);
-    return meta?.fieldType === "file" || meta?.fieldType === "photos" || isFileFieldKey(key);
+    return (
+      meta?.fieldType === "file" ||
+      meta?.fieldType === "photos" ||
+      isFileFieldKey(key)
+    );
   };
 
   const isPartner = role === "PARTNER";
@@ -1906,11 +2477,22 @@ function DatosProjectFieldsPanel({
 
   const isTraineeLeadGeneral = visit.setter?.role === "SETTER";
 
-
   return (
     <div className="space-y-6">
       {showBillSection && (
-        <DatosLeadPanel visit={visit} editFields={editFields} onFieldChange={onFieldChange} onUpload={onUpload} onRefresh={onRefresh} leadTags={leadTags} notAvailTags={notAvailTags} onAddTag={onAddTag} onRemoveTag={onRemoveTag} onBillFileUpload={onBillFileUpload} role={role} />
+        <DatosLeadPanel
+          visit={visit}
+          editFields={editFields}
+          onFieldChange={onFieldChange}
+          onUpload={onUpload}
+          onRefresh={onRefresh}
+          leadTags={leadTags}
+          notAvailTags={notAvailTags}
+          onAddTag={onAddTag}
+          onRemoveTag={onRemoveTag}
+          onBillFileUpload={onBillFileUpload}
+          role={role}
+        />
       )}
 
       {commonFieldsFiltered.length > 0 && (
@@ -1929,7 +2511,13 @@ function DatosProjectFieldsPanel({
                 isFile={isFieldFile(key)}
                 onFileUpload={onFileFieldUpload}
                 fileUrl={pd[key] ? String(pd[key]) : undefined}
-                required={OPTIONAL_FIELDS.includes(key) ? false : REQUIRED_COMMON_FIELDS.has(key) ? true : false}
+                required={
+                  OPTIONAL_FIELDS.includes(key)
+                    ? false
+                    : REQUIRED_COMMON_FIELDS.has(key)
+                      ? true
+                      : false
+                }
                 minDate={key === "closingDate" ? closingMinDate : undefined}
               />
             ))}
@@ -1937,51 +2525,83 @@ function DatosProjectFieldsPanel({
         </Panel>
       )}
 
-      {fieldMetasByProject.length > 0 && fieldMetasByProject.map((project) => {
-        const isExpanded = expandedProjects.has(project.projectTypeId);
-        const projectFields = project.fields
-          .filter((m) => !COMMON_FIELDS.includes(m.fieldName))
-          .filter((m) => !isPartner || !isFieldHiddenForPartner(m.fieldName, m.fieldLabel));
+      {fieldMetasByProject.length > 0 &&
+        fieldMetasByProject.map((project) => {
+          const isExpanded = expandedProjects.has(project.projectTypeId);
+          const projectFields = project.fields
+            .filter((m) => !COMMON_FIELDS.includes(m.fieldName))
+            .filter(
+              (m) =>
+                !isPartner ||
+                !isFieldHiddenForPartner(m.fieldName, m.fieldLabel),
+            );
 
-        const isPanelSolar = project.projectTypeName.toLowerCase().includes("panel solar");
-        const isSetter = role === "SETTER" || role === "SETTER_JR";
-        const isTraineeLead = visit.setter?.role === "SETTER";
-        const isProjectReadOnly = role === "ADMIN" || isPartner || (isSetter && isPanelSolar);
+          const isPanelSolar = project.projectTypeName
+            .toLowerCase()
+            .includes("panel solar");
+          const isSetter = role === "SETTER" || role === "SETTER_JR";
+          const isTraineeLead = visit.setter?.role === "SETTER";
+          const isProjectReadOnly =
+            role === "ADMIN" || isPartner || (isSetter && isPanelSolar);
 
-        return (
-          <div key={project.projectTypeId} className="glass-panel rounded-xl">
-            <button
-              onClick={() => toggleExpandProject(project.projectTypeId)}
-              className="w-full p-6 flex items-center justify-between text-left"
-            >
-              <h3 className="font-semibold text-lg flex items-center gap-2 text-on-surface">
-                <Package className="w-5 h-5 text-primary" />
-                {project.projectTypeName}
-              </h3>
-              <ChevronDown className={`w-5 h-5 text-on-surface-variant transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
-            </button>
-            {isExpanded && (
-              <div className="px-6 pb-6">
-                {projectFields.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {projectFields.map((meta) => (
-                      <FieldRow key={meta.fieldName} label={meta.fieldLabel || meta.fieldName}
-                        value={getValue(meta.fieldName)} field={meta.fieldName}
-                        type={meta.fieldType || "text"} onChange={(_, v) => onFieldChange(meta.fieldName, v)}
-                        onBlur={onSave} isFile={meta.fieldType === "file" || meta.fieldType === "photos"}
-                        readOnly={isProjectReadOnly}
-                        onFileUpload={onFileFieldUpload} fileUrl={pd[meta.fieldName] ? String(pd[meta.fieldName]) : undefined}
-                        required={meta.isRequired === false ? false : meta.isRequired === true ? true : undefined} />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-on-surface-variant">Sin campos específicos para este proyecto</p>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
+          return (
+            <div key={project.projectTypeId} className="glass-panel rounded-xl">
+              <button
+                onClick={() => toggleExpandProject(project.projectTypeId)}
+                className="w-full p-6 flex items-center justify-between text-left"
+              >
+                <h3 className="font-semibold text-lg flex items-center gap-2 text-on-surface">
+                  <Package className="w-5 h-5 text-primary" />
+                  {project.projectTypeName}
+                </h3>
+                <ChevronDown
+                  className={`w-5 h-5 text-on-surface-variant transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                />
+              </button>
+              {isExpanded && (
+                <div className="px-6 pb-6">
+                  {projectFields.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {projectFields.map((meta) => (
+                        <FieldRow
+                          key={meta.fieldName}
+                          label={meta.fieldLabel || meta.fieldName}
+                          value={getValue(meta.fieldName)}
+                          field={meta.fieldName}
+                          type={meta.fieldType || "text"}
+                          onChange={(_, v) => onFieldChange(meta.fieldName, v)}
+                          onBlur={onSave}
+                          isFile={
+                            meta.fieldType === "file" ||
+                            meta.fieldType === "photos"
+                          }
+                          readOnly={isProjectReadOnly}
+                          onFileUpload={onFileFieldUpload}
+                          fileUrl={
+                            pd[meta.fieldName]
+                              ? String(pd[meta.fieldName])
+                              : undefined
+                          }
+                          required={
+                            meta.isRequired === false
+                              ? false
+                              : meta.isRequired === true
+                                ? true
+                                : undefined
+                          }
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-on-surface-variant">
+                      Sin campos específicos para este proyecto
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
     </div>
   );
 }
@@ -2011,7 +2631,11 @@ function DatosProjectPanel({
   onSave: () => void;
   saving: boolean;
   fieldMetas: FieldMeta[];
-  fieldMetasByProject: { projectTypeName: string; projectTypeId: number; fields: FieldMeta[] }[];
+  fieldMetasByProject: {
+    projectTypeName: string;
+    projectTypeId: number;
+    fields: FieldMeta[];
+  }[];
   selectedProjectNames: string[];
   progress: number;
   role: string;
@@ -2024,15 +2648,20 @@ function DatosProjectPanel({
   isPartnerView?: boolean;
 }) {
   const pd = visit.projectDetails || {};
-  const nonCommonFields = fieldMetas.filter((m) => !COMMON_FIELDS.includes(m.fieldName));
+  const nonCommonFields = fieldMetas.filter(
+    (m) => !COMMON_FIELDS.includes(m.fieldName),
+  );
 
-  const [expandedProjects, setExpandedProjects] = useState<Set<number>>(new Set());
+  const [expandedProjects, setExpandedProjects] = useState<Set<number>>(
+    new Set(),
+  );
   const { data: session } = useSession();
 
   const toggleExpandProject = (ptId: number) => {
     setExpandedProjects((prev) => {
       const next = new Set(prev);
-      if (next.has(ptId)) next.delete(ptId); else next.add(ptId);
+      if (next.has(ptId)) next.delete(ptId);
+      else next.add(ptId);
       return next;
     });
   };
@@ -2041,12 +2670,18 @@ function DatosProjectPanel({
     if (editFields[key] !== undefined) return editFields[key];
     const val = pd[key];
     if (val === undefined || val === null) return "";
-    if ((key === "closingDate" || key === "siteSurveyDate") && typeof val === "string") return val.split("T")[0];
+    if (
+      (key === "closingDate" || key === "siteSurveyDate") &&
+      typeof val === "string"
+    )
+      return val.split("T")[0];
     return String(val);
   };
 
   let closingMinDate: string | undefined = undefined;
-  const baseDate = visit.scheduledAt ? new Date(visit.scheduledAt) : new Date(visit.createdAt);
+  const baseDate = visit.scheduledAt
+    ? new Date(visit.scheduledAt)
+    : new Date(visit.createdAt);
   if (!isNaN(baseDate.getTime())) {
     baseDate.setDate(baseDate.getDate() + 14);
     closingMinDate = baseDate.toISOString().split("T")[0];
@@ -2054,26 +2689,40 @@ function DatosProjectPanel({
 
   const getType = (key: string): string => {
     if (FIELD_TYPES[key]) return FIELD_TYPES[key];
-    const meta = fieldMetas.find((m: { fieldName: string }) => m.fieldName === key);
+    const meta = fieldMetas.find(
+      (m: { fieldName: string }) => m.fieldName === key,
+    );
     return meta?.fieldType || "text";
   };
 
   const isFieldFile = (key: string): boolean => {
     const meta = fieldMetas.find((m) => m.fieldName === key);
-    return meta?.fieldType === "file" || meta?.fieldType === "photos" || isFileFieldKey(key);
+    return (
+      meta?.fieldType === "file" ||
+      meta?.fieldType === "photos" ||
+      isFileFieldKey(key)
+    );
   };
 
   const isAdmin = role === "ADMIN";
   const isTraineeLeadGeneral = visit.setter?.role === "SETTER";
 
-  const canRequestClose = role === "SETTER" || role === "SETTER_JR" || role === "CLOSER";
+  const canRequestClose =
+    role === "SETTER" || role === "SETTER_JR" || role === "CLOSER";
 
-  const visibleProjects = role === "PARTNER"
-    ? fieldMetasByProject.filter((project) => {
-        const vp = visit.projects?.find(p => p.projectType.id === project.projectTypeId);
-        return vp?.partnerId && session?.user?.id && vp.partnerId === parseInt(session.user.id);
-      })
-    : fieldMetasByProject;
+  const visibleProjects =
+    role === "PARTNER"
+      ? fieldMetasByProject.filter((project) => {
+          const vp = visit.projects?.find(
+            (p) => p.projectType.id === project.projectTypeId,
+          );
+          return (
+            vp?.partnerId &&
+            session?.user?.id &&
+            vp.partnerId === parseInt(session.user.id)
+          );
+        })
+      : fieldMetasByProject;
 
   return (
     <div className="space-y-6">
@@ -2090,7 +2739,11 @@ function DatosProjectPanel({
           <div className="w-full h-3 bg-surface-container-highest rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
-                progress === 100 ? "bg-primary" : progress >= 50 ? "bg-secondary" : "bg-tertiary"
+                progress === 100
+                  ? "bg-primary"
+                  : progress >= 50
+                    ? "bg-secondary"
+                    : "bg-tertiary"
               }`}
               style={{ width: `${progress}%` }}
             />
@@ -2098,26 +2751,30 @@ function DatosProjectPanel({
         </div>
         {progress === 100 && (
           <div className="mt-4 flex gap-3 flex-wrap items-center">
-            {canRequestClose && (
-              closeRequested ? (
+            {canRequestClose &&
+              (closeRequested ? (
                 <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
                   <Clock className="w-4 h-4 shrink-0" />
-                  <span className="text-sm font-semibold">Cierre Solicitado</span>
+                  <span className="text-sm font-semibold">
+                    Cierre Solicitado
+                  </span>
                 </div>
               ) : (
                 <Button onClick={onRequestClose} variant="outline">
                   <BadgeCheck className="w-4 h-4" />
                   Solicitar Cierre
                 </Button>
-              )
-            )}
+              ))}
             {isAdmin && closeRequested && (
               <>
                 <Button onClick={onCloseProject}>
                   <CheckCircle className="w-4 h-4" />
                   Cerrar Proyecto
                 </Button>
-                <Button onClick={onReturnLead} className="bg-orange-500 hover:bg-orange-600 text-white">
+                <Button
+                  onClick={onReturnLead}
+                  className="bg-orange-500 hover:bg-orange-600 text-white"
+                >
                   <RotateCcw className="w-4 h-4" />
                   Devolver Proyecto
                 </Button>
@@ -2127,7 +2784,14 @@ function DatosProjectPanel({
         )}
       </Panel>
 
-      <ClientInfoPanel editFields={editFields} onFieldChange={onFieldChange} onSave={onSave} isReadOnly={closeRequested || role === "ADMIN"} visit={visit} role={role} />
+      <ClientInfoPanel
+        editFields={editFields}
+        onFieldChange={onFieldChange}
+        onSave={onSave}
+        isReadOnly={closeRequested || role === "ADMIN"}
+        visit={visit}
+        role={role}
+      />
 
       <Panel title="Documentos" icon={FileText}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2138,7 +2802,9 @@ function DatosProjectPanel({
             isFile
             required={true}
             onFileUpload={onFileFieldUpload}
-            fileUrl={pd["idDocumentUrl"] ? String(pd["idDocumentUrl"]) : undefined}
+            fileUrl={
+              pd["idDocumentUrl"] ? String(pd["idDocumentUrl"]) : undefined
+            }
             readOnly={closeRequested || role === "ADMIN"}
           />
           <FieldRow
@@ -2148,7 +2814,9 @@ function DatosProjectPanel({
             isFile
             required={true}
             onFileUpload={onFileFieldUpload}
-            fileUrl={pd["electricBillUrl"] ? String(pd["electricBillUrl"]) : undefined}
+            fileUrl={
+              pd["electricBillUrl"] ? String(pd["electricBillUrl"]) : undefined
+            }
             readOnly={closeRequested || role === "ADMIN"}
           />
         </div>
@@ -2169,64 +2837,92 @@ function DatosProjectPanel({
               isFile={isFieldFile(key)}
               onFileUpload={onFileFieldUpload}
               fileUrl={pd[key] ? String(pd[key]) : undefined}
-              required={OPTIONAL_FIELDS.includes(key) ? false : REQUIRED_COMMON_FIELDS.has(key) ? true : false}
+              required={
+                OPTIONAL_FIELDS.includes(key)
+                  ? false
+                  : REQUIRED_COMMON_FIELDS.has(key)
+                    ? true
+                    : false
+              }
               minDate={key === "closingDate" ? closingMinDate : undefined}
             />
           ))}
         </div>
       </Panel>
 
-      {visibleProjects.length > 0 && visibleProjects.map((project) => {
-        const isExpanded = expandedProjects.has(project.projectTypeId);
-        const projectFields = project.fields.filter((m) => !COMMON_FIELDS.includes(m.fieldName));
-        
-        const isPanelSolar = project.projectTypeName.toLowerCase().includes("panel solar");
-        const isSetter = role === "SETTER" || role === "SETTER_JR";
-        const isTraineeLead = visit.setter?.role === "SETTER";
-        const isProjectReadOnly = role === "ADMIN" || closeRequested || (isSetter && isPanelSolar);
+      {visibleProjects.length > 0 &&
+        visibleProjects.map((project) => {
+          const isExpanded = expandedProjects.has(project.projectTypeId);
+          const projectFields = project.fields.filter(
+            (m) => !COMMON_FIELDS.includes(m.fieldName),
+          );
 
-        return (
-          <div key={project.projectTypeId} className="glass-panel rounded-xl">
-            <button
-              onClick={() => toggleExpandProject(project.projectTypeId)}
-              className="w-full p-6 flex items-center justify-between text-left"
-            >
-              <h3 className="font-semibold text-lg flex items-center gap-2 text-on-surface">
-                <Package className="w-5 h-5 text-primary shrink-0" />
-                {project.projectTypeName}
-              </h3>
-              <ChevronDown className={`w-5 h-5 text-on-surface-variant transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
-            </button>
-            {isExpanded && (
-              <div className="px-6 pb-6">
-                {projectFields.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {projectFields.map((meta) => (
-                      <FieldRow
-                        key={meta.fieldName}
-                        label={meta.fieldLabel}
-                        value={getValue(meta.fieldName)}
-                        field={meta.fieldName}
-                        type={meta.fieldType}
-                        onChange={(_, v) => onFieldChange(meta.fieldName, v)}
-                        onBlur={onSave}
-                        readOnly={isProjectReadOnly}
-                        isFile={meta.fieldType === "file" || meta.fieldType === "photos"}
-                        onFileUpload={onFileFieldUpload}
-                        fileUrl={pd[meta.fieldName] ? String(pd[meta.fieldName]) : undefined}
-                        required={meta.isRequired === false ? false : meta.isRequired === true ? true : undefined}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-on-surface-variant">Sin campos específicos para este proyecto</p>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
+          const isPanelSolar = project.projectTypeName
+            .toLowerCase()
+            .includes("panel solar");
+          const isSetter = role === "SETTER" || role === "SETTER_JR";
+          const isTraineeLead = visit.setter?.role === "SETTER";
+          const isProjectReadOnly =
+            role === "ADMIN" || closeRequested || (isSetter && isPanelSolar);
 
+          return (
+            <div key={project.projectTypeId} className="glass-panel rounded-xl">
+              <button
+                onClick={() => toggleExpandProject(project.projectTypeId)}
+                className="w-full p-6 flex items-center justify-between text-left"
+              >
+                <h3 className="font-semibold text-lg flex items-center gap-2 text-on-surface">
+                  <Package className="w-5 h-5 text-primary shrink-0" />
+                  {project.projectTypeName}
+                </h3>
+                <ChevronDown
+                  className={`w-5 h-5 text-on-surface-variant transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                />
+              </button>
+              {isExpanded && (
+                <div className="px-6 pb-6">
+                  {projectFields.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {projectFields.map((meta) => (
+                        <FieldRow
+                          key={meta.fieldName}
+                          label={meta.fieldLabel}
+                          value={getValue(meta.fieldName)}
+                          field={meta.fieldName}
+                          type={meta.fieldType}
+                          onChange={(_, v) => onFieldChange(meta.fieldName, v)}
+                          onBlur={onSave}
+                          readOnly={isProjectReadOnly}
+                          isFile={
+                            meta.fieldType === "file" ||
+                            meta.fieldType === "photos"
+                          }
+                          onFileUpload={onFileFieldUpload}
+                          fileUrl={
+                            pd[meta.fieldName]
+                              ? String(pd[meta.fieldName])
+                              : undefined
+                          }
+                          required={
+                            meta.isRequired === false
+                              ? false
+                              : meta.isRequired === true
+                                ? true
+                                : undefined
+                          }
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-on-surface-variant">
+                      Sin campos específicos para este proyecto
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
     </div>
   );
 }
@@ -2245,7 +2941,11 @@ function DatosClosedPanel({
 }: {
   visit: VisitDetails;
   fieldMetas: FieldMeta[];
-  fieldMetasByProject: { projectTypeName: string; projectTypeId: number; fields: FieldMeta[] }[];
+  fieldMetasByProject: {
+    projectTypeName: string;
+    projectTypeId: number;
+    fields: FieldMeta[];
+  }[];
   selectedProjectNames: string[];
   postCloseTags: string;
   onToggleTag: (tag: string) => void;
@@ -2256,8 +2956,12 @@ function DatosClosedPanel({
 }) {
   const pd = visit.projectDetails || {};
 
-  const nonCommonFields = fieldMetas.filter((m) => !COMMON_FIELDS.includes(m.fieldName));
-  const [expandedProjects, setExpandedProjects] = useState<Set<number>>(new Set());
+  const nonCommonFields = fieldMetas.filter(
+    (m) => !COMMON_FIELDS.includes(m.fieldName),
+  );
+  const [expandedProjects, setExpandedProjects] = useState<Set<number>>(
+    new Set(),
+  );
   const [partners, setPartners] = useState<{ id: number; name: string }[]>([]);
   const [partnerSaving, setPartnerSaving] = useState<number | null>(null);
   const { data: session } = useSession();
@@ -2268,20 +2972,27 @@ function DatosClosedPanel({
         .then((r) => r.json())
         .then((users) => {
           if (Array.isArray(users)) {
-            setPartners(users.filter((u: { role: string }) => u.role === "PARTNER"));
+            setPartners(
+              users.filter((u: { role: string }) => u.role === "PARTNER"),
+            );
           }
         })
         .catch(() => {});
     }
   }, [isAdmin]);
 
-  const handleAssignPartner = async (projectTypeId: number, partnerId: number | null) => {
+  const handleAssignPartner = async (
+    projectTypeId: number,
+    partnerId: number | null,
+  ) => {
     setPartnerSaving(projectTypeId);
     try {
       await fetch(`/api/visits/${visit.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectPartners: [{ projectTypeId, partnerId }] }),
+        body: JSON.stringify({
+          projectPartners: [{ projectTypeId, partnerId }],
+        }),
       });
       onRefresh?.();
     } catch {
@@ -2291,17 +3002,25 @@ function DatosClosedPanel({
     }
   };
 
-  const visibleProjects = role === "PARTNER"
-    ? fieldMetasByProject.filter((project) => {
-        const vp = visit.projects?.find(p => p.projectType.id === project.projectTypeId);
-        return vp?.partnerId && session?.user?.id && vp.partnerId === parseInt(session.user.id);
-      })
-    : fieldMetasByProject;
+  const visibleProjects =
+    role === "PARTNER"
+      ? fieldMetasByProject.filter((project) => {
+          const vp = visit.projects?.find(
+            (p) => p.projectType.id === project.projectTypeId,
+          );
+          return (
+            vp?.partnerId &&
+            session?.user?.id &&
+            vp.partnerId === parseInt(session.user.id)
+          );
+        })
+      : fieldMetasByProject;
 
   const toggleExpandProject = (ptId: number) => {
     setExpandedProjects((prev) => {
       const next = new Set(prev);
-      if (next.has(ptId)) next.delete(ptId); else next.add(ptId);
+      if (next.has(ptId)) next.delete(ptId);
+      else next.add(ptId);
       return next;
     });
   };
@@ -2323,7 +3042,9 @@ function DatosClosedPanel({
                     : "bg-surface-container-low border-outline-variant text-on-surface-variant hover:border-primary/30"
                 }`}
               >
-                {postCloseTags === tag && <CheckCircle className="w-3 h-3 inline mr-1" />}
+                {postCloseTags === tag && (
+                  <CheckCircle className="w-3 h-3 inline mr-1" />
+                )}
                 {tag}
               </button>
             ))}
@@ -2340,7 +3061,11 @@ function DatosClosedPanel({
 
       <Panel title="Campos Generales" icon={Pencil}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {COMMON_FIELDS.filter(key => role !== "PARTNER" || !isFieldHiddenForPartner(key, fieldLabel(key))).map((key) => (
+          {COMMON_FIELDS.filter(
+            (key) =>
+              role !== "PARTNER" ||
+              !isFieldHiddenForPartner(key, fieldLabel(key)),
+          ).map((key) => (
             <ReadOnlyField
               key={key}
               label={fieldLabel(key)}
@@ -2358,80 +3083,133 @@ function DatosClosedPanel({
 
       <Panel title="Resumen del Proyecto" icon={User}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ReadOnlyField label="Nombre" value={String(pd.clientName || visit.bill?.clientName || "-")} />
-          {role !== "PARTNER" && <ReadOnlyField label="Email" value={String(pd.clientEmail || visit.bill?.clientEmail || "-")} />}
-          <ReadOnlyField label="Dirección" value={String(pd.address || visit.parcel.address)} />
+          <ReadOnlyField
+            label="Nombre"
+            value={String(pd.clientName || visit.bill?.clientName || "-")}
+          />
+          {role !== "PARTNER" && (
+            <ReadOnlyField
+              label="Email"
+              value={String(pd.clientEmail || visit.bill?.clientEmail || "-")}
+            />
+          )}
+          <ReadOnlyField
+            label="Dirección"
+            value={String(pd.address || visit.parcel.address)}
+          />
         </div>
       </Panel>
 
-      {visibleProjects.length > 0 && visibleProjects.map((project) => {
-        const isExpanded = expandedProjects.has(project.projectTypeId);
-        const projectFields = project.fields
-          .filter((m) => !COMMON_FIELDS.includes(m.fieldName))
-          .filter((m) => role !== "PARTNER" || !isFieldHiddenForPartner(m.fieldName, m.fieldLabel))
-          .filter((meta) => pd[meta.fieldName] !== undefined && pd[meta.fieldName] !== null && pd[meta.fieldName] !== "");
-        return (
-          <div key={project.projectTypeId} className="glass-panel rounded-xl">
-            <button
-              onClick={() => toggleExpandProject(project.projectTypeId)}
-              className="w-full p-6 flex items-center justify-between text-left"
-            >
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <h3 className="font-semibold text-lg flex items-center gap-2 text-on-surface">
-                  <Package className="w-5 h-5 text-primary shrink-0" />
-                  {project.projectTypeName}
-                </h3>
-                {isAdmin && (
-                  <select
-                    value={String(visit.projects?.find(p => p.projectType.id === project.projectTypeId)?.partnerId ?? "")}
-                    onChange={(e) => handleAssignPartner(project.projectTypeId, e.target.value ? parseInt(e.target.value) : null)}
-                    className="h-8 px-3 rounded-full text-xs font-bold tracking-wider cursor-pointer outline-none transition-colors min-w-[120px]"
-                    style={{ backgroundColor: "#f4822120", color: "#f48221", border: "1px solid #f4822140" }}
-                    disabled={partnerSaving === project.projectTypeId}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <option value="" className="text-on-surface bg-surface-container-high">Sin partner</option>
-                    {partners.map((p) => (
-                      <option key={p.id} value={p.id} className="text-on-surface bg-surface-container-high">{p.name}</option>
-                    ))}
-                  </select>
-                )}
-              </div>
-              <ChevronDown className={`w-5 h-5 text-on-surface-variant transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
-            </button>
-            {isExpanded && (
-              <div className="px-6 pb-6">
-                {projectFields.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {projectFields.map((meta) => (
-                      <ReadOnlyField
-                        key={meta.fieldName}
-                        label={meta.fieldLabel || meta.fieldName}
-                        value={
-                          meta.fieldType === "file" || meta.fieldType === "photos"
-                            ? ""
-                            : String(pd[meta.fieldName])
-                        }
-                        linkUrl={
-                          meta.fieldType === "file" || meta.fieldType === "photos"
-                            ? String(pd[meta.fieldName])
-                            : undefined
-                        }
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-on-surface-variant">Sin campos específicos para este proyecto</p>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {visibleProjects.length > 0 &&
+        visibleProjects.map((project) => {
+          const isExpanded = expandedProjects.has(project.projectTypeId);
+          const projectFields = project.fields
+            .filter((m) => !COMMON_FIELDS.includes(m.fieldName))
+            .filter(
+              (m) =>
+                role !== "PARTNER" ||
+                !isFieldHiddenForPartner(m.fieldName, m.fieldLabel),
+            )
+            .filter(
+              (meta) =>
+                pd[meta.fieldName] !== undefined &&
+                pd[meta.fieldName] !== null &&
+                pd[meta.fieldName] !== "",
+            );
+          return (
+            <div key={project.projectTypeId} className="glass-panel rounded-xl">
+              <button
+                onClick={() => toggleExpandProject(project.projectTypeId)}
+                className="w-full p-6 flex items-center justify-between text-left"
+              >
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <h3 className="font-semibold text-lg flex items-center gap-2 text-on-surface">
+                    <Package className="w-5 h-5 text-primary shrink-0" />
+                    {project.projectTypeName}
+                  </h3>
+                  {isAdmin && (
+                    <select
+                      value={String(
+                        visit.projects?.find(
+                          (p) => p.projectType.id === project.projectTypeId,
+                        )?.partnerId ?? "",
+                      )}
+                      onChange={(e) =>
+                        handleAssignPartner(
+                          project.projectTypeId,
+                          e.target.value ? parseInt(e.target.value) : null,
+                        )
+                      }
+                      className="h-8 px-3 rounded-full text-xs font-bold tracking-wider cursor-pointer outline-none transition-colors min-w-[120px]"
+                      style={{
+                        backgroundColor: "#f4822120",
+                        color: "#f48221",
+                        border: "1px solid #f4822140",
+                      }}
+                      disabled={partnerSaving === project.projectTypeId}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <option
+                        value=""
+                        className="text-on-surface bg-surface-container-high"
+                      >
+                        Sin partner
+                      </option>
+                      {partners.map((p) => (
+                        <option
+                          key={p.id}
+                          value={p.id}
+                          className="text-on-surface bg-surface-container-high"
+                        >
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                <ChevronDown
+                  className={`w-5 h-5 text-on-surface-variant transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                />
+              </button>
+              {isExpanded && (
+                <div className="px-6 pb-6">
+                  {projectFields.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {projectFields.map((meta) => (
+                        <ReadOnlyField
+                          key={meta.fieldName}
+                          label={meta.fieldLabel || meta.fieldName}
+                          value={
+                            meta.fieldType === "file" ||
+                            meta.fieldType === "photos"
+                              ? ""
+                              : String(pd[meta.fieldName])
+                          }
+                          linkUrl={
+                            meta.fieldType === "file" ||
+                            meta.fieldType === "photos"
+                              ? String(pd[meta.fieldName])
+                              : undefined
+                          }
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-on-surface-variant">
+                      Sin campos específicos para este proyecto
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
 
       {role !== "PARTNER" && visit.bill?.notes && (
         <Panel title="Notas" icon={Pencil}>
-          <p className="text-sm text-on-surface whitespace-pre-wrap">{visit.bill.notes}</p>
+          <p className="text-sm text-on-surface whitespace-pre-wrap">
+            {visit.bill.notes}
+          </p>
         </Panel>
       )}
     </div>
@@ -2458,11 +3236,19 @@ function DatosCancelledPanel({
           <h3 className="text-lg font-bold text-error">Proyecto Cancelado</h3>
         </div>
         <div className="space-y-3">
-          <ReadOnlyField label="Motivo de Cancelación" value={visit.cancellationReason || "No especificado"} />
+          <ReadOnlyField
+            label="Motivo de Cancelación"
+            value={visit.cancellationReason || "No especificado"}
+          />
           {visit.cancelledAt && (
-            <ReadOnlyField label="Fecha de Cancelación" value={new Date(visit.cancelledAt).toLocaleDateString()} />
+            <ReadOnlyField
+              label="Fecha de Cancelación"
+              value={new Date(visit.cancelledAt).toLocaleDateString()}
+            />
           )}
-          {visit.legacyNotes && <ReadOnlyField label="Notas" value={visit.legacyNotes} multiline />}
+          {visit.legacyNotes && (
+            <ReadOnlyField label="Notas" value={visit.legacyNotes} multiline />
+          )}
         </div>
       </div>
 
@@ -2482,7 +3268,15 @@ function DatosCancelledPanel({
   );
 }
 
-function ArchivosPanel({ visit, onUpdate, role }: { visit: VisitDetails; onUpdate?: () => void; role?: string }) {
+function ArchivosPanel({
+  visit,
+  onUpdate,
+  role,
+}: {
+  visit: VisitDetails;
+  onUpdate?: () => void;
+  role?: string;
+}) {
   const router = useRouter();
   const pd = visit.projectDetails || {};
   const bill = visit.bill;
@@ -2491,7 +3285,9 @@ function ArchivosPanel({ visit, onUpdate, role }: { visit: VisitDetails; onUpdat
   const [customName, setCustomName] = useState("");
   const [docFile, setDocFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [customDocs, setCustomDocs] = useState<{ name: string; url: string }[]>([]);
+  const [customDocs, setCustomDocs] = useState<{ name: string; url: string }[]>(
+    [],
+  );
   const [fileToDelete, setFileToDelete] = useState<FileEntry | null>(null);
 
   const DOCUMENT_OPTIONS = [
@@ -2505,7 +3301,7 @@ function ArchivosPanel({ visit, onUpdate, role }: { visit: VisitDetails; onUpdat
     "Fotos de Paneles",
     "Formulario de Cierre",
     "Orden de Materiales",
-    "Fotos de Propiedad"
+    "Fotos de Propiedad",
   ];
 
   useEffect(() => {
@@ -2525,7 +3321,11 @@ function ArchivosPanel({ visit, onUpdate, role }: { visit: VisitDetails; onUpdat
 
   const allFilesFlat: FileEntry[] = [];
 
-  const addFile = (name: string, url: string | undefined | null, fieldKey?: string) => {
+  const addFile = (
+    name: string,
+    url: string | undefined | null,
+    fieldKey?: string,
+  ) => {
     if (!url) return;
     allFilesFlat.push({ name, url, fieldKey });
   };
@@ -2534,15 +3334,44 @@ function ArchivosPanel({ visit, onUpdate, role }: { visit: VisitDetails; onUpdat
   const hasBillUrl = pd.electricBillUrl || bill?.imageUrl;
 
   if (hasIdUrl) addFile("ID del Cliente", String(hasIdUrl), "idDocumentUrl");
-  if (hasBillUrl) addFile("Recibo de Luz", String(hasBillUrl), "electricBillUrl");
-  addFile("Seguro de Hogar", pd.homeInsuranceUrl ? String(pd.homeInsuranceUrl) : undefined, "homeInsuranceUrl");
-  addFile("Título de Propiedad", pd.homeTitleUrl ? String(pd.homeTitleUrl) : undefined, "homeTitleUrl");
+  if (hasBillUrl)
+    addFile("Recibo de Luz", String(hasBillUrl), "electricBillUrl");
+  addFile(
+    "Seguro de Hogar",
+    pd.homeInsuranceUrl ? String(pd.homeInsuranceUrl) : undefined,
+    "homeInsuranceUrl",
+  );
+  addFile(
+    "Título de Propiedad",
+    pd.homeTitleUrl ? String(pd.homeTitleUrl) : undefined,
+    "homeTitleUrl",
+  );
   addFile("NOC", pd.nocUrl ? String(pd.nocUrl) : undefined, "nocUrl");
-  addFile("Exterior Scope", pd.exteriorScopeUrl ? String(pd.exteriorScopeUrl) : undefined, "exteriorScopeUrl");
-  addFile("Reporte de Techo", pd.roofReportUrl ? String(pd.roofReportUrl) : undefined, "roofReportUrl");
-  addFile("Fotos de Paneles", pd.panelsPhotoUrl ? String(pd.panelsPhotoUrl) : undefined, "panelsPhotoUrl");
-  addFile("Formulario de Cierre", pd.closingFormUrl ? String(pd.closingFormUrl) : undefined, "closingFormUrl");
-  addFile("Orden de Materiales", pd.materialsOrderUrl ? String(pd.materialsOrderUrl) : undefined, "materialsOrderUrl");
+  addFile(
+    "Exterior Scope",
+    pd.exteriorScopeUrl ? String(pd.exteriorScopeUrl) : undefined,
+    "exteriorScopeUrl",
+  );
+  addFile(
+    "Reporte de Techo",
+    pd.roofReportUrl ? String(pd.roofReportUrl) : undefined,
+    "roofReportUrl",
+  );
+  addFile(
+    "Fotos de Paneles",
+    pd.panelsPhotoUrl ? String(pd.panelsPhotoUrl) : undefined,
+    "panelsPhotoUrl",
+  );
+  addFile(
+    "Formulario de Cierre",
+    pd.closingFormUrl ? String(pd.closingFormUrl) : undefined,
+    "closingFormUrl",
+  );
+  addFile(
+    "Orden de Materiales",
+    pd.materialsOrderUrl ? String(pd.materialsOrderUrl) : undefined,
+    "materialsOrderUrl",
+  );
 
   if (pd.propertyPhotosJson) {
     try {
@@ -2553,7 +3382,10 @@ function ArchivosPanel({ visit, onUpdate, role }: { visit: VisitDetails; onUpdat
         });
       }
     } catch {
-      allFilesFlat.push({ name: "Fotos de Propiedad", url: String(pd.propertyPhotosJson) });
+      allFilesFlat.push({
+        name: "Fotos de Propiedad",
+        url: String(pd.propertyPhotosJson),
+      });
     }
   }
 
@@ -2565,44 +3397,75 @@ function ArchivosPanel({ visit, onUpdate, role }: { visit: VisitDetails; onUpdat
     try {
       if (file.fieldKey) {
         // Project/Bill required file — clear the field
-        if (file.fieldKey === "idDocumentUrl" || file.fieldKey === "additionalFileUrl") {
+        if (
+          file.fieldKey === "idDocumentUrl" ||
+          file.fieldKey === "additionalFileUrl"
+        ) {
           await fetch("/api/project-details", {
-            method: "POST", headers: { "Content-Type": "application/json" },
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ visitId: visit.id, idDocumentUrl: null }),
           });
           await fetch(`/api/visits/${visit.id}`, {
-            method: "PATCH", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ bill: { upsert: { create: { additionalFileUrl: null }, update: { additionalFileUrl: null } } } }),
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              bill: {
+                upsert: {
+                  create: { additionalFileUrl: null },
+                  update: { additionalFileUrl: null },
+                },
+              },
+            }),
           });
-        } else if (file.fieldKey === "electricBillUrl" || file.fieldKey === "imageUrl") {
+        } else if (
+          file.fieldKey === "electricBillUrl" ||
+          file.fieldKey === "imageUrl"
+        ) {
           await fetch("/api/project-details", {
-            method: "POST", headers: { "Content-Type": "application/json" },
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ visitId: visit.id, electricBillUrl: null }),
           });
           await fetch(`/api/visits/${visit.id}`, {
-            method: "PATCH", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ bill: { upsert: { create: { imageUrl: null }, update: { imageUrl: null } } } }),
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              bill: {
+                upsert: {
+                  create: { imageUrl: null },
+                  update: { imageUrl: null },
+                },
+              },
+            }),
           });
         } else {
           await fetch("/api/project-details", {
-            method: "POST", headers: { "Content-Type": "application/json" },
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ visitId: visit.id, [file.fieldKey]: null }),
           });
         }
       } else {
-        const idx = customDocs.findIndex(d => d.url === file.url);
+        const idx = customDocs.findIndex((d) => d.url === file.url);
         if (idx === -1) return;
         const updatedDocs = customDocs.filter((_, i) => i !== idx);
         setCustomDocs(updatedDocs);
         await fetch("/api/project-details", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ visitId: visit.id, customDocs: JSON.stringify(updatedDocs) }),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            visitId: visit.id,
+            customDocs: JSON.stringify(updatedDocs),
+          }),
         });
       }
       toast.success("Archivo eliminado");
       if (onUpdate) onUpdate();
       else router.refresh();
-    } catch { toast.error("Error al eliminar"); }
+    } catch {
+      toast.error("Error al eliminar");
+    }
   };
 
   const handleDocUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2611,8 +3474,15 @@ function ArchivosPanel({ visit, onUpdate, role }: { visit: VisitDetails; onUpdat
   };
 
   const finalDocName = docName === "Otro" ? customName : docName;
-  const isOptUploaded = (opt: string) => allFilesFlat.some(f => f.name === opt || (opt === "Fotos de Propiedad" && f.name.startsWith("Foto de Propiedad")));
-  const isAlreadyUploaded = docName !== "Otro" && docName !== "" && isOptUploaded(docName);
+  const isOptUploaded = (opt: string) =>
+    allFilesFlat.some(
+      (f) =>
+        f.name === opt ||
+        (opt === "Fotos de Propiedad" &&
+          f.name.startsWith("Foto de Propiedad")),
+    );
+  const isAlreadyUploaded =
+    docName !== "Otro" && docName !== "" && isOptUploaded(docName);
 
   const uploadDocument = async () => {
     if (!finalDocName.trim() || !docFile || isAlreadyUploaded) return;
@@ -2620,7 +3490,10 @@ function ArchivosPanel({ visit, onUpdate, role }: { visit: VisitDetails; onUpdat
     try {
       const fd = new FormData();
       fd.append("file", docFile);
-      const uploadRes = await fetch("/api/upload", { method: "POST", body: fd });
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: fd,
+      });
       if (!uploadRes.ok) throw new Error("Upload failed");
       const data = await uploadRes.json();
       const url = data.url;
@@ -2631,7 +3504,10 @@ function ArchivosPanel({ visit, onUpdate, role }: { visit: VisitDetails; onUpdat
       await fetch("/api/project-details", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ visitId: visit.id, customDocs: JSON.stringify(updatedDocs) }),
+        body: JSON.stringify({
+          visitId: visit.id,
+          customDocs: JSON.stringify(updatedDocs),
+        }),
       });
 
       setDocName("");
@@ -2651,17 +3527,94 @@ function ArchivosPanel({ visit, onUpdate, role }: { visit: VisitDetails; onUpdat
 
   const closeRequested = (() => {
     if (!visit?.contractFields) return false;
-    try { return !!(JSON.parse(visit.contractFields)?.closeRequestedAt); } catch { return false; }
+    try {
+      return !!JSON.parse(visit.contractFields)?.closeRequestedAt;
+    } catch {
+      return false;
+    }
   })();
-  
-  const isFinished = visit.stage === 'CLOSED' || visit.stage === 'CANCELLED' || (visit.stage === 'PROJECT' && closeRequested);
-  const canUpload = role !== 'ADMIN' && !isFinished;
-  const canDelete = role === 'ADMIN' || !isFinished;
+
+  const isFinished =
+    visit.stage === "CLOSED" ||
+    visit.stage === "CANCELLED" ||
+    (visit.stage === "PROJECT" && closeRequested);
+  const canUpload = role !== "ADMIN" && !isFinished;
+  const canDelete = role === "ADMIN" || !isFinished;
 
   if (noFiles) {
     return (
       <div className="space-y-6">
         {canUpload && (
+          <div className="mb-6 p-4 glass-panel rounded-xl">
+            <h4 className="text-sm font-semibold mb-3">Agregar Documento</h4>
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2 flex-wrap">
+                <select
+                  value={docName}
+                  onChange={(e) => setDocName(e.target.value)}
+                  className="flex-1 min-w-[200px] h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm"
+                >
+                  <option value="">Selecciona un documento</option>
+                  {DOCUMENT_OPTIONS.map((opt) => {
+                    const uploaded = isOptUploaded(opt);
+                    return (
+                      <option key={opt} value={opt} disabled={uploaded}>
+                        {opt}
+                        {uploaded ? " (Ya subido)" : ""}
+                      </option>
+                    );
+                  })}
+                  <option value="Otro">Otro (Especificar)</option>
+                </select>
+                {docName === "Otro" && (
+                  <input
+                    type="text"
+                    placeholder="Nombre del documento"
+                    value={customName}
+                    onChange={(e) => setCustomName(e.target.value)}
+                    className="flex-1 min-w-[200px] h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm"
+                  />
+                )}
+                <input
+                  type="file"
+                  onChange={handleDocUpload}
+                  className="text-sm text-on-surface file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-on-primary file:text-xs"
+                />
+                <Button
+                  onClick={uploadDocument}
+                  disabled={
+                    uploading ||
+                    !finalDocName.trim() ||
+                    !docFile ||
+                    isAlreadyUploaded
+                  }
+                >
+                  {uploading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    "Subir"
+                  )}
+                </Button>
+              </div>
+              {isAlreadyUploaded && (
+                <p className="text-xs text-red-500 font-medium">
+                  ya se encuentra el archivo no se necesita otro
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+        <div className="flex flex-col items-center justify-center py-12 text-on-surface-variant">
+          <FileText className="w-16 h-16 mb-4 opacity-30" />
+          <p className="text-lg font-medium">No hay archivos disponibles</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {canUpload && (
         <div className="mb-6 p-4 glass-panel rounded-xl">
           <h4 className="text-sm font-semibold mb-3">Agregar Documento</h4>
           <div className="flex flex-col gap-2">
@@ -2672,11 +3625,12 @@ function ArchivosPanel({ visit, onUpdate, role }: { visit: VisitDetails; onUpdat
                 className="flex-1 min-w-[200px] h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm"
               >
                 <option value="">Selecciona un documento</option>
-                {DOCUMENT_OPTIONS.map(opt => {
+                {DOCUMENT_OPTIONS.map((opt) => {
                   const uploaded = isOptUploaded(opt);
                   return (
                     <option key={opt} value={opt} disabled={uploaded}>
-                      {opt}{uploaded ? " (Ya subido)" : ""}
+                      {opt}
+                      {uploaded ? " (Ya subido)" : ""}
                     </option>
                   );
                 })}
@@ -2696,74 +3650,35 @@ function ArchivosPanel({ visit, onUpdate, role }: { visit: VisitDetails; onUpdat
                 onChange={handleDocUpload}
                 className="text-sm text-on-surface file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-on-primary file:text-xs"
               />
-              <Button onClick={uploadDocument} disabled={uploading || !finalDocName.trim() || !docFile || isAlreadyUploaded}>
-                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Subir"}
+              <Button
+                onClick={uploadDocument}
+                disabled={
+                  uploading ||
+                  !finalDocName.trim() ||
+                  !docFile ||
+                  isAlreadyUploaded
+                }
+              >
+                {uploading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "Subir"
+                )}
               </Button>
             </div>
             {isAlreadyUploaded && (
-              <p className="text-xs text-red-500 font-medium">ya se encuentra el archivo no se necesita otro</p>
+              <p className="text-xs text-red-500 font-medium">
+                ya se encuentra el archivo no se necesita otro
+              </p>
             )}
           </div>
         </div>
-        )}
-        <div className="flex flex-col items-center justify-center py-12 text-on-surface-variant">
-          <FileText className="w-16 h-16 mb-4 opacity-30" />
-          <p className="text-lg font-medium">No hay archivos disponibles</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-8">
-      {canUpload && (
-      <div className="mb-6 p-4 glass-panel rounded-xl">
-        <h4 className="text-sm font-semibold mb-3">Agregar Documento</h4>
-        <div className="flex flex-col gap-2">
-          <div className="flex gap-2 flex-wrap">
-            <select
-              value={docName}
-              onChange={(e) => setDocName(e.target.value)}
-              className="flex-1 min-w-[200px] h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm"
-            >
-              <option value="">Selecciona un documento</option>
-              {DOCUMENT_OPTIONS.map(opt => {
-                const uploaded = isOptUploaded(opt);
-                return (
-                  <option key={opt} value={opt} disabled={uploaded}>
-                    {opt}{uploaded ? " (Ya subido)" : ""}
-                  </option>
-                );
-              })}
-              <option value="Otro">Otro (Especificar)</option>
-            </select>
-            {docName === "Otro" && (
-              <input
-                type="text"
-                placeholder="Nombre del documento"
-                value={customName}
-                onChange={(e) => setCustomName(e.target.value)}
-                className="flex-1 min-w-[200px] h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm"
-              />
-            )}
-            <input
-              type="file"
-              onChange={handleDocUpload}
-              className="text-sm text-on-surface file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-on-primary file:text-xs"
-            />
-            <Button onClick={uploadDocument} disabled={uploading || !finalDocName.trim() || !docFile || isAlreadyUploaded}>
-              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Subir"}
-            </Button>
-          </div>
-          {isAlreadyUploaded && (
-            <p className="text-xs text-red-500 font-medium">ya se encuentra el archivo no se necesita otro</p>
-          )}
-        </div>
-      </div>
       )}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
         {allFilesFlat.map((file, i) => {
-          const isImage = /\.(jpg|jpeg|png|gif|webp|svg|heic|heif)$/i.test(file.url);
+          const isImage = /\.(jpg|jpeg|png|gif|webp|svg|heic|heif)$/i.test(
+            file.url,
+          );
           return (
             <motion.div
               key={i}
@@ -2773,23 +3688,29 @@ function ArchivosPanel({ visit, onUpdate, role }: { visit: VisitDetails; onUpdat
               transition={{ delay: i * 0.03 }}
             >
               {canDelete && (
-              <button
-                onClick={() => setFileToDelete(file)}
-                className="absolute top-1 left-1 z-10 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                title="Eliminar archivo"
-              >
-                <X className="w-3 h-3" />
-              </button>
+                <button
+                  onClick={() => setFileToDelete(file)}
+                  className="absolute top-1 left-1 z-10 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                  title="Eliminar archivo"
+                >
+                  <X className="w-3 h-3" />
+                </button>
               )}
               <div className="aspect-square bg-surface-container-low flex items-center justify-center overflow-hidden">
                 {isImage ? (
-                  <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
+                  <img
+                    src={file.url}
+                    alt={file.name}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <FileText className="w-12 h-12 text-on-surface-variant opacity-40" />
                 )}
               </div>
               <div className="p-3">
-                <p className="text-xs font-medium text-on-surface truncate">{file.name}</p>
+                <p className="text-xs font-medium text-on-surface truncate">
+                  {file.name}
+                </p>
                 <a
                   href={file.url}
                   target="_blank"
@@ -2818,7 +3739,9 @@ function ArchivosPanel({ visit, onUpdate, role }: { visit: VisitDetails; onUpdat
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
             >
-              <h3 className="text-xl font-bold text-on-surface mb-2">Eliminar Documento</h3>
+              <h3 className="text-xl font-bold text-on-surface mb-2">
+                Eliminar Documento
+              </h3>
               <p className="text-on-surface-variant mb-6 text-sm">
                 ¿Quieres eliminar este documento?
               </p>
@@ -2848,7 +3771,13 @@ function ArchivosPanel({ visit, onUpdate, role }: { visit: VisitDetails; onUpdat
   );
 }
 
-function HistorialPanel({ history, loading }: { history: HistoryEntry[]; loading: boolean }) {
+function HistorialPanel({
+  history,
+  loading,
+}: {
+  history: HistoryEntry[];
+  loading: boolean;
+}) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -2879,7 +3808,10 @@ function HistorialPanel({ history, loading }: { history: HistoryEntry[]; loading
                 borderColor: getTimelineColor(entry.action),
               }}
             >
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getTimelineColor(entry.action) }} />
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: getTimelineColor(entry.action) }}
+              />
             </div>
             <div className="glass-panel rounded-xl p-4">
               <div className="flex items-center justify-between mb-1">
@@ -2892,11 +3824,17 @@ function HistorialPanel({ history, loading }: { history: HistoryEntry[]; loading
                 >
                   {entry.action}
                 </span>
-                <span className="text-xs text-on-surface-variant">{entry.date}</span>
+                <span className="text-xs text-on-surface-variant">
+                  {entry.date}
+                </span>
               </div>
-              <p className="text-sm font-medium text-on-surface">{entry.userName}</p>
+              <p className="text-sm font-medium text-on-surface">
+                {entry.userName}
+              </p>
               {entry.details && (
-                <p className="text-xs text-on-surface-variant mt-1">{entry.details}</p>
+                <p className="text-xs text-on-surface-variant mt-1">
+                  {entry.details}
+                </p>
               )}
             </div>
           </div>
@@ -2944,9 +3882,19 @@ function UploadField({
   if (preview) {
     return (
       <div className="space-y-2">
-        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">{label}</label>
-        <motion.div className="relative" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-          <img src={preview} alt="Preview" className="w-full h-40 object-cover rounded-xl" />
+        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+          {label}
+        </label>
+        <motion.div
+          className="relative"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <img
+            src={preview}
+            alt="Preview"
+            className="w-full h-40 object-cover rounded-xl"
+          />
           {!readOnly && (
             <button
               type="button"
@@ -2963,18 +3911,29 @@ function UploadField({
   if (readOnly) {
     return (
       <div className="space-y-2">
-        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">{label}</label>
+        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+          {label}
+        </label>
         <p className="text-sm text-on-surface-variant italic">No subido</p>
       </div>
     );
   }
   return (
     <div className="space-y-2">
-      <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">{label}</label>
+      <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+        {label}
+      </label>
       <label className="w-full h-32 border-2 border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center bg-surface-container-lowest hover:bg-primary/5 transition-colors cursor-pointer group">
         <Upload className="w-6 h-6 text-on-surface-variant group-hover:text-primary transition-colors" />
-        <span className="text-xs text-on-surface-variant mt-1">Haz clic para subir archivo</span>
-        <input type="file" accept="image/*,.pdf" onChange={onChange} className="hidden" />
+        <span className="text-xs text-on-surface-variant mt-1">
+          Haz clic para subir archivo
+        </span>
+        <input
+          type="file"
+          accept="image/*,.pdf"
+          onChange={onChange}
+          className="hidden"
+        />
       </label>
     </div>
   );
@@ -2993,10 +3952,17 @@ function ReadOnlyField({
 }) {
   return (
     <div>
-      <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">{label}</label>
+      <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+        {label}
+      </label>
       {linkUrl ? (
         <div className="mt-1">
-          <a href={linkUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm flex items-center gap-1">
+          <a
+            href={linkUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline text-sm flex items-center gap-1"
+          >
             <Eye className="w-3 h-3" /> Ver
           </a>
         </div>
@@ -3008,5 +3974,3 @@ function ReadOnlyField({
     </div>
   );
 }
-
-

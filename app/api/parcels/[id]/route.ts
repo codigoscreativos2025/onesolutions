@@ -1,15 +1,18 @@
 import { verifyApiAuth } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const authRes = await verifyApiAuth();
   if (authRes.error) {
-    return NextResponse.json({ error: authRes.error }, { status: authRes.status });
+    return NextResponse.json(
+      { error: authRes.error },
+      { status: authRes.status },
+    );
   }
   const session = authRes.session!;
 
@@ -23,7 +26,7 @@ export async function GET(
       },
       visitHistory: {
         orderBy: { visitedAt: "desc" },
-        include: { setter: { select: { name: true, role: true } } }
+        include: { setter: { select: { name: true, role: true } } },
       },
       visits: {
         orderBy: { createdAt: "desc" },
@@ -65,15 +68,32 @@ export async function GET(
 
   const role = session.user.role;
   const userId = parseInt(session.user.id);
-  
-  if (role === 'SETTER' || role === 'SETTER_JR' || role === 'TRAINEE') {
-    const isOwner = parcel.setterId === userId || 
-                    parcel.visits?.some((v: any) => v.setterId === userId || v.closerId === userId) ||
-                    parcel.visitHistory?.some((h: any) => h.setterId === userId);
+
+  let hasGlobalActiveVisit = false;
+  if (parcel.visits && parcel.visits.length > 0) {
+    hasGlobalActiveVisit = parcel.visits.some((v: any) => {
+      if (v.stage === "CANCELLED") return false;
+      if (v.stage === "CLOSED") {
+        try {
+          const cf = v.contractFields ? JSON.parse(v.contractFields) : {};
+          if (cf.postCloseTags === "Finalizado") return false;
+        } catch {}
+      }
+      return true;
+    });
+  }
+
+  if (role === "SETTER" || role === "SETTER_JR" || role === "TRAINEE") {
+    const isOwner =
+      parcel.setterId === userId ||
+      parcel.visits?.some(
+        (v: any) => v.setterId === userId || v.closerId === userId,
+      ) ||
+      parcel.visitHistory?.some((h: any) => h.setterId === userId);
     if (!isOwner) {
       parcel.visits = [];
     }
-  } else if (role === 'PARTNER') {
+  } else if (role === "PARTNER") {
     if (parcel.partnerId !== userId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -81,28 +101,41 @@ export async function GET(
 
   // Remove history/notes if Trainee didn't claim it? No, if isOwner is true, they claimed it or were assigned.
 
-  return NextResponse.json(parcel);
+  return NextResponse.json({ ...parcel, hasGlobalActiveVisit });
 }
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const authRes = await verifyApiAuth();
   if (authRes.error) {
-    return NextResponse.json({ error: authRes.error }, { status: authRes.status });
+    return NextResponse.json(
+      { error: authRes.error },
+      { status: authRes.status },
+    );
   }
   const session = authRes.session!;
 
   const { id } = await params;
   const body = await request.json();
-  const { partnerId, parcelTags, parcelNotes, visitedStatus, address: bodyAddress, geometry: bodyGeometry } = body;
+  const {
+    partnerId,
+    parcelTags,
+    parcelNotes,
+    visitedStatus,
+    address: bodyAddress,
+    geometry: bodyGeometry,
+  } = body;
 
   const parcel = await prisma.parcel.findUnique({ where: { id } });
 
   const isAdmin = session.user.role === "ADMIN";
   const isOwner = parcel?.setterId === parseInt(session.user.id);
-  const isSetterOrCloser = session.user.role === "SETTER" || session.user.role === "SETTER_JR" || session.user.role === "CLOSER";
+  const isSetterOrCloser =
+    session.user.role === "SETTER" ||
+    session.user.role === "SETTER_JR" ||
+    session.user.role === "CLOSER";
 
   const updateData: Record<string, unknown> = {};
 
@@ -110,7 +143,8 @@ export async function PATCH(
     updateData.partnerId = partnerId;
   }
 
-  const isTagOrNotesUpdate = parcelTags !== undefined || parcelNotes !== undefined;
+  const isTagOrNotesUpdate =
+    parcelTags !== undefined || parcelNotes !== undefined;
   if (isTagOrNotesUpdate && (isAdmin || isOwner || isSetterOrCloser)) {
     if (parcelTags !== undefined) updateData.parcelTags = parcelTags;
     if (parcelNotes !== undefined) updateData.parcelNotes = parcelNotes;
@@ -130,7 +164,8 @@ export async function PATCH(
       id,
       ...updateData,
       address: bodyAddress || "Sin direccion",
-      geometry: bodyGeometry || JSON.stringify({ type: "Polygon", coordinates: [] }),
+      geometry:
+        bodyGeometry || JSON.stringify({ type: "Polygon", coordinates: [] }),
       ...(isAdmin ? { partnerId: partnerId as number } : {}),
     },
     include: {
