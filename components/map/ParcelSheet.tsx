@@ -451,7 +451,7 @@ export function ParcelSheet({
           )}
 
           {/* Historial de Etiquetas / Notas */}
-          {parcel.visitHistory && parcel.visitHistory.length > 0 && (
+          {!hasActiveVisit && parcel.visitHistory && parcel.visitHistory.length > 0 && (
             <div className="space-y-2 mt-4">
               <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
                 Historial de Etiquetas
