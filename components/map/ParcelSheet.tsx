@@ -43,6 +43,13 @@ interface Parcel {
     setter?: { id: number; name: string };
     projects?: { projectType: { name: string } }[];
   }[];
+  visitHistory?: {
+    id: number;
+    visitedAt: string;
+    status: string;
+    notes?: string;
+    setter?: { name: string; role: string };
+  }[];
 }
 
 interface ParcelSheetProps {
@@ -128,6 +135,10 @@ export function ParcelSheet({
         }
         if (data?.parcelNotes) {
           setLocalNotes(data.parcelNotes);
+        }
+        if (data?.visitHistory) {
+          // This will trigger a re-render with the updated parcel data containing visitHistory
+          onParcelUpdated?.(data);
         }
       })
       .catch(() => {});
@@ -439,6 +450,43 @@ export function ParcelSheet({
             </div>
           )}
 
+          {/* Historial de Etiquetas / Notas */}
+          {parcel.visitHistory && parcel.visitHistory.length > 0 && (
+            <div className="space-y-2 mt-4">
+              <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                Historial de Etiquetas
+              </h3>
+              <div className="flex flex-col gap-2">
+                {parcel.visitHistory.map((h) => {
+                  const tagInfo = notAvailTags.find(t => t.name === h.status) || { color: "#888", name: h.status };
+                  return (
+                    <div key={h.id} className="p-3 rounded-xl border border-glass-border bg-white/40 dark:bg-black/20 text-sm">
+                      <div className="flex items-center justify-between mb-1">
+                        <span 
+                          className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                          style={{ backgroundColor: tagInfo.color + "20", color: tagInfo.color }}
+                        >
+                          {tagInfo.name}
+                        </span>
+                        <span className="text-xs text-on-surface-variant">
+                          {new Date(h.visitedAt).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-end mt-2">
+                        <p className="text-on-surface italic text-xs leading-relaxed max-w-[70%]">
+                          {h.notes ? `"${h.notes}"` : "Sin notas adicionales"}
+                        </p>
+                        <p className="text-xs font-medium text-on-surface-variant">
+                          - {h.setter?.name || "Usuario"}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {quickTagMessage && (
             <div
               className="p-4 rounded-xl border flex items-center gap-3"
@@ -604,6 +652,35 @@ export function ParcelSheet({
               {t.common.close}
             </Button>
           )}
+
+          {/* Leyenda en el Drawer */}
+          <div className="mt-6 pt-4 border-t border-glass-border">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mb-3 ml-1">
+              Leyenda de Etiquetas
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center gap-2 p-1.5 rounded-lg">
+                <div className="w-3 h-3 rounded-full shrink-0 bg-[#ef4444]" />
+                <span className="text-[10px] font-semibold text-on-surface-variant">No abrio</span>
+              </div>
+              <div className="flex items-center gap-2 p-1.5 rounded-lg">
+                <div className="w-3 h-3 rounded-full shrink-0 bg-[#f97316]" />
+                <span className="text-[10px] font-semibold text-on-surface-variant">No le interesa</span>
+              </div>
+              <div className="flex items-center gap-2 p-1.5 rounded-lg">
+                <div className="w-3 h-3 rounded-full shrink-0 bg-[#3b82f6]" />
+                <span className="text-[10px] font-semibold text-on-surface-variant">Pasar luego</span>
+              </div>
+              <div className="flex items-center gap-2 p-1.5 rounded-lg">
+                <div className="w-3 h-3 rounded-full shrink-0 bg-[#a855f7]" />
+                <span className="text-[10px] font-semibold text-on-surface-variant">No esta prop.</span>
+              </div>
+              <div className="flex items-center gap-2 p-1.5 rounded-lg">
+                <div className="w-3 h-3 rounded-full shrink-0 bg-[#eab308]" />
+                <span className="text-[10px] font-semibold text-on-surface-variant">No vive prop.</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

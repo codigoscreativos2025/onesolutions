@@ -21,7 +21,10 @@ export async function GET(
       setter: {
         select: { id: true, name: true },
       },
-      visitHistory: true,
+      visitHistory: {
+        orderBy: { visitedAt: "desc" },
+        include: { setter: { select: { name: true, role: true } } }
+      },
       visits: {
         orderBy: { createdAt: "desc" },
         include: {
