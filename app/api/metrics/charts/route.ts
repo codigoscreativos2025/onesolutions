@@ -57,7 +57,7 @@ export async function GET(request: Request) {
 
     if (userId) {
       whereClause.setterId = parseInt(userId);
-    } else if (role === 'SETTER') {
+    } else if (role === 'SETTER' || role === 'SETTER_JR') {
       whereClause.setterId = currentUserId;
     }
 
@@ -129,7 +129,7 @@ export async function GET(request: Request) {
 
     if (userId) {
       (projectTypesWhere.visit as Record<string, unknown>).setterId = parseInt(userId);
-    } else if (role === 'SETTER') {
+    } else if (role === 'SETTER' || role === 'SETTER_JR') {
       (projectTypesWhere.visit as Record<string, unknown>).setterId = currentUserId;
     }
 

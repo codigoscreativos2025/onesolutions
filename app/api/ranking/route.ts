@@ -52,9 +52,7 @@ export async function GET(request: NextRequest) {
       const leadsGenerated = user.visitsAsSetter.filter(
         (v) => v.stage === "PROPOSAL_ACCEPTED"
       ).length;
-      const doors = user.visitsAsSetter.filter(
-        (v) => v.stage === "IN_PROGRESS"
-      ).length;
+      const doors = user.visitsAsSetter.length;
       return {
         id: user.id,
         name: user.name,
@@ -89,7 +87,7 @@ export async function GET(request: NextRequest) {
         select: { id: true, completedAt: true, stage: true },
       },
       visitsAsSetter: {
-        where: { stage: "IN_PROGRESS", ...dateFilter },
+        where: dateFilter,
         select: { id: true },
       },
     },
