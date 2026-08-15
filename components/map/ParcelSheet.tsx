@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { CreateLeadModal } from "@/components/leads/CreateLeadModal";
-import { DoorOpen, X, User, Tag, Plus, Pencil, Trash2, DoorClosed, ThumbsDown, Clock, UserX, Home } from "lucide-react";
+import { DoorOpen, X, User, Tag, Plus, Pencil, Trash2, DoorClosed, ThumbsDown, Clock, UserX, Home, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useLocale } from "@/lib/locale-context";
+import { getPropertyClassLabel } from "@/lib/utils";
 
 interface TagObject {
   name: string;
@@ -464,7 +465,7 @@ export function ParcelSheet({
 
           <div className="grid grid-cols-2 gap-3">
             {metadata.owner && <InfoCard label="Propietario" value={metadata.owner} />}
-            {metadata.property_class && <InfoCard label="Clase" value={metadata.property_class} />}
+            {metadata.property_class && <InfoCard label="Clase" value={getPropertyClassLabel(metadata.property_class)} />}
             {metadata.acreage && <InfoCard label="Acres" value={metadata.acreage} />}
             {metadata.land_value && <InfoCard label="Valor terreno" value={`$${Number(metadata.land_value).toLocaleString()}`} />}
             {metadata.building_value && <InfoCard label="Valor constr." value={`$${Number(metadata.building_value).toLocaleString()}`} />}
