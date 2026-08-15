@@ -47,6 +47,7 @@ interface Parcel {
 
 interface ParcelSheetProps {
   parcel: Parcel | null;
+  isFetching?: boolean;
   onClose: () => void;
   onClaim: (parcelId: string) => Promise<{ id: string } | void>;
   onVisitStarted: () => void;
@@ -58,6 +59,7 @@ interface ParcelSheetProps {
 
 export function ParcelSheet({
   parcel,
+  isFetching = false,
   onClose,
   onClaim,
   onVisitStarted,
@@ -195,6 +197,15 @@ export function ParcelSheet({
   }, []);
 
   if (!parcel) return null;
+
+  if (isFetching) {
+    return (
+      <div className="fixed inset-y-0 right-0 z-[1000] w-full sm:w-96 glass-panel border-l border-glass-border shadow-[-10px_0_40px_rgba(0,0,0,0.1)] flex flex-col justify-center items-center h-full animate-slide-in-right">
+        <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
+        <p className="text-on-surface-variant font-medium text-sm">Cargando parcela...</p>
+      </div>
+    );
+  }
 
   const STAGE_MAP: Record<string, string> = {
     IN_PROGRESS: "Lead",

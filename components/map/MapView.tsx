@@ -63,6 +63,7 @@ export default function MapView({
   const map = useRef<maplibregl.Map | null>(null);
   const mapTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
+  const [isFetchingParcel, setIsFetchingParcel] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [legendTags, setLegendTags] = useState<
     { id: number; name: string; color: string }[]
@@ -359,6 +360,7 @@ export default function MapView({
           }
         );
         setSelectedParcel(basicParcel);
+        setIsFetchingParcel(true);
 
         try {
           // Prefer full GIS detail + merge with DB if exists
@@ -457,9 +459,7 @@ export default function MapView({
             }
             fetchMarkersRef.current?.();
           }
-        } catch {
-          /* keep basic parcel */
-        }
+        } catch { /* keep basic parcel */ } finally { setIsFetchingParcel(false); }
       };
 
       m.on("click", "parcel-fills", async (e) => {
@@ -703,6 +703,7 @@ export default function MapView({
         </div>
       )}
       <ParcelSheet
+        isFetching={isFetchingParcel}
         parcel={selectedParcel}
         onClose={() => {
           setSelectedParcel(null);
