@@ -17,31 +17,66 @@ export function formatPhoneNumber(value: string) {
 }
 
 export function getPropertyClassLabel(code: string | number): string {
-  const codeStr = String(code).trim();
+  // Aseguramos que el código tenga al menos 4 dígitos rellenando con ceros si es necesario.
+  const codeStr = String(code).trim().padStart(4, '0');
+  
+  // Diccionario principal con las clases base de 2 dígitos del Florida Department of Revenue (DOR)
   const classes: Record<string, string> = {
-    "0000": "Terreno Vacío",
-    "0100": "Casa Unifamiliar",
+    "00": "Terreno Vacío",
     "01": "Casa Unifamiliar",
-    "0200": "Casa Móvil",
     "02": "Casa Móvil",
-    "0300": "Multifamiliar (>=10 unidades)",
-    "0400": "Condominio",
+    "03": "Multifamiliar (>=10 unidades)",
     "04": "Condominio",
-    "0500": "Cooperativa",
-    "0800": "Multifamiliar (<10 unidades)",
+    "05": "Cooperativa",
+    "06": "Residencia de Retiro / Asilo",
+    "07": "Misceláneo Residencial",
     "08": "Multifamiliar (<10 unidades)",
-    "1000": "Comercial Vacío",
-    "1100": "Tienda",
-    "1200": "Comercio Mixto",
-    "1700": "Oficinas",
-    "4100": "Industrial Ligero",
-    "4800": "Almacenes/Bodegas",
-    "7100": "Iglesia / Templo",
-    "7200": "Escuela Privada",
-    "7300": "Hospital Privado",
-    "8000": "Propiedad del Gobierno",
-    "8200": "Bosque / Parque",
+    "09": "Elementos Comunes Residenciales",
+    "10": "Terreno Vacío Comercial",
+    "11": "Tienda",
+    "12": "Comercio Mixto",
+    "13": "Tienda por Departamentos",
+    "14": "Supermercado",
+    "15": "Centro Comercial Regional",
+    "16": "Centro Comercial Comunitario",
+    "17": "Oficinas (1 piso)",
+    "18": "Oficinas (Multi-piso)",
+    "19": "Servicios Profesionales",
+    "20": "Aeropuertos / Terminales",
+    "21": "Restaurantes / Cafeterías",
+    "23": "Bancos / Entidades Financieras",
+    "25": "Talleres Mecánicos",
+    "26": "Gasolinera",
+    "27": "Estacionamiento",
+    "28": "Concesionario de Autos",
+    "39": "Hotel / Motel",
+    "40": "Terreno Vacío Industrial",
+    "41": "Industrial Ligero",
+    "42": "Industrial Pesado",
+    "48": "Almacenes / Bodegas",
+    "70": "Terreno Vacío Institucional",
+    "71": "Iglesia / Templo",
+    "72": "Escuela Privada",
+    "73": "Hospital Privado",
+    "80": "Propiedad del Gobierno",
+    "82": "Bosque / Parque Público",
+    "86": "Condado / Ciudad",
+    "89": "Municipal",
   };
 
-  return classes[codeStr] ? `${codeStr} - ${classes[codeStr]}` : codeStr;
+  // Primero intentamos buscar el código exacto por si tuviéramos mapeos específicos de 4 dígitos
+  const exactMatch = classes[codeStr];
+  if (exactMatch) {
+    return `${codeStr} - ${exactMatch}`;
+  }
+
+  // Fallback: Tomamos los primeros 2 dígitos que representan la categoría general en el estándar de Florida DOR
+  const baseCode = codeStr.substring(0, 2);
+  const baseMatch = classes[baseCode];
+  if (baseMatch) {
+    return `${codeStr} - ${baseMatch}`;
+  }
+
+  // Si no se encuentra, devolvemos el código original
+  return codeStr;
 }
