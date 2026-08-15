@@ -7,6 +7,7 @@ const OUT_FIELDS = [
   "PARCEL",
   "NAME1",
   "NAME2",
+  "ADD1",
   "SITUS",
   "CITY_SITUS",
   "ZIP_SITUS",

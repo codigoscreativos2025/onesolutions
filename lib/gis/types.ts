@@ -5,6 +5,7 @@ export interface GisFieldMap {
   owner: string;
   owner2?: string;
   address: string;
+  mailAddress?: string;
   city: string;
   zip: string;
   landValue?: string;
@@ -33,6 +34,7 @@ export interface NormalizedGisFeature {
   city: string;
   state: string;
   zipCode: string;
+  ownerOccupied?: boolean;
   geometry: GeoJSON.Geometry | null;
   landValue?: number | null;
   buildingValue?: number | null;

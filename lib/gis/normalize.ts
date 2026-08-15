@@ -70,6 +70,20 @@ export function normalizeArcGisFeature(
     [city, config.state, zipCode].filter(Boolean).join(", ") ||
     "Sin direccion";
 
+  let ownerOccupied: boolean | undefined = undefined;
+  if (fm.mailAddress) {
+    const mailAddress = str(props[fm.mailAddress]);
+    if (mailAddress && addressRaw) {
+      const mailNum = mailAddress.match(/^(\d+)/)?.[1];
+      const situsNum = addressRaw.match(/^(\d+)/)?.[1];
+      if (mailNum && situsNum) {
+        ownerOccupied = mailNum === situsNum;
+      } else {
+        ownerOccupied = mailAddress.toLowerCase().trim().startsWith(addressRaw.toLowerCase().trim().substring(0, 5));
+      }
+    }
+  }
+
   return {
     externalId: makeExternalId(config.id, parcelId),
     parcelId,
@@ -78,6 +92,7 @@ export function normalizeArcGisFeature(
     city: city === "UN-INCORPORATED" ? "" : city,
     state: config.state,
     zipCode,
+    ownerOccupied,
     geometry: cleanGeometry(feature.geometry || null),
     landValue: fm.landValue ? num(props[fm.landValue]) : null,
     buildingValue: fm.buildingValue ? num(props[fm.buildingValue]) : null,
@@ -95,6 +110,7 @@ export function toAppParcelPayload(
     parcelTags?: string | null;
     parcelNotes?: string | null;
     status?: string;
+    ownerOccupied?: boolean;
     setter?: { id: number; name: string } | null;
     visits?: unknown[];
   } | null
@@ -121,6 +137,7 @@ export function toAppParcelPayload(
     city: feature.city,
     state: feature.state,
     zipCode: feature.zipCode,
+    ownerOccupied: existing?.ownerOccupied ?? feature.ownerOccupied,
     parcelTags: existing?.parcelTags ?? null,
     parcelNotes: existing?.parcelNotes ?? null,
     geometry: JSON.stringify(
