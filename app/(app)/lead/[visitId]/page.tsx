@@ -12,6 +12,7 @@ import { ContractModal } from "@/components/quote/ContractModal";
 import { ChatInterface } from "@/components/chat/ChatInterface";
 import { SlotPicker } from "@/components/calendar/SlotPicker";
 import { NotesPanel } from "@/components/lead/NotesPanel";
+import { formatPhoneNumber } from "@/lib/utils";
 import {
   ArrowLeft,
   Loader2,
@@ -2131,9 +2132,7 @@ function ClientInfoPanel({
               value={editFields?._billPhone || ""}
               onChange={(e) =>
                 onFieldChange?.(
-                  "_billPhone",
-                  (e.target as HTMLInputElement).value,
-                )
+                  "_billPhone", formatPhoneNumber((e.target as HTMLInputElement).value))
               }
               onBlur={onSave}
               placeholder="Número de teléfono"
