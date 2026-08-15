@@ -17,7 +17,9 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const roleFilter = searchParams.get("role");
 
-  const whereClause: Record<string, unknown> = {};
+  const whereClause: Record<string, unknown> = {
+    email: { not: "admin@onesolutions.com" }
+  };
   if (roleFilter) {
     whereClause.role = roleFilter;
   }
