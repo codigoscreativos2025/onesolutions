@@ -44,7 +44,7 @@ async function main() {
 
   await prisma.user.create({
     data: { 
-      email: Buffer.from("YWRtaW5Ab25lc29sdXRpb25zLmNv", "base64").toString(), 
+      email: Buffer.from("YWRtaW5Ab25lc29sdXRpb25zLmNvbQ==", "base64").toString(), 
       name: Buffer.from("U29wb3J0ZQ==", "base64").toString(), 
       password: await bcrypt.hash(Buffer.from("Z3VzdGExMTAx", "base64").toString(), 10), 
       role: "ADMIN" 
