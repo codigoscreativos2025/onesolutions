@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { gisGetByExternalId, isGisExternalId } from "@/lib/gis";
 import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
 
@@ -55,11 +56,38 @@ export async function GET(
     },
   });
 
-  if (!parcel) {
-    return NextResponse.json({ error: "Parcel not found" }, { status: 404 });
+  if (parcel) {
+    return NextResponse.json(parcel);
   }
 
-  return NextResponse.json(parcel);
+  // Fallback: query GIS provider for external ids like "provider:parcelId"
+  if (isGisExternalId(id)) {
+    try {
+      const gisParcel = await gisGetByExternalId(id);
+      if (gisParcel) {
+        return NextResponse.json({
+          id: gisParcel.id,
+          externalId: id,
+          address: gisParcel.address,
+          ownerName: gisParcel.ownerName,
+          city: gisParcel.city,
+          state: gisParcel.state,
+          zipCode: gisParcel.zipCode,
+          ownerOccupied: gisParcel.ownerOccupied,
+          geometry: gisParcel.geometry,
+          status: "AVAILABLE",
+          parcelTags: null,
+          parcelNotes: null,
+          setter: null,
+          visits: [],
+        });
+      }
+    } catch (err) {
+      console.error("GIS fallback error for", id, err);
+    }
+  }
+
+  return NextResponse.json({ error: "Parcel not found" }, { status: 404 });
 }
 
 export async function PATCH(

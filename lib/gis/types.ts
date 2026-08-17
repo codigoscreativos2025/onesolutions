@@ -1,13 +1,23 @@
-export type GisProviderId = "orange-fl";
+export type GisProviderId =
+  | "orange-fl"
+  | "hillsborough-fl"
+  | "osceola-fl"
+  | "pinellas-fl"
+  | "broward-fl"
+  | "palm-beach-fl"
+  | "collier-fl"
+  | "fl-statewide";
 
 export interface GisFieldMap {
   parcelId: string;
-  owner: string;
+  owner?: string;
   owner2?: string;
-  address: string;
+  address?: string;
+  /** Optional street number field, prepended to `address` (e.g. Pinellas). */
+  addressNum?: string;
   mailAddress?: string;
-  city: string;
-  zip: string;
+  city?: string;
+  zip?: string;
   landValue?: string;
   buildingValue?: string;
   acreage?: string;

@@ -43,6 +43,7 @@ interface Parcel {
     createdAt?: string;
     setter?: { id: number; name: string };
     projects?: { projectType: { name: string } }[];
+    notAvailableTags?: { tag: NotAvailTag; notes?: string }[];
   }[];
 }
 
@@ -100,42 +101,30 @@ export function ParcelSheet({
       setVisitNotAvailTags([]);
       return;
     }
-    
-    // Fetch from in-memory API
+
     if (parcel.id) {
       fetch(`/api/map-notes?parcelId=${parcel.id}`)
-        .then(res => res.json())
-        .then(data => setMapNotes(data.note || ""))
+        .then((res) => (res.ok ? res.json() : { note: "" }))
+        .then((data) => setMapNotes(data?.note || ""))
         .catch(() => setMapNotes(""));
     }
+
     const pId = parcel.id;
     if (!pId) return;
-    // Skip DB fetch for pure external ids not yet claimed (uuid-like Regrid or gis:id still try)
-    const isUnsavedRegridOnly =
-      pId.includes("-") && pId.length > 30 && !pId.includes(":");
-    if (isUnsavedRegridOnly) return;
-    fetch(`/api/parcels/${encodeURIComponent(pId)}`)
-      .then((r) => {
-        if (!r.ok) return null;
-        return r.json();
-      })
-      .then((data) => {
-        if (!data) return;
-        const latestVisit = data?.visits?.[0];
-        if (latestVisit?.notAvailableTags) {
-          setVisitNotAvailTags(
-            latestVisit.notAvailableTags.map((vt: { tag: NotAvailTag; notes?: string }) => ({
-              ...vt.tag,
-            }))
-          );
-        } else {
-          setVisitNotAvailTags([]);
-        }
-        if (data?.parcelNotes) {
-          setLocalNotes(data.parcelNotes);
-        }
-      })
-      .catch(() => {});
+
+    const latestVisit = parcel.visits?.[0];
+    if (latestVisit?.notAvailableTags) {
+      setVisitNotAvailTags(
+        latestVisit.notAvailableTags.map((vt: { tag: NotAvailTag; notes?: string }) => ({
+          ...vt.tag,
+        }))
+      );
+    } else {
+      setVisitNotAvailTags([]);
+    }
+    if (parcel.parcelNotes) {
+      setLocalNotes(parcel.parcelNotes);
+    }
   }, [parcel?.id]);
 
   useEffect(() => {

@@ -1,0 +1,332 @@
+import type { GisCountyConfig, NormalizedGisFeature } from "../types";
+import { getProviderConfig } from "../catalog";
+import { normalizeArcGisFeature } from "../normalize";
+
+/**
+ * Generic FL county parcel provider.
+ * Uses the same ArcGIS FeatureServer query pattern as Orange County,
+ * with geometry as a comma-separated string and inSR=4326. Works with
+ * any ArcGIS-hosted FeatureServer that exposes Polygon parcel data.
+ *
+ * Caching: bbox queries are CACHED at the upstream service via HTTP
+ * standard caching. Set `next: { revalidate: 0 }` to disable Next.js
+ * caching and let the upstream service control freshness.
+ */
+
+const FETCH_TIMEOUT_MS = 60000;
+const OBJECT_ID_CHUNK = 100;
+
+// Throttle repeated identical warnings within a short window so a slow
+// or failing upstream doesn't flood the console.
+const recentWarnings = new Map<string, number>();
+const WARNING_THROTTLE_MS = 30_000;
+
+function warnOnce(key: string, ...args: unknown[]) {
+  const now = Date.now();
+  const last = recentWarnings.get(key) || 0;
+  if (now - last < WARNING_THROTTLE_MS) return;
+  recentWarnings.set(key, now);
+  console.warn(...args);
+}
+
+async function fetchJson(url: string): Promise<unknown> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { Accept: "application/json" },
+      next: { revalidate: 0 },
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`GIS HTTP ${res.status}: ${text.slice(0, 200)}`);
+    }
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function config(id: string): GisCountyConfig {
+  return getProviderConfig(id as never);
+}
+
+function parseFeatureCollection(
+  data: unknown,
+  cfg: GisCountyConfig
+): NormalizedGisFeature[] {
+  const fc = data as {
+    features?: Array<{
+      properties?: Record<string, unknown>;
+      attributes?: Record<string, unknown>;
+      geometry?: GeoJSON.Geometry;
+    }>;
+  };
+  const features = fc.features || [];
+  const out: NormalizedGisFeature[] = [];
+  for (const f of features) {
+    const n = normalizeArcGisFeature(f, cfg);
+    if (n) out.push(n);
+  }
+  return out;
+}
+
+/** Build envelope string in the format the upstream prefers */
+function envelope(
+  jsonMode: boolean,
+  minLng: number,
+  minLat: number,
+  maxLng: number,
+  maxLat: number
+): string {
+  if (jsonMode) {
+    return JSON.stringify({
+      xmin: minLng,
+      ymin: minLat,
+      xmax: maxLng,
+      ymax: maxLat,
+      spatialReference: { wkid: 4326 },
+    });
+  }
+  return `${minLng},${minLat},${maxLng},${maxLat}`;
+}
+
+/** Build query URL with comma-string geometry (works with most FL county services) */
+function bboxQueryUrl(
+  cfg: GisCountyConfig,
+  fields: string,
+  jsonMode: boolean,
+  minLng: number,
+  minLat: number,
+  maxLng: number,
+  maxLat: number,
+  recordCount: number
+): string {
+  const geometry = envelope(jsonMode, minLng, minLat, maxLng, maxLat);
+  const params = new URLSearchParams({
+    geometry,
+    geometryType: "esriGeometryEnvelope",
+    inSR: "4326",
+    spatialRel: "esriSpatialRelIntersects",
+    outFields: fields,
+    returnGeometry: "true",
+    outSR: "4326",
+    resultRecordCount: String(recordCount),
+    f: "geojson",
+  });
+  return `${cfg.parcelsUrl}/query?${params.toString()}`;
+}
+
+export interface CountyProviderOptions {
+  /** Field names for the `outFields` parameter */
+  outFields: string[];
+  /** Use the `returnIdsOnly` + `objectIds` pagination pattern (for services with strict record limits) */
+  usePagination?: boolean;
+  /** Default record count per query */
+  recordCount?: number;
+  /** Use JSON envelope format with explicit wkid (for services that need it) */
+  jsonEnvelope?: boolean;
+}
+
+export function createCountyProvider(
+  providerId: string,
+  opts: CountyProviderOptions
+) {
+  const fields = opts.outFields.join(",");
+  const cfg = () => config(providerId);
+
+  async function fetchByObjectIds(ids: number[]): Promise<NormalizedGisFeature[]> {
+    const c = cfg();
+    const out: NormalizedGisFeature[] = [];
+    for (let i = 0; i < ids.length; i += OBJECT_ID_CHUNK) {
+      const chunk = ids.slice(i, i + OBJECT_ID_CHUNK);
+      const params = new URLSearchParams({
+        objectIds: chunk.join(","),
+        outFields: fields,
+        returnGeometry: "true",
+        outSR: "4326",
+        f: "geojson",
+      });
+      const url = `${c.parcelsUrl}/query?${params.toString()}`;
+      try {
+        const data = await fetchJson(url);
+        out.push(...parseFeatureCollection(data, c));
+      } catch (err) {
+        warnOnce(
+          `${providerId}:objectIds:${i}`,
+          `[${providerId}] objectIds chunk error (chunk ${i}-${i + chunk.length}):`,
+          err instanceof Error ? err.message : err
+        );
+      }
+    }
+    return out;
+  }
+
+  return {
+    id: providerId,
+
+    async queryByBbox(
+      minLng: number,
+      minLat: number,
+      maxLng: number,
+      maxLat: number,
+      limit = opts.recordCount ?? 200
+    ): Promise<NormalizedGisFeature[]> {
+      const c = cfg();
+      try {
+        if (opts.usePagination) {
+          const geometry = envelope(
+            !!opts.jsonEnvelope,
+            minLng,
+            minLat,
+            maxLng,
+            maxLat
+          );
+          const params = new URLSearchParams({
+            geometry,
+            geometryType: "esriGeometryEnvelope",
+            inSR: "4326",
+            spatialRel: "esriSpatialRelIntersects",
+            returnIdsOnly: "true",
+            f: "json",
+          });
+          const data = (await fetchJson(`${c.parcelsUrl}/query?${params.toString()}`)) as {
+            objectIds?: number[];
+          };
+          const ids = data.objectIds || [];
+          if (ids.length === 0) return [];
+          const features = await fetchByObjectIds(ids);
+          return features.slice(0, limit);
+        }
+
+        const url = bboxQueryUrl(
+          c,
+          fields,
+          !!opts.jsonEnvelope,
+          minLng,
+          minLat,
+          maxLng,
+          maxLat,
+          limit
+        );
+        const data = await fetchJson(url);
+        return parseFeatureCollection(data, c).slice(0, limit);
+      } catch (err) {
+        warnOnce(
+          `${providerId}:bbox`,
+          `[${providerId}] bbox error:`,
+          err instanceof Error ? err.message : err
+        );
+        return [];
+      }
+    },
+
+    async queryByPoint(
+      lat: number,
+      lng: number
+    ): Promise<NormalizedGisFeature[]> {
+      const c = cfg();
+      try {
+        if (opts.usePagination) {
+          // Tight bbox around the point to use the pagination flow
+          return this.queryByBbox(lng - 0.0005, lat - 0.0005, lng + 0.0005, lat + 0.0005, 20);
+        }
+        const geometry = `${lng},${lat}`;
+        const params = new URLSearchParams({
+          geometry,
+          geometryType: "esriGeometryPoint",
+          inSR: "4326",
+          spatialRel: "esriSpatialRelIntersects",
+          outFields: fields,
+          returnGeometry: "true",
+          outSR: "4326",
+          resultRecordCount: "5",
+          f: "geojson",
+        });
+        const data = await fetchJson(`${c.parcelsUrl}/query?${params.toString()}`);
+        return parseFeatureCollection(data, c);
+      } catch (err) {
+        warnOnce(
+          `${providerId}:point`,
+          `[${providerId}] point error:`,
+          err instanceof Error ? err.message : err
+        );
+        return [];
+      }
+    },
+
+    async queryByParcelId(parcelId: string): Promise<NormalizedGisFeature | null> {
+      const c = cfg();
+      try {
+        const safe = parcelId.replace(/'/g, "''");
+        const params = new URLSearchParams({
+          where: `${c.fieldMap.parcelId}='${safe}'`,
+          outFields: fields,
+          returnGeometry: "true",
+          outSR: "4326",
+          resultRecordCount: "1",
+          f: "geojson",
+        });
+        const data = await fetchJson(`${c.parcelsUrl}/query?${params.toString()}`);
+        const list = parseFeatureCollection(data, c);
+        return list[0] || null;
+      } catch (err) {
+        warnOnce(
+          `${providerId}:parcelId:${parcelId}`,
+          `[${providerId}] parcelId error for ${parcelId}:`,
+          err instanceof Error ? err.message : err
+        );
+        return null;
+      }
+    },
+
+    async searchAddress(query: string): Promise<NormalizedGisFeature[]> {
+      const q = query.trim();
+      if (!q) return [];
+
+      const c = cfg();
+      const addrField = c.fieldMap.address;
+      const ownerField = c.fieldMap.owner;
+      const safe = q.replace(/'/g, "''").toUpperCase();
+
+      const results: NormalizedGisFeature[] = [];
+      const seen = new Set<string>();
+
+      const tryWhere = async (whereClause: string) => {
+        const params = new URLSearchParams({
+          where: whereClause,
+          outFields: fields,
+          returnGeometry: "true",
+          outSR: "4326",
+          resultRecordCount: "15",
+          f: "geojson",
+        });
+        try {
+          const data = await fetchJson(`${c.parcelsUrl}/query?${params.toString()}`);
+          for (const f of parseFeatureCollection(data, c)) {
+            if (!seen.has(f.externalId)) {
+              seen.add(f.externalId);
+              results.push(f);
+            }
+          }
+        } catch (err) {
+          warnOnce(
+            `${providerId}:search:${q}`,
+            `[${providerId}] search error for "${q}":`,
+            err instanceof Error ? err.message : err
+          );
+        }
+      };
+
+      await tryWhere(`UPPER(${addrField}) LIKE '%${safe}%'`);
+      if (results.length < 15) {
+        await tryWhere(`UPPER(${ownerField}) LIKE '%${safe}%'`);
+      }
+
+      return results.slice(0, 15);
+    },
+  };
+}
+
+export type CountyProvider = ReturnType<typeof createCountyProvider>;

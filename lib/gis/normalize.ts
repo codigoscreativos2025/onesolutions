@@ -58,13 +58,17 @@ export function normalizeArcGisFeature(
   const parcelId = str(props[fm.parcelId]);
   if (!parcelId) return null;
 
-  const owner1 = str(props[fm.owner]);
+  const owner1 = fm.owner ? str(props[fm.owner]) : "";
   const owner2 = fm.owner2 ? str(props[fm.owner2]) : "";
   const ownerName = [owner1, owner2].filter(Boolean).join(" / ") || undefined;
 
-  const addressRaw = str(props[fm.address]);
-  const city = str(props[fm.city]);
-  const zipCode = str(props[fm.zip]);
+  const addressNum = fm.addressNum ? str(props[fm.addressNum]) : "";
+  const addressStreet = fm.address ? str(props[fm.address]) : "";
+  const addressRaw = addressNum && addressStreet
+    ? `${addressNum} ${addressStreet}`.trim()
+    : addressStreet;
+  const city = fm.city ? str(props[fm.city]) : "";
+  const zipCode = fm.zip ? str(props[fm.zip]) : "";
   const address =
     addressRaw ||
     [city, config.state, zipCode].filter(Boolean).join(", ") ||

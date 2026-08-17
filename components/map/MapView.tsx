@@ -72,8 +72,8 @@ export default function MapView({
   const autoOpenedRef = useRef(false);
 
   useEffect(() => {
-    fetch("/api/settings/tags")
-      .then((r) => r.json())
+    fetch("/api/not-available-tags")
+      .then((r) => (r.ok ? r.json() : []))
       .then((d) => {
         if (Array.isArray(d)) setLegendTags(d);
       })
@@ -154,9 +154,13 @@ export default function MapView({
         sources: {
           osm: {
             type: "raster",
-            tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+            tiles: [
+              "https://cartodb-basemaps-a.global.ssl.fastly.net/rastertiles/voyager/{z}/{x}/{y}.png",
+              "https://cartodb-basemaps-b.global.ssl.fastly.net/rastertiles/voyager/{z}/{x}/{y}.png",
+              "https://cartodb-basemaps-c.global.ssl.fastly.net/rastertiles/voyager/{z}/{x}/{y}.png",
+            ],
             tileSize: 256,
-            attribution: "&copy; OpenStreetMap contributors",
+            attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
           },
         },
         layers: [
@@ -363,60 +367,40 @@ export default function MapView({
         setIsFetchingParcel(true);
 
         try {
-          // Prefer full GIS detail + merge with DB if exists
+          // Single fetch: /api/parcels/[id] handles DB lookup with
+          // GIS fallback for external ids (provider:parcelId).
+          // For features with no llUuid we use a point query instead.
           let fullParcel: Parcel | null = null;
 
           if (llUuid) {
-            const gisRes = await fetch(
-              `/api/gis/parcel/${encodeURIComponent(llUuid)}`
-            );
-            if (gisRes.ok) {
-              fullParcel = await gisRes.json();
-            }
-
-            const dbRes = await fetch(
+            const res = await fetch(
               `/api/parcels/${encodeURIComponent(llUuid)}`
             );
-            if (dbRes.ok) {
-              const dbParcel = await dbRes.json();
-              if (dbParcel?.id) {
-                const meta = fullParcel?.metadata
-                  ? JSON.parse(
-                      typeof fullParcel.metadata === "string"
-                        ? fullParcel.metadata
-                        : JSON.stringify(fullParcel.metadata)
-                    )
-                  : {};
-                const dbMeta = dbParcel.metadata
-                  ? JSON.parse(dbParcel.metadata)
-                  : {};
+            if (res.ok) {
+              const data = await res.json();
+              if (data?.id) {
                 fullParcel = {
                   ...basicParcel,
-                  ...dbParcel,
-                  address: dbParcel.address || fullParcel?.address || basicParcel.address,
+                  ...data,
+                  address:
+                    data.address ||
+                    basicParcel.address,
                   ownerName:
-                    dbParcel.ownerName ||
-                    fullParcel?.ownerName ||
+                    data.ownerName ||
                     basicParcel.ownerName,
                   geometry: basicParcel.geometry,
-                  metadata: JSON.stringify({
-                    ...meta,
-                    ...dbMeta,
-                    regrid_id: llUuid,
-                    source: "gis",
-                  }),
+                  metadata: data.metadata
+                    ? typeof data.metadata === "string"
+                      ? data.metadata
+                      : JSON.stringify(data.metadata)
+                    : basicParcel.metadata,
                 };
               }
-            } else if (fullParcel) {
-              fullParcel = {
-                ...fullParcel,
-                geometry: basicParcel.geometry,
-              };
             }
           }
 
-          // Fallback: point query if no id on feature
-          if (!fullParcel) {
+          // Point-query fallback only if feature has no llUuid (rare)
+          if (!fullParcel && !llUuid) {
             const pointRes = await fetch(
               `/api/gis/parcels?lat=${lat}&lng=${lng}`
             );
@@ -459,7 +443,11 @@ export default function MapView({
             }
             fetchMarkersRef.current?.();
           }
-        } catch { /* keep basic parcel */ } finally { setIsFetchingParcel(false); }
+        } catch {
+          /* keep basic parcel */
+        } finally {
+          setIsFetchingParcel(false);
+        }
       };
 
       m.on("click", "parcel-fills", async (e) => {
