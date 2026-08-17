@@ -65,7 +65,8 @@ function getProvider(id: GisProviderId) {
   ].filter((f): f is string => Boolean(f));
 
   // FL Statewide FGDL service requires JSON envelope + 100-record pagination
-  const usePagination = id === "fl-statewide";
+  // Orange County is strictly limited to 200 records per bbox query, so it also MUST use pagination
+  const usePagination = id === "fl-statewide" || id === "orange-fl";
   const jsonEnvelope = id === "fl-statewide";
   const recordCount = id === "orange-fl" ? 200 : 800;
   // FDOR and Martin only support WHERE-clause queries (not spatial bbox/point)

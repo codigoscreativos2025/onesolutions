@@ -237,28 +237,43 @@ export function createCountyProvider(
       const c = cfg();
       try {
         if (opts.usePagination) {
-          const geometry = envelope(
-            !!opts.jsonEnvelope,
-            minLng,
-            minLat,
-            maxLng,
-            maxLat
-          );
-          const params = new URLSearchParams({
-            geometry,
-            geometryType: "esriGeometryEnvelope",
-            inSR: "4326",
-            spatialRel: "esriSpatialRelIntersects",
-            returnIdsOnly: "true",
-            f: "json",
-          });
-          const data = (await fetchJson(`${c.parcelsUrl}/query?${params.toString()}`, 60000)) as {
-            objectIds?: number[];
-          };
-          const ids = data.objectIds || [];
-          if (ids.length === 0) return [];
-          const features = await fetchByObjectIds(ids, 60000);
-          return features.slice(0, limit);
+          const allFeatures: NormalizedGisFeature[] = [];
+          let offset = 0;
+          const chunkSize = limit;
+
+          while (true) {
+            const url = bboxQueryUrl(
+              c,
+              fields,
+              !!opts.jsonEnvelope,
+              minLng,
+              minLat,
+              maxLng,
+              maxLat,
+              chunkSize
+            );
+            const pagedUrl = `${url}&resultOffset=${offset}`;
+            try {
+              const data = await fetchJson(pagedUrl, 60000);
+              const features = parseFeatureCollection(data, c);
+              allFeatures.push(...features);
+              
+              if (features.length < chunkSize) {
+                break; // Got all records
+              }
+              offset += chunkSize;
+              
+              // Safeguard against massive queries or infinite loops
+              if (offset >= 10000) {
+                warnOnce(`${providerId}:maxPagination`, `[${providerId}] Reached 10000 pagination limit for BBOX query.`);
+                break;
+              }
+            } catch (err) {
+              warnOnce(`${providerId}:paginationError`, `[${providerId}] Pagination error at offset ${offset}:`, err instanceof Error ? err.message : err);
+              break;
+            }
+          }
+          return allFeatures;
         }
 
         const url = bboxQueryUrl(
