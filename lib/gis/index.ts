@@ -241,6 +241,7 @@ export async function gisSearchAddress(
     "manatee-fl",
     "volusia-fl",
     "polk-fl",
+    "lake-fl",
   ];
   const countyConfigs = countyIds
     .map((id) => GIS_PROVIDERS[id])

@@ -13,6 +13,7 @@ export type GisProviderId =
   | "volusia-fl"
   | "polk-fl"
   | "martin-fl"
+  | "lake-fl"
   | "fl-statewide"
   | "fl-fdor";
 

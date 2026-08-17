@@ -262,6 +262,30 @@ export const GIS_PROVIDERS: Record<GisProviderId, GisCountyConfig> = {
     maxScale: 250000,
   },
 
+  "lake-fl": {
+    id: "lake-fl",
+    name: "Lake County",
+    state: "FL",
+    bbox: [-82.05, 28.38, -81.30, 29.35],
+    parcelsUrl:
+      "https://services1.arcgis.com/7LNyA2emK1umjjot/arcgis/rest/services/Tax_Parcels_Hosted/FeatureServer/0",
+    fieldMap: {
+      parcelId: "ParcelNumber",
+      owner: "OwnerName",
+      address: "PropertyAddress",
+      mailAddress: "OwnerAddress",
+      city: "OwnerCity",
+      zip: "OwnerZip",
+      landValue: "LandValue",
+      buildingValue: "BuildingValue",
+      acreage: "Acres",
+      propertyClass: "PropertyClassCode",
+    },
+    extraOutFields: ["OBJECTID"],
+    objectIdField: "OBJECTID",
+    maxScale: 250000,
+  },
+
   "broward-fl": {
     id: "broward-fl",
     name: "Broward County",
