@@ -200,6 +200,27 @@ export function createCountyProvider(
     return out;
   }
 
+  // Cached queryByObjectId: OBJECTID-based lookup is 30x faster than
+  // WHERE-parcel-id (Orange County: 0.3s vs 9s).
+  const objectIdCache = new Map<number, { data: NormalizedGisFeature | null; expires: number }>();
+
+  async function queryByObjectIdImpl(objectId: number): Promise<NormalizedGisFeature | null> {
+    const cached = objectIdCache.get(objectId);
+    if (cached) {
+      if (Date.now() <= cached.expires) return cached.data;
+      objectIdCache.delete(objectId);
+    }
+    const features = await fetchByObjectIds([objectId], 10000);
+    const result = features[0] || null;
+    objectIdCache.set(objectId, { data: result, expires: Date.now() + CACHE_TTL_MS });
+    while (objectIdCache.size > CACHE_MAX_ENTRIES) {
+      const firstKey = objectIdCache.keys().next().value;
+      if (firstKey === undefined) break;
+      objectIdCache.delete(firstKey);
+    }
+    return result;
+  }
+
   return {
     id: providerId,
 
@@ -328,6 +349,10 @@ export function createCountyProvider(
         );
         return null;
       }
+    },
+
+    async queryByObjectId(objectId: number): Promise<NormalizedGisFeature | null> {
+      return queryByObjectIdImpl(objectId);
     },
 
     async searchAddress(query: string): Promise<NormalizedGisFeature[]> {

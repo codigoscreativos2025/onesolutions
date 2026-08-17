@@ -37,6 +37,13 @@ export interface GisCountyConfig {
   geocodeUrl?: string;
   fieldMap: GisFieldMap;
   maxScale?: number;
+  /** Extra outFields to include (e.g. ["OBJECTID"] for click fast-path) */
+  extraOutFields?: string[];
+  /**
+   * Name of the OBJECTID field used by this provider. Defaults to "OBJECTID".
+   * Orange County: "OBJECTID". Some services use "FID" or "OID_*".
+   */
+  objectIdField?: string;
 }
 
 export interface NormalizedGisFeature {
@@ -53,6 +60,8 @@ export interface NormalizedGisFeature {
   buildingValue?: number | null;
   acreage?: number | null;
   propertyClass?: string | null;
+  /** OBJECTID from upstream ArcGIS service (for fast click lookup) */
+  objectId?: number | null;
   provider: GisProviderId;
   raw: Record<string, unknown>;
 }

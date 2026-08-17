@@ -321,7 +321,14 @@ export default function MapView({
         lng: number,
         lat: number
       ) => {
-        const llUuid = String(props.ll_uuid || "");
+        // Fast-path: prefer OBJECTID-based externalId when present.
+        // Orange County's objectIds= query is ~30x faster than
+        // WHERE PARCEL='...' (0.3s vs 9s).
+        const objectId = props.object_id;
+        let llUuid = String(props.ll_uuid || "");
+        if (objectId != null && llUuid.startsWith("orange-fl:")) {
+          llUuid = `orange-fl:O:${objectId}`;
+        }
         const basicParcel: Parcel = {
           id: llUuid || `gis-${props.parcel_id || "unknown"}`,
           address: String(props.address || props.headline || "Sin direccion"),
@@ -368,7 +375,8 @@ export default function MapView({
 
         try {
           // Single fetch: /api/parcels/[id] handles DB lookup with
-          // GIS fallback for external ids (provider:parcelId).
+          // GIS fallback for external ids (provider:parcelId or
+          // provider:O:objectId for fast-path).
           // For features with no llUuid we use a point query instead.
           let fullParcel: Parcel | null = null;
 

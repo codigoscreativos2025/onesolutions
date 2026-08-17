@@ -88,6 +88,9 @@ export function normalizeArcGisFeature(
     }
   }
 
+  const objectIdField = config.objectIdField || "OBJECTID";
+  const objectIdNum = num(props[objectIdField]);
+
   return {
     externalId: makeExternalId(config.id, parcelId),
     parcelId,
@@ -102,6 +105,7 @@ export function normalizeArcGisFeature(
     buildingValue: fm.buildingValue ? num(props[fm.buildingValue]) : null,
     acreage: fm.acreage ? num(props[fm.acreage]) : null,
     propertyClass: fm.propertyClass ? str(props[fm.propertyClass]) || null : null,
+    objectId: objectIdNum,
     provider: config.id,
     raw: props,
   };
@@ -158,24 +162,26 @@ export function toMapLibreFeature(
   feature: NormalizedGisFeature
 ): GeoJSON.Feature | null {
   if (!feature.geometry) return null;
+  const props: Record<string, unknown> = {
+    ll_uuid: feature.externalId,
+    parcel_id: feature.parcelId,
+    address: feature.address,
+    owner: feature.ownerName || "",
+    headline: feature.address,
+    provider: feature.provider as string,
+    city: feature.city,
+    state: feature.state,
+    zipCode: feature.zipCode,
+    property_class: feature.propertyClass || "",
+    acreage: feature.acreage ?? "",
+    land_value: feature.landValue ?? "",
+    building_value: feature.buildingValue ?? "",
+  };
+  if (feature.objectId != null) props.object_id = feature.objectId;
   return {
     type: "Feature",
     geometry: feature.geometry,
-    properties: {
-      ll_uuid: feature.externalId,
-      parcel_id: feature.parcelId,
-      address: feature.address,
-      owner: feature.ownerName || "",
-      headline: feature.address,
-      provider: feature.provider as string,
-      city: feature.city,
-      state: feature.state,
-      zipCode: feature.zipCode,
-      property_class: feature.propertyClass || "",
-      acreage: feature.acreage ?? "",
-      land_value: feature.landValue ?? "",
-      building_value: feature.buildingValue ?? "",
-    },
+    properties: props,
   };
 }
 

@@ -33,6 +33,8 @@ export const GIS_PROVIDERS: Record<GisProviderId, GisCountyConfig> = {
       propertyClass: "DOR_CODE",
     },
     maxScale: 40000,
+    extraOutFields: ["OBJECTID"],
+    objectIdField: "OBJECTID",
   },
 
   "osceola-fl": {
@@ -334,15 +336,39 @@ export function makeExternalId(
   return `${providerId}:${parcelId}`;
 }
 
+/**
+ * Build a fast-path externalId that encodes the upstream OBJECTID.
+ * Use when the client knows the OBJECTID (e.g. it came from a bbox
+ * response that includes OBJECTID in feature properties). The server
+ * will route through queryByObjectId which is ~30x faster than a
+ * WHERE-parcel-id query on services like Orange County.
+ */
+export function makeObjectIdExternalId(
+  providerId: GisProviderId,
+  objectId: number
+): string {
+  return `${providerId}:O:${objectId}`;
+}
+
 export function parseExternalId(
   externalId: string
-): { providerId: GisProviderId; parcelId: string } | null {
+): { providerId: GisProviderId; parcelId: string; objectId?: number } | null {
   const idx = externalId.indexOf(":");
   if (idx <= 0) return null;
   const providerId = externalId.slice(0, idx) as GisProviderId;
-  const parcelId = externalId.slice(idx + 1);
-  if (!GIS_PROVIDERS[providerId] || !parcelId) return null;
-  return { providerId, parcelId };
+  if (!GIS_PROVIDERS[providerId]) return null;
+  const rest = externalId.slice(idx + 1);
+
+  // Fast-path: "providerId:O:12345" — query by OBJECTID (30x faster than
+  // WHERE PARCEL='...' on Orange County: 0.3s vs 9s)
+  if (rest.startsWith("O:")) {
+    const oid = parseInt(rest.slice(2), 10);
+    if (!Number.isFinite(oid) || oid <= 0) return null;
+    return { providerId, parcelId: "", objectId: oid };
+  }
+
+  if (!rest) return null;
+  return { providerId, parcelId: rest };
 }
 
 /** Active parcel data provider: gis (free county) or regrid */

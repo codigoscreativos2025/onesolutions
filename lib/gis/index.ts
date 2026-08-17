@@ -61,6 +61,7 @@ function getProvider(id: GisProviderId) {
     cfg.fieldMap.buildingValue,
     cfg.fieldMap.acreage,
     cfg.fieldMap.propertyClass,
+    ...(cfg.extraOutFields ?? []),
   ].filter((f): f is string => Boolean(f));
 
   // FL Statewide FGDL service requires JSON envelope + 100-record pagination
@@ -274,9 +275,18 @@ export async function gisGetByExternalId(
 ): Promise<AppParcelPayload | null> {
   const parsed = parseExternalId(externalId);
   const providerId = parsed?.providerId || DEFAULT_GIS_PROVIDER;
-  const parcelId = parsed?.parcelId || externalId;
 
-  const feature = await getProvider(providerId).queryByParcelId(parcelId);
+  // Fast-path: externalId encodes an OBJECTID (providerId:O:12345).
+  // Orange County's objectIds= query is ~30x faster than WHERE PARCEL='...'
+  const provider = getProvider(providerId);
+  let feature: NormalizedGisFeature | null = null;
+  if (parsed?.objectId != null && typeof provider.queryByObjectId === "function") {
+    feature = await provider.queryByObjectId(parsed.objectId);
+  } else {
+    const parcelId = parsed?.parcelId || externalId;
+    feature = await provider.queryByParcelId(parcelId);
+  }
+
   if (!feature) return null;
   // Skip enrichWithDb: the caller (/api/parcels/[id]) already did a
   // full DB lookup; if it fell through to here, the parcel is purely
