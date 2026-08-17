@@ -8,6 +8,11 @@ export type GisProviderId =
   | "collier-fl"
   | "lee-fl"
   | "nassau-fl"
+  | "miami-dade-fl"
+  | "manatee-fl"
+  | "volusia-fl"
+  | "polk-fl"
+  | "martin-fl"
   | "fl-statewide"
   | "fl-fdor";
 

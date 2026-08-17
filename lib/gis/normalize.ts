@@ -48,6 +48,7 @@ export function normalizeArcGisFeature(
     properties?: Record<string, unknown> | null;
     attributes?: Record<string, unknown> | null;
     geometry?: GeoJSON.Geometry | null;
+    id?: number | string | null;
   },
   config: GisCountyConfig
 ): NormalizedGisFeature | null {
@@ -89,7 +90,11 @@ export function normalizeArcGisFeature(
   }
 
   const objectIdField = config.objectIdField || "OBJECTID";
-  const objectIdNum = num(props[objectIdField]);
+  // OBJECTID may be in feature.id (ArcGIS GeoJSON output) OR in properties
+  let objectIdNum = num(props[objectIdField]);
+  if (objectIdNum == null && feature.id != null) {
+    objectIdNum = num(feature.id);
+  }
 
   return {
     externalId: makeExternalId(config.id, parcelId),

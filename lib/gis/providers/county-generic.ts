@@ -336,7 +336,11 @@ export function createCountyProvider(
           resultRecordCount: "1",
           f: "geojson",
         });
-        const data = await fetchJson(`${c.parcelsUrl}/query?${params.toString()}`, 10000);
+        // Orange County's WHERE parser is ~10s slow; allow 25s so the
+        // first click on an unclaimed parcel doesn't fail. The fast-path
+        // via OBJECTID (queryByObjectId) is preferred when available and
+        // takes only ~0.5s.
+        const data = await fetchJson(`${c.parcelsUrl}/query?${params.toString()}`, 25000);
         const list = parseFeatureCollection(data, c);
         const result = list[0] || null;
         cacheSet(cacheKey, result);

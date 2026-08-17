@@ -144,6 +144,124 @@ export const GIS_PROVIDERS: Record<GisProviderId, GisCountyConfig> = {
     maxScale: 250000,
   },
 
+  "miami-dade-fl": {
+    id: "miami-dade-fl",
+    name: "Miami-Dade County",
+    state: "FL",
+    bbox: [-80.87, 25.13, -80.12, 25.97],
+    parcelsUrl:
+      "https://gisweb.miamidade.gov/arcgis/rest/services/MD_LandInformation/MapServer/26",
+    fieldMap: {
+      parcelId: "FOLIO",
+      owner: "TRUE_OWNER1",
+      owner2: "TRUE_OWNER2",
+      address: "TRUE_SITE_ADDR",
+      city: "TRUE_SITE_CITY",
+      zip: "TRUE_SITE_ZIP_CODE",
+      landValue: "LAND_VAL_CUR",
+      buildingValue: "BUILDING_VAL_CUR",
+      acreage: "LOT_SIZE",
+      propertyClass: "DOR_CODE_CUR",
+    },
+    extraOutFields: ["OBJECTID"],
+    objectIdField: "OBJECTID",
+    maxScale: 6000,
+  },
+
+  "manatee-fl": {
+    id: "manatee-fl",
+    name: "Manatee County",
+    state: "FL",
+    bbox: [-82.91, 27.21, -82.05, 27.78],
+    parcelsUrl:
+      "https://www.mymanatee.org/gisits/rest/services/opendata/General/FeatureServer/0",
+    fieldMap: {
+      parcelId: "PARCEL_ID",
+      owner: "OWNER",
+      owner2: "SECONDARY_OWNER",
+      address: "PRIMARY_ADDRESS",
+      mailAddress: "OWN_ADDR",
+      city: "PROP_CITYNAME",
+      zip: "PROP_ZIP",
+      landValue: "LANDVAL",
+      buildingValue: "IMPRVAL",
+      acreage: "ACRES",
+      propertyClass: "LUC",
+    },
+    extraOutFields: ["OBJECTID"],
+    objectIdField: "OBJECTID",
+    maxScale: 250000,
+  },
+
+  "volusia-fl": {
+    id: "volusia-fl",
+    name: "Volusia County",
+    state: "FL",
+    bbox: [-81.66, 28.61, -80.84, 29.43],
+    parcelsUrl:
+      "https://maps5.vcgov.org/arcgis/rest/services/Open_Data/Open_Data_3/FeatureServer/34",
+    fieldMap: {
+      parcelId: "PID",
+      owner: "OWNER1",
+      owner2: "OWNER2",
+      address: "ADDRFULL",
+      mailAddress: "MAILADDR1",
+      city: "CITYNAME",
+      zip: "ZIP1",
+      landValue: "LANDJUST",
+      buildingValue: "IMPRJUST",
+      acreage: "CALCACRES",
+      propertyClass: "CLASS",
+    },
+    extraOutFields: ["OBJECTID"],
+    objectIdField: "OBJECTID",
+    maxScale: 250000,
+  },
+
+  "polk-fl": {
+    id: "polk-fl",
+    name: "Polk County",
+    state: "FL",
+    bbox: [-82.10, 27.64, -81.17, 28.36],
+    parcelsUrl:
+      "https://map.polkflpa.gov/proxy.ashx?https://gissrvr/ArcGIS/rest/services/WebSite/WebSite/MapServer/22",
+    fieldMap: {
+      parcelId: "PARCELID",
+      owner: "NAME",
+      owner2: "NAME2",
+      address: "PROP_ADDRESS",
+      city: "PROP_CITY",
+      zip: "PROP_ZIP1",
+      landValue: "TOT_LND_VAL",
+      buildingValue: "IMPROV_VALUE",
+      propertyClass: "DOR_CD",
+    },
+    maxScale: 15000,
+  },
+
+  "martin-fl": {
+    id: "martin-fl",
+    name: "Martin County",
+    state: "FL",
+    bbox: [-80.88, 26.86, -80.03, 27.32],
+    parcelsUrl:
+      "https://services.arcgis.com/Ie0K5n4UyLAfvdiX/arcgis/rest/services/Martin_County_Parcel_Map/FeatureServer/0",
+    fieldMap: {
+      parcelId: "PARCEL_ID",
+      owner: "OWN_NAME",
+      owner2: "FIDU_NAME",
+      address: "PHY_ADDR1",
+      mailAddress: "OWN_ADDR1",
+      city: "PHY_CITY",
+      zip: "PHY_ZIPCD",
+      landValue: "LND_VAL",
+      buildingValue: "JV",
+      acreage: "LND_SQFOOT",
+      propertyClass: "DOR_UC",
+    },
+    maxScale: 250000,
+  },
+
   "broward-fl": {
     id: "broward-fl",
     name: "Broward County",
@@ -203,20 +321,23 @@ export const GIS_PROVIDERS: Record<GisProviderId, GisCountyConfig> = {
 
   "fl-statewide": {
     id: "fl-statewide",
-    name: "Florida Statewide Parcels (FGDL)",
+    name: "Florida Statewide Parcels (FGDL FL_Parcels)",
     state: "FL",
     bbox: [-87.63, 24.52, -80.03, 31.00],
     parcelsUrl:
-      "https://services5.arcgis.com/GcvM6vDlR2gM4x31/arcgis/rest/services/Parcels/FeatureServer/4",
+      "https://services5.arcgis.com/GcvM6vDlR2gM4x31/ArcGIS/rest/services/FL_Parcels/FeatureServer/0",
     fieldMap: {
-      parcelId: "PARCELID",
-      owner: "ONAME",
-      address: "OADDR1",
-      city: "OCITY",
-      zip: "OZIPCD",
-      landValue: "LNDVAL",
+      parcelId: "PARCEL_ID",
+      owner: "OWN_NAME",
+      owner2: "FIDU_NAME",
+      address: "PHY_ADDR1",
+      mailAddress: "OWN_ADDR1",
+      city: "PHY_CITY",
+      zip: "PHY_ZIPCD",
+      landValue: "LND_VAL",
       buildingValue: "JV",
-      propertyClass: "DORUC",
+      acreage: "Acres",
+      propertyClass: "DOR_UC",
     },
     maxScale: 250000,
   },
@@ -263,7 +384,7 @@ export function resolveProvidersForPoint(
   const out: GisCountyConfig[] = [];
   for (const cfg of Object.values(GIS_PROVIDERS)) {
     // Skip providers that don't support spatial queries
-    if (cfg.id === "fl-statewide" || cfg.id === "fl-fdor") continue;
+    if (cfg.id === "fl-statewide" || cfg.id === "fl-fdor" || cfg.id === "martin-fl") continue;
     const [minLng, minLat, maxLng, maxLat] = cfg.bbox;
     if (lng >= minLng && lng <= maxLng && lat >= minLat && lat <= maxLat) {
       out.push(cfg);
@@ -281,7 +402,7 @@ export function resolveProvidersForPoint(
 /**
  * Return all providers that overlap with a WGS84 bbox.
  * Order: county providers first (most specific), statewide last (catch-all).
- * FDOR is excluded because it doesn't support spatial queries.
+ * FDOR and Martin are excluded because they don't support spatial queries.
  */
 export function resolveProvidersForBbox(
   minLng: number,
@@ -291,7 +412,7 @@ export function resolveProvidersForBbox(
 ): GisCountyConfig[] {
   const out: GisCountyConfig[] = [];
   for (const cfg of Object.values(GIS_PROVIDERS)) {
-    if (cfg.id === "fl-statewide" || cfg.id === "fl-fdor") continue;
+    if (cfg.id === "fl-statewide" || cfg.id === "fl-fdor" || cfg.id === "martin-fl") continue;
     const [cMinLng, cMinLat, cMaxLng, cMaxLat] = cfg.bbox;
     const overlaps =
       minLng <= cMaxLng &&

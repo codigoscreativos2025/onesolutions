@@ -68,8 +68,8 @@ function getProvider(id: GisProviderId) {
   const usePagination = id === "fl-statewide";
   const jsonEnvelope = id === "fl-statewide";
   const recordCount = id === "orange-fl" ? 200 : 800;
-  // FDOR only supports WHERE-clause queries (not spatial bbox/point)
-  const supportsSpatial = id !== "fl-fdor";
+  // FDOR and Martin only support WHERE-clause queries (not spatial bbox/point)
+  const supportsSpatial = id !== "fl-fdor" && id !== "martin-fl";
 
   p = createCountyProvider(id, {
     outFields,
@@ -237,6 +237,10 @@ export async function gisSearchAddress(
     "collier-fl",
     "lee-fl",
     "pinellas-fl",
+    "miami-dade-fl",
+    "manatee-fl",
+    "volusia-fl",
+    "polk-fl",
   ];
   const countyConfigs = countyIds
     .map((id) => GIS_PROVIDERS[id])
