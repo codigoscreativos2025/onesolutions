@@ -230,6 +230,8 @@ export async function gisSearchAddress(
     "osceola-fl",
     "palm-beach-fl",
     "collier-fl",
+    "lee-fl",
+    "pinellas-fl",
   ];
   const countyConfigs = countyIds
     .map((id) => GIS_PROVIDERS[id])

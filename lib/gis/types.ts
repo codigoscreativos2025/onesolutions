@@ -6,6 +6,8 @@ export type GisProviderId =
   | "broward-fl"
   | "palm-beach-fl"
   | "collier-fl"
+  | "lee-fl"
+  | "nassau-fl"
   | "fl-statewide";
 
 export interface GisFieldMap {
