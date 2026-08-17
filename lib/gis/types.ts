@@ -8,7 +8,8 @@ export type GisProviderId =
   | "collier-fl"
   | "lee-fl"
   | "nassau-fl"
-  | "fl-statewide";
+  | "fl-statewide"
+  | "fl-fdor";
 
 export interface GisFieldMap {
   parcelId: string;

@@ -67,12 +67,15 @@ function getProvider(id: GisProviderId) {
   const usePagination = id === "fl-statewide";
   const jsonEnvelope = id === "fl-statewide";
   const recordCount = id === "orange-fl" ? 200 : 800;
+  // FDOR only supports WHERE-clause queries (not spatial bbox/point)
+  const supportsSpatial = id !== "fl-fdor";
 
   p = createCountyProvider(id, {
     outFields,
     usePagination,
     jsonEnvelope,
     recordCount,
+    supportsSpatial,
   });
   providers.set(id, p);
   return p;
@@ -216,7 +219,8 @@ export async function gisQueryPoint(
 
 /**
  * Search address across county providers (parallel) then statewide if
- * county returned < 15 results. Sequential to enable early-exit.
+ * county returned < 15 results. FDOR is a final fallback for ALL 67
+ * counties when local providers + FGDL don't return enough matches.
  */
 export async function gisSearchAddress(
   query: string
@@ -237,12 +241,30 @@ export async function gisSearchAddress(
     .map((id) => GIS_PROVIDERS[id])
     .filter(Boolean);
   const statewideConfig = GIS_PROVIDERS["fl-statewide"];
+  const fdorConfig = GIS_PROVIDERS["fl-fdor"];
 
   const merged = await queryProvidersSequential(
     [...countyConfigs, statewideConfig],
     (p) => p.searchAddress(q),
     { minCountyResults: 15 }
   );
+
+  // Final FDOR fallback if we still don't have enough (covers the 37
+  // counties without a dedicated provider + ones where FGDL has no data)
+  if (merged.length < 15 && fdorConfig) {
+    try {
+      const fdorResults = await getProvider("fl-fdor").searchAddress(q);
+      const seen = new Set(merged.map((f) => f.externalId));
+      for (const f of fdorResults) {
+        if (!seen.has(f.externalId)) {
+          seen.add(f.externalId);
+          merged.push(f);
+        }
+      }
+    } catch {
+      /* swallow */
+    }
+  }
 
   return merged.slice(0, 15);
 }
@@ -256,8 +278,10 @@ export async function gisGetByExternalId(
 
   const feature = await getProvider(providerId).queryByParcelId(parcelId);
   if (!feature) return null;
-  const [payload] = await enrichWithDb([feature]);
-  return payload || null;
+  // Skip enrichWithDb: the caller (/api/parcels/[id]) already did a
+  // full DB lookup; if it fell through to here, the parcel is purely
+  // external and not in our DB. Avoids a 30-50ms wasted Prisma round-trip.
+  return toAppParcelPayload(feature, null);
 }
 
 /**

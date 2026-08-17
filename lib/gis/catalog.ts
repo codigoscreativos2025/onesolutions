@@ -218,6 +218,27 @@ export const GIS_PROVIDERS: Record<GisProviderId, GisCountyConfig> = {
     },
     maxScale: 250000,
   },
+
+  "fl-fdor": {
+    id: "fl-fdor",
+    name: "Florida Statewide Cadastral (FDOR)",
+    state: "FL",
+    bbox: [-87.63, 24.52, -80.03, 31.00],
+    parcelsUrl:
+      "https://services9.arcgis.com/Gh9awoU677aKree0/arcgis/rest/services/Florida_Statewide_Cadastral/FeatureServer/0",
+    fieldMap: {
+      parcelId: "PARCEL_ID",
+      owner: "OWN_NAME",
+      owner2: "FIDU_NAME",
+      address: "PHY_ADDR1",
+      mailAddress: "OWN_ADDR1",
+      city: "PHY_CITY",
+      zip: "PHY_ZIPCD",
+      buildingValue: "JV",
+      propertyClass: "DOR_UC",
+    },
+    maxScale: 250000,
+  },
 };
 
 export const DEFAULT_GIS_PROVIDER: GisProviderId = "fl-statewide";
@@ -239,7 +260,8 @@ export function resolveProvidersForPoint(
 ): GisCountyConfig[] {
   const out: GisCountyConfig[] = [];
   for (const cfg of Object.values(GIS_PROVIDERS)) {
-    if (cfg.id === "fl-statewide") continue;
+    // Skip providers that don't support spatial queries
+    if (cfg.id === "fl-statewide" || cfg.id === "fl-fdor") continue;
     const [minLng, minLat, maxLng, maxLat] = cfg.bbox;
     if (lng >= minLng && lng <= maxLng && lat >= minLat && lat <= maxLat) {
       out.push(cfg);
@@ -257,6 +279,7 @@ export function resolveProvidersForPoint(
 /**
  * Return all providers that overlap with a WGS84 bbox.
  * Order: county providers first (most specific), statewide last (catch-all).
+ * FDOR is excluded because it doesn't support spatial queries.
  */
 export function resolveProvidersForBbox(
   minLng: number,
@@ -266,7 +289,7 @@ export function resolveProvidersForBbox(
 ): GisCountyConfig[] {
   const out: GisCountyConfig[] = [];
   for (const cfg of Object.values(GIS_PROVIDERS)) {
-    if (cfg.id === "fl-statewide") continue;
+    if (cfg.id === "fl-statewide" || cfg.id === "fl-fdor") continue;
     const [cMinLng, cMinLat, cMaxLng, cMaxLat] = cfg.bbox;
     const overlaps =
       minLng <= cMaxLng &&

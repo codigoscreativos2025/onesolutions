@@ -13,7 +13,7 @@ import { normalizeArcGisFeature } from "../normalize";
  * caching and let the upstream service control freshness.
  */
 
-const FETCH_TIMEOUT_MS = 60000;
+const DEFAULT_TIMEOUT_MS = 60000;
 const OBJECT_ID_CHUNK = 100;
 
 // Throttle repeated identical warnings within a short window so a slow
@@ -29,9 +29,9 @@ function warnOnce(key: string, ...args: unknown[]) {
   console.warn(...args);
 }
 
-async function fetchJson(url: string): Promise<unknown> {
+async function fetchJson(url: string, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<unknown> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(url, {
       signal: controller.signal,
@@ -45,6 +45,36 @@ async function fetchJson(url: string): Promise<unknown> {
     return await res.json();
   } finally {
     clearTimeout(timer);
+  }
+}
+
+// LRU cache for queryByParcelId results. Clicking the same parcel twice
+// is common (open, close, reopen) and the upstream query is 1-10s — we
+// cache for 5 min so repeat clicks are instant.
+type CacheEntry = { data: NormalizedGisFeature | null; expires: number };
+const CACHE_TTL_MS = 5 * 60 * 1000;
+const CACHE_MAX_ENTRIES = 500;
+const parcelIdCache = new Map<string, CacheEntry>();
+
+function cacheGet(key: string): NormalizedGisFeature | null | undefined {
+  const entry = parcelIdCache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() > entry.expires) {
+    parcelIdCache.delete(key);
+    return undefined;
+  }
+  // LRU bump: re-insert to move to end of insertion order
+  parcelIdCache.delete(key);
+  parcelIdCache.set(key, entry);
+  return entry.data;
+}
+
+function cacheSet(key: string, data: NormalizedGisFeature | null): void {
+  parcelIdCache.set(key, { data, expires: Date.now() + CACHE_TTL_MS });
+  while (parcelIdCache.size > CACHE_MAX_ENTRIES) {
+    const firstKey = parcelIdCache.keys().next().value;
+    if (firstKey === undefined) break;
+    parcelIdCache.delete(firstKey);
   }
 }
 
@@ -127,6 +157,13 @@ export interface CountyProviderOptions {
   recordCount?: number;
   /** Use JSON envelope format with explicit wkid (for services that need it) */
   jsonEnvelope?: boolean;
+  /**
+   * Whether the upstream supports spatial (bbox/point) queries.
+   * Defaults to true. Set false for providers that only support WHERE
+   * clauses (e.g. FDOR cadastral). Spatial methods will short-circuit
+   * to empty results without a network call.
+   */
+  supportsSpatial?: boolean;
 }
 
 export function createCountyProvider(
@@ -136,7 +173,7 @@ export function createCountyProvider(
   const fields = opts.outFields.join(",");
   const cfg = () => config(providerId);
 
-  async function fetchByObjectIds(ids: number[]): Promise<NormalizedGisFeature[]> {
+  async function fetchByObjectIds(ids: number[], timeoutMs = DEFAULT_TIMEOUT_MS): Promise<NormalizedGisFeature[]> {
     const c = cfg();
     const out: NormalizedGisFeature[] = [];
     for (let i = 0; i < ids.length; i += OBJECT_ID_CHUNK) {
@@ -150,7 +187,7 @@ export function createCountyProvider(
       });
       const url = `${c.parcelsUrl}/query?${params.toString()}`;
       try {
-        const data = await fetchJson(url);
+        const data = await fetchJson(url, timeoutMs);
         out.push(...parseFeatureCollection(data, c));
       } catch (err) {
         warnOnce(
@@ -173,6 +210,9 @@ export function createCountyProvider(
       maxLat: number,
       limit = opts.recordCount ?? 200
     ): Promise<NormalizedGisFeature[]> {
+      // Short-circuit when upstream doesn't support spatial queries
+      if (opts.supportsSpatial === false) return [];
+
       const c = cfg();
       try {
         if (opts.usePagination) {
@@ -191,12 +231,12 @@ export function createCountyProvider(
             returnIdsOnly: "true",
             f: "json",
           });
-          const data = (await fetchJson(`${c.parcelsUrl}/query?${params.toString()}`)) as {
+          const data = (await fetchJson(`${c.parcelsUrl}/query?${params.toString()}`, 60000)) as {
             objectIds?: number[];
           };
           const ids = data.objectIds || [];
           if (ids.length === 0) return [];
-          const features = await fetchByObjectIds(ids);
+          const features = await fetchByObjectIds(ids, 60000);
           return features.slice(0, limit);
         }
 
@@ -210,7 +250,7 @@ export function createCountyProvider(
           maxLat,
           limit
         );
-        const data = await fetchJson(url);
+        const data = await fetchJson(url, 60000);
         return parseFeatureCollection(data, c).slice(0, limit);
       } catch (err) {
         warnOnce(
@@ -226,6 +266,9 @@ export function createCountyProvider(
       lat: number,
       lng: number
     ): Promise<NormalizedGisFeature[]> {
+      // Short-circuit when upstream doesn't support spatial queries
+      if (opts.supportsSpatial === false) return [];
+
       const c = cfg();
       try {
         if (opts.usePagination) {
@@ -244,7 +287,7 @@ export function createCountyProvider(
           resultRecordCount: "5",
           f: "geojson",
         });
-        const data = await fetchJson(`${c.parcelsUrl}/query?${params.toString()}`);
+        const data = await fetchJson(`${c.parcelsUrl}/query?${params.toString()}`, 10000);
         return parseFeatureCollection(data, c);
       } catch (err) {
         warnOnce(
@@ -257,6 +300,10 @@ export function createCountyProvider(
     },
 
     async queryByParcelId(parcelId: string): Promise<NormalizedGisFeature | null> {
+      const cacheKey = `${providerId}:${parcelId}`;
+      const cached = cacheGet(cacheKey);
+      if (cached !== undefined) return cached;
+
       const c = cfg();
       try {
         const safe = parcelId.replace(/'/g, "''");
@@ -268,9 +315,11 @@ export function createCountyProvider(
           resultRecordCount: "1",
           f: "geojson",
         });
-        const data = await fetchJson(`${c.parcelsUrl}/query?${params.toString()}`);
+        const data = await fetchJson(`${c.parcelsUrl}/query?${params.toString()}`, 10000);
         const list = parseFeatureCollection(data, c);
-        return list[0] || null;
+        const result = list[0] || null;
+        cacheSet(cacheKey, result);
+        return result;
       } catch (err) {
         warnOnce(
           `${providerId}:parcelId:${parcelId}`,
@@ -303,7 +352,7 @@ export function createCountyProvider(
           f: "geojson",
         });
         try {
-          const data = await fetchJson(`${c.parcelsUrl}/query?${params.toString()}`);
+          const data = await fetchJson(`${c.parcelsUrl}/query?${params.toString()}`, 15000);
           for (const f of parseFeatureCollection(data, c)) {
             if (!seen.has(f.externalId)) {
               seen.add(f.externalId);
@@ -320,7 +369,7 @@ export function createCountyProvider(
       };
 
       await tryWhere(`UPPER(${addrField}) LIKE '%${safe}%'`);
-      if (results.length < 15) {
+      if (results.length < 15 && ownerField) {
         await tryWhere(`UPPER(${ownerField}) LIKE '%${safe}%'`);
       }
 
