@@ -750,6 +750,7 @@ function KanbanCard({
   const isOpen = transferOpen === visit.id;
   const isBlockedForTrainee =
     isTrainee &&
+    visit.stage !== "IN_PROGRESS" &&
     visit.closer != null &&
     visit.projects.some((p) =>
       p.projectType.name.toLowerCase().includes("panel solar"),

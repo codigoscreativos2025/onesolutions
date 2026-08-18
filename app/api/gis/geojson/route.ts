@@ -55,7 +55,13 @@ export async function GET(request: Request) {
   }
 
   try {
-    const fc = await gisGeoJsonForBbox(minLng, minLat, maxLng, maxLat);
+    const bboxWidth = maxLng - minLng;
+    const maxAllowableOffset =
+      bboxWidth > 0.03 ? 0.0002 :
+      bboxWidth > 0.02 ? 0.0001 :
+      bboxWidth > 0.01 ? 0.00005 :
+      bboxWidth > 0.005 ? 0.00002 : 0;
+    const fc = await gisGeoJsonForBbox(minLng, minLat, maxLng, maxLat, { maxAllowableOffset });
     return NextResponse.json(fc, {
       headers: {
         "Cache-Control": "private, max-age=30, stale-while-revalidate=120",

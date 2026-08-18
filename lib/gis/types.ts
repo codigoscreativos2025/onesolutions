@@ -74,6 +74,7 @@ export interface NormalizedGisFeature {
 
 export interface AppParcelPayload {
   id: string;
+  externalId?: string;
   address: string;
   ownerName?: string;
   city: string;

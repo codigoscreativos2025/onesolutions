@@ -235,10 +235,11 @@ export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead 
 
   const handleSaveFields = async () => {
     const invalidEmails: string[] = [];
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     nonSignatureFields.forEach(f => {
       const isEmail = f.type === "email" || f.key.toLowerCase().includes("email") || f.label.toLowerCase().includes("email");
       if (isEmail && fieldValues[f.key]) {
-        if (!fieldValues[f.key].toLowerCase().endsWith("@gmail.com")) {
+        if (!emailRegex.test(fieldValues[f.key].toLowerCase())) {
           invalidEmails.push(f.label);
         }
       }
@@ -517,6 +518,7 @@ export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead 
 
   const isPanelSolar = activeContract?.name.toLowerCase().includes("panel solar") || activeContract?.type.toLowerCase().includes("panel-solar");
   const canEditOrSign = (() => {
+    if (role === "SETTER_JR") return false;
     if (role === "SETTER" && isPanelSolar) return false;
     if (role === "CLOSER" && isTraineeLead && !isPanelSolar) return false;
     return true;
@@ -830,7 +832,7 @@ export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead 
                 </div>
                 <h3 className="text-xl font-bold mb-2 text-gray-900">Dominio Inválido</h3>
                 <p className="text-gray-600 mb-6 text-sm">
-                  Los campos de correo electrónico deben terminar obligatoriamente en <strong>@gmail.com</strong> para poder guardarse.
+                  Los campos de correo electrónico deben tener un formato válido (por ejemplo, cliente@ejemplo.com) para poder guardarse.
                 </p>
                 <Button onClick={() => setShowEmailWarning(false)} className="w-full">
                   Entendido

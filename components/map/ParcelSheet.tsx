@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { CreateLeadModal } from "@/components/leads/CreateLeadModal";
-import { DoorOpen, X, User, Tag, Plus, Pencil, Trash2, DoorClosed, ThumbsDown, Clock, UserX, Home, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { DoorOpen, X, User, DoorClosed, ThumbsDown, Clock, UserX, Home, Loader2 } from "lucide-react";
+
 import { useLocale } from "@/lib/locale-context";
 import { getPropertyClassLabel } from "@/lib/utils";
 
@@ -24,6 +24,7 @@ interface NotAvailTag {
 
 interface Parcel {
   id: string;
+  externalId?: string;
   address: string;
   ownerName?: string;
   status: "AVAILABLE" | "LEAD" | "CUSTOMER";
@@ -55,6 +56,7 @@ interface ParcelSheetProps {
   onVisitStarted: () => void;
   onParcelUpdated?: (updated: Parcel) => void;
   onQuickTagApplied?: () => void;
+  
   userRole: string;
   userId: string;
 }
@@ -74,29 +76,59 @@ export function ParcelSheet({
   const router = useRouter();
   const [claiming, setClaiming] = useState(false);
   const [claimError, setClaimError] = useState("");
-  const [showTagsMenu, setShowTagsMenu] = useState(false);
-  const [customTagName, setCustomTagName] = useState("");
-  const [customTagColor, setCustomTagColor] = useState("#6366f1");
-  const [localNotes, setLocalNotes] = useState("");
-  const [editingTagIdx, setEditingTagIdx] = useState<number | null>(null);
-  const [editTagName, setEditTagName] = useState("");
-  const [editTagColor, setEditTagColor] = useState("#6366f1");
 
-  const [notAvailTags, setNotAvailTags] = useState<NotAvailTag[]>([]);
-  const [selectedNotAvailTagIds, setSelectedNotAvailTagIds] = useState<number[]>([]);
+
+
+
+
+
+
+
+
+
 
   const [showLeadModal, setShowLeadModal] = useState(false);
   const [visitNotAvailTags, setVisitNotAvailTags] = useState<NotAvailTag[]>([]);
-  const [quickTagMessage, setQuickTagMessage] = useState<{ name: string; color: string } | null>(null);
+
   const [mapNotes, setMapNotes] = useState("");
 
   const noteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSavingRef = useRef(false);
 
-  const isAdmin = userRole === "ADMIN";
+  const saveTagsAuto = useCallback(async (newTags: TagObject[]) => {
+    if (!parcel || isSavingRef.current) return;
+    
+    // Optimistic update
+    const prevParcel = { ...parcel };
+    const updatedParcel = { ...parcel, parcelTags: JSON.stringify(newTags) };
+    if (onParcelUpdated) onParcelUpdated(updatedParcel);
+    
+    isSavingRef.current = true;
+    try {
+      const res = await fetch(`/api/parcels/${encodeURIComponent(parcel.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ parcelTags: JSON.stringify(newTags), address: parcel.address, geometry: parcel.geometry, externalId: parcel.externalId }),
+      });
+      if (res.ok) {
+        // We know newTags is correct. Keep the tags!
+        if (onParcelUpdated) onParcelUpdated({ ...parcel, parcelTags: JSON.stringify(newTags) });
+        if (onQuickTagApplied) onQuickTagApplied();
+      } else {
+        console.error("Failed to save parcel tags:", res.status);
+        if (onParcelUpdated) onParcelUpdated(prevParcel);
+      }
+    } catch {
+      if (onParcelUpdated) onParcelUpdated(prevParcel);
+    } finally {
+      isSavingRef.current = false;
+    }
+  }, [parcel, onParcelUpdated]);
 
-  useEffect(() => {
-    setQuickTagMessage(null);
+  const handleQuickTag = async (name: string, color: string) => {
+    const newTags = [{ name, color, date: new Date().toISOString() }];
+    await saveTagsAuto(newTags);
+  };  useEffect(() => {
     if (!parcel) {
       setVisitNotAvailTags([]);
       return;
@@ -122,45 +154,7 @@ export function ParcelSheet({
     } else {
       setVisitNotAvailTags([]);
     }
-    if (parcel.parcelNotes) {
-      setLocalNotes(parcel.parcelNotes);
-    }
   }, [parcel?.id]);
-
-  useEffect(() => {
-    setLocalNotes(parcel?.parcelNotes || "");
-  }, [parcel?.id, parcel?.parcelNotes]);
-
-  useEffect(() => {
-    fetch("/api/not-available-tags")
-      .then((r) => r.json())
-      .then((d) => { if (Array.isArray(d)) setNotAvailTags(d); })
-      .catch(() => {});
-  }, []);
-
-  const saveTagsAuto = useCallback(async (newTags: TagObject[]) => {
-    if (!parcel || isSavingRef.current) return;
-    // Optimistic update - update parent immediately for instant visual feedback
-    const prevParcel = { ...parcel };
-    const updatedParcel = { ...parcel, parcelTags: JSON.stringify(newTags) };
-    onParcelUpdated?.(updatedParcel as typeof parcel);
-    
-    isSavingRef.current = true;
-    try {
-      const res = await fetch(`/api/parcels/${encodeURIComponent(parcel.id)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ parcelTags: JSON.stringify(newTags), address: parcel.address, geometry: parcel.geometry }),
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        if (onParcelUpdated) onParcelUpdated({ ...parcel, parcelTags: updated.parcelTags });
-      } else {
-        onParcelUpdated?.(prevParcel as typeof parcel);
-      }
-    } catch { onParcelUpdated?.(prevParcel as typeof parcel); }
-    finally { isSavingRef.current = false; }
-  }, [parcel, onParcelUpdated]);
 
   const saveNotesAuto = useCallback(async (notes: string) => {
     if (!parcel) return;
@@ -213,7 +207,9 @@ export function ParcelSheet({
   const metadata = parcel.metadata ? JSON.parse(parcel.metadata) : {};
   const canVisit = userRole === "SETTER" || userRole === "SETTER_JR" || userRole === "CLOSER";
   const isTakenByMe = parcel.setter?.id === parseInt(userId);
-  const isAvailable = parcel.status === "AVAILABLE";
+  const activeVisits = parcel.visits?.filter(v => v.stage !== "CANCELLED" && v.stage !== "CLOSED") || [];
+  const hasActiveLead = activeVisits.length > 0;
+  const isAvailable = parcel.status === "AVAILABLE" && !hasActiveLead;
   const closedVisits = parcel.visits?.filter(v => v.stage === "CLOSED") || [];
   const hasPriorProjects = closedVisits.length > 0;
 
@@ -229,122 +225,7 @@ export function ParcelSheet({
     .filter(Boolean)
     .join(", ");
 
-  const toggleNotAvailTag = (tagId: number) => {
-    const tag = notAvailTags.find((t) => t.id === tagId);
-    if (!tag) return;
 
-    const already = tags.some((t) => t.name === tag.name);
-    let newTags: TagObject[];
-    if (already) {
-      newTags = tags.filter((t) => t.name !== tag.name);
-    } else {
-      newTags = [...tags, { name: tag.name, color: tag.color, date: new Date().toISOString() }];
-    }
-    saveTagsAuto(newTags);
-  };
-
-  const removeTag = (tagName: string) => {
-    saveTagsAuto(tags.filter((t) => t.name !== tagName));
-  };
-
-  const startEditTag = (idx: number) => {
-    setEditingTagIdx(idx);
-    setEditTagName(tags[idx].name);
-    setEditTagColor(tags[idx].color);
-  };
-
-  const saveEditTag = () => {
-    if (editingTagIdx === null || !editTagName.trim()) return;
-    const newTags = [...tags];
-    newTags[editingTagIdx] = { ...newTags[editingTagIdx], name: editTagName.trim(), color: editTagColor };
-    saveTagsAuto(newTags);
-    setEditingTagIdx(null);
-  };
-
-  const cancelEditTag = () => {
-    setEditingTagIdx(null);
-  };
-
-  const handleQuickTag = async (name: string, color: string) => {
-    const newTags = [{ name, color, date: new Date().toISOString() }];
-    await saveTagsAuto(newTags);
-    setQuickTagMessage({ name, color });
-    onQuickTagApplied?.();
-  };
-
-  const addCustomTagToParcel = () => {
-    if (!customTagName.trim()) return;
-    const exists = tags.some((t) => t.name === customTagName.trim());
-    if (exists) {
-      toast.error("Esa etiqueta ya existe");
-      return;
-    }
-    const newTag: TagObject = { name: customTagName.trim(), color: customTagColor, date: new Date().toISOString() };
-    saveTagsAuto([...tags, newTag]);
-    setCustomTagName("");
-    setCustomTagColor("#6366f1");
-    setShowTagsMenu(false);
-  };
-
-  const handleAdminAddPresetTag = async () => {
-    if (!customTagName.trim()) return;
-    try {
-      const res = await fetch("/api/admin/not-available-tags", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: customTagName.trim(), color: customTagColor }),
-      });
-      if (res.ok) {
-        const created = await res.json();
-        setNotAvailTags((prev) => [...prev, created]);
-        toast.success("Tag creado");
-        setCustomTagName("");
-        setCustomTagColor("#6366f1");
-      } else {
-        toast.error("Error al crear tag");
-      }
-    } catch {
-      toast.error("Error al crear tag");
-    }
-  };
-
-  const handleAdminDeletePresetTag = async (tagId: number) => {
-    try {
-      const res = await fetch(`/api/admin/not-available-tags/${tagId}`, { method: "DELETE" });
-      if (res.ok) {
-        setNotAvailTags((prev) => prev.filter((t) => t.id !== tagId));
-        toast.success("Tag eliminado");
-      } else {
-        toast.error("Error al eliminar tag");
-      }
-    } catch {
-      toast.error("Error al eliminar tag");
-    }
-  };
-
-  const handleAdminUpdatePresetTag = async (tagId: number, name: string, color: string) => {
-    try {
-      const res = await fetch(`/api/admin/not-available-tags/${tagId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, color }),
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        setNotAvailTags((prev) => prev.map((t) => (t.id === tagId ? updated : t)));
-        toast.success("Tag actualizado");
-      } else {
-        toast.error("Error al actualizar");
-      }
-    } catch {
-      toast.error("Error al actualizar");
-    }
-  };
-
-  const handleNotesChange = (val: string) => {
-    setLocalNotes(val);
-    debouncedSaveNotes(val);
-  };
 
   const handleKnockDoor = async () => {
     if (claiming) return;
@@ -372,7 +253,7 @@ export function ParcelSheet({
       <div className="fixed inset-y-0 right-0 z-[1000] w-full sm:w-96 glass-panel border-l border-glass-border shadow-[-10px_0_40px_rgba(0,0,0,0.1)] flex flex-col max-h-screen sm:max-h-none animate-slide-in-right pb-16">
         <div className="flex justify-between items-center p-4 border-b border-glass-border">
           <div className="flex items-center gap-2">
-            <StatusBadge status={parcel.status} />
+            <StatusBadge status={parcel.status} tag={tags.length > 0 ? tags[0] : undefined} />
             {parcel.setter && (
               <span className="text-on-surface-variant text-xs">
                 {" "}
@@ -440,14 +321,14 @@ export function ParcelSheet({
 
 
           <div className="grid grid-cols-2 gap-3">
-            {metadata.owner && <InfoCard label="Propietario" value={metadata.owner} />}
-            {metadata.property_class && <InfoCard label="Clase" value={getPropertyClassLabel(metadata.property_class)} />}
-            {metadata.acreage && <InfoCard label="Acres" value={metadata.acreage} />}
-            {metadata.land_value && <InfoCard label="Valor terreno" value={`$${Number(metadata.land_value).toLocaleString()}`} />}
-            {metadata.building_value && <InfoCard label="Valor constr." value={`$${Number(metadata.building_value).toLocaleString()}`} />}
-            {metadata.roofAge && <InfoCard label="Edad del techo" value={metadata.roofAge} />}
-            {metadata.utility && <InfoCard label="Est. Luz" value={metadata.utility} />}
-            {metadata.solarPotential && <InfoCard label="Potencial solar" value={metadata.solarPotential} />}
+            {metadata.owner != null && <InfoCard label="Propietario" value={metadata.owner} />}
+            {metadata.property_class != null && <InfoCard label="Clase" value={getPropertyClassLabel(metadata.property_class)} />}
+            {metadata.acreage != null && <InfoCard label="Acres" value={metadata.acreage} />}
+            {metadata.land_value != null && <InfoCard label="Valor terreno" value={`$${Number(metadata.land_value).toLocaleString()}`} />}
+            {metadata.building_value != null && <InfoCard label="Valor constr." value={`$${Number(metadata.building_value).toLocaleString()}`} />}
+            {metadata.roofAge != null && <InfoCard label="Edad del techo" value={metadata.roofAge} />}
+            {metadata.utility != null && <InfoCard label="Est. Luz" value={metadata.utility} />}
+            {metadata.solarPotential != null && <InfoCard label="Potencial solar" value={metadata.solarPotential} />}
             {parcel.ownerOccupied !== undefined && (
               <InfoCard label="Tipo" value={parcel.ownerOccupied ? "Dueño" : "Rentado"} />
             )}
@@ -456,7 +337,11 @@ export function ParcelSheet({
               value={
                 parcel.status === "LEAD" ? getStageLabel(parcel) :
                 parcel.status === "CUSTOMER" ? t.map.customer :
-                (tags.length > 0 ? tags[0].name : t.map.available)
+                (tags.length > 0 ? (
+                  <span style={{ color: tags[0].color, fontWeight: 700 }}>
+                    {tags[0].name}
+                  </span>
+                ) : t.map.available)
               }
             />
           </div>
@@ -568,15 +453,27 @@ export function ParcelSheet({
                 )}
               </div>
 
-              {parcel.visits?.[0]?.id && (
-                <Button 
-                  onClick={() => router.push(`/lead/${parcel.visits?.[0]?.id}`)} 
-                  disabled={userRole === "SETTER_JR" || (userRole === "SETTER" && !isTakenByMe)}
-                  className="w-full mt-4 bg-brand-green hover:bg-brand-green/90 text-white shadow-md py-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Ver detalles
-                </Button>
-              )}
+              {parcel.visits?.[0]?.id && (() => {
+                const visitStage = parcel.visits?.[0]?.stage || "IN_PROGRESS";
+                const isLeadStage = visitStage === "IN_PROGRESS";
+                let btnDisabled = false;
+                
+                if (userRole === "SETTER_JR") {
+                  btnDisabled = !isLeadStage;
+                } else if (userRole === "SETTER") {
+                  btnDisabled = !isLeadStage || !isTakenByMe;
+                }
+
+                return (
+                  <Button 
+                    onClick={() => router.push(`/lead/${parcel.visits?.[0]?.id}`)} 
+                    disabled={btnDisabled}
+                    className="w-full mt-4 bg-brand-green hover:bg-brand-green/90 text-white shadow-md py-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Ver detalles
+                  </Button>
+                );
+              })()}
 
               <Button variant="outline" onClick={onClose} className="w-full mt-3">
                 {t.common.close}
@@ -606,7 +503,7 @@ export function ParcelSheet({
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, tag }: { status: string; tag?: TagObject }) {
   const { t } = useLocale();
   const colors = {
     AVAILABLE: "bg-error/10 text-error",
@@ -625,6 +522,18 @@ function StatusBadge({ status }: { status: string }) {
     LEAD: "",
     CUSTOMER: "",
   };
+
+  if (tag) {
+    return (
+      <span
+        className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+        style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
+        title="Etiqueta rápida"
+      >
+        {tag.name}
+      </span>
+    );
+  }
 
   return (
     <span

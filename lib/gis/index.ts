@@ -66,9 +66,12 @@ function getProvider(id: GisProviderId) {
 
   // FL Statewide FGDL service requires JSON envelope + 100-record pagination
   // Orange County is strictly limited to 200 records per bbox query, so it also MUST use pagination
-  const usePagination = id === "fl-statewide" || id === "orange-fl";
+  const usePagination = true;
   const jsonEnvelope = id === "fl-statewide";
-  const recordCount = id === "orange-fl" ? 200 : 800;
+  const recordCount =
+    id === "orange-fl" ? 200 :
+    id === "miami-dade-fl" || id === "polk-fl" || id === "pinellas-fl" ? 1000 :
+    2000;
   // FDOR and Martin only support WHERE-clause queries (not spatial bbox/point)
   const supportsSpatial = id !== "fl-fdor" && id !== "martin-fl";
 
@@ -310,9 +313,9 @@ export async function gisGeoJsonForBbox(
   minLat: number,
   maxLng: number,
   maxLat: number,
-  options: { includeStatewide?: boolean } = {}
+  options: { includeStatewide?: boolean; maxAllowableOffset?: number } = {}
 ): Promise<GeoJSON.FeatureCollection> {
-  const { includeStatewide = false } = options;
+  const { includeStatewide = false, maxAllowableOffset } = options;
   const providerConfigs = resolveProvidersForBbox(
     minLng,
     minLat,
@@ -326,7 +329,7 @@ export async function gisGeoJsonForBbox(
 
   const merged = await queryProvidersSequential(
     providerConfigs,
-    (p) => p.queryByBbox(minLng, minLat, maxLng, maxLat),
+    (p) => p.queryByBbox(minLng, minLat, maxLng, maxLat, undefined, maxAllowableOffset),
     { includeStatewide }
   );
 

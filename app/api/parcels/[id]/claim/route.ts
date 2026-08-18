@@ -38,7 +38,7 @@ export async function POST(
       parcel = await prisma.parcel.create({
         data: {
           id,
-          externalId: id,
+          externalId: body.externalId || id,
           address: body.address || "Sin dirección",
           ownerName: body.ownerName || null,
           geometry: body.geometry || defaultGeometry,

@@ -66,8 +66,8 @@ export async function GET(
       const gisParcel = await gisGetByExternalId(id);
       if (gisParcel) {
         return NextResponse.json({
-          id: gisParcel.id,
-          externalId: id,
+          id: id,
+          externalId: gisParcel.externalId || gisParcel.id,
           address: gisParcel.address,
           ownerName: gisParcel.ownerName,
           city: gisParcel.city,
@@ -102,7 +102,7 @@ export async function PATCH(
   const { id: rawId } = await params;
   const id = decodeURIComponent(rawId);
   const body = await request.json();
-  const { partnerId, parcelTags, parcelNotes, visitedStatus, address: bodyAddress, geometry: bodyGeometry, ownerName: bodyOwnerName, metadata: bodyMetadata } = body;
+  const { partnerId, parcelTags, parcelNotes, visitedStatus, address: bodyAddress, geometry: bodyGeometry, ownerName: bodyOwnerName, metadata: bodyMetadata, externalId: bodyExternalId } = body;
 
   const parcel = await prisma.parcel.findFirst({
     where: { OR: [{ id }, { externalId: id }] },
@@ -110,7 +110,7 @@ export async function PATCH(
 
   const isAdmin = session.user.role === "ADMIN";
   const isOwner = parcel?.setterId === parseInt(session.user.id);
-  const isSetterOrCloser = session.user.role === "SETTER" || session.user.role === "SETTER_JR" || session.user.role === "CLOSER";
+  const isSetterOrCloser = session.user.role === "SETTER" || session.user.role === "SETTER_JR" || session.user.role === "CLOSER" || session.user.role === "TRAINEE";
 
   const updateData: Record<string, unknown> = {};
 
@@ -132,37 +132,41 @@ export async function PATCH(
 
   const parcelKey = parcel?.id || id;
 
-  // Upsert for GIS/Regrid parcels (may not exist in DB yet)
-  const created = await prisma.parcel.upsert({
-    where: { id: parcelKey },
-    update: updateData,
-    create: {
-      id: parcelKey,
-      externalId: parcel?.externalId || id,
-      ...updateData,
-      address: bodyAddress || parcel?.address || "Sin direccion",
-      ownerName: bodyOwnerName || parcel?.ownerName || null,
-      geometry: bodyGeometry || parcel?.geometry || JSON.stringify({ type: "Polygon", coordinates: [] }),
-      metadata: bodyMetadata || parcel?.metadata || null,
-      ...(isAdmin ? { partnerId: partnerId as number } : {}),
-    },
-    include: {
-      setter: { select: { id: true, name: true } },
-      partner: { select: { id: true, name: true } },
-    },
-  });
-
-  if (visitedStatus && (isAdmin || isOwner || isSetterOrCloser)) {
-    await prisma.parcelVisitHistory.create({
-      data: {
-        parcelId: created.id,
-        setterId: parseInt(session.user.id),
-        visitedAt: new Date(),
-        status: visitedStatus,
-        notes: parcelNotes || null,
+  try {
+    const created = await prisma.parcel.upsert({
+      where: { id: parcelKey },
+      update: updateData,
+      create: {
+        id: parcelKey,
+        externalId: bodyExternalId || parcel?.externalId || id,
+        ...updateData,
+        address: bodyAddress || parcel?.address || "Sin direccion",
+        ownerName: bodyOwnerName || parcel?.ownerName || null,
+        geometry: bodyGeometry || parcel?.geometry || JSON.stringify({ type: "Polygon", coordinates: [] }),
+        metadata: bodyMetadata || parcel?.metadata || null,
+        ...(isAdmin ? { partnerId: partnerId as number } : {}),
+      },
+      include: {
+        setter: { select: { id: true, name: true } },
+        partner: { select: { id: true, name: true } },
       },
     });
-  }
 
-  return NextResponse.json(created);
+    if (visitedStatus && (isAdmin || isOwner || isSetterOrCloser)) {
+      await prisma.parcelVisitHistory.create({
+        data: {
+          parcelId: created.id,
+          setterId: parseInt(session.user.id),
+          visitedAt: new Date(),
+          status: visitedStatus,
+          notes: parcelNotes || null,
+        },
+      });
+    }
+
+    return NextResponse.json(created);
+  } catch (err) {
+    console.error("PATCH parcel upsert error:", err);
+    return NextResponse.json({ error: "Failed to update parcel" }, { status: 500 });
+  }
 }

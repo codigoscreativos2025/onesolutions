@@ -145,6 +145,7 @@ export function toAppParcelPayload(
 
   return {
     id: existing?.id || feature.externalId,
+    externalId: feature.externalId,
     address: feature.address,
     ownerName: feature.ownerName,
     city: feature.city,

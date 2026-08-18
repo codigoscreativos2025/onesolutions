@@ -11,6 +11,7 @@ import { useLocale } from "@/lib/locale-context";
 
 interface Parcel {
   id: string;
+  externalId?: string;
   address: string;
   ownerName?: string;
   status: "AVAILABLE" | "LEAD" | "CUSTOMER";
@@ -79,6 +80,7 @@ export default function MapView({
           if (data && data.id) {
             const parcel: Parcel = {
               id: data.id,
+              externalId: data.externalId,
               address: data.address || "Sin direccion",
               ownerName: data.ownerName,
               status: data.status || "AVAILABLE",
@@ -385,6 +387,8 @@ export default function MapView({
                 fullParcel = {
                   ...basicParcel,
                   ...data,
+                  id: basicParcel.id,
+                  externalId: data.externalId,
                   address:
                     data.address ||
                     basicParcel.address,
@@ -453,17 +457,6 @@ export default function MapView({
         }
       };
 
-      m.on("click", "parcel-fills", async (e) => {
-        if (!e.features?.[0]) return;
-        quickTagActiveRef.current = false;
-        const props = (e.features[0].properties || {}) as Record<string, unknown>;
-        const geom =
-          (e.features[0] as unknown as { geometry: GeoJSON.Geometry }).geometry ||
-          e.features[0].geometry;
-        const { lng, lat } = e.lngLat;
-        await enrichParcelFromClick(props, geom as GeoJSON.Geometry, lng, lat);
-      });
-
       m.on("mousemove", "parcel-fills", (e) => {
         if (!e.features?.[0]) return;
         m.getCanvas().style.cursor = "pointer";
@@ -480,15 +473,34 @@ export default function MapView({
         m.setFilter("parcel-hover", ["==", ["get", "ll_uuid"], ""]);
       });
 
-      m.on("click", (e) => {
+      m.on("click", async (e) => {
         const features = m.queryRenderedFeatures(e.point, {
-          layers: ["parcel-fills"],
+          layers: ["parcel-status-circles", "parcel-status-triangles", "parcel-fills"],
         });
+
         if (features.length === 0) {
           setSelectedParcel(null);
-          (map.current?.getSource(
-            "selected-source"
-          ) as maplibregl.GeoJSONSource)?.setData(EMPTY_FC);
+          (map.current?.getSource("selected-source") as maplibregl.GeoJSONSource)?.setData(EMPTY_FC);
+          return;
+        }
+
+        quickTagActiveRef.current = false;
+        const pointFeature = features.find(f => f.layer.id.startsWith("parcel-status-"));
+        const fillFeature = features.find(f => f.layer.id === "parcel-fills");
+
+        if (pointFeature && pointFeature.properties?.id) {
+          const id = pointFeature.properties.id;
+          const props = fillFeature ? fillFeature.properties || {} : {};
+          const geom = fillFeature ? (fillFeature.geometry || (fillFeature as unknown as { geometry: GeoJSON.Geometry }).geometry) : pointFeature.geometry;
+          
+          // Force DB lookup by passing the DB id as ll_uuid and removing object_id
+          const mergedProps = { ...props, ll_uuid: id, object_id: null };
+          
+          await enrichParcelFromClick(mergedProps as Record<string, unknown>, geom as GeoJSON.Geometry, e.lngLat.lng, e.lngLat.lat);
+        } else if (fillFeature) {
+          const props = fillFeature.properties || {};
+          const geom = fillFeature.geometry || (fillFeature as unknown as { geometry: GeoJSON.Geometry }).geometry;
+          await enrichParcelFromClick(props as Record<string, unknown>, geom as GeoJSON.Geometry, e.lngLat.lng, e.lngLat.lat);
         }
       });
 
@@ -658,6 +670,7 @@ export default function MapView({
           ownerName: selectedParcel?.ownerName,
           geometry: selectedParcel?.geometry,
           metadata: selectedParcel?.metadata,
+          externalId: selectedParcel?.externalId,
         }),
       }
     );

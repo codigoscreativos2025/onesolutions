@@ -131,7 +131,8 @@ function bboxQueryUrl(
   minLat: number,
   maxLng: number,
   maxLat: number,
-  recordCount: number
+  recordCount: number,
+  maxAllowableOffset?: number
 ): string {
   const geometry = envelope(jsonMode, minLng, minLat, maxLng, maxLat);
   const params = new URLSearchParams({
@@ -145,6 +146,9 @@ function bboxQueryUrl(
     resultRecordCount: String(recordCount),
     f: "geojson",
   });
+  if (maxAllowableOffset != null && maxAllowableOffset > 0) {
+    params.set("maxAllowableOffset", String(maxAllowableOffset));
+  }
   return `${cfg.parcelsUrl}/query?${params.toString()}`;
 }
 
@@ -229,7 +233,8 @@ export function createCountyProvider(
       minLat: number,
       maxLng: number,
       maxLat: number,
-      limit = opts.recordCount ?? 200
+      limit = opts.recordCount ?? 200,
+      maxAllowableOffset?: number
     ): Promise<NormalizedGisFeature[]> {
       // Short-circuit when upstream doesn't support spatial queries
       if (opts.supportsSpatial === false) return [];
@@ -238,42 +243,62 @@ export function createCountyProvider(
       try {
         if (opts.usePagination) {
           const chunkSize = limit;
-          const url = bboxQueryUrl(
-            c, fields, !!opts.jsonEnvelope, minLng, minLat, maxLng, maxLat, chunkSize
+          const baseUrl = bboxQueryUrl(
+            c, fields, !!opts.jsonEnvelope, minLng, minLat, maxLng, maxLat, chunkSize, maxAllowableOffset
           );
 
-          let totalCount = 0;
-          try {
-            const countUrl = new URL(url);
-            countUrl.searchParams.set("returnCountOnly", "true");
-            countUrl.searchParams.set("f", "json");
-            const countData = await fetchJson(countUrl.toString(), 15000) as { count?: number };
-            totalCount = countData.count || 0;
-          } catch (err) {
-            warnOnce(`${providerId}:count`, `[${providerId}] Failed to get count:`, err instanceof Error ? err.message : err);
-          }
+          const results: NormalizedGisFeature[] = [];
+          const seen = new Set<string>();
+          let offset = 0;
+          const MAX_RECORDS = 50000;
+          const concurrency = 2;
 
-          if (totalCount === 0) return [];
-
-          const maxCount = Math.min(totalCount, 10000); // 10k safeguard
-          const offsets: number[] = [];
-          for (let offset = 0; offset < maxCount; offset += chunkSize) {
-            offsets.push(offset);
-          }
-
-          const fetchPromises = offsets.map(async (offset) => {
-            const pagedUrl = `${url}&resultOffset=${offset}`;
-            try {
-              const data = await fetchJson(pagedUrl, 60000);
-              return parseFeatureCollection(data, c);
-            } catch (err) {
-              warnOnce(`${providerId}:page:${offset}`, `[${providerId}] Page error at ${offset}:`, err instanceof Error ? err.message : err);
-              return [];
+          while (offset < MAX_RECORDS) {
+            const batchOffsets: number[] = [];
+            for (let i = 0; i < concurrency && offset + i * chunkSize < MAX_RECORDS; i++) {
+              batchOffsets.push(offset + i * chunkSize);
             }
-          });
+            if (batchOffsets.length === 0) break;
 
-          const results = await Promise.all(fetchPromises);
-          return results.flat();
+            const batchPromises = batchOffsets.map(async (off) => {
+              const pagedUrl = `${baseUrl}&resultOffset=${off}`;
+              try {
+                const data = await fetchJson(pagedUrl, 60000);
+                return parseFeatureCollection(data, c);
+              } catch (err) {
+                warnOnce(`${providerId}:page:${off}`, `[${providerId}] Page error at ${off}:`, err instanceof Error ? err.message : err);
+                return null;
+              }
+            });
+
+            const batchResults = await Promise.all(batchPromises);
+            let totalInBatch = 0;
+            let anySuccess = false;
+
+            for (const feats of batchResults) {
+              if (feats === null) continue;
+              anySuccess = true;
+              totalInBatch += feats.length;
+              for (const f of feats) {
+                if (!seen.has(f.externalId)) {
+                  seen.add(f.externalId);
+                  results.push(f);
+                }
+              }
+            }
+
+            if (!anySuccess) {
+              warnOnce(`${providerId}:batchFail`, `[${providerId}] All pages in batch failed at offset ${offset}, stopping.`);
+              break;
+            }
+
+            if (totalInBatch < batchOffsets.length * chunkSize) {
+              break;
+            }
+
+            offset += batchOffsets.length * chunkSize;
+          }
+          return results;
         }
 
         const url = bboxQueryUrl(
@@ -284,7 +309,8 @@ export function createCountyProvider(
           minLat,
           maxLng,
           maxLat,
-          limit
+          limit,
+          maxAllowableOffset
         );
         const data = await fetchJson(url, 60000);
         return parseFeatureCollection(data, c).slice(0, limit);
