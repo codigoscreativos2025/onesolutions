@@ -244,7 +244,7 @@ export default function MapView({
       const loadViewportParcels = async () => {
         if (!map.current) return;
         const z = map.current.getZoom();
-        if (z < 14) {
+        if (z < 13) {
           setParcelsHint("Acerca el mapa para ver parcelas");
           (map.current.getSource("gis-parcels") as maplibregl.GeoJSONSource)?.setData(
             EMPTY_FC
@@ -317,12 +317,13 @@ export default function MapView({
         lat: number
       ) => {
         // Fast-path: prefer OBJECTID-based externalId when present.
-        // Orange County's objectIds= query is ~30x faster than
-        // WHERE PARCEL='...' (0.3s vs 9s).
+        // objectIds= query is ~30x faster than WHERE PARCEL='...' (0.3s vs 9s)
+        // for any county whose catalog has extraOutFields: ["OBJECTID"].
         const objectId = props.object_id;
+        const provider = String(props.provider || "");
         let llUuid = String(props.ll_uuid || "");
-        if (objectId != null && llUuid.startsWith("orange-fl:")) {
-          llUuid = `orange-fl:O:${objectId}`;
+        if (objectId != null && provider) {
+          llUuid = `${provider}:O:${objectId}`;
         }
         const basicParcel: Parcel = {
           id: llUuid || `gis-${props.parcel_id || "unknown"}`,
@@ -590,6 +591,10 @@ export default function MapView({
       fetchMarkersRef.current = fetchStatusMarkers;
 
       m.on("moveend", () => {
+        fetchStatusMarkers();
+        scheduleParcelLoad();
+      });
+      m.on("zoomend", () => {
         fetchStatusMarkers();
         scheduleParcelLoad();
       });

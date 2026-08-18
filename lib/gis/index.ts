@@ -64,11 +64,16 @@ function getProvider(id: GisProviderId) {
     ...(cfg.extraOutFields ?? []),
   ].filter((f): f is string => Boolean(f));
 
-  // FL Statewide FGDL service requires JSON envelope + 100-record pagination
-  // Orange County is strictly limited to 200 records per bbox query, so it also MUST use pagination
-  const usePagination = id === "fl-statewide" || id === "orange-fl";
+  // All providers must paginate to avoid silent truncation on dense
+  // areas. Even non-FGDL providers (Hillsborough, Miami-Dade, etc.) cap
+  // their resultRecordCount (typically 200-1000) and return
+  // exceededTransferLimit=true when the viewport has more parcels.
+  const usePagination = true;
   const jsonEnvelope = id === "fl-statewide";
-  const recordCount = id === "orange-fl" ? 200 : 800;
+  const recordCount =
+    id === "orange-fl" ? 200 :
+    id === "miami-dade-fl" || id === "polk-fl" || id === "pinellas-fl" ? 1000 :
+    2000;
   // FDOR and Martin only support WHERE-clause queries (not spatial bbox/point)
   const supportsSpatial = id !== "fl-fdor" && id !== "martin-fl";
 
