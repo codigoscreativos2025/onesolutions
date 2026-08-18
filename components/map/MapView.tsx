@@ -241,71 +241,194 @@ export default function MapView({
         filter: ["==", ["get", "ll_uuid"], ""],
       });
 
+      // Client-side tile cache: keep every loaded parcel feature in a
+      // flat Map keyed by ll_uuid. The map source becomes a derived view
+      // of this cache filtered by viewport, so panning is instant (no
+      // re-fetch) and zooming is smooth (no setData blink).
+      const parcelCache = new Map<string, GeoJSON.Feature>();
+      const tileLoading = new Set<string>();
+      const viewportFeatures: GeoJSON.Feature[] = [];
+
+      const tileKey = (w: number, s: number, e: number, n: number) =>
+        `${w.toFixed(3)}|${s.toFixed(3)}|${e.toFixed(3)}|${n.toFixed(3)}`;
+
+      const tilesForViewport = (w: number, s: number, e: number, n: number) => {
+        const GRID = 0.01;
+        const snapMin = (v: number) => Math.floor(v / GRID) * GRID;
+        const snapMax = (v: number) => Math.ceil(v / GRID) * GRID;
+        const tw = snapMin(w);
+        const ts = snapMin(s);
+        const cols = Math.ceil((snapMax(e) - tw) / GRID);
+        const rows = Math.ceil((snapMax(n) - ts) / GRID);
+        const list: { w: number; s: number; e: number; n: number; key: string }[] = [];
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const minLng = tw + c * GRID;
+            const minLat = ts + r * GRID;
+            const maxLng = Math.min(minLng + GRID, snapMax(e));
+            const maxLat = Math.min(minLat + GRID, snapMax(n));
+            list.push({
+              w: minLng,
+              s: minLat,
+              e: maxLng,
+              n: maxLat,
+              key: tileKey(minLng, minLat, maxLng, maxLat),
+            });
+          }
+        }
+        return list;
+      };
+
+      const renderCacheToMap = () => {
+        if (!map.current) return;
+        const src = map.current.getSource("gis-parcels") as maplibregl.GeoJSONSource | undefined;
+        src?.setData({ type: "FeatureCollection", features: viewportFeatures });
+      };
+
+      const featureInBounds = (
+        f: GeoJSON.Feature,
+        b: maplibregl.LngLatBounds
+      ): boolean => {
+        const g = f.geometry;
+        if (!g) return false;
+        if (g.type === "Polygon") {
+          const ring = g.coordinates[0];
+          for (const [lng, lat] of ring) {
+            if (lng >= b.getWest() && lng <= b.getEast() && lat >= b.getSouth() && lat <= b.getNorth()) {
+              return true;
+            }
+          }
+          return false;
+        }
+        if (g.type === "MultiPolygon") {
+          for (const poly of g.coordinates) {
+            const ring = poly[0];
+            for (const [lng, lat] of ring) {
+              if (lng >= b.getWest() && lng <= b.getEast() && lat >= b.getSouth() && lat <= b.getNorth()) {
+                return true;
+              }
+            }
+          }
+          return false;
+        }
+        return true;
+      };
+
+      const addFeaturesToCache = (features: GeoJSON.Feature[]) => {
+        for (const f of features) {
+          const id = f.properties?.ll_uuid || f.id;
+          if (!id) continue;
+          const key = String(id);
+          if (!parcelCache.has(key)) {
+            parcelCache.set(key, f);
+            if (map.current && featureInBounds(f, map.current.getBounds())) {
+              viewportFeatures.push(f);
+            }
+          }
+        }
+      };
+
+      const recomputeViewport = () => {
+        if (!map.current) return;
+        const b = map.current.getBounds();
+        viewportFeatures.length = 0;
+        const features = Array.from(parcelCache.values());
+        for (const f of features) {
+          if (featureInBounds(f, b)) viewportFeatures.push(f);
+        }
+        renderCacheToMap();
+      };
+
+      const loadTile = async (tile: { w: number; s: number; e: number; n: number; key: string }) => {
+        if (tileLoading.has(tile.key)) return;
+        // Check if ANY feature in this tile is already cached (cheap proxy)
+        let anyCached = false;
+        for (const f of Array.from(parcelCache.values())) {
+          if (tileCacheMeta(f) === tile.key) {
+            anyCached = true;
+            break;
+          }
+        }
+        if (anyCached) return;
+        tileLoading.add(tile.key);
+        try {
+          const res = await fetch(
+            `/api/gis/geojson?west=${tile.w.toFixed(3)}&south=${tile.s.toFixed(3)}&east=${tile.e.toFixed(3)}&north=${tile.n.toFixed(3)}`
+          );
+          if (!res.ok) return;
+          const data = await res.json();
+          if (data.tooLarge || !Array.isArray(data.features)) return;
+          // Tag each feature with its source tile so we can dedupe later
+          for (const f of data.features) {
+            f.properties = { ...(f.properties || {}), _tile: tile.key };
+          }
+          addFeaturesToCache(data.features);
+          renderCacheToMap();
+        } catch {
+          /* ignore */
+        } finally {
+          tileLoading.delete(tile.key);
+        }
+      };
+
+      const tileCacheMeta = (f: GeoJSON.Feature): string | undefined => {
+        return f.properties?._tile as string | undefined;
+      };
+
+      const evictTilesOutsideBounds = (b: maplibregl.LngLatBounds, pad = 0.02) => {
+        const w = b.getWest() - pad;
+        const s = b.getSouth() - pad;
+        const e = b.getEast() + pad;
+        const n = b.getNorth() + pad;
+        const toDelete: string[] = [];
+        for (const [key, f] of Array.from(parcelCache.entries())) {
+          const tile = tileCacheMeta(f);
+          if (!tile) continue;
+          const [kw, ks] = tile.split("|").map(Number);
+          if (kw + 0.01 < w || ks + 0.01 < s || kw > e || ks > n) {
+            toDelete.push(key);
+          }
+        }
+        for (const key of toDelete) parcelCache.delete(key);
+      };
+
       const loadViewportParcels = async () => {
         if (!map.current) return;
         const z = map.current.getZoom();
         if (z < 13) {
           setParcelsHint("Acerca el mapa para ver parcelas");
-          (map.current.getSource("gis-parcels") as maplibregl.GeoJSONSource)?.setData(
-            EMPTY_FC
-          );
+          (map.current.getSource("gis-parcels") as maplibregl.GeoJSONSource)?.setData(EMPTY_FC);
+          parcelCache.clear();
+          viewportFeatures.length = 0;
           return;
         }
+        setParcelsHint(null);
 
         const bounds = map.current.getBounds();
-        
-        // Grid Snapping Optimization (0.01 degrees ~= 1.1km)
-        const GRID_SIZE = 0.01;
-        const snapMin = (val: number) => (Math.floor(val / GRID_SIZE) * GRID_SIZE).toFixed(3);
-        const snapMax = (val: number) => (Math.ceil(val / GRID_SIZE) * GRID_SIZE).toFixed(3);
-
-        const west = snapMin(bounds.getWest());
-        const south = snapMin(bounds.getSouth());
-        const east = snapMax(bounds.getEast());
-        const north = snapMax(bounds.getNorth());
-
-        parcelsAbortRef.current?.abort();
-        const ac = new AbortController();
-        parcelsAbortRef.current = ac;
-
-        try {
-          const res = await fetch(
-            `/api/gis/geojson?west=${west}&south=${south}&east=${east}&north=${north}`,
-            { signal: ac.signal }
-          );
-          if (!res.ok) {
-            setParcelsHint("No se pudieron cargar parcelas GIS");
-            return;
-          }
-          const data = await res.json();
-          if (data.tooLarge) {
-            setParcelsHint(
-              data.message || "Acerca el mapa para ver parcelas"
-            );
-            (map.current?.getSource("gis-parcels") as maplibregl.GeoJSONSource)?.setData(
-              EMPTY_FC
-            );
-            return;
-          }
-          setParcelsHint(null);
-          const fc: GeoJSON.FeatureCollection = {
-            type: "FeatureCollection",
-            features: Array.isArray(data.features) ? data.features : [],
-          };
-          (map.current?.getSource("gis-parcels") as maplibregl.GeoJSONSource)?.setData(
-            fc
-          );
-        } catch (err) {
-          if ((err as Error)?.name === "AbortError") return;
-          setParcelsHint("Error cargando parcelas del condado");
-        }
+        const tiles = tilesForViewport(bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth());
+        for (const t of tiles) loadTile(t);
+        evictTilesOutsideBounds(bounds);
       };
 
       const scheduleParcelLoad = () => {
         if (parcelsDebounceRef.current) clearTimeout(parcelsDebounceRef.current);
         parcelsDebounceRef.current = setTimeout(() => {
           loadViewportParcels();
-        }, 350);
+        }, 200);
+      };
+
+      // Update visible features on move/zoom without re-fetching.
+      // This makes pan/zoom feel instant: features already cached stay on
+      // screen, only the visible subset is recomputed. Throttled with
+      // requestAnimationFrame so it doesn't fire more than once per frame.
+      let rafToken = 0;
+      const refreshVisible = () => {
+        if (rafToken) return;
+        rafToken = requestAnimationFrame(() => {
+          rafToken = 0;
+          if (!map.current) return;
+          recomputeViewport();
+        });
       };
 
       fetchParcelsRef.current = loadViewportParcels;
@@ -590,9 +713,17 @@ export default function MapView({
 
       fetchMarkersRef.current = fetchStatusMarkers;
 
+      m.on("move", () => {
+        // Instant visible-features filter — no re-fetch, just hide/show
+        // cached features as the viewport pans. Runs on every frame.
+        refreshVisible();
+      });
       m.on("moveend", () => {
         fetchStatusMarkers();
         scheduleParcelLoad();
+      });
+      m.on("zoom", () => {
+        refreshVisible();
       });
       m.on("zoomend", () => {
         fetchStatusMarkers();
