@@ -25,6 +25,7 @@ export const GIS_PROVIDERS: Record<GisProviderId, GisCountyConfig> = {
       owner: "NAME1",
       owner2: "NAME2",
       address: "SITUS",
+      mailAddress: "ADD1",
       city: "CITY_SITUS",
       zip: "ZIP_SITUS",
       landValue: "LAND_MKT",
