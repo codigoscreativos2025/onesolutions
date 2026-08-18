@@ -437,20 +437,7 @@ export function ParcelSheet({
             </div>
           )}
 
-          {quickTagMessage && (
-            <div
-              className="p-4 rounded-xl border flex items-center gap-3"
-              style={{ backgroundColor: quickTagMessage.color + "15", borderColor: quickTagMessage.color + "40" }}
-            >
-              <span
-                className="w-6 h-6 rounded-full shrink-0 border-2 border-white shadow"
-                style={{ backgroundColor: quickTagMessage.color }}
-              />
-              <span className="text-sm font-semibold" style={{ color: quickTagMessage.color }}>
-                {quickTagMessage.name}
-              </span>
-            </div>
-          )}
+
 
           <div className="grid grid-cols-2 gap-3">
             {metadata.owner && <InfoCard label="Propietario" value={metadata.owner} />}
@@ -535,7 +522,7 @@ export function ParcelSheet({
             </p>
           )}
 
-          {canVisit && (isAvailable || hasPriorProjects) && (
+          {canVisit && isAvailable && (
             <div className="flex flex-col gap-3">
               <Button
                 onClick={handleKnockDoor}

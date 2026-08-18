@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 /** Max bbox diagonal (m) for GeoJSON viewport load */
-const MAX_DIAGONAL_M = 4500;
+const MAX_DIAGONAL_M = 8500;
 
 export async function GET(request: Request) {
   const session = await auth();

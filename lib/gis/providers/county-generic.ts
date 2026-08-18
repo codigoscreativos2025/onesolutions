@@ -237,43 +237,43 @@ export function createCountyProvider(
       const c = cfg();
       try {
         if (opts.usePagination) {
-          const allFeatures: NormalizedGisFeature[] = [];
-          let offset = 0;
           const chunkSize = limit;
+          const url = bboxQueryUrl(
+            c, fields, !!opts.jsonEnvelope, minLng, minLat, maxLng, maxLat, chunkSize
+          );
 
-          while (true) {
-            const url = bboxQueryUrl(
-              c,
-              fields,
-              !!opts.jsonEnvelope,
-              minLng,
-              minLat,
-              maxLng,
-              maxLat,
-              chunkSize
-            );
+          let totalCount = 0;
+          try {
+            const countUrl = new URL(url);
+            countUrl.searchParams.set("returnCountOnly", "true");
+            countUrl.searchParams.set("f", "json");
+            const countData = await fetchJson(countUrl.toString(), 15000) as { count?: number };
+            totalCount = countData.count || 0;
+          } catch (err) {
+            warnOnce(`${providerId}:count`, `[${providerId}] Failed to get count:`, err instanceof Error ? err.message : err);
+          }
+
+          if (totalCount === 0) return [];
+
+          const maxCount = Math.min(totalCount, 10000); // 10k safeguard
+          const offsets: number[] = [];
+          for (let offset = 0; offset < maxCount; offset += chunkSize) {
+            offsets.push(offset);
+          }
+
+          const fetchPromises = offsets.map(async (offset) => {
             const pagedUrl = `${url}&resultOffset=${offset}`;
             try {
               const data = await fetchJson(pagedUrl, 60000);
-              const features = parseFeatureCollection(data, c);
-              allFeatures.push(...features);
-              
-              if (features.length < chunkSize) {
-                break; // Got all records
-              }
-              offset += chunkSize;
-              
-              // Safeguard against massive queries or infinite loops
-              if (offset >= 10000) {
-                warnOnce(`${providerId}:maxPagination`, `[${providerId}] Reached 10000 pagination limit for BBOX query.`);
-                break;
-              }
+              return parseFeatureCollection(data, c);
             } catch (err) {
-              warnOnce(`${providerId}:paginationError`, `[${providerId}] Pagination error at offset ${offset}:`, err instanceof Error ? err.message : err);
-              break;
+              warnOnce(`${providerId}:page:${offset}`, `[${providerId}] Page error at ${offset}:`, err instanceof Error ? err.message : err);
+              return [];
             }
-          }
-          return allFeatures;
+          });
+
+          const results = await Promise.all(fetchPromises);
+          return results.flat();
         }
 
         const url = bboxQueryUrl(

@@ -213,8 +213,8 @@ export default function PublicProfilePage() {
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-2xl font-bold">{profile.name}</h1>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getRoleColor(profile.role)}`}>
-                {profile.role}
+              <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium uppercase tracking-wider">
+                {profile.role === 'SETTER' ? 'Trainee' : profile.role}
               </span>
               {isOwnProfile && (
                 <Button size="sm" variant="outline" onClick={openEditModal}>
@@ -245,6 +245,11 @@ export default function PublicProfilePage() {
       </div>
 
       {(isOwnProfile || session?.user?.role === 'ADMIN') && profile.profile && (
+        profile.profile.address || profile.profile.dateOfBirth || profile.profile.bankName ||
+        profile.profile.zelle || profile.profile.accountNumber || profile.profile.ssn ||
+        profile.profile.routingNumber || profile.profile.representativeName || profile.profile.companyName ||
+        profile.profile.companyPosition || profile.profile.emergencyContactName || profile.profile.emergencyContactPhone
+      ) && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
           <h2 className="text-xl font-bold mb-4">Mi Informaci&oacute;n</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

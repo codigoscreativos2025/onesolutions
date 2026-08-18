@@ -175,7 +175,7 @@ export default function ProfilePage() {
             <h1 className="text-3xl font-bold mb-2">{profile.user.name}</h1>
             <div className="flex items-center gap-4 text-gray-600 dark:text-gray-400 mb-4">
               <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
-                {profile.user.role}
+                {profile.user.role === 'SETTER' ? 'Trainee' : profile.user.role}
               </span>
               <div className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
