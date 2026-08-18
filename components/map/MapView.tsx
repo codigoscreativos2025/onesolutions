@@ -67,6 +67,13 @@ export default function MapView({
   const [mapReady, setMapReady] = useState(false);
   const [parcelsHint, setParcelsHint] = useState<string | null>(null);
   const autoOpenedRef = useRef(false);
+  // User's geolocation. null = not yet known / disabled. Only non-admin
+  // users get a location prompt; admins keep the Orlando default.
+  const userLocationRef = useRef<[number, number] | null>(null);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [locationStatus, setLocationStatus] = useState<
+    "idle" | "requesting" | "granted" | "denied" | "unavailable"
+  >("idle");
 
   const { t } = useLocale();
 
@@ -116,6 +123,22 @@ export default function MapView({
     }
   }, [autoOpenId]);
 
+  // Update user-location dot whenever a new fix arrives. Skips if the
+  // map hasn't mounted yet (initMap handles the initial placement).
+  useEffect(() => {
+    if (!map.current || !userLocation) return;
+    (map.current.getSource("user-location") as maplibregl.GeoJSONSource)?.setData({
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          geometry: { type: "Point", coordinates: [userLocation[1], userLocation[0]] },
+          properties: {},
+        },
+      ],
+    });
+  }, [userLocation]);
+
   const fetchMarkersRef = useRef<() => void>();
   const fetchParcelsRef = useRef<() => void>();
   const initializedRef = useRef(false);
@@ -129,12 +152,50 @@ export default function MapView({
     centerRef.current = center;
   }, [center]);
 
+  // Request geolocation for non-admin users. Admins keep the default
+  // Orlando center. The location is stored in a ref so initMap can
+  // pick it up synchronously without waiting for React state.
+  const isAdmin = (session?.user?.role || "").toUpperCase() === "ADMIN";
+  const requestUserLocation = useCallback(() => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setLocationStatus("unavailable");
+      return;
+    }
+    if (isAdmin) {
+      // Admins keep the default Orlando center and never get the dot.
+      return;
+    }
+    if (locationStatus === "requesting" || locationStatus === "granted") return;
+    setLocationStatus("requesting");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const loc: [number, number] = [pos.coords.latitude, pos.coords.longitude];
+        userLocationRef.current = loc;
+        setUserLocation(loc);
+        setLocationStatus("granted");
+      },
+      (err) => {
+        setLocationStatus(err.code === err.PERMISSION_DENIED ? "denied" : "unavailable");
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 }
+    );
+  }, [isAdmin, locationStatus]);
+
+  // Trigger geolocation as soon as we know the user role and it's not admin.
+  useEffect(() => {
+    if (!session) return;
+    requestUserLocation();
+  }, [session, requestUserLocation]);
+
   const initMap = useCallback(() => {
     if (!mapContainer.current || initializedRef.current) return;
     initializedRef.current = true;
 
-    const initialCenter = centerRef.current || defaultCenter;
-    const zoom = centerRef.current ? 18 : 16;
+    const propCenter = centerRef.current;
+    const userLoc = userLocationRef.current;
+    // Priority: explicit propCenter > userLocation > defaultCenter
+    const initialCenter = propCenter || userLoc || defaultCenter;
+    const zoom = propCenter || userLoc ? 18 : 16;
 
     const m = new maplibregl.Map({
       container: mapContainer.current,
@@ -240,6 +301,51 @@ export default function MapView({
         },
         filter: ["==", ["get", "ll_uuid"], ""],
       });
+
+      // User-location: pulsing dot rendered on top of everything else.
+      // Hidden when admin or no location yet.
+      m.addSource("user-location", {
+        type: "geojson",
+        data: EMPTY_FC,
+      });
+      m.addLayer({
+        id: "user-location-halo",
+        type: "circle",
+        source: "user-location",
+        paint: {
+          "circle-radius": 18,
+          "circle-color": "#1d4ed8",
+          "circle-opacity": 0.18,
+          "circle-stroke-width": 0,
+        },
+      });
+      m.addLayer({
+        id: "user-location-dot",
+        type: "circle",
+        source: "user-location",
+        paint: {
+          "circle-radius": 8,
+          "circle-color": "#1d4ed8",
+          "circle-stroke-color": "#ffffff",
+          "circle-stroke-width": 3,
+        },
+      });
+
+      // Place the dot if we already have a location by the time the map
+      // loads (the geolocation request often resolves before tiles).
+      const initialLoc = userLocationRef.current;
+      if (initialLoc) {
+        (m.getSource("user-location") as maplibregl.GeoJSONSource)?.setData({
+          type: "FeatureCollection",
+          features: [
+            {
+              type: "Feature",
+              geometry: { type: "Point", coordinates: [initialLoc[1], initialLoc[0]] },
+              properties: {},
+            },
+          ],
+        });
+      }
 
       // Client-side tile cache: keep every loaded parcel feature in a
       // flat Map keyed by ll_uuid. The map source becomes a derived view
@@ -869,6 +975,51 @@ export default function MapView({
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 px-4 py-2 rounded-full bg-surface/95 border border-outline-variant/40 text-xs text-on-surface shadow-lg">
           {parcelsHint}
         </div>
+      )}
+      {mapReady && !isAdmin && (
+        <button
+          type="button"
+          onClick={() => {
+            if (userLocationRef.current && map.current) {
+              map.current.flyTo({
+                center: [userLocationRef.current[1], userLocationRef.current[0]],
+                zoom: 18,
+              });
+              setTimeout(() => fetchParcelsRef.current?.(), 500);
+              return;
+            }
+            // No cached location yet — request it; the initMap useEffect
+            // will recenter when the fix arrives.
+            requestUserLocation();
+            if (locationStatus === "denied" || locationStatus === "unavailable") {
+              toast.error("Activa la ubicacion para usar este boton");
+            }
+          }}
+          aria-label="Ubicarme"
+          title={
+            locationStatus === "denied"
+              ? "Ubicacion bloqueada. Activala en tu navegador."
+              : locationStatus === "requesting"
+                ? "Solicitando ubicacion..."
+                : "Ubicarme"
+          }
+          className="absolute right-4 bottom-4 z-10 w-11 h-11 rounded-full bg-white border border-outline-variant shadow-lg flex items-center justify-center hover:bg-surface-container-low transition-colors"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={locationStatus === "denied" ? "#ef4444" : "#1d4ed8"}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+          </svg>
+        </button>
       )}
       <ParcelSheet
         isFetching={isFetchingParcel}
