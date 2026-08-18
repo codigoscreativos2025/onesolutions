@@ -123,20 +123,37 @@ export default function MapView({
     }
   }, [autoOpenId]);
 
-  // Update user-location dot whenever a new fix arrives. Skips if the
-  // map hasn't mounted yet (initMap handles the initial placement).
+  // Update user-location dot whenever a new fix arrives. Recenters the
+  // map to the user's location too, but only when:
+  //   - the map is mounted
+  //   - there's no explicit center prop (otherwise the admin/user picked
+  //     a specific parcel to focus on and we shouldn't override it)
+  // Skips if the location still hasn't arrived.
   useEffect(() => {
-    if (!map.current || !userLocation) return;
-    (map.current.getSource("user-location") as maplibregl.GeoJSONSource)?.setData({
-      type: "FeatureCollection",
-      features: [
-        {
-          type: "Feature",
-          geometry: { type: "Point", coordinates: [userLocation[1], userLocation[0]] },
-          properties: {},
-        },
-      ],
-    });
+    if (!userLocation) return;
+    if (map.current) {
+      (map.current.getSource("user-location") as maplibregl.GeoJSONSource)?.setData({
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            geometry: { type: "Point", coordinates: [userLocation[1], userLocation[0]] },
+            properties: {},
+          },
+        ],
+      });
+      if (!centerRef.current) {
+        map.current.flyTo({
+          center: [userLocation[1], userLocation[0]],
+          zoom: 18,
+        });
+        centerRef.current = userLocation;
+        setTimeout(() => fetchParcelsRef.current?.(), 500);
+      }
+    } else {
+      // Map not yet mounted — stash the location so initMap picks it up
+      // on its first run. (initMap already handles this case.)
+    }
   }, [userLocation]);
 
   const fetchMarkersRef = useRef<() => void>();
