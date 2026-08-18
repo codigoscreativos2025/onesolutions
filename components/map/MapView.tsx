@@ -246,6 +246,8 @@ export default function MapView({
       // of this cache filtered by viewport, so panning is instant (no
       // re-fetch) and zooming is smooth (no setData blink).
       const parcelCache = new Map<string, GeoJSON.Feature>();
+      const tileFeatures = new Map<string, GeoJSON.Feature[]>(); // tileKey -> features
+      const tileLoaded = new Set<string>();
       const tileLoading = new Set<string>();
       const viewportFeatures: GeoJSON.Feature[] = [];
 
@@ -285,43 +287,69 @@ export default function MapView({
         src?.setData({ type: "FeatureCollection", features: viewportFeatures });
       };
 
-      const featureInBounds = (
-        f: GeoJSON.Feature,
-        b: maplibregl.LngLatBounds
-      ): boolean => {
-        const g = f.geometry;
-        if (!g) return false;
+      // Fast bbox of a geometry. Polygon/MultiPolygon supported.
+      const geomBbox = (g: GeoJSON.Geometry): [number, number, number, number] | null => {
         if (g.type === "Polygon") {
-          const ring = g.coordinates[0];
-          for (const [lng, lat] of ring) {
-            if (lng >= b.getWest() && lng <= b.getEast() && lat >= b.getSouth() && lat <= b.getNorth()) {
-              return true;
+          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+          for (const ring of g.coordinates) {
+            for (const [x, y] of ring) {
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
             }
           }
-          return false;
+          return [minX, minY, maxX, maxY];
         }
         if (g.type === "MultiPolygon") {
+          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
           for (const poly of g.coordinates) {
-            const ring = poly[0];
-            for (const [lng, lat] of ring) {
-              if (lng >= b.getWest() && lng <= b.getEast() && lat >= b.getSouth() && lat <= b.getNorth()) {
-                return true;
+            for (const ring of poly) {
+              for (const [x, y] of ring) {
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
               }
             }
           }
-          return false;
+          return [minX, minY, maxX, maxY];
         }
-        return true;
+        return null;
       };
 
-      const addFeaturesToCache = (features: GeoJSON.Feature[]) => {
+      const featureInBounds = (
+        f: GeoJSON.Feature,
+        w: number, s: number, e: number, n: number
+      ): boolean => {
+        const cached = (f.properties as Record<string, unknown> | null)?._bbox as
+          | [number, number, number, number]
+          | undefined;
+        const bb = cached || (f.geometry ? geomBbox(f.geometry) : null);
+        if (!bb) return false;
+        if (!cached) {
+          f.properties = { ...(f.properties || {}), _bbox: bb };
+        }
+        // Bbox overlap test (cheap, no vertex loop)
+        return !(bb[2] < w || bb[0] > e || bb[3] < s || bb[1] > n);
+      };
+
+      const addFeaturesToCache = (features: GeoJSON.Feature[], tileKey: string) => {
+        if (!tileFeatures.has(tileKey)) tileFeatures.set(tileKey, []);
+        const bucket = tileFeatures.get(tileKey)!;
+        const b = map.current?.getBounds();
+        const w = b?.getWest() ?? -Infinity;
+        const s = b?.getSouth() ?? -Infinity;
+        const e = b?.getEast() ?? Infinity;
+        const n = b?.getNorth() ?? Infinity;
         for (const f of features) {
           const id = f.properties?.ll_uuid || f.id;
           if (!id) continue;
           const key = String(id);
           if (!parcelCache.has(key)) {
             parcelCache.set(key, f);
-            if (map.current && featureInBounds(f, map.current.getBounds())) {
+            bucket.push(f);
+            if (b && featureInBounds(f, w, s, e, n)) {
               viewportFeatures.push(f);
             }
           }
@@ -331,25 +359,25 @@ export default function MapView({
       const recomputeViewport = () => {
         if (!map.current) return;
         const b = map.current.getBounds();
+        const w = b.getWest();
+        const s = b.getSouth();
+        const e = b.getEast();
+        const n = b.getNorth();
         viewportFeatures.length = 0;
-        const features = Array.from(parcelCache.values());
-        for (const f of features) {
-          if (featureInBounds(f, b)) viewportFeatures.push(f);
+        // Iterate only visible tiles, not the whole cache.
+        const visibleTiles = tilesForViewport(w, s, e, n);
+        for (const t of visibleTiles) {
+          const features = tileFeatures.get(t.key);
+          if (!features) continue;
+          for (const f of features) {
+            if (featureInBounds(f, w, s, e, n)) viewportFeatures.push(f);
+          }
         }
         renderCacheToMap();
       };
 
       const loadTile = async (tile: { w: number; s: number; e: number; n: number; key: string }) => {
-        if (tileLoading.has(tile.key)) return;
-        // Check if ANY feature in this tile is already cached (cheap proxy)
-        let anyCached = false;
-        for (const f of Array.from(parcelCache.values())) {
-          if (tileCacheMeta(f) === tile.key) {
-            anyCached = true;
-            break;
-          }
-        }
-        if (anyCached) return;
+        if (tileLoaded.has(tile.key) || tileLoading.has(tile.key)) return;
         tileLoading.add(tile.key);
         try {
           const res = await fetch(
@@ -358,38 +386,46 @@ export default function MapView({
           if (!res.ok) return;
           const data = await res.json();
           if (data.tooLarge || !Array.isArray(data.features)) return;
-          // Tag each feature with its source tile so we can dedupe later
-          for (const f of data.features) {
-            f.properties = { ...(f.properties || {}), _tile: tile.key };
-          }
-          addFeaturesToCache(data.features);
+          addFeaturesToCache(data.features, tile.key);
           renderCacheToMap();
         } catch {
           /* ignore */
         } finally {
           tileLoading.delete(tile.key);
+          tileLoaded.add(tile.key);
         }
       };
 
-      const tileCacheMeta = (f: GeoJSON.Feature): string | undefined => {
-        return f.properties?._tile as string | undefined;
-      };
-
-      const evictTilesOutsideBounds = (b: maplibregl.LngLatBounds, pad = 0.02) => {
+      const evictTilesOutsideBounds = (b: maplibregl.LngLatBounds, pad = 0.05) => {
         const w = b.getWest() - pad;
         const s = b.getSouth() - pad;
         const e = b.getEast() + pad;
         const n = b.getNorth() + pad;
-        const toDelete: string[] = [];
-        for (const [key, f] of Array.from(parcelCache.entries())) {
-          const tile = tileCacheMeta(f);
-          if (!tile) continue;
-          const [kw, ks] = tile.split("|").map(Number);
+        const removed = new Set<string>();
+        for (const [k, features] of Array.from(tileFeatures.entries())) {
+          const [kw, ks] = k.split("|").map(Number);
+          // Tile bbox: [kw, ks, kw+0.01, ks+0.01]
           if (kw + 0.01 < w || ks + 0.01 < s || kw > e || ks > n) {
-            toDelete.push(key);
+            for (const f of features) {
+              const id = f.properties?.ll_uuid || f.id;
+              if (id) removed.add(String(id));
+            }
+            tileFeatures.delete(k);
+            tileLoaded.delete(k);
           }
         }
-        for (const key of toDelete) parcelCache.delete(key);
+        for (const key of Array.from(removed)) parcelCache.delete(key);
+        // Trim viewportFeatures to remove any evicted entries
+        if (removed.size > 0) {
+          for (let i = viewportFeatures.length - 1; i >= 0; i--) {
+            const f = viewportFeatures[i];
+            const id = f.properties?.ll_uuid || f.id;
+            if (id && removed.has(String(id))) {
+              viewportFeatures.splice(i, 1);
+            }
+          }
+          renderCacheToMap();
+        }
       };
 
       const loadViewportParcels = async () => {
@@ -399,6 +435,8 @@ export default function MapView({
           setParcelsHint("Acerca el mapa para ver parcelas");
           (map.current.getSource("gis-parcels") as maplibregl.GeoJSONSource)?.setData(EMPTY_FC);
           parcelCache.clear();
+          tileFeatures.clear();
+          tileLoaded.clear();
           viewportFeatures.length = 0;
           return;
         }
@@ -406,6 +444,9 @@ export default function MapView({
 
         const bounds = map.current.getBounds();
         const tiles = tilesForViewport(bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth());
+        // Launch all tiles in parallel — each one calls renderCacheToMap()
+        // when its response arrives, so the user sees polygons appear
+        // tile-by-tile rather than waiting for the slowest tile.
         for (const t of tiles) loadTile(t);
         evictTilesOutsideBounds(bounds);
       };
