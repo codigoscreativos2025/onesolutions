@@ -131,7 +131,8 @@ function bboxQueryUrl(
   minLat: number,
   maxLng: number,
   maxLat: number,
-  recordCount: number
+  recordCount: number,
+  maxAllowableOffset?: number
 ): string {
   const geometry = envelope(jsonMode, minLng, minLat, maxLng, maxLat);
   const params = new URLSearchParams({
@@ -145,6 +146,9 @@ function bboxQueryUrl(
     resultRecordCount: String(recordCount),
     f: "geojson",
   });
+  if (maxAllowableOffset && maxAllowableOffset > 0) {
+    params.set("maxAllowableOffset", String(maxAllowableOffset));
+  }
   return `${cfg.parcelsUrl}/query?${params.toString()}`;
 }
 
@@ -229,7 +233,8 @@ export function createCountyProvider(
       minLat: number,
       maxLng: number,
       maxLat: number,
-      limit = opts.recordCount ?? 200
+      limit = opts.recordCount ?? 200,
+      maxAllowableOffset?: number
     ): Promise<NormalizedGisFeature[]> {
       // Short-circuit when upstream doesn't support spatial queries
       if (opts.supportsSpatial === false) return [];
@@ -239,7 +244,7 @@ export function createCountyProvider(
         if (opts.usePagination) {
           const chunkSize = limit;
           const url = bboxQueryUrl(
-            c, fields, !!opts.jsonEnvelope, minLng, minLat, maxLng, maxLat, chunkSize
+            c, fields, !!opts.jsonEnvelope, minLng, minLat, maxLng, maxLat, chunkSize, maxAllowableOffset
           );
 
           let totalCount = 0;

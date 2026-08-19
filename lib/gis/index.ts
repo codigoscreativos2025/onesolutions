@@ -315,9 +315,9 @@ export async function gisGeoJsonForBbox(
   minLat: number,
   maxLng: number,
   maxLat: number,
-  options: { includeStatewide?: boolean } = {}
+  options: { includeStatewide?: boolean; maxAllowableOffset?: number } = {}
 ): Promise<GeoJSON.FeatureCollection> {
-  const { includeStatewide = false } = options;
+  const { includeStatewide = false, maxAllowableOffset } = options;
   const providerConfigs = resolveProvidersForBbox(
     minLng,
     minLat,
@@ -331,7 +331,7 @@ export async function gisGeoJsonForBbox(
 
   const merged = await queryProvidersSequential(
     providerConfigs,
-    (p) => p.queryByBbox(minLng, minLat, maxLng, maxLat),
+    (p) => p.queryByBbox(minLng, minLat, maxLng, maxLat, undefined, maxAllowableOffset),
     { includeStatewide }
   );
 
