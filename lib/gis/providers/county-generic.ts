@@ -185,7 +185,7 @@ export function createCountyProvider(
       const params = new URLSearchParams({
         objectIds: chunk.join(","),
         outFields: fields,
-        returnGeometry: "true",
+        returnGeometry: "false",
         outSR: "4326",
         f: "geojson",
       });
