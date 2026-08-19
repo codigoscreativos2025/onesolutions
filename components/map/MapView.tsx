@@ -181,11 +181,8 @@ export default function MapView({
       setLocationStatus("unavailable");
       return;
     }
-    if (isAdmin) {
-      // Admins keep the default Orlando center and never get the dot.
-      return;
-    }
-    if (locationStatus === "requesting" || locationStatus === "granted") return;
+    if (locationStatus === "requesting") return;
+    if (locationStatus === "granted" && userLocationRef.current) return;
     setLocationStatus("requesting");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -204,8 +201,8 @@ export default function MapView({
   // Trigger geolocation as soon as we know the user role and it's not admin.
   useEffect(() => {
     if (!session) return;
-    requestUserLocation();
-  }, [session, requestUserLocation]);
+    if (!isAdmin) requestUserLocation();
+  }, [session, isAdmin, requestUserLocation]);
 
   const initMap = useCallback(() => {
     if (!mapContainer.current || initializedRef.current) return;
@@ -1278,12 +1275,20 @@ const loadViewportParcels = async () => {
               setTimeout(() => fetchParcelsRef.current?.(), 500);
               return;
             }
-            // No cached location yet — request it; the initMap useEffect
-            // will recenter when the fix arrives.
-            requestUserLocation();
-            if (locationStatus === "denied" || locationStatus === "unavailable") {
-              toast.error("Activa la ubicacion para usar este boton");
+            if (locationStatus === "requesting") {
+              toast.loading("Obteniendo ubicacion...", { id: "geo-req", duration: 2000 });
+              return;
             }
+            if (locationStatus === "denied") {
+              toast.error("Ubicacion bloqueada. Activala en los permisos del navegador.");
+              return;
+            }
+            if (locationStatus === "unavailable") {
+              toast.error("Tu navegador no soporta geolocalizacion.");
+              return;
+            }
+            requestUserLocation();
+            toast.loading("Obteniendo ubicacion...", { id: "geo-req", duration: 3000 });
           }}
           aria-label="Ubicarme"
           title={
