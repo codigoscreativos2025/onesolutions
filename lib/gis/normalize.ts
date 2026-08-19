@@ -172,16 +172,16 @@ export function toMapLibreFeature(
     ll_uuid: feature.externalId,
     parcel_id: feature.parcelId,
     address: feature.address,
-    owner: feature.ownerName || "",
+    owner: feature.ownerName ?? null,
     headline: feature.address,
     provider: feature.provider as string,
     city: feature.city,
     state: feature.state,
     zipCode: feature.zipCode,
-    property_class: feature.propertyClass || "",
-    acreage: feature.acreage ?? "",
-    land_value: feature.landValue ?? "",
-    building_value: feature.buildingValue ?? "",
+    property_class: feature.propertyClass ?? null,
+    acreage: feature.acreage ?? null,
+    land_value: feature.landValue ?? null,
+    building_value: feature.buildingValue ?? null,
   };
   if (feature.objectId != null) props.object_id = feature.objectId;
   return {

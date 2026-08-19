@@ -337,11 +337,11 @@ export function ParcelSheet({
 
 
           <div className="grid grid-cols-2 gap-3">
-            {metadata.owner != null && <InfoCard label="Propietario" value={metadata.owner} />}
-            {metadata.property_class != null && <InfoCard label="Clase" value={getPropertyClassLabel(metadata.property_class)} />}
-            {metadata.acreage != null && <InfoCard label="Acres" value={metadata.acreage} />}
-            {metadata.land_value != null && <InfoCard label="Valor terreno" value={`$${Number(metadata.land_value).toLocaleString()}`} />}
-            {metadata.building_value != null && <InfoCard label="Valor constr." value={`$${Number(metadata.building_value).toLocaleString()}`} />}
+            {metadata.owner != null && metadata.owner !== "" && <InfoCard label="Propietario" value={metadata.owner} />}
+            {metadata.property_class != null && metadata.property_class !== "" && <InfoCard label="Clase" value={getPropertyClassLabel(metadata.property_class)} />}
+            {metadata.acreage != null && metadata.acreage !== "" && <InfoCard label="Acres" value={metadata.acreage} />}
+            {metadata.land_value != null && metadata.land_value !== "" && <InfoCard label="Valor terreno" value={`$${Number(metadata.land_value).toLocaleString()}`} />}
+            {metadata.building_value != null && metadata.building_value !== "" && <InfoCard label="Valor constr." value={`$${Number(metadata.building_value).toLocaleString()}`} />}
             {metadata.roofAge != null && <InfoCard label="Edad del techo" value={metadata.roofAge} />}
             {metadata.utility != null && <InfoCard label="Est. Luz" value={metadata.utility} />}
             {metadata.solarPotential != null && <InfoCard label="Potencial solar" value={metadata.solarPotential} />}

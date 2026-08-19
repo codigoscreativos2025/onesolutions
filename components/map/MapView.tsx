@@ -711,7 +711,7 @@ const loadTile = async (
       return;
     }
     if (!Array.isArray(data.features)) return;
-    if (tile.grid === PARCEL_TILE) {
+    if (tile.grid !== MACRO_TILE) {
       addFeaturesToCache(data.features);
     } else {
       addMacroToCache(tile, data.features.length > 0);

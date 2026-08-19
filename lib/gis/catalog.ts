@@ -57,6 +57,8 @@ export const GIS_PROVIDERS: Record<GisProviderId, GisCountyConfig> = {
       acreage: "LND_SQFOOT",
       propertyClass: "DOR_UC",
     },
+    extraOutFields: ["OBJECTID"],
+    objectIdField: "OBJECTID",
     maxScale: 250000,
   },
 
@@ -79,6 +81,8 @@ export const GIS_PROVIDERS: Record<GisProviderId, GisCountyConfig> = {
       acreage: "ACREAGE",
       propertyClass: "DOR_C",
     },
+    extraOutFields: ["OBJECTID"],
+    objectIdField: "OBJECTID",
     maxScale: 250000,
   },
 
@@ -100,6 +104,8 @@ export const GIS_PROVIDERS: Record<GisProviderId, GisCountyConfig> = {
       acreage: "ACREAGE",
       propertyClass: "LAND_USE_CD",
     },
+    extraOutFields: ["OBJECTID"],
+    objectIdField: "OBJECTID",
     maxScale: 250000,
   },
 
@@ -123,6 +129,8 @@ export const GIS_PROVIDERS: Record<GisProviderId, GisCountyConfig> = {
       acreage: "GISACRES",
       propertyClass: "DORCODE",
     },
+    extraOutFields: ["OBJECTID"],
+    objectIdField: "OBJECTID",
     maxScale: 250000,
   },
 
@@ -145,6 +153,8 @@ export const GIS_PROVIDERS: Record<GisProviderId, GisCountyConfig> = {
       acreage: "LND_SQFOOT",
       propertyClass: "DOR_UC",
     },
+    extraOutFields: ["OBJECTID"],
+    objectIdField: "OBJECTID",
     maxScale: 250000,
   },
 
@@ -241,6 +251,8 @@ export const GIS_PROVIDERS: Record<GisProviderId, GisCountyConfig> = {
       buildingValue: "IMPROV_VALUE",
       propertyClass: "DOR_CD",
     },
+    extraOutFields: ["OBJECTID"],
+    objectIdField: "OBJECTID",
     maxScale: 15000,
   },
 
@@ -264,6 +276,8 @@ export const GIS_PROVIDERS: Record<GisProviderId, GisCountyConfig> = {
       acreage: "LND_SQFOOT",
       propertyClass: "DOR_UC",
     },
+    extraOutFields: ["OBJECTID"],
+    objectIdField: "OBJECTID",
     maxScale: 250000,
   },
 
@@ -308,6 +322,8 @@ export const GIS_PROVIDERS: Record<GisProviderId, GisCountyConfig> = {
       buildingValue: "BLDG_TOT_SQ_FOOTAGE",
       propertyClass: "USE_CODE",
     },
+    extraOutFields: ["OBJECTID"],
+    objectIdField: "OBJECTID",
     maxScale: 250000,
   },
 
@@ -328,6 +344,8 @@ export const GIS_PROVIDERS: Record<GisProviderId, GisCountyConfig> = {
       zip: "PHY_ZIPCD",
       propertyClass: "DOR_UC",
     },
+    extraOutFields: ["OBJECTID"],
+    objectIdField: "OBJECTID",
     maxScale: 250000,
   },
 
@@ -345,6 +363,8 @@ export const GIS_PROVIDERS: Record<GisProviderId, GisCountyConfig> = {
       city: "SiteCity",
       zip: "SiteZipCode",
     },
+    extraOutFields: ["OBJECTID"],
+    objectIdField: "OBJECTID",
     maxScale: 250000,
   },
 
@@ -368,6 +388,8 @@ export const GIS_PROVIDERS: Record<GisProviderId, GisCountyConfig> = {
       acreage: "Acres",
       propertyClass: "DOR_UC",
     },
+    extraOutFields: ["OBJECTID"],
+    objectIdField: "OBJECTID",
     maxScale: 250000,
   },
 
@@ -389,6 +411,8 @@ export const GIS_PROVIDERS: Record<GisProviderId, GisCountyConfig> = {
       buildingValue: "JV",
       propertyClass: "DOR_UC",
     },
+    extraOutFields: ["OBJECTID"],
+    objectIdField: "OBJECTID",
     maxScale: 250000,
   },
 };

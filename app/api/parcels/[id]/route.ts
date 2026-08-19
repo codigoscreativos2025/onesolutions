@@ -75,6 +75,7 @@ export async function GET(
           zipCode: gisParcel.zipCode,
           ownerOccupied: gisParcel.ownerOccupied,
           geometry: gisParcel.geometry,
+          metadata: gisParcel.metadata,
           status: "AVAILABLE",
           parcelTags: null,
           parcelNotes: null,
