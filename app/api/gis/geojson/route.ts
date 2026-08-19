@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
   /** Max bbox diagonal (m) for GeoJSON viewport load */
-  const MAX_DIAGONAL_M = 100000;
+  const MAX_DIAGONAL_M = 8500;
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -55,8 +55,13 @@ export async function GET(request: Request) {
   }
 
   try {
+    const bboxWidth = maxLng - minLng;
+    const maxAllowableOffset =
+      bboxWidth > 0.03 ? 0.0005 :
+      bboxWidth > 0.01 ? 0.0001 :
+      0;
     const fc = await gisGeoJsonForBbox(minLng, minLat, maxLng, maxLat, {
-      maxAllowableOffset: 0.0002,
+      maxAllowableOffset,
     });
     return NextResponse.json(fc, {
       headers: {
