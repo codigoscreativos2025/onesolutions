@@ -2204,11 +2204,12 @@ function DatosLeadPanel({
       : [...selectedPTIds, ptId];
     setSelectedPTIds(next);
     try {
-      await fetch(`/api/visits/${visit.id}`, {
+      const res = await fetch(`/api/visits/${visit.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectTypeIds: next }),
       });
+      if (res.ok) onRefresh();
     } catch {
       /* */
     }
@@ -2410,11 +2411,12 @@ function DatosProjectFieldsPanel({
     setSelectedProjectTypeIds(next);
     setProjectTypesSaving(true);
     try {
-      await fetch(`/api/visits/${visit.id}`, {
+      const res = await fetch(`/api/visits/${visit.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectTypeIds: next }),
       });
+      if (res.ok) onRefresh();
     } catch {
       toast.error("Error al actualizar tipos de proyecto");
       setSelectedProjectTypeIds(visit.projects.map((p) => p.projectType.id));

@@ -100,14 +100,14 @@ export function AdvancedFilters({
                   <div className="flex gap-2">
                     <input
                       type="date"
-                      placeholder="Desde"
+                      placeholder={t.placeholders.from}
                       value={activeFilters[`${filter.id}_from`] || ''}
                       onChange={(e) => onFilterChange(`${filter.id}_from`, e.target.value)}
                       className="flex-1 h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
                     />
                     <input
                       type="date"
-                      placeholder="Hasta"
+                      placeholder={t.placeholders.to}
                       value={activeFilters[`${filter.id}_to`] || ''}
                       onChange={(e) => onFilterChange(`${filter.id}_to`, e.target.value)}
                       className="flex-1 h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"

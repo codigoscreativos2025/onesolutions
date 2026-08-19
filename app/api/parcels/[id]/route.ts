@@ -20,13 +20,13 @@ export async function GET(
     where: { OR: [{ id }, { externalId: id }] },
     include: {
       setter: {
-        select: { id: true, name: true },
+        select: { id: true, name: true, role: true },
       },
       visits: {
         orderBy: { createdAt: "desc" },
         include: {
           setter: {
-            select: { id: true, name: true },
+            select: { id: true, name: true, role: true },
           },
           closer: {
             select: { id: true, name: true },

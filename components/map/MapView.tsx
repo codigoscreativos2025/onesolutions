@@ -23,12 +23,12 @@ interface Parcel {
   ownerOccupied?: boolean;
   parcelTags?: string;
   parcelNotes?: string;
-  setter?: { id: number; name: string };
+  setter?: { id: number; name: string; role?: string };
   visits?: {
     id: number;
     stage: string;
     outcome?: string;
-    setter?: { id: number; name: string };
+    setter?: { id: number; name: string; role?: string };
   }[];
 }
 

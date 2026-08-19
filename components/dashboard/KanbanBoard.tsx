@@ -368,7 +368,7 @@ export function KanbanBoard({
         <div className="flex gap-3 flex-wrap">
           <input
             type="text"
-            placeholder="Filtrar por direccion..."
+            placeholder={t.placeholders.filterAddress}
             value={partnerFilter.address}
             onChange={(e) =>
               setPartnerFilter((p) => ({ ...p, address: e.target.value }))
@@ -377,7 +377,7 @@ export function KanbanBoard({
           />
           <input
             type="text"
-            placeholder="Filtrar por cliente..."
+            placeholder={t.placeholders.filterClient}
             value={partnerFilter.client}
             onChange={(e) =>
               setPartnerFilter((p) => ({ ...p, client: e.target.value }))
@@ -518,7 +518,7 @@ export function KanbanBoard({
           />
           <input
             type="text"
-            placeholder="Cliente..."
+            placeholder={t.placeholders.client}
             value={clientFilter}
             onChange={(e) => setClientFilter(e.target.value)}
             className="h-9 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface flex-1 min-w-[160px]"

@@ -352,7 +352,7 @@ export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead 
 
   const handleSendEmail = async () => {
     if (!sendToEmail) {
-      toast.error("Ingresa un email para enviar");
+      toast.error(t.contracts.enterEmail);
       return;
     }
     if (!contentRef.current || !contractContentRef.current || !activeContract) return;
@@ -714,7 +714,7 @@ export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead 
                             size="sm"
                           >
                             <PenLine className="w-4 h-4" />
-                            {signMode ? "Salir de Firma" : "Firmar"}
+                            {signMode ? t.contracts.exitSignMode : t.contracts.sign}
                           </Button>
                           <Button
                             variant={editMode ? undefined : "outline"}
@@ -747,7 +747,7 @@ export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead 
                           <input
                             value={sendToEmail}
                             onChange={(e) => setSendToEmail(e.target.value)}
-                            placeholder="Email destinatario"
+                            placeholder={t.placeholders.recipientEmail}
                             className="px-3 py-1.5 rounded-lg bg-white border border-outline-variant focus:border-primary outline-none text-sm w-48"
                           />
                           <Button

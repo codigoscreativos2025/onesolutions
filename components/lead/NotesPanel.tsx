@@ -276,7 +276,7 @@ export function NotesPanel({ visitId, visitCreatedAt, disabled }: NotesPanelProp
             <textarea
               value={newContent}
               onChange={(e) => setNewContent(e.target.value)}
-              placeholder="Escribir nota..."
+              placeholder={t.placeholders.writeNote}
               className="flex-1 min-h-[60px] bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none rounded-xl p-3 resize-none text-sm text-on-surface"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey && newContent.trim()) {
@@ -337,7 +337,7 @@ export function NotesPanel({ visitId, visitCreatedAt, disabled }: NotesPanelProp
             value={editContent}
             onChange={(e) => setEditContent(e.target.value)}
             className="w-full min-h-[120px] bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none rounded-xl p-4 resize-none text-sm text-on-surface"
-            placeholder="Editar nota..."
+            placeholder={t.placeholders.editNote}
           />
           <div className="flex gap-3">
             <Button

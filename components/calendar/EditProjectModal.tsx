@@ -204,7 +204,7 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
             <div className="space-y-4">
               {/* Campos Comunes — siempre visibles */}
               <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <h3 className="font-semibold text-lg">Campos Comunes</h3>
+                <h3 className="font-semibold text-lg">{t.placeholders.commonFields}</h3>
                 <Input label={t.chat.clientName} value={projectDetails.clientName as string || ''} onChange={(e) => handleFieldChange('clientName', e.target.value)} />
                 <Input label={t.chat.clientEmail} type="email" value={projectDetails.clientEmail as string || ''} onChange={(e) => handleFieldChange('clientEmail', e.target.value)} />
                 <Input label={t.chat.address} value={projectDetails.address as string || ''} onChange={(e) => handleFieldChange('address', e.target.value)} />
@@ -345,8 +345,8 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
               );  })}
               {projectFields.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
-                  <p>No hay campos configurados para este proyecto.</p>
-                  <p className="text-sm">Selecciona un tipo de proyecto en Admin {">"} Campos de Proyectos.</p>
+                  <p>{t.placeholders.noConfiguredFields}</p>
+                  <p className="text-sm">{t.placeholders.configureInAdmin}</p>
                 </div>
               )}
             </div>
@@ -377,12 +377,10 @@ export function EditProjectModal({ isOpen, onClose, visitId, onSuccess }: EditPr
               <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertTriangle className="w-8 h-8" />
               </div>
-              <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">Dominio Inválido</h3>
-              <p className="text-gray-600 dark:text-gray-300 mb-6 text-sm">
-                Los campos de correo electrónico deben terminar obligatoriamente en <strong>@gmail.com</strong> para poder guardarse.
-              </p>
+              <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">{t.common.invalidDomain}</h3>
+              <p className="text-gray-600 dark:text-gray-300 mb-6 text-sm" dangerouslySetInnerHTML={{ __html: t.placeholders.emailMustBeGmail }} />
               <Button onClick={() => setShowEmailWarning(false)} className="w-full">
-                Entendido
+                {t.common.gotIt}
               </Button>
             </div>
           </div>

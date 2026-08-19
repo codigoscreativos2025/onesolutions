@@ -36,13 +36,14 @@ interface Parcel {
   ownerOccupied?: boolean;
   parcelTags?: string;
   parcelNotes?: string;
-  setter?: { id: number; name: string };
+  setter?: { id: number; name: string; role?: string };
   visits?: {
     id: number;
     stage: string;
     outcome?: string;
+    closerId?: number | null;
     createdAt?: string;
-    setter?: { id: number; name: string };
+    setter?: { id: number; name: string; role?: string };
     projects?: { projectType: { name: string } }[];
     notAvailableTags?: { tag: NotAvailTag; notes?: string }[];
   }[];
@@ -186,7 +187,7 @@ export function ParcelSheet({
     return (
       <div className="fixed inset-y-0 right-0 z-[1000] w-full sm:w-96 glass-panel border-l border-glass-border shadow-[-10px_0_40px_rgba(0,0,0,0.1)] flex flex-col justify-center items-center h-full animate-slide-in-right">
         <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
-        <p className="text-on-surface-variant font-medium text-sm">Cargando parcela...</p>
+        <p className="text-on-surface-variant font-medium text-sm">{t.common.loading}</p>
       </div>
     );
   }
@@ -205,7 +206,7 @@ export function ParcelSheet({
   };
 
   const metadata = parcel.metadata ? JSON.parse(parcel.metadata) : {};
-  const canVisit = userRole === "SETTER" || userRole === "SETTER_JR" || userRole === "CLOSER";
+  const canVisit = userRole === "SETTER" || userRole === "SETTER_JR" || userRole === "CLOSER" || userRole === "TRAINEE";
   const isTakenByMe = parcel.setter?.id === parseInt(userId);
   const activeVisits = parcel.visits?.filter(v => v.stage !== "CANCELLED" && v.stage !== "CLOSED") || [];
   const hasActiveLead = activeVisits.length > 0;
@@ -253,7 +254,7 @@ export function ParcelSheet({
       <div className="fixed inset-y-0 right-0 z-[1000] w-full sm:w-96 glass-panel border-l border-glass-border shadow-[-10px_0_40px_rgba(0,0,0,0.1)] flex flex-col max-h-screen sm:max-h-none animate-slide-in-right pb-16">
         <div className="flex justify-between items-center p-4 border-b border-glass-border">
           <div className="flex items-center gap-2">
-            <StatusBadge status={parcel.status} tag={tags.length > 0 ? tags[0] : undefined} />
+            <StatusBadge status={parcel.status} stageLabel={parcel.status === "LEAD" ? getStageLabel(parcel) : undefined} />
             {parcel.setter && (
               <span className="text-on-surface-variant text-xs">
                 {" "}
@@ -287,6 +288,21 @@ export function ParcelSheet({
             )}
 
           </div>
+
+          {tags.length > 0 && (
+            <div
+              className="rounded-xl p-3 flex items-center gap-2"
+              style={{ backgroundColor: `${tags[0].color}15`, borderLeft: `4px solid ${tags[0].color}` }}
+            >
+              <span
+                className="w-3 h-3 rounded-full shrink-0"
+                style={{ backgroundColor: tags[0].color }}
+              />
+              <span className="text-sm font-bold" style={{ color: tags[0].color }}>
+                {tags[0].name}
+              </span>
+            </div>
+          )}
 
           {hasPriorProjects && (
             <div className="space-y-2">
@@ -337,11 +353,7 @@ export function ParcelSheet({
               value={
                 parcel.status === "LEAD" ? getStageLabel(parcel) :
                 parcel.status === "CUSTOMER" ? t.map.customer :
-                (tags.length > 0 ? (
-                  <span style={{ color: tags[0].color, fontWeight: 700 }}>
-                    {tags[0].name}
-                  </span>
-                ) : t.map.available)
+                t.map.available
               }
             />
           </div>
@@ -349,11 +361,11 @@ export function ParcelSheet({
           {canVisit && isAvailable && !hasPriorProjects && parcel.status !== "CUSTOMER" && (
             <>
               <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO ABRIO", "#ef4444")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#ef4444" }}><DoorClosed className="w-3.5 h-3.5 mr-1" />No abrio</Button>
-                <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO LE INTERESA", "#f97316")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#f97316" }}><ThumbsDown className="w-3.5 h-3.5 mr-1" />No le interesa</Button>
-                <Button variant="outline" size="sm" onClick={() => handleQuickTag("PASAR LUEGO", "#3b82f6")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#3b82f6" }}><Clock className="w-3.5 h-3.5 mr-1" />Pasar luego</Button>
-                <Button variant="outline" size="sm" onClick={() => handleQuickTag("No esta el propietario", "#a855f7")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#a855f7" }}><UserX className="w-3.5 h-3.5 mr-1" />No esta el propietario</Button>
-                <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO VIVE EL PROPIETARIO", "#eab308")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#eab308" }}><Home className="w-3.5 h-3.5 mr-1" />No vive el propietario</Button>
+                <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO ABRIO", "#ef4444")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#ef4444" }}><DoorClosed className="w-3.5 h-3.5 mr-1" />{t.map.tagNoAnswer}</Button>
+                <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO LE INTERESA", "#f97316")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#f97316" }}><ThumbsDown className="w-3.5 h-3.5 mr-1" />{t.map.tagNotInterested}</Button>
+                <Button variant="outline" size="sm" onClick={() => handleQuickTag("PASAR LUEGO", "#3b82f6")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#3b82f6" }}><Clock className="w-3.5 h-3.5 mr-1" />{t.map.tagPassLater}</Button>
+                <Button variant="outline" size="sm" onClick={() => handleQuickTag("No esta el propietario", "#a855f7")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#a855f7" }}><UserX className="w-3.5 h-3.5 mr-1" />{t.map.tagOwnerNotPresent}</Button>
+                <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO VIVE EL PROPIETARIO", "#eab308")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#eab308" }}><Home className="w-3.5 h-3.5 mr-1" />{t.map.tagOwnerNotResident}</Button>
               </div>
 
               <div className="space-y-1">
@@ -454,24 +466,54 @@ export function ParcelSheet({
               </div>
 
               {parcel.visits?.[0]?.id && (() => {
-                const visitStage = parcel.visits?.[0]?.stage || "IN_PROGRESS";
+                const visit = parcel.visits?.[0];
+                const visitStage = visit?.stage || "IN_PROGRESS";
                 const isLeadStage = visitStage === "IN_PROGRESS";
+                const hasPanelSolar = visit?.projects?.some((p) =>
+                  p.projectType.name.toLowerCase().includes("panel solar")
+                ) || false;
+                const visitSetterId = visit?.setter?.id;
+                const visitSetterRole = visit?.setter?.role;
                 let btnDisabled = false;
-                
+                let disabledReason = "";
+
                 if (userRole === "SETTER_JR") {
-                  btnDisabled = !isLeadStage;
-                } else if (userRole === "SETTER") {
-                  btnDisabled = !isLeadStage || !isTakenByMe;
+                  if (!isLeadStage) {
+                    btnDisabled = true;
+                    disabledReason = "Este lead ya fue transferido al closer";
+                  }
+                } else if (userRole === "SETTER" || userRole === "TRAINEE") {
+                  if (hasPanelSolar && !isLeadStage) {
+                    btnDisabled = true;
+                    disabledReason = "Este lead con Panel Solar fue transferido al closer";
+                  }
+                  if (!hasPanelSolar && !isTakenByMe && visitSetterId !== parseInt(userId)) {
+                    btnDisabled = true;
+                    disabledReason = t.map.onlyOwnLeads;
+                  }
+                } else if (userRole === "CLOSER") {
+                  const isFromTrainee = visitSetterRole === "SETTER" || visitSetterRole === "TRAINEE";
+                  if (isFromTrainee && !hasPanelSolar && visit?.closerId !== parseInt(userId)) {
+                    btnDisabled = true;
+                    disabledReason = t.map.onlySolarPanelLeads;
+                  }
                 }
 
                 return (
-                  <Button 
-                    onClick={() => router.push(`/lead/${parcel.visits?.[0]?.id}`)} 
-                    disabled={btnDisabled}
-                    className="w-full mt-4 bg-brand-green hover:bg-brand-green/90 text-white shadow-md py-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Ver detalles
-                  </Button>
+                  <>
+                    <Button 
+                      onClick={() => router.push(`/lead/${visit?.id}`)} 
+                      disabled={btnDisabled}
+                      className="w-full mt-4 bg-brand-green hover:bg-brand-green/90 text-white shadow-md py-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Ver detalles
+                    </Button>
+                    {btnDisabled && disabledReason && (
+                      <p className="text-xs text-on-surface-variant text-center mt-1">
+                        {disabledReason}
+                      </p>
+                    )}
+                  </>
                 );
               })()}
 
@@ -503,7 +545,7 @@ export function ParcelSheet({
   );
 }
 
-function StatusBadge({ status, tag }: { status: string; tag?: TagObject }) {
+function StatusBadge({ status, stageLabel }: { status: string; stageLabel?: string }) {
   const { t } = useLocale();
   const colors = {
     AVAILABLE: "bg-error/10 text-error",
@@ -513,34 +555,15 @@ function StatusBadge({ status, tag }: { status: string; tag?: TagObject }) {
 
   const labels = {
     AVAILABLE: t.map.available,
-    LEAD: t.map.lead,
+    LEAD: stageLabel || t.map.lead,
     CUSTOMER: t.map.customer,
   };
-
-  const tooltips = {
-    AVAILABLE: "Esta parcela aun no ha sido visitada por ningun representante",
-    LEAD: "",
-    CUSTOMER: "",
-  };
-
-  if (tag) {
-    return (
-      <span
-        className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
-        style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
-        title="Etiqueta rápida"
-      >
-        {tag.name}
-      </span>
-    );
-  }
 
   return (
     <span
       className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
         colors[status as keyof typeof colors]
       }`}
-      title={tooltips[status as keyof typeof tooltips] || undefined}
     >
       {labels[status as keyof typeof labels]}
     </span>

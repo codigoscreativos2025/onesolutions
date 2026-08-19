@@ -247,8 +247,7 @@ export default function PublicProfilePage() {
       {(isOwnProfile || session?.user?.role === 'ADMIN') && profile.profile && (
         profile.profile.address || profile.profile.dateOfBirth || profile.profile.bankName ||
         profile.profile.zelle || profile.profile.accountNumber || profile.profile.ssn ||
-        profile.profile.routingNumber || profile.profile.representativeName || profile.profile.companyName ||
-        profile.profile.companyPosition || profile.profile.emergencyContactName || profile.profile.emergencyContactPhone
+        profile.profile.routingNumber || profile.profile.representativeName || profile.profile.companyName
       ) && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
           <h2 className="text-xl font-bold mb-4">Mi Informaci&oacute;n</h2>
