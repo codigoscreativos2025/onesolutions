@@ -176,13 +176,14 @@ export default function MapView({
   // Orlando center. The location is stored in a ref so initMap can
   // pick it up synchronously without waiting for React state.
   const isAdmin = (session?.user?.role || "").toUpperCase() === "ADMIN";
-  const requestUserLocation = useCallback(() => {
+  const requestUserLocation = useCallback((forceRefresh = false) => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       setLocationStatus("unavailable");
       return;
     }
     if (locationStatus === "requesting") return;
-    if (locationStatus === "granted" && userLocationRef.current) return;
+    if (!forceRefresh && locationStatus === "granted" && userLocationRef.current) return;
+    
     setLocationStatus("requesting");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -190,13 +191,19 @@ export default function MapView({
         userLocationRef.current = loc;
         setUserLocation(loc);
         setLocationStatus("granted");
+        
+        // If they forced a refresh (clicked the button), fly to the new location immediately
+        if (forceRefresh && map.current) {
+          map.current.flyTo({ center: [loc[1], loc[0]], zoom: 18 });
+          setTimeout(() => fetchParcelsRef.current?.(), 500);
+        }
       },
       (err) => {
         setLocationStatus(err.code === err.PERMISSION_DENIED ? "denied" : "unavailable");
       },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 }
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 } // use 0 for fresh location
     );
-  }, [isAdmin, locationStatus]);
+  }, [locationStatus]);
 
   // Trigger geolocation as soon as we know the user role and it's not admin.
   useEffect(() => {
@@ -1267,28 +1274,21 @@ const loadViewportParcels = async () => {
         <button
           type="button"
           onClick={() => {
-            if (userLocationRef.current && map.current) {
-              map.current.flyTo({
-                center: [userLocationRef.current[1], userLocationRef.current[0]],
-                zoom: 18,
-              });
-              setTimeout(() => fetchParcelsRef.current?.(), 500);
-              return;
-            }
             if (locationStatus === "requesting") {
-              toast.loading("Obteniendo ubicacion...", { id: "geo-req", duration: 2000 });
+              toast.loading("Obteniendo ubicación...", { id: "geo-req", duration: 2000 });
               return;
             }
             if (locationStatus === "denied") {
-              toast.error("Ubicacion bloqueada. Activala en los permisos del navegador.");
+              toast.error("Ubicación bloqueada. Actívala en los permisos del navegador.");
               return;
             }
             if (locationStatus === "unavailable") {
-              toast.error("Tu navegador no soporta geolocalizacion.");
+              toast.error("Tu navegador no soporta geolocalización.");
               return;
             }
-            requestUserLocation();
-            toast.loading("Obteniendo ubicacion...", { id: "geo-req", duration: 3000 });
+            // Always force a refresh when the user clicks the button
+            requestUserLocation(true);
+            toast.loading("Ubicándote...", { id: "geo-req", duration: 2000 });
           }}
           aria-label="Ubicarme"
           title={
