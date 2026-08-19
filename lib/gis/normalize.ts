@@ -182,6 +182,7 @@ export function toMapLibreFeature(
     acreage: feature.acreage ?? null,
     land_value: feature.landValue ?? null,
     building_value: feature.buildingValue ?? null,
+    owner_occupied: feature.ownerOccupied ?? null,
   };
   if (feature.objectId != null) props.object_id = feature.objectId;
   return {

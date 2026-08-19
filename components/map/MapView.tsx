@@ -863,6 +863,7 @@ const loadViewportParcels = async () => {
           city: props.city ? String(props.city) : undefined,
           state: props.state ? String(props.state) : "FL",
           zipCode: props.zipCode ? String(props.zipCode) : undefined,
+          ownerOccupied: props.owner_occupied !== null && props.owner_occupied !== undefined ? Boolean(props.owner_occupied) : undefined,
           status: "AVAILABLE",
           geometry: JSON.stringify(geom),
           metadata: JSON.stringify({
