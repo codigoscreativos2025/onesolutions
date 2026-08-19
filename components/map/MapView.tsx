@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 
 import { useLocale } from "@/lib/locale-context";
+import { FL_COUNTIES_FC } from "@/lib/gis/fl-counties";
 
 interface Parcel {
   id: string;
@@ -254,6 +255,89 @@ export default function MapView({
     m.on("load", () => {
       if (mapTimeout.current) clearTimeout(mapTimeout.current);
 
+      // County-level layer: shows the whole state of Florida at z=6-10.
+      // Green polygons are counties with a dedicated GIS provider; gray
+      // polygons are counties that fall back to statewide data only.
+      // Built from the GIS catalog bboxes — see lib/gis/fl-counties.ts.
+      m.addSource("counties", {
+        type: "geojson",
+        data: FL_COUNTIES_FC as GeoJSON.FeatureCollection,
+        promoteId: "id",
+      });
+      m.addLayer({
+        id: "county-fills",
+        type: "fill",
+        source: "counties",
+        minzoom: 6,
+        maxzoom: 10,
+        paint: {
+          "fill-color": [
+            "case",
+            ["==", ["get", "hasDedicatedProvider"], true],
+            "#22c55e",
+            "#94a3b8",
+          ],
+          "fill-opacity": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            6, 0.10,
+            9, 0.14,
+            10, 0,
+          ],
+        },
+      });
+      m.addLayer({
+        id: "county-borders",
+        type: "line",
+        source: "counties",
+        minzoom: 6,
+        maxzoom: 10,
+        paint: {
+          "line-color": "#0f172a",
+          "line-width": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            6, 0.5,
+            9, 1.5,
+            10, 0,
+          ],
+        },
+      });
+      m.addLayer({
+        id: "county-labels",
+        type: "symbol",
+        source: "counties",
+        minzoom: 7,
+        maxzoom: 10,
+        layout: {
+          "text-field": ["get", "name"],
+          "text-size": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            7, 10,
+            9, 14,
+          ],
+          "text-anchor": "center",
+          "text-allow-overlap": false,
+        },
+        paint: {
+          "text-color": "#0f172a",
+          "text-halo-color": "#ffffff",
+          "text-halo-width": 1.5,
+          "text-opacity": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            7, 0.7,
+            9, 0.95,
+            10, 0,
+          ],
+        },
+      });
+
       // Macro-tile source/layer: subdivision rectangles that show the
       // user which 5km chunks are loaded when zoomed out. Hidden at
       // z >= 13 when real parcel polygons take over.
@@ -309,7 +393,7 @@ export default function MapView({
         id: "parcel-borders",
         type: "line",
         source: "gis-parcels",
-        minzoom: 14,
+        minzoom: 13,
         paint: {
           "line-color": "#088",
           "line-width": 1,
@@ -320,7 +404,7 @@ export default function MapView({
         id: "parcel-fills",
         type: "fill",
         source: "gis-parcels",
-        minzoom: 14,
+        minzoom: 13,
         paint: {
           "fill-color": "#088",
           "fill-opacity": 0.12,
@@ -356,7 +440,7 @@ export default function MapView({
         id: "parcel-hover",
         type: "fill",
         source: "gis-parcels",
-        minzoom: 14,
+        minzoom: 13,
         paint: {
           "fill-color": "#ff8800",
           "fill-opacity": 0.4,
@@ -441,7 +525,20 @@ const tileLoading = new Set<string>();
 const tileKey = (w: number, s: number, e: number, n: number, grid: number) =>
   `${grid}|${w.toFixed(3)}|${s.toFixed(3)}|${e.toFixed(3)}|${n.toFixed(3)}`;
 
+// Tile grid by zoom level:
+//   z >= 16 → 0.003° (~330m): finer tiles for small viewports (single-house detail)
+//   z >= 13 → 0.01°  (~1.1km): standard parcel detail
+//   z >= 10 → 0.05°  (~5.5km): subdivision rectangles (no individual parcels yet)
+//   z <  10 → no tiles
+function gridForZoom(z: number): number {
+  if (z >= 16) return 0.003;
+  if (z >= 13) return 0.01;
+  if (z >= 10) return 0.05;
+  return 0;
+}
+
 const tilesForViewport = (w: number, s: number, e: number, n: number, grid: number) => {
+  if (grid <= 0) return [];
   const snapMin = (v: number) => Math.floor(v / grid) * grid;
   const snapMax = (v: number) => Math.ceil(v / grid) * grid;
   const tw = snapMin(w);
@@ -677,8 +774,9 @@ const evictOutside = (b: maplibregl.LngLatBounds, pad = 0.05) => {
 const loadViewportParcels = async () => {
   if (!map.current) return;
   const z = map.current.getZoom();
+  const grid = gridForZoom(z);
 
-  if (z < 10) {
+  if (grid === 0) {
     setParcelsHint("Acerca el mapa para ver manzanas");
     (map.current.getSource("gis-parcels") as maplibregl.GeoJSONSource)?.setData(EMPTY_FC);
     (map.current.getSource("gis-macro") as maplibregl.GeoJSONSource)?.setData(EMPTY_FC);
@@ -690,7 +788,7 @@ const loadViewportParcels = async () => {
 
   const bounds = map.current.getBounds();
 
-  if (z < PARCEL_ZOOM_MIN) {
+  if (grid === MACRO_TILE) {
     // Subdivision level: macro-tiles only.
     setParcelsHint("Acerca el mapa para ver parcelas");
     (map.current.getSource("gis-parcels") as maplibregl.GeoJSONSource)?.setData(EMPTY_FC);
@@ -707,10 +805,10 @@ const loadViewportParcels = async () => {
     setParcelsHint(null);
     (map.current.getSource("gis-macro") as maplibregl.GeoJSONSource)?.setData(EMPTY_FC);
     const tiles = tilesForViewport(
-      bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth(), PARCEL_TILE
+      bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth(), grid
     );
     for (const t of tiles) {
-      loadTile({ ...t, grid: PARCEL_TILE });
+      loadTile({ ...t, grid });
     }
     evictOutside(bounds);
   }
@@ -1039,6 +1137,23 @@ const loadViewportParcels = async () => {
 
       fetchStatusMarkers();
       scheduleParcelLoad();
+
+      // Pre-load macro-tiles for a ~30km radius around the map center so
+      // the user can pan/zoom and the subdivision rectangles are already
+      // cached. isPrefetch=true keeps these off the critical path so the
+      // visible viewport tiles still render first.
+      const center = m.getCenter();
+      const preLoadRadiusDeg = 0.3; // ~33km at 28°N
+      const preLoadTiles = tilesForViewport(
+        center.lng - preLoadRadiusDeg,
+        center.lat - preLoadRadiusDeg,
+        center.lng + preLoadRadiusDeg,
+        center.lat + preLoadRadiusDeg,
+        MACRO_TILE
+      );
+      for (const t of preLoadTiles) {
+        loadTile({ ...t, grid: MACRO_TILE }, true);
+      }
 
       map.current = m;
       setMapReady(true);
