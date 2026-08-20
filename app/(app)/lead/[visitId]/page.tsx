@@ -512,6 +512,8 @@ export default function LeadDetailPage() {
     hasInitializedEditFields.current = true;
   }, [visit]);
 
+  const projectTypeKey = visit?.projects?.map((p) => p.projectType.id).sort().join(",") ?? "";
+
   const fetchFieldMetas = useCallback(async () => {
     if (!visit?.projects?.length) return;
     const allMetas: FieldMeta[] = [];
@@ -570,7 +572,8 @@ export default function LeadDetailPage() {
 
     setFieldMetas(allMetas);
     setFieldMetasByProject(byProject);
-  }, [visit?.projects]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectTypeKey]);
 
   const fetchHistory = async () => {
     setHistoryLoading(true);
@@ -681,14 +684,17 @@ export default function LeadDetailPage() {
   useEffect(() => {
     if (visit) {
       initEditFields();
-      fetchFieldMetas();
       parsePostClosureTags();
     }
-  }, [visit, initEditFields, fetchFieldMetas, parsePostClosureTags]);
+  }, [visit, initEditFields, parsePostClosureTags]);
+
+  useEffect(() => {
+    if (visit) fetchFieldMetas();
+  }, [fetchFieldMetas]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (visit && activeTab === "historial") fetchHistory();
-  }, [visit, activeTab]);
+  }, [activeTab, visitId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (visit?.parcel?.id) {
@@ -782,7 +788,8 @@ export default function LeadDetailPage() {
     if (visit && visit.stage === "IN_PROGRESS" && !visit.scheduledAt) {
       fetchScheduleClosers();
     }
-  }, [visit]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visit?.stage, visit?.scheduledAt]);
 
   const saveProjectDetailsAction = async (silent = false) => {
     if (!visit || !visitId) return;
