@@ -518,6 +518,7 @@ export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead 
 
   const isPanelSolar = activeContract?.name.toLowerCase().includes("panel solar") || activeContract?.type.toLowerCase().includes("panel-solar");
   const canEditOrSign = (() => {
+    if (role === "ADMIN") return false;
     if (role === "SETTER_JR") return false;
     if (role === "SETTER" && isPanelSolar) return false;
     if (role === "CLOSER" && isTraineeLead && !isPanelSolar) return false;
@@ -728,62 +729,66 @@ export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead 
                           </Button>
                         </>
                       )}
-                      <Button
-                        variant="outline"
-                        onClick={handleDownloadPdf}
-                        disabled={generatingPdf}
-                        className="gap-2 text-sm"
-                        size="sm"
-                      >
-                        {generatingPdf ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Download className="w-4 h-4" />
-                        )}
-                        PDF
-                      </Button>
-                      {showSendEmail ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            value={sendToEmail}
-                            onChange={(e) => setSendToEmail(e.target.value)}
-                            placeholder={t.placeholders.recipientEmail}
-                            className="px-3 py-1.5 rounded-lg bg-white border border-outline-variant focus:border-primary outline-none text-sm w-48"
-                          />
+                      {role !== "ADMIN" && (
+                        <>
                           <Button
-                            onClick={handleSendEmail}
-                            disabled={sendingEmail}
+                            variant="outline"
+                            onClick={handleDownloadPdf}
+                            disabled={generatingPdf}
                             className="gap-2 text-sm"
                             size="sm"
                           >
-                            {sendingEmail ? (
+                            {generatingPdf ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
-                              <Send className="w-4 h-4" />
+                              <Download className="w-4 h-4" />
                             )}
-                            Enviar
+                            PDF
                           </Button>
-                          <button
-                            onClick={() => setShowSendEmail(false)}
-                            className="p-1.5 rounded-full hover:bg-surface-container-highest transition-colors"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            const email = activeContract?.data?.clientEmail || "";
-                            setSendToEmail(email);
-                            setShowSendEmail(true);
-                          }}
-                          className="gap-2 text-sm"
-                          size="sm"
-                        >
-                          <Send className="w-4 h-4" />
-                          Enviar por Email
-                        </Button>
+                          {showSendEmail ? (
+                            <div className="flex items-center gap-2">
+                              <input
+                                value={sendToEmail}
+                                onChange={(e) => setSendToEmail(e.target.value)}
+                                placeholder={t.placeholders.recipientEmail}
+                                className="px-3 py-1.5 rounded-lg bg-white border border-outline-variant focus:border-primary outline-none text-sm w-48"
+                              />
+                              <Button
+                                onClick={handleSendEmail}
+                                disabled={sendingEmail}
+                                className="gap-2 text-sm"
+                                size="sm"
+                              >
+                                {sendingEmail ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Send className="w-4 h-4" />
+                                )}
+                                Enviar
+                              </Button>
+                              <button
+                                onClick={() => setShowSendEmail(false)}
+                                className="p-1.5 rounded-full hover:bg-surface-container-highest transition-colors"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                const email = activeContract?.data?.clientEmail || "";
+                                setSendToEmail(email);
+                                setShowSendEmail(true);
+                              }}
+                              className="gap-2 text-sm"
+                              size="sm"
+                            >
+                              <Send className="w-4 h-4" />
+                              Enviar por Email
+                            </Button>
+                          )}
+                        </>
                       )}
                     </div>
                     {signMode && signatureFields.length > 0 && (

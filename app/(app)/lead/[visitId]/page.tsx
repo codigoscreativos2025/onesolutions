@@ -3538,7 +3538,7 @@ function ArchivosPanel({
     visit.stage === "CANCELLED" ||
     (visit.stage === "PROJECT" && closeRequested);
   const canUpload = role !== "ADMIN" && !isFinished;
-  const canDelete = role === "ADMIN" || !isFinished;
+  const canDelete = role !== "ADMIN" && !isFinished;
 
   if (noFiles) {
     return (
