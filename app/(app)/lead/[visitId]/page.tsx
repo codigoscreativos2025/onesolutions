@@ -37,6 +37,7 @@ import {
   Tag,
   ChevronDown,
   Undo2,
+  Home,
 } from "lucide-react";
 
 const FIELD_LABEL_MAP: Record<string, string> = {
