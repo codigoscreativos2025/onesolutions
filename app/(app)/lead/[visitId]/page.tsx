@@ -636,6 +636,49 @@ export default function LeadDetailPage() {
   }, [visitId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    if (!visitId) return;
+    const POLL_MS = 30_000;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const refreshIfClean = () => {
+      if (hasChangesRef.current) return;
+      fetchVisitDetails(true);
+    };
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        refreshIfClean();
+        if (!intervalId) {
+          intervalId = setInterval(() => {
+            if (document.visibilityState === "visible") {
+              refreshIfClean();
+            }
+          }, POLL_MS);
+        }
+      } else {
+        if (intervalId) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisible);
+    if (document.visibilityState === "visible") {
+      intervalId = setInterval(() => {
+        if (document.visibilityState === "visible") {
+          refreshIfClean();
+        }
+      }, POLL_MS);
+    }
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [visitId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
     if (visit) {
       initEditFields();
       fetchFieldMetas();
