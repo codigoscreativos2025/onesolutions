@@ -881,18 +881,36 @@ export default function LeadDetailPage() {
   const handleFileUploadField = async (fieldName: string, file: File) => {
     try {
       const url = await handleUpload(file);
-      const updated = { ...(visit?.projectDetails || {}), [fieldName]: url };
+      let finalVal: string = url;
+      
+      if (fieldName === "propertyPhotosJson") {
+         const current = visit?.projectDetails?.[fieldName];
+         let arr: string[] = [];
+         if (current) {
+             try {
+                const parsed = JSON.parse(String(current));
+                if (Array.isArray(parsed)) arr = parsed;
+                else arr = [String(current)];
+             } catch {
+                arr = [String(current)];
+             }
+         }
+         arr.push(url);
+         finalVal = JSON.stringify(arr);
+      }
+
+      const updated = { ...(visit?.projectDetails || {}), [fieldName]: finalVal };
       setVisit((prev) => (prev ? { ...prev, projectDetails: updated } : prev));
 
-      setEditFields((prev) => ({ ...prev, [fieldName]: url }));
+      setEditFields((prev) => ({ ...prev, [fieldName]: finalVal }));
       if (editFieldsRef.current) {
-        editFieldsRef.current[fieldName] = url;
+        editFieldsRef.current[fieldName] = finalVal;
       }
 
       await fetch("/api/project-details", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ visitId, [fieldName]: url }),
+        body: JSON.stringify({ visitId, [fieldName]: finalVal }),
       });
       toast.success("Archivo subido");
     } catch {
@@ -1891,24 +1909,43 @@ function FieldRow({
   }
 
   if (isFile) {
+    let urls: string[] = [];
+    if (fileUrl) {
+      if (field === "propertyPhotosJson") {
+        try {
+          const parsed = JSON.parse(fileUrl);
+          if (Array.isArray(parsed)) urls = parsed;
+          else urls = [fileUrl];
+        } catch {
+          urls = [fileUrl];
+        }
+      } else {
+        urls = [fileUrl];
+      }
+    }
+
+    const maxFiles = field === "propertyPhotosJson" ? 20 : 1;
+    const canUploadMore = !readOnly && urls.length < maxFiles;
+
     return (
       <div className="space-y-1.5">
         <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">
           {label}
           <RequiredBadge required={required} />
         </label>
-        <div className="flex items-center gap-3">
-          {fileUrl && (
+        <div className="flex items-center gap-3 flex-wrap">
+          {urls.map((u, i) => (
             <a
-              href={fileUrl}
+              key={i}
+              href={u}
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:underline text-sm flex items-center gap-1"
             >
-              <Eye className="w-4 h-4" /> Ver
+              <Eye className="w-4 h-4" /> {urls.length > 1 ? `Ver ${i + 1}` : "Ver"}
             </a>
-          )}
-          {!readOnly && !fileUrl && (
+          ))}
+          {canUploadMore && (
             <label className="cursor-pointer text-xs text-on-surface-variant hover:text-primary flex items-center gap-1">
               <Upload className="w-3 h-3" />
               Subir
@@ -3377,6 +3414,9 @@ function ArchivosPanel({
     "Formulario de Cierre",
     "Orden de Materiales",
     "Fotos de Propiedad",
+    "Imagen HOA 1",
+    "Imagen HOA 2",
+    "Imagen HOA 3",
   ];
 
   useEffect(() => {
@@ -3447,19 +3487,35 @@ function ArchivosPanel({
     pd.materialsOrderUrl ? String(pd.materialsOrderUrl) : undefined,
     "materialsOrderUrl",
   );
+  addFile(
+    "Imagen HOA 1",
+    pd.hoaImage1Url ? String(pd.hoaImage1Url) : undefined,
+    "hoaImage1Url",
+  );
+  addFile(
+    "Imagen HOA 2",
+    pd.hoaImage2Url ? String(pd.hoaImage2Url) : undefined,
+    "hoaImage2Url",
+  );
+  addFile(
+    "Imagen HOA 3",
+    pd.hoaImage3Url ? String(pd.hoaImage3Url) : undefined,
+    "hoaImage3Url",
+  );
 
   if (pd.propertyPhotosJson) {
     try {
       const photos = JSON.parse(String(pd.propertyPhotosJson));
       if (Array.isArray(photos)) {
         photos.forEach((url: string, i: number) => {
-          allFilesFlat.push({ name: `Foto de Propiedad ${i + 1}`, url });
+          allFilesFlat.push({ name: `Foto de Propiedad ${i + 1}`, url, fieldKey: "propertyPhotosJson" });
         });
       }
     } catch {
       allFilesFlat.push({
         name: "Fotos de Propiedad",
         url: String(pd.propertyPhotosJson),
+        fieldKey: "propertyPhotosJson",
       });
     }
   }
@@ -3514,6 +3570,21 @@ function ArchivosPanel({
               },
             }),
           });
+        } else if (file.fieldKey === "propertyPhotosJson") {
+           let updatedArr: string[] = [];
+           if (pd.propertyPhotosJson) {
+              try {
+                const parsed = JSON.parse(String(pd.propertyPhotosJson));
+                if (Array.isArray(parsed)) {
+                   updatedArr = parsed.filter(u => u !== file.url);
+                }
+              } catch {}
+           }
+           await fetch("/api/project-details", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ visitId: visit.id, propertyPhotosJson: JSON.stringify(updatedArr) }),
+          });
         } else {
           await fetch("/api/project-details", {
             method: "POST",
@@ -3549,13 +3620,17 @@ function ArchivosPanel({
   };
 
   const finalDocName = docName === "Otro" ? customName : docName;
-  const isOptUploaded = (opt: string) =>
-    allFilesFlat.some(
-      (f) =>
-        f.name === opt ||
-        (opt === "Fotos de Propiedad" &&
-          f.name.startsWith("Foto de Propiedad")),
-    );
+  const isOptUploaded = (opt: string) => {
+    if (opt === "Fotos de Propiedad") {
+      const propertyPhotoCount = allFilesFlat.filter(
+        (f) =>
+          f.name === "Fotos de Propiedad" ||
+          f.name.startsWith("Foto de Propiedad")
+      ).length;
+      return propertyPhotoCount >= 20;
+    }
+    return allFilesFlat.some((f) => f.name === opt);
+  };
   const isAlreadyUploaded =
     docName !== "Otro" && docName !== "" && isOptUploaded(docName);
 
@@ -3573,17 +3648,60 @@ function ArchivosPanel({
       const data = await uploadRes.json();
       const url = data.url;
 
-      const updatedDocs = [...customDocs, { name: finalDocName.trim(), url }];
-      setCustomDocs(updatedDocs);
+      const finalName = finalDocName.trim();
+      const fieldMap: Record<string, string> = {
+        "ID del Cliente": "idDocumentUrl",
+        "Recibo de Luz": "electricBillUrl",
+        "Seguro de Hogar": "homeInsuranceUrl",
+        "Título de Propiedad": "homeTitleUrl",
+        "NOC": "nocUrl",
+        "Exterior Scope": "exteriorScopeUrl",
+        "Reporte de Techo": "roofReportUrl",
+        "Fotos de Paneles": "panelsPhotoUrl",
+        "Formulario de Cierre": "closingFormUrl",
+        "Orden de Materiales": "materialsOrderUrl",
+        "Imagen HOA 1": "hoaImage1Url",
+        "Imagen HOA 2": "hoaImage2Url",
+        "Imagen HOA 3": "hoaImage3Url",
+      };
 
-      await fetch("/api/project-details", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          visitId: visit.id,
-          customDocs: JSON.stringify(updatedDocs),
-        }),
-      });
+      const dbField = fieldMap[finalName];
+
+      if (dbField) {
+        await fetch("/api/project-details", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ visitId: visit.id, [dbField]: url }),
+        });
+      } else if (finalName === "Fotos de Propiedad") {
+        let arr: string[] = [];
+        if (pd.propertyPhotosJson) {
+          try {
+            const parsed = JSON.parse(String(pd.propertyPhotosJson));
+            if (Array.isArray(parsed)) arr = parsed;
+            else arr = [String(pd.propertyPhotosJson)];
+          } catch {
+            arr = [String(pd.propertyPhotosJson)];
+          }
+        }
+        arr.push(url);
+        await fetch("/api/project-details", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ visitId: visit.id, propertyPhotosJson: JSON.stringify(arr) }),
+        });
+      } else {
+        const updatedDocs = [...customDocs, { name: finalName, url }];
+        setCustomDocs(updatedDocs);
+        await fetch("/api/project-details", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            visitId: visit.id,
+            customDocs: JSON.stringify(updatedDocs),
+          }),
+        });
+      }
 
       setDocName("");
       setCustomName("");
