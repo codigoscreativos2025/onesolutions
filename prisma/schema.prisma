@@ -186,6 +186,9 @@ model ProjectDetails {
   solarFinancier    String?
   systemSize        String?
   hoaInfo           String?
+  hoaImage1Url      String?
+  hoaImage2Url      String?
+  hoaImage3Url      String?
   ppwSold           String?
   umbrella          String?   // "SI" o "NO"
   clientIncentive   String?   // incentivo al cliente

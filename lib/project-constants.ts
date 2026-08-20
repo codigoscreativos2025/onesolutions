@@ -1,6 +1,5 @@
 export const COMMON_FIELDS = [
   "closingDate",
-  "hoaInfo",
   "primaryRep",
   "primaryRepCommPct",
   "secondaryRep",
@@ -15,6 +14,9 @@ export const OPTIONAL_FIELDS = [
   "tertiaryRep",
   "tertiaryRepCommPct",
   "hoaInfo",
+  "hoaImage1Url",
+  "hoaImage2Url",
+  "hoaImage3Url"
 ];
 
 export const FILE_FIELD_KEYS = new Set([

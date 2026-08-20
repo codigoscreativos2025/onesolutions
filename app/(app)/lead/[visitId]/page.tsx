@@ -276,7 +276,8 @@ function calculateProjectCompletion(
   for (const meta of fieldMetas) {
     if (
       COMMON_FIELDS.includes(meta.fieldName) ||
-      FILE_FIELD_KEYS.has(meta.fieldName)
+      FILE_FIELD_KEYS.has(meta.fieldName) ||
+      meta.fieldName.startsWith("hoa")
     )
       continue;
 
@@ -2325,6 +2326,56 @@ function DatosLeadPanel({
   );
 }
 
+function HoaPanel({
+  pd,
+  onFieldChange,
+  onSave,
+  onFileFieldUpload,
+  readOnly,
+}: {
+  pd: Record<string, unknown>;
+  onFieldChange: (key: string, v: string) => void;
+  onSave: () => void;
+  onFileFieldUpload: (fieldName: string, file: File) => void;
+  readOnly: boolean;
+}) {
+  return (
+    <Panel title="Información HOA" icon={Home}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <FieldRow
+          label="Información HOA"
+          value={pd["hoaInfo"] ? String(pd["hoaInfo"]) : ""}
+          field="hoaInfo"
+          type="text"
+          onChange={(_, v) => onFieldChange("hoaInfo", v)}
+          onBlur={onSave}
+          readOnly={readOnly}
+          required={false}
+        />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[1, 2, 3].map((num) => {
+          const key = `hoaImage${num}Url`;
+          return (
+            <FieldRow
+              key={key}
+              label={`Imagen HOA ${num}`}
+              value=""
+              field={key}
+              type="file"
+              readOnly={readOnly}
+              isFile={true}
+              onFileUpload={onFileFieldUpload}
+              fileUrl={pd[key] ? String(pd[key]) : undefined}
+              required={false}
+            />
+          );
+        })}
+      </div>
+    </Panel>
+  );
+}
+
 function DatosProjectFieldsPanel({
   visit,
   editFields,
@@ -2525,6 +2576,14 @@ function DatosProjectFieldsPanel({
           </div>
         </Panel>
       )}
+
+      <HoaPanel
+        pd={pd}
+        onFieldChange={onFieldChange}
+        onSave={onSave}
+        onFileFieldUpload={onFileFieldUpload}
+        readOnly={role === "ADMIN" || isPartner}
+      />
 
       {fieldMetasByProject.length > 0 &&
         fieldMetasByProject.map((project) => {
@@ -2851,6 +2910,14 @@ function DatosProjectPanel({
         </div>
       </Panel>
 
+      <HoaPanel
+        pd={pd}
+        onFieldChange={onFieldChange}
+        onSave={onSave}
+        onFileFieldUpload={onFileFieldUpload}
+        readOnly={closeRequested || role === "ADMIN"}
+      />
+
       {visibleProjects.length > 0 &&
         visibleProjects.map((project) => {
           const isExpanded = expandedProjects.has(project.projectTypeId);
@@ -3079,6 +3146,14 @@ function DatosClosedPanel({
           ))}
         </div>
       </Panel>
+
+      <HoaPanel
+        pd={pd}
+        onFieldChange={() => {}}
+        onSave={() => {}}
+        onFileFieldUpload={() => {}}
+        readOnly={true}
+      />
 
       <Panel title="Resumen del Proyecto" icon={User}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

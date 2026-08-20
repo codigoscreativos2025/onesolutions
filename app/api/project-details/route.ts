@@ -97,7 +97,7 @@ export async function POST(request: Request) {
       "clientName", "clientEmail", "address", "closingDate",
       "primaryRep", "primaryRepCommPct", "secondaryRep", "secondaryRepCommPct",
       "tertiaryRep", "tertiaryRepCommPct",
-      "solarFinancier", "systemSize", "hoaInfo", "ppwSold", "umbrella", "mpuPanels",
+      "solarFinancier", "systemSize", "hoaInfo", "hoaImage1Url", "hoaImage2Url", "hoaImage3Url", "ppwSold", "umbrella", "mpuPanels",
       "siteSurveyDate", "panelsUpCount", "panelsDownCount", "panelsPhotoUrl",
       "solarCostPrice", "solarSalePrice", "solarCommission",
       "electricBillUrl", "closingFormUrl", "homeInsuranceUrl", "homeTitleUrl", "idDocumentUrl",
