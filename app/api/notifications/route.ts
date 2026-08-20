@@ -38,42 +38,60 @@ export async function PATCH() {
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session || session.user.role !== "ADMIN") {
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const body = await request.json();
   const { userId, title, body: notificationBody, link } = body;
 
-  if (!userId || !title || !notificationBody) {
+  if (!title || !notificationBody) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  const notification = await prisma.notification.create({
-    data: {
-      userId: parseInt(userId),
-      title,
-      body: notificationBody,
-      link: link || null,
-    },
-  });
+  let targetUserIds: number[] = [];
 
-  const user = await prisma.user.findUnique({
-    where: { id: parseInt(userId) },
-    select: { email: true, name: true },
-  });
-
-  if (user && user.email && !user.email.endsWith("@onesolutions.com")) {
-    try {
-      await sendEmail({
-        to: user.email,
-        subject: "Nueva notificaci\u00f3n - One Solutions",
-        html: emailTemplates.notification(user.name || "", title, notificationBody),
-      });
-    } catch {
-      // email failure shouldn't break notification creation
-    }
+  if (userId) {
+    targetUserIds.push(parseInt(userId));
+  } else {
+    const admins = await prisma.user.findMany({
+      where: { role: "ADMIN" },
+      select: { id: true },
+    });
+    targetUserIds = admins.map((a) => a.id);
   }
 
-  return NextResponse.json(notification);
+  const notifications = await Promise.all(
+    targetUserIds.map(async (id) => {
+      const notification = await prisma.notification.create({
+        data: {
+          userId: id,
+          title,
+          body: notificationBody,
+          link: link || null,
+        },
+      });
+
+      const user = await prisma.user.findUnique({
+        where: { id },
+        select: { email: true, name: true },
+      });
+
+      if (user && user.email && !user.email.endsWith("@onesolutions.com")) {
+        try {
+          await sendEmail({
+            to: user.email,
+            subject: "Nueva notificaci\u00f3n - One Solutions",
+            html: emailTemplates.notification(user.name || "", title, notificationBody),
+          });
+        } catch {
+          // email failure shouldn't break notification creation
+        }
+      }
+
+      return notification;
+    })
+  );
+
+  return NextResponse.json(notifications);
 }
