@@ -460,6 +460,12 @@ export default function LeadDetailPage() {
   const [scheduleClosers, setScheduleClosers] = useState<any[]>([]);
   const [scheduleSaving, setScheduleSaving] = useState(false);
 
+  // Track the last fetched visit's `updatedAt` so we can detect when
+  // another user (closer/admin) saves while this tab is open. Without
+  // this, two users looking at the same lead can clobber each other's
+  // changes — the polling refresh would land between the user's PATCH
+  // and their POST and silently drop the new values.
+  const lastFetchedUpdatedAtRef = useRef<string | null>(null);
   const fetchVisitDetails = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
@@ -471,6 +477,23 @@ export default function LeadDetailPage() {
       }
       if (!res.ok) throw new Error("Error fetching visit");
       const data = await res.json();
+
+      // Detect that the server's view of this visit moved forward while
+      // we were idle. If so, surface a non-blocking toast so the user
+      // knows their cached state is stale.
+      const serverUpdatedAt = data?.updatedAt || null;
+      if (
+        silent &&
+        lastFetchedUpdatedAtRef.current &&
+        serverUpdatedAt &&
+        serverUpdatedAt !== lastFetchedUpdatedAtRef.current
+      ) {
+        toast.info("Otro usuario actualizó este proyecto", {
+          description: "Los datos visibles se han refrescado desde el servidor.",
+        });
+      }
+      lastFetchedUpdatedAtRef.current = serverUpdatedAt;
+
       setVisit(data);
     } catch {
       if (!silent) toast.error("Error al cargar los detalles del proyecto");
@@ -640,21 +663,24 @@ export default function LeadDetailPage() {
 
   useEffect(() => {
     if (!visitId) return;
-    const POLL_MS = 30_000;
+    const POLL_MS = 15_000;
     let intervalId: ReturnType<typeof setInterval> | null = null;
 
-    const refreshIfClean = () => {
-      if (hasChangesRef.current) return;
+    // Always refresh from the server on each poll. Skipping the poll
+    // when the local user has unsaved edits was the original cause of
+    // the "another user saved and I never saw it" bug — the local edits
+    // would mask a remote save that happened in between.
+    const refresh = () => {
       fetchVisitDetails(true);
     };
 
     const onVisible = () => {
       if (document.visibilityState === "visible") {
-        refreshIfClean();
+        refresh();
         if (!intervalId) {
           intervalId = setInterval(() => {
             if (document.visibilityState === "visible") {
-              refreshIfClean();
+              refresh();
             }
           }, POLL_MS);
         }
@@ -670,7 +696,7 @@ export default function LeadDetailPage() {
     if (document.visibilityState === "visible") {
       intervalId = setInterval(() => {
         if (document.visibilityState === "visible") {
-          refreshIfClean();
+          refresh();
         }
       }, POLL_MS);
     }
@@ -852,13 +878,22 @@ export default function LeadDetailPage() {
         additionalFileName: visit.bill?.additionalFileName || null,
       };
 
-      await fetch(`/api/visits/${visit.id}`, {
+// Save Bill data — was previously swallowed on error which left
+      // the bill out of sync when the user reloaded. Now we validate
+      // the response and surface a specific error if it fails.
+      const billRes = await fetch(`/api/visits/${visit.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           bill: { upsert: { create: billData, update: billData } },
         }),
       });
+      if (!billRes.ok) {
+        const errBody = await billRes.json().catch(() => ({}));
+        const message = (errBody as { error?: string }).error || "Error al guardar recibo";
+        if (!silent) toast.error(`Recibo: ${message}`);
+        return;
+      }
 
       if (Object.keys(payload).length > 0) {
         const res = await fetch("/api/project-details", {
@@ -874,15 +909,35 @@ export default function LeadDetailPage() {
               ? {
                   ...prev,
                   projectDetails: { ...prev.projectDetails, ...updated },
+                  bill: { ...prev.bill, ...billData } as typeof prev.bill,
                 }
               : prev,
           );
         } else {
           if (!silent) toast.error("Error al guardar detalles");
+          return;
         }
+      } else {
+        // No project details to save, just sync the bill from server
+        setVisit((prev) =>
+          prev
+            ? {
+                ...prev,
+                bill: { ...prev.bill, ...billData } as typeof prev.bill,
+              }
+            : prev,
+        );
       }
 
+      hasChangesRef.current = false;
       if (!silent) toast.success("Datos guardados");
+
+      // Sync the server's updatedAt right after a save so the polling
+      // loop's stale-detection compares against a fresh fingerprint
+      // instead of the pre-save one. Without this, the next poll (15s
+      // later) would falsely report "Otro usuario actualizó este
+      // proyecto" because our own save changed updatedAt.
+      await fetchVisitDetails(true);
     } catch {
       if (!silent) toast.error("Error al guardar");
     } finally {
