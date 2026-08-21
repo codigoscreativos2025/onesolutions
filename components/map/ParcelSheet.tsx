@@ -89,6 +89,7 @@ export function ParcelSheet({
 
 
   const [showLeadModal, setShowLeadModal] = useState(false);
+  const [showConfirmClaim, setShowConfirmClaim] = useState(false);
   const [visitNotAvailTags, setVisitNotAvailTags] = useState<NotAvailTag[]>([]);
 
   const [mapNotes, setMapNotes] = useState("");
@@ -130,6 +131,7 @@ export function ParcelSheet({
     const newTags = [{ name, color, date: new Date().toISOString() }];
     await saveTagsAuto(newTags);
   };  useEffect(() => {
+    setShowConfirmClaim(false);
     if (!parcel) {
       setVisitNotAvailTags([]);
       return;
@@ -228,7 +230,6 @@ export function ParcelSheet({
 
 
 
-  const [showConfirmClaim, setShowConfirmClaim] = useState(false);
 
   const handleKnockDoor = async () => {
     if (claiming) return;
