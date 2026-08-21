@@ -13,7 +13,7 @@ import { normalizeArcGisFeature } from "../normalize";
  * caching and let the upstream service control freshness.
  */
 
-const DEFAULT_TIMEOUT_MS = 60000;
+const DEFAULT_TIMEOUT_MS = 90000;
 const OBJECT_ID_CHUNK = 100;
 
 // Track the latest AbortController so in‑flight requests can be cancelled
@@ -36,40 +36,49 @@ function warnOnce(key: string, ...args: unknown[]) {
   console.warn(...args);
 }
 
-async function fetchJson(url: string, timeoutMs = DEFAULT_TIMEOUT_MS, signal?: AbortSignal): Promise<unknown> {
-  // If a signal is provided, AbortController will handle it; otherwise create
-  // a local one with the timeout. We keep a reference to the latest controller
-  // so callers can cancel previous in‑flight requests.
-  let controller: AbortController | null = signal ? null : new AbortController();
-  const abortSignal = signal ?? (controller ? controller.signal : undefined);
-  const timer = setTimeout(() => (controller?.abort ? controller.abort() : undefined), timeoutMs);
-  try {
-    const res = await fetch(url, {
-      signal: abortSignal,
-      headers: { Accept: "application/json" },
-      next: { revalidate: 0 },
-    });
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw new Error(`GIS HTTP ${res.status}: ${text.slice(0, 200)}`);
-    }
-    return await res.json();
-  } catch (err) {
-    // Re‑throw if the abort was caused by a new query starting (expected),
-    // otherwise wrap for warning logic below.
-    const error = err instanceof Error ? err : new Error(String(err));
-    if (error.name !== "AbortError") throw err;
-    // Silently swallow abort errors — they happen when a newer query
-    // supersedes an older one, which is normal during map panning/zooming.
-    throw err;
-  } finally {
-    clearTimeout(timer);
-    // If we created a local controller (no signal passed), clear it so
-    // the reference in `latestController` doesn't leak.
-    if (!signal && controller) {
-      controller.abort();
+async function fetchJson(url: string, timeoutMs = DEFAULT_TIMEOUT_MS, signal?: AbortSignal, retries = 1): Promise<unknown> {
+  let lastError: unknown;
+  
+  for (let i = 0; i <= retries; i++) {
+    // If a signal is provided, AbortController will handle it; otherwise create
+    // a local one with the timeout. We keep a reference to the latest controller
+    // so callers can cancel previous in‑flight requests.
+    let controller: AbortController | null = signal ? null : new AbortController();
+    const abortSignal = signal ?? (controller ? controller.signal : undefined);
+    const timer = setTimeout(() => (controller?.abort ? controller.abort() : undefined), timeoutMs);
+    try {
+      const res = await fetch(url, {
+        signal: abortSignal,
+        headers: { Accept: "application/json" },
+        next: { revalidate: 0 },
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(`GIS HTTP ${res.status}: ${text.slice(0, 200)}`);
+      }
+      return await res.json();
+    } catch (err) {
+      // Re‑throw if the abort was caused by a new query starting (expected),
+      // otherwise wrap for warning logic below.
+      const error = err instanceof Error ? err : new Error(String(err));
+      if (error.name === "AbortError") throw err;
+      
+      lastError = err;
+      if (i < retries) {
+        // Wait 1 second before retrying
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    } finally {
+      clearTimeout(timer);
+      // If we created a local controller (no signal passed), clear it so
+      // the reference in `latestController` doesn't leak.
+      if (!signal && controller) {
+        controller.abort();
+      }
     }
   }
+  
+  throw lastError;
 }
 
 // LRU cache for queryByParcelId results. Clicking the same parcel twice
@@ -275,7 +284,7 @@ export function createCountyProvider(
           const seen = new Set<string>();
           let offset = 0;
           const MAX_RECORDS = 50000;
-const concurrency = 2;
+          const concurrency = 1;
 
   // Abort any in‑flight request from a previous query so we don't get
   // "This operation was aborted" errors when a new batch starts while

@@ -310,6 +310,14 @@ export async function gisGetByExternalId(
  * fast — statewide is only used for parcel-click / search, not for drawing
  * polygons on the map.
  */
+const BBOX_CACHE_TTL = 120_000;
+const bboxCache = new Map<string, { data: GeoJSON.FeatureCollection, expires: number }>();
+const inFlightBbox = new Map<string, Promise<GeoJSON.FeatureCollection>>();
+
+function getBboxKey(minLng: number, minLat: number, maxLng: number, maxLat: number) {
+  return `${minLng.toFixed(5)},${minLat.toFixed(5)},${maxLng.toFixed(5)},${maxLat.toFixed(5)}`;
+}
+
 export async function gisGeoJsonForBbox(
   minLng: number,
   minLat: number,
@@ -317,30 +325,61 @@ export async function gisGeoJsonForBbox(
   maxLat: number,
   options: { includeStatewide?: boolean; maxAllowableOffset?: number } = {}
 ): Promise<GeoJSON.FeatureCollection> {
-  const { includeStatewide = false, maxAllowableOffset } = options;
-  const providerConfigs = resolveProvidersForBbox(
-    minLng,
-    minLat,
-    maxLng,
-    maxLat
-  ).filter((c) => includeStatewide || c.id !== "fl-statewide");
-
-  if (providerConfigs.length === 0) {
-    return { type: "FeatureCollection", features: [] };
+  const cacheKey = getBboxKey(minLng, minLat, maxLng, maxLat);
+  
+  const cached = bboxCache.get(cacheKey);
+  if (cached && Date.now() < cached.expires) {
+    return cached.data;
   }
 
-  const merged = await queryProvidersSequential(
-    providerConfigs,
-    (p) => p.queryByBbox(minLng, minLat, maxLng, maxLat, undefined, maxAllowableOffset),
-    { includeStatewide }
-  );
-
-  const geoFeatures: GeoJSON.Feature[] = [];
-  for (const f of merged) {
-    const geo = toMapLibreFeature(f);
-    if (geo) geoFeatures.push(geo);
+  if (inFlightBbox.has(cacheKey)) {
+    return inFlightBbox.get(cacheKey)!;
   }
-  return { type: "FeatureCollection", features: geoFeatures };
+
+  const promise = (async () => {
+    try {
+      const { includeStatewide = false, maxAllowableOffset } = options;
+      const providerConfigs = resolveProvidersForBbox(
+        minLng,
+        minLat,
+        maxLng,
+        maxLat
+      ).filter((c) => includeStatewide || c.id !== "fl-statewide");
+
+      if (providerConfigs.length === 0) {
+        return { type: "FeatureCollection" as const, features: [] };
+      }
+
+      const merged = await queryProvidersSequential(
+        providerConfigs,
+        (p) => p.queryByBbox(minLng, minLat, maxLng, maxLat, undefined, maxAllowableOffset),
+        { includeStatewide }
+      );
+
+      const geoFeatures: GeoJSON.Feature[] = [];
+      for (const f of merged) {
+        const geo = toMapLibreFeature(f);
+        if (geo) geoFeatures.push(geo);
+      }
+      
+      const fc = { type: "FeatureCollection" as const, features: geoFeatures };
+      
+      if (bboxCache.size > 200) {
+        const now = Date.now();
+        for (const [k, v] of bboxCache.entries()) {
+          if (now > v.expires) bboxCache.delete(k);
+        }
+      }
+      bboxCache.set(cacheKey, { data: fc, expires: Date.now() + BBOX_CACHE_TTL });
+      
+      return fc;
+    } finally {
+      inFlightBbox.delete(cacheKey);
+    }
+  })();
+
+  inFlightBbox.set(cacheKey, promise);
+  return promise;
 }
 
 export function getDefaultProviderId(): GisProviderId {
