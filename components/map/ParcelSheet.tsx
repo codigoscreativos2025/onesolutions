@@ -136,7 +136,7 @@ export function ParcelSheet({
     }
 
     if (parcel.id) {
-      fetch(`/api/map-notes?parcelId=${parcel.id}`)
+      fetch(`/api/map-notes?parcelId=${parcel.id}`, { cache: 'no-store' })
         .then((res) => (res.ok ? res.json() : { note: "" }))
         .then((data) => setMapNotes(data?.note || ""))
         .catch(() => setMapNotes(""));

@@ -30,74 +30,88 @@ export async function POST(
       coordinates: [[[0, 0], [0, 0], [0, 0]]],
     });
 
-    let parcel = await prisma.parcel.findFirst({
-      where: { OR: [{ id }, { externalId: id }] },
-    });
+    const updated = await prisma.$transaction(async (tx) => {
+      let parcel = await tx.parcel.findFirst({
+        where: { OR: [{ id }, { externalId: id }] },
+      });
 
-    if (!parcel) {
-      parcel = await prisma.parcel.create({
+      if (!parcel) {
+        parcel = await tx.parcel.create({
+          data: {
+            id,
+            externalId: body.externalId || id,
+            address: body.address || "Sin dirección",
+            ownerName: body.ownerName || null,
+            geometry: body.geometry || defaultGeometry,
+            metadata: body.metadata || null,
+            territory: "Florida",
+          },
+        });
+      }
+
+      // Check for closed visits to allow reclaim
+      const closedVisitsCount = await tx.visit.count({
+        where: { parcelId: parcel.id, stage: "CLOSED" },
+      });
+      const hasClosedVisits = closedVisitsCount > 0;
+
+      let isReclaim = false;
+      if (parcel.status !== "AVAILABLE") {
+        const existingSetter =
+          parcel.setterId !== userId && parcel.setterId !== null;
+        if (existingSetter && !hasClosedVisits) {
+          throw new Error("Parcel already claimed");
+        }
+        
+        // If the same user is trying to claim, check if they already have an active visit
+        if (!existingSetter) {
+          const activeVisit = await tx.visit.findFirst({
+            where: { 
+              parcelId: parcel.id, 
+              setterId: userId,
+              stage: { notIn: ["CLOSED", "CANCELLED"] }
+            }
+          });
+          if (activeVisit) {
+            throw new Error("Active visit already exists");
+          }
+        }
+        
+        if (hasClosedVisits) isReclaim = true;
+      }
+
+      await tx.visit.create({
         data: {
-          id,
-          externalId: body.externalId || id,
-          address: body.address || "Sin dirección",
-          ownerName: body.ownerName || null,
-          geometry: body.geometry || defaultGeometry,
-          metadata: body.metadata || null,
-          territory: "Florida",
+          parcelId: parcel.id,
+          setterId: userId,
+          stage: "IN_PROGRESS",
         },
       });
-    }
 
-    // Check for closed visits to allow reclaim
-    const closedVisitsCount = await prisma.visit.count({
-      where: { parcelId: parcel.id, stage: "CLOSED" },
-    });
-    const hasClosedVisits = closedVisitsCount > 0;
-
-    let isReclaim = false;
-    if (parcel.status !== "AVAILABLE") {
-      const existingSetter =
-        parcel.setterId !== userId && parcel.setterId !== null;
-      if (existingSetter && !hasClosedVisits) {
-        return NextResponse.json(
-          { error: "Parcel already claimed" },
-          { status: 409 }
-        );
-      }
-      if (hasClosedVisits) isReclaim = true;
-    }
-
-    await prisma.visit.create({
-      data: {
-        parcelId: parcel.id,
-        setterId: userId,
-        stage: "IN_PROGRESS",
-      },
-    });
-
-    const updated = await prisma.parcel.update({
-      where: { id: parcel.id },
-      data: {
-        status: "LEAD",
-        setterId: userId,
-        ...(isReclaim ? { parcelTags: null } : {}),
-        address: body.address || parcel.address || "Sin dirección",
-        ownerName: body.ownerName || parcel.ownerName || null,
-        metadata: body.metadata || parcel.metadata || null,
-      },
-      include: {
-        setter: { select: { id: true, name: true } },
-        visits: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          select: {
-            id: true,
-            stage: true,
-            outcome: true,
-            setter: { select: { id: true, name: true } },
+      return tx.parcel.update({
+        where: { id: parcel.id },
+        data: {
+          status: "LEAD",
+          setterId: userId,
+          ...(isReclaim ? { parcelTags: null } : {}),
+          address: body.address || parcel.address || "Sin dirección",
+          ownerName: body.ownerName || parcel.ownerName || null,
+          metadata: body.metadata || parcel.metadata || null,
+        },
+        include: {
+          setter: { select: { id: true, name: true } },
+          visits: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: {
+              id: true,
+              stage: true,
+              outcome: true,
+              setter: { select: { id: true, name: true } },
+            },
           },
         },
-      },
+      });
     });
 
     return NextResponse.json(updated);
