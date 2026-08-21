@@ -4,6 +4,7 @@ import { TopAppBar } from "@/components/layout/TopAppBar";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { PageLoadingTransition } from "@/components/layout/PageLoadingTransition";
 import { ParticleBackground } from "@/components/ui/ParticleBackground";
+import { SessionGuard } from "@/components/layout/SessionGuard";
 
 export default async function AppLayout({
   children,
@@ -12,13 +13,14 @@ export default async function AppLayout({
 }) {
   const session = await auth();
 
-  if (!session) {
-    redirect("/login");
+  if (!session || !session.user) {
+    redirect("/login?error=SessionExpired");
   }
 
   return (
-    <div className="min-h-screen bg-background text-on-background relative">
-      <ParticleBackground />
+    <SessionGuard>
+      <div className="min-h-screen bg-background text-on-background relative">
+        <ParticleBackground />
       <div className="fixed inset-0 pointer-events-none z-0" aria-hidden="true">
         <div
           className="floating-hex"
@@ -65,5 +67,6 @@ export default async function AppLayout({
       </main>
       <BottomNav />
     </div>
+    </SessionGuard>
   );
 }

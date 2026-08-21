@@ -98,17 +98,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         });
         if (!activeSession) {
           // If session is not found in DB (kicked out), invalidate JWT
-          return {}; // Returning empty token effectively logs them out
+          return null as any; // Returning null deletes the JWT cookie in NextAuth
         }
       }
 
       return token;
     },
     session({ session, token }) {
-      if (!token.id) {
-        // This handles the kicked out state
-        session.user = null as any; 
-        return session;
+      if (!token?.id) {
+        // Token fue invalidado
+        return null as any;
       }
       session.user.id = token.id as string;
       session.user.role = token.role as string;
