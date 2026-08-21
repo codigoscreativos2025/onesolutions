@@ -228,6 +228,8 @@ export function ParcelSheet({
 
 
 
+  const [showConfirmClaim, setShowConfirmClaim] = useState(false);
+
   const handleKnockDoor = async () => {
     if (claiming) return;
     setClaimError("");
@@ -246,6 +248,7 @@ export function ParcelSheet({
       setClaimError(e instanceof Error ? e.message : "Error al reclamar parcela");
     } finally {
       setClaiming(false);
+      setShowConfirmClaim(false);
     }
   };
 
@@ -421,14 +424,39 @@ export function ParcelSheet({
 
           {canVisit && isAvailable && (
             <div className="flex flex-col gap-3">
-              <Button
-                onClick={handleKnockDoor}
-                disabled={claiming}
-                className="w-full bg-brand-green hover:bg-brand-green/90 text-white py-6 text-lg rounded-xl shadow-md"
-              >
-                <DoorOpen className="w-5 h-5 mr-2" />
-                {t.map.knockDoor}
-              </Button>
+              {!showConfirmClaim ? (
+                <Button
+                  onClick={() => setShowConfirmClaim(true)}
+                  disabled={claiming}
+                  className="w-full bg-brand-green hover:bg-brand-green/90 text-white py-6 text-lg rounded-xl shadow-md"
+                >
+                  <DoorOpen className="w-5 h-5 mr-2" />
+                  {t.map.knockDoor}
+                </Button>
+              ) : (
+                <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/30 space-y-3">
+                  <p className="text-sm font-medium text-on-surface text-center">
+                    ¿Estás seguro de que deseas crear el lead?
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => setShowConfirmClaim(false)}
+                      disabled={claiming}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      className="flex-1 bg-brand-green hover:bg-brand-green/90 text-white"
+                      onClick={handleKnockDoor}
+                      disabled={claiming}
+                    >
+                      {claiming ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirmar"}
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               <Button variant="ghost" onClick={onClose} className="w-full mt-2">
                 {t.common.close}

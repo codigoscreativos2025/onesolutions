@@ -151,7 +151,10 @@ export default function MapView({
           zoom: 18,
         });
         centerRef.current = userLocation;
-        setTimeout(() => fetchParcelsRef.current?.(), 500);
+        map.current.once("moveend", () => {
+          fetchParcelsRef.current?.();
+          fetchMarkersRef.current?.();
+        });
       }
     } else {
       // Map not yet mounted — stash the location so initMap picks it up
@@ -176,39 +179,60 @@ export default function MapView({
   // Orlando center. The location is stored in a ref so initMap can
   // pick it up synchronously without waiting for React state.
   const isAdmin = (session?.user?.role || "").toUpperCase() === "ADMIN";
+  const watchIdRef = useRef<number | null>(null);
+
   const requestUserLocation = useCallback((forceRefresh = false) => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       setLocationStatus("unavailable");
       return;
     }
-    if (locationStatus === "requesting") return;
+    
+    // Si ya estamos "granted" y no forzaron refresco, no hacer nada
     if (!forceRefresh && locationStatus === "granted" && userLocationRef.current) return;
     
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    
     setLocationStatus("requesting");
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const loc: [number, number] = [pos.coords.latitude, pos.coords.longitude];
-        userLocationRef.current = loc;
-        setUserLocation(loc);
-        setLocationStatus("granted");
-        
-        // If they forced a refresh (clicked the button), fly to the new location immediately
-        if (forceRefresh && map.current) {
-          map.current.flyTo({ center: [loc[1], loc[0]], zoom: 18 });
-          setTimeout(() => fetchParcelsRef.current?.(), 500);
-        }
-      },
-      (err) => {
-        setLocationStatus(err.code === err.PERMISSION_DENIED ? "denied" : "unavailable");
-      },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 } // use 0 for fresh location
+    
+    const handleSuccess = (pos: GeolocationPosition) => {
+      const loc: [number, number] = [pos.coords.latitude, pos.coords.longitude];
+      userLocationRef.current = loc;
+      setUserLocation(loc);
+      setLocationStatus("granted");
+      
+      if (forceRefresh && map.current) {
+        map.current.flyTo({ center: [loc[1], loc[0]], zoom: 18 });
+        map.current.once("moveend", () => {
+          fetchParcelsRef.current?.();
+          fetchMarkersRef.current?.();
+        });
+      }
+    };
+    
+    const handleError = (err: GeolocationPositionError) => {
+      setLocationStatus(err.code === err.PERMISSION_DENIED ? "denied" : "unavailable");
+    };
+
+    // Usamos watchPosition para seguimiento en vivo
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      handleSuccess,
+      handleError,
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   }, [locationStatus]);
 
-  // Trigger geolocation as soon as we know the user role and it's not admin.
   useEffect(() => {
     if (!session) return;
     if (!isAdmin) requestUserLocation();
+    
+    return () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
+    };
   }, [session, isAdmin, requestUserLocation]);
 
   const initMap = useCallback(() => {
