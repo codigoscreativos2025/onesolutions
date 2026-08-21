@@ -366,7 +366,7 @@ export async function gisGeoJsonForBbox(
       
       if (bboxCache.size > 200) {
         const now = Date.now();
-        for (const [k, v] of bboxCache.entries()) {
+        for (const [k, v] of Array.from(bboxCache.entries())) {
           if (now > v.expires) bboxCache.delete(k);
         }
       }
