@@ -2565,23 +2565,29 @@ function DatosLeadPanel({
 
 function HoaPanel({
   pd,
+  editFields = {},
   onFieldChange,
   onSave,
   onFileFieldUpload,
   readOnly,
 }: {
   pd: Record<string, unknown>;
+  editFields?: Record<string, string>;
   onFieldChange: (key: string, v: string) => void;
   onSave: () => void;
   onFileFieldUpload: (fieldName: string, file: File) => void;
   readOnly: boolean;
 }) {
+  const hoaInfoVal = editFields["hoaInfo"] !== undefined 
+    ? editFields["hoaInfo"] 
+    : (pd["hoaInfo"] ? String(pd["hoaInfo"]) : "");
+
   return (
     <Panel title="Información HOA" icon={Home}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <FieldRow
           label="Información HOA"
-          value={pd["hoaInfo"] ? String(pd["hoaInfo"]) : ""}
+          value={hoaInfoVal}
           field="hoaInfo"
           type="text"
           onChange={(_, v) => onFieldChange("hoaInfo", v)}
@@ -2819,6 +2825,7 @@ function DatosProjectFieldsPanel({
 
       <HoaPanel
         pd={pd}
+        editFields={editFields}
         onFieldChange={onFieldChange}
         onSave={onSave}
         onFileFieldUpload={onFileFieldUpload}
@@ -3152,6 +3159,7 @@ function DatosProjectPanel({
 
       <HoaPanel
         pd={pd}
+        editFields={editFields}
         onFieldChange={onFieldChange}
         onSave={onSave}
         onFileFieldUpload={onFileFieldUpload}
