@@ -255,6 +255,7 @@ function calculateProjectCompletion(
   const isValid = (val: unknown) => {
     if (val === undefined || val === null) return false;
     if (typeof val === "string" && val.trim() === "") return false;
+    if (typeof val === "string" && val.trim() === "[]") return false;
     return true;
   };
 
@@ -1055,7 +1056,7 @@ export default function LeadDetailPage() {
       const url = await handleUpload(file);
       let finalVal: string = url;
       
-      if (fieldName === "propertyPhotosJson") {
+      if (fieldName === "propertyPhotosJson" || fieldName === "idDocumentUrl") {
          const current = visit?.projectDetails?.[fieldName];
          let arr: string[] = [];
          if (current) {
@@ -2084,7 +2085,7 @@ function FieldRow({
   if (isFile) {
     let urls: string[] = [];
     if (fileUrl) {
-      if (field === "propertyPhotosJson") {
+      if (field === "propertyPhotosJson" || field === "idDocumentUrl") {
         try {
           const parsed = JSON.parse(fileUrl);
           if (Array.isArray(parsed)) urls = parsed;
@@ -2097,7 +2098,10 @@ function FieldRow({
       }
     }
 
-    const maxFiles = field === "propertyPhotosJson" ? 20 : 1;
+    let maxFiles = 1;
+    if (field === "propertyPhotosJson") maxFiles = 20;
+    else if (field === "idDocumentUrl") maxFiles = 2;
+
     const canUploadMore = !readOnly && urls.length < maxFiles;
 
     return (
@@ -3646,7 +3650,20 @@ function ArchivosPanel({
   const hasIdUrl = pd.idDocumentUrl || bill?.additionalFileUrl;
   const hasBillUrl = pd.electricBillUrl || bill?.imageUrl;
 
-  if (hasIdUrl) addFile("ID del Cliente", String(hasIdUrl), "idDocumentUrl");
+  if (hasIdUrl) {
+    try {
+      const parsed = JSON.parse(String(hasIdUrl));
+      if (Array.isArray(parsed)) {
+        parsed.forEach((url: string, i: number) => {
+          allFilesFlat.push({ name: `ID del Cliente ${i + 1}`, url, fieldKey: "idDocumentUrl" });
+        });
+      } else {
+        addFile("ID del Cliente", String(hasIdUrl), "idDocumentUrl");
+      }
+    } catch {
+      addFile("ID del Cliente", String(hasIdUrl), "idDocumentUrl");
+    }
+  }
   if (hasBillUrl)
     addFile("Recibo de Luz", String(hasBillUrl), "electricBillUrl");
   addFile(
@@ -3768,20 +3785,30 @@ function ArchivosPanel({
               },
             }),
           });
-        } else if (file.fieldKey === "propertyPhotosJson") {
+        } else if (file.fieldKey === "propertyPhotosJson" || file.fieldKey === "idDocumentUrl") {
            let updatedArr: string[] = [];
-           if (pd.propertyPhotosJson) {
+           const currentVal = pd[file.fieldKey];
+           if (currentVal) {
               try {
-                const parsed = JSON.parse(String(pd.propertyPhotosJson));
+                const parsed = JSON.parse(String(currentVal));
                 if (Array.isArray(parsed)) {
                    updatedArr = parsed.filter(u => u !== file.url);
+                } else if (currentVal !== file.url) {
+                   updatedArr = [String(currentVal)];
                 }
-              } catch {}
+              } catch {
+                if (currentVal !== file.url) {
+                   updatedArr = [String(currentVal)];
+                }
+              }
            }
+           
+           const finalDbVal = updatedArr.length > 0 ? JSON.stringify(updatedArr) : null;
+           
            await fetch("/api/project-details", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ visitId: visit.id, propertyPhotosJson: JSON.stringify(updatedArr) }),
+            body: JSON.stringify({ visitId: visit.id, [file.fieldKey]: finalDbVal }),
           });
         } else {
           await fetch("/api/project-details", {
@@ -3827,6 +3854,14 @@ function ArchivosPanel({
       ).length;
       return propertyPhotoCount >= 20;
     }
+    if (opt === "ID del Cliente") {
+      const idCount = allFilesFlat.filter(
+        (f) =>
+          f.name === "ID del Cliente" ||
+          f.name.startsWith("ID del Cliente ")
+      ).length;
+      return idCount >= 2;
+    }
     return allFilesFlat.some((f) => f.name === opt);
   };
   const isAlreadyUploaded =
@@ -3864,29 +3899,31 @@ function ArchivosPanel({
       };
 
       const dbField = fieldMap[finalName];
+      const isArrayField = finalName === "Fotos de Propiedad" || finalName === "ID del Cliente";
 
-      if (dbField) {
-        await fetch("/api/project-details", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ visitId: visit.id, [dbField]: url }),
-        });
-      } else if (finalName === "Fotos de Propiedad") {
+      if (isArrayField) {
+        const targetDbField = finalName === "Fotos de Propiedad" ? "propertyPhotosJson" : "idDocumentUrl";
         let arr: string[] = [];
-        if (pd.propertyPhotosJson) {
+        if (pd[targetDbField]) {
           try {
-            const parsed = JSON.parse(String(pd.propertyPhotosJson));
+            const parsed = JSON.parse(String(pd[targetDbField]));
             if (Array.isArray(parsed)) arr = parsed;
-            else arr = [String(pd.propertyPhotosJson)];
+            else arr = [String(pd[targetDbField])];
           } catch {
-            arr = [String(pd.propertyPhotosJson)];
+            arr = [String(pd[targetDbField])];
           }
         }
         arr.push(url);
         await fetch("/api/project-details", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ visitId: visit.id, propertyPhotosJson: JSON.stringify(arr) }),
+          body: JSON.stringify({ visitId: visit.id, [targetDbField]: JSON.stringify(arr) }),
+        });
+      } else if (dbField) {
+        await fetch("/api/project-details", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ visitId: visit.id, [dbField]: url }),
         });
       } else {
         const updatedDocs = [...customDocs, { name: finalName, url }];
