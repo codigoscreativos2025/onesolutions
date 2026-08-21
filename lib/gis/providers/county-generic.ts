@@ -16,6 +16,13 @@ import { normalizeArcGisFeature } from "../normalize";
 const DEFAULT_TIMEOUT_MS = 60000;
 const OBJECT_ID_CHUNK = 100;
 
+// Track the latest AbortController so in‑flight requests can be cancelled
+// when a new query is started (e.g. map pan/zoom). This prevents the
+// "This operation was aborted" console errors that occur when concurrent
+// fetch promises from a previous batch are left hanging while a new
+// query initiates its own batch.
+let latestController: AbortController | null = null;
+
 // Throttle repeated identical warnings within a short window so a slow
 // or failing upstream doesn't flood the console.
 const recentWarnings = new Map<string, number>();
@@ -29,12 +36,16 @@ function warnOnce(key: string, ...args: unknown[]) {
   console.warn(...args);
 }
 
-async function fetchJson(url: string, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<unknown> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+async function fetchJson(url: string, timeoutMs = DEFAULT_TIMEOUT_MS, signal?: AbortSignal): Promise<unknown> {
+  // If a signal is provided, AbortController will handle it; otherwise create
+  // a local one with the timeout. We keep a reference to the latest controller
+  // so callers can cancel previous in‑flight requests.
+  let controller: AbortController | null = signal ? null : new AbortController();
+  const abortSignal = signal ?? (controller ? controller.signal : undefined);
+  const timer = setTimeout(() => (controller?.abort ? controller.abort() : undefined), timeoutMs);
   try {
     const res = await fetch(url, {
-      signal: controller.signal,
+      signal: abortSignal,
       headers: { Accept: "application/json" },
       next: { revalidate: 0 },
     });
@@ -43,8 +54,21 @@ async function fetchJson(url: string, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<u
       throw new Error(`GIS HTTP ${res.status}: ${text.slice(0, 200)}`);
     }
     return await res.json();
+  } catch (err) {
+    // Re‑throw if the abort was caused by a new query starting (expected),
+    // otherwise wrap for warning logic below.
+    const error = err instanceof Error ? err : new Error(String(err));
+    if (error.name !== "AbortError") throw err;
+    // Silently swallow abort errors — they happen when a newer query
+    // supersedes an older one, which is normal during map panning/zooming.
+    throw err;
   } finally {
     clearTimeout(timer);
+    // If we created a local controller (no signal passed), clear it so
+    // the reference in `latestController` doesn't leak.
+    if (!signal && controller) {
+      controller.abort();
+    }
   }
 }
 
@@ -251,9 +275,17 @@ export function createCountyProvider(
           const seen = new Set<string>();
           let offset = 0;
           const MAX_RECORDS = 50000;
-          const concurrency = 2;
+const concurrency = 2;
 
-          while (offset < MAX_RECORDS) {
+  // Abort any in‑flight request from a previous query so we don't get
+  // "This operation was aborted" errors when a new batch starts while
+  // old promises are still resolving (e.g. map pan/zoom).
+  if (latestController) {
+    latestController.abort();
+    latestController = null;
+  }
+
+  while (offset < MAX_RECORDS) {
             const batchOffsets: number[] = [];
             for (let i = 0; i < concurrency && offset + i * chunkSize < MAX_RECORDS; i++) {
               batchOffsets.push(offset + i * chunkSize);
@@ -263,10 +295,14 @@ export function createCountyProvider(
             const batchPromises = batchOffsets.map(async (off) => {
               const pagedUrl = `${baseUrl}&resultOffset=${off}`;
               try {
-                const data = await fetchJson(pagedUrl, 60000);
+                const data = await fetchJson(pagedUrl, 60000, latestController?.signal);
                 return parseFeatureCollection(data, c);
               } catch (err) {
-                warnOnce(`${providerId}:page:${off}`, `[${providerId}] Page error at ${off}:`, err instanceof Error ? err.message : err);
+                // Swallow AbortError — it means a newer query superseded this one
+                // (normal during map panning/zooming). Other errors are still warned.
+                if (err instanceof Error && err.name !== "AbortError") {
+                  warnOnce(`${providerId}:page:${off}`, `[${providerId}] Page error at ${off}:`, err.message);
+                }
                 return null;
               }
             });
@@ -311,7 +347,7 @@ export function createCountyProvider(
           maxLat,
           limit
         );
-        const data = await fetchJson(url, 60000);
+        const data = await fetchJson(url, 60000, latestController?.signal);
         return parseFeatureCollection(data, c).slice(0, limit);
       } catch (err) {
         warnOnce(
