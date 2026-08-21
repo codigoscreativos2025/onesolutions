@@ -290,6 +290,11 @@ function calculateProjectCompletion(
 
   if (stage === "PROJECT" || stage === "CLOSED") {
     totalFields += 2;
+    // ID del Cliente: a single uploaded file (front or back of the ID)
+    // is enough to mark the field complete. The bill syncs its
+    // additionalFileUrl into projectDetails.idDocumentUrl on save
+    // (see saveProjectDetailsAction), so checking that mirror is
+    // sufficient. A second file is optional.
     if (isValid(projectDetails["idDocumentUrl"])) completedFields++;
     if (isValid(projectDetails["electricBillUrl"])) completedFields++;
   }
@@ -954,32 +959,94 @@ export default function LeadDetailPage() {
     return data.url;
   };
 
+  type BillFileField = "imageUrl" | "additionalFileUrl" | "additionalFile2Url";
+
   const handleBillFileUpload = async (
-    type: "imageUrl" | "additionalFileUrl",
+    type: BillFileField,
     file: File,
   ) => {
     try {
       const url = await handleUpload(file);
-      const billData = { [type]: url };
-      await fetch(`/api/visits/${visit?.id}`, {
+      // Persist the display name alongside the URL so the user can see
+      // what each uploaded file is called.
+      const nameKey =
+        type === "additionalFileUrl"
+          ? "additionalFileName"
+          : type === "additionalFile2Url"
+            ? "additionalFile2Name"
+            : null;
+      const billData: Record<string, string> = { [type]: url };
+      if (nameKey) billData[nameKey] = file.name;
+
+      const res = await fetch(`/api/visits/${visit?.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           bill: { upsert: { create: billData, update: billData } },
         }),
       });
+      if (!res.ok) {
+        toast.error("Error al guardar el archivo");
+        return;
+      }
+      setVisit((prev) => {
+        if (!prev) return prev;
+        // Mirror the front-of-ID URL into projectDetails.idDocumentUrl
+        // so the completion percentage is updated immediately, without
+        // having to wait for the next saveProjectDetailsAction call.
+        const projectDetailsMirror: Record<string, string> = {};
+        if (type === "additionalFileUrl") {
+          projectDetailsMirror.idDocumentUrl = url;
+        }
+        return {
+          ...prev,
+          bill: prev.bill
+            ? { ...prev.bill, ...billData }
+            : ({ ...billData } as any),
+          projectDetails: {
+            ...(prev.projectDetails || {}),
+            ...projectDetailsMirror,
+          },
+        };
+      });
+      toast.success("Archivo subido");
+    } catch {
+      toast.error("Error al subir archivo");
+    }
+  };
+
+  // Clear one of the ID-del-Cliente slots (front or back). Calls the
+  // same PATCH route with null values so the server clears the column.
+  const handleBillFileClear = async (
+    slot: "first" | "second",
+  ) => {
+    try {
+      const billData: Record<string, string | null> =
+        slot === "first"
+          ? { additionalFileUrl: null, additionalFileName: null }
+          : { additionalFile2Url: null, additionalFile2Name: null };
+      const res = await fetch(`/api/visits/${visit?.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bill: { upsert: { create: billData, update: billData } },
+        }),
+      });
+      if (!res.ok) {
+        toast.error("Error al eliminar el archivo");
+        return;
+      }
       setVisit((prev) => {
         if (!prev) return prev;
         return {
           ...prev,
           bill: prev.bill
             ? { ...prev.bill, ...billData }
-            : ({ ...billData } as any),
+            : (prev.bill as any),
         };
       });
-      toast.success("Archivo subido");
     } catch {
-      toast.error("Error al subir archivo");
+      toast.error("Error al eliminar el archivo");
     }
   };
 
@@ -1544,6 +1611,7 @@ export default function LeadDetailPage() {
                     onAddTag={handleAddLeadTag}
                     onRemoveTag={handleRemoveLeadTag}
                     onBillFileUpload={handleBillFileUpload}
+                    onBillFileClear={handleBillFileClear}
                     role={role}
                   />
                   <div className="mt-6">
@@ -2299,6 +2367,7 @@ function DatosLeadPanel({
   onAddTag,
   onRemoveTag,
   onBillFileUpload,
+  onBillFileClear,
   role,
 }: {
   visit: VisitDetails;
@@ -2311,9 +2380,10 @@ function DatosLeadPanel({
   onAddTag: (tag: { name: string; color: string }) => void;
   onRemoveTag: (tagName: string) => void;
   onBillFileUpload?: (
-    type: "imageUrl" | "additionalFileUrl",
+    type: "imageUrl" | "additionalFileUrl" | "additionalFile2Url",
     file: File,
   ) => Promise<void>;
+  onBillFileClear?: (slot: "first" | "second") => Promise<void>;
   role?: string;
 }) {
   const [saving, setSaving] = useState(false);
@@ -2416,16 +2486,36 @@ function DatosLeadPanel({
 
       <Panel title="Documentos" icon={FileText}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <UploadField
+          <IdUploadField
             label="ID del Cliente"
-            preview={visit.bill?.additionalFileUrl || ""}
-            onChange={async (e) => {
+            files={[
+              {
+                url: visit.bill?.additionalFileUrl || "",
+                name: visit.bill?.additionalFileName,
+              },
+              {
+                url:
+                  (visit.bill as unknown as {
+                    additionalFile2Url?: string | null;
+                  })?.additionalFile2Url || "",
+                name: (visit.bill as unknown as {
+                  additionalFile2Name?: string | null;
+                })?.additionalFile2Name,
+              },
+            ]}
+            onUpload={async (slot, file) => {
               if (isReadOnly) return;
-              const f = e.target.files?.[0];
-              if (f && onBillFileUpload)
-                await onBillFileUpload("additionalFileUrl", f);
+              if (!onBillFileUpload) return;
+              await onBillFileUpload(
+                slot === "first" ? "additionalFileUrl" : "additionalFile2Url",
+                file,
+              );
             }}
-            onClear={() => {}}
+            onClear={async (slot) => {
+              if (isReadOnly) return;
+              if (!onBillFileClear) return;
+              await onBillFileClear(slot);
+            }}
             readOnly={isReadOnly}
           />
           <UploadField
@@ -2537,6 +2627,7 @@ function DatosProjectFieldsPanel({
   onAddTag,
   onRemoveTag,
   onBillFileUpload,
+  onBillFileClear,
   role,
 }: {
   visit: VisitDetails;
@@ -2560,9 +2651,10 @@ function DatosProjectFieldsPanel({
   onAddTag: (tag: { name: string; color: string }) => void;
   onRemoveTag: (tagName: string) => void;
   onBillFileUpload?: (
-    type: "imageUrl" | "additionalFileUrl",
+    type: "imageUrl" | "additionalFileUrl" | "additionalFile2Url",
     file: File,
   ) => Promise<void>;
+  onBillFileClear?: (slot: "first" | "second") => Promise<void>;
   role?: string;
 }) {
   const pd = visit.projectDetails || {};
@@ -2686,6 +2778,7 @@ function DatosProjectFieldsPanel({
           onAddTag={onAddTag}
           onRemoveTag={onRemoveTag}
           onBillFileUpload={onBillFileUpload}
+          onBillFileClear={onBillFileClear}
           role={role}
         />
       )}
@@ -4233,6 +4326,110 @@ function UploadField({
           className="hidden"
         />
       </label>
+    </div>
+  );
+}
+
+// Two-file upload field used for "ID del Cliente" (front + back of
+// the client's ID). The first file is required to mark the field as
+// uploaded; the second is optional. Up to 2 files can be stored; once
+// 2 are present the upload zones are hidden.
+type IdSlot = { url: string; name?: string | null };
+
+function IdUploadField({
+  label,
+  files,
+  onUpload,
+  onClear,
+  readOnly,
+}: {
+  label: string;
+  files: IdSlot[];
+  onUpload: (slot: "first" | "second", file: File) => void;
+  onClear: (slot: "first" | "second") => void;
+  readOnly?: boolean;
+}) {
+ const renderSlot = (
+    slot: IdSlot | undefined,
+    slotKey: "first" | "second",
+    position: "Frente" | "Reverso",
+  ) => {
+    if (slot?.url) {
+      return (
+        <motion.div
+          key={`${slotKey}-preview`}
+          className="relative"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <img
+            src={slot.url}
+            alt={slot.name || position}
+            className="w-full h-32 object-cover rounded-xl"
+          />
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={() => onClear(slotKey)}
+              className="absolute top-2 right-2 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70"
+              aria-label={`Quitar ${position.toLowerCase()}`}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+          <span className="absolute bottom-1 left-1 text-[10px] px-1.5 py-0.5 rounded bg-black/60 text-white">
+            {position}
+          </span>
+        </motion.div>
+      );
+    }
+    if (readOnly) {
+      return (
+        <p className="text-sm text-on-surface-variant italic">
+          {position} no subido
+        </p>
+      );
+    }
+    return (
+      <label className="w-full h-28 border-2 border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center bg-surface-container-lowest hover:bg-primary/5 transition-colors cursor-pointer group">
+        <Upload className="w-5 h-5 text-on-surface-variant group-hover:text-primary transition-colors" />
+        <span className="text-[11px] text-on-surface-variant mt-0.5">
+          Subir {position.toLowerCase()}
+        </span>
+        <input
+          type="file"
+          accept="image/*,.pdf"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onUpload(slotKey, f);
+            // reset so the same file can be re-selected after clearing
+            e.target.value = "";
+          }}
+          className="hidden"
+        />
+      </label>
+    );
+  };
+
+ const first = files[0];
+ const second = files[1];
+ const slot1 = first ? { url: first.url, name: first.name } : undefined;
+ const slot2 = second ? { url: second.url, name: second.name } : undefined;
+
+ return (
+    <div className="space-y-2">
+      <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+        {label}
+      </label>
+      <div className="grid grid-cols-2 gap-3">
+        {renderSlot(slot1, "first", "Frente")}
+        {renderSlot(slot2, "second", "Reverso")}
+      </div>
+      {!readOnly && !first && !second && (
+        <p className="text-[11px] text-on-surface-variant">
+          Sube al menos 1 archivo. Puedes agregar un segundo (reverso del ID).
+        </p>
+      )}
     </div>
   );
 }

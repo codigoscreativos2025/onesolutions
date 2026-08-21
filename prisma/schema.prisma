@@ -320,8 +320,13 @@ model Bill {
   clientName         String?
   clientEmail        String?
   notes              String?
+  // ID del Cliente — accepts up to 2 files (front + back of the ID).
+  // First file kept on additionalFile* for legacy data; a second
+  // upload writes to additionalFile2*.
   additionalFileUrl  String?
   additionalFileName String?
+  additionalFile2Url  String?
+  additionalFile2Name String?
 }
 
 model ChatRoom {
