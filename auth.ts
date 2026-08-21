@@ -25,6 +25,32 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const valid = await bcrypt.compare(password, user.password);
         if (!valid) return null;
 
+        // --- Session Management ---
+        const { v4: uuidv4 } = require("uuid");
+        const sessionToken = uuidv4();
+
+        // Eliminar sesiones antiguas si hay más de 1 activa (para dejar espacio para la nueva, max 2)
+        const activeSessions = await prisma.userSession.findMany({
+          where: { userId: user.id },
+          orderBy: { createdAt: "asc" },
+        });
+
+        if (activeSessions.length >= 2) {
+          // Si hay 2 o más, borramos las más antiguas hasta dejar solo 1
+          const sessionsToDelete = activeSessions.slice(0, activeSessions.length - 1);
+          await prisma.userSession.deleteMany({
+            where: { id: { in: sessionsToDelete.map((s) => s.id) } },
+          });
+        }
+
+        await prisma.userSession.create({
+          data: {
+            userId: user.id,
+            token: sessionToken,
+          },
+        });
+        // --------------------------
+
         return {
           id: String(user.id),
           email: user.email,
@@ -32,6 +58,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           role: user.role,
           closerId: user.closerId ?? undefined,
           locationValidationEnabled: user.locationValidationEnabled,
+          sessionToken, // Pasa el token para guardarlo en JWT
         };
       },
     }),
@@ -50,6 +77,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.role = user.role;
         token.closerId = user.closerId;
         token.locationValidationEnabled = user.locationValidationEnabled;
+        token.sessionToken = (user as any).sessionToken;
       } else if (token.email) {
         const dbUser = await prisma.user.findUnique({
           where: { email: token.email as string },
@@ -62,13 +90,31 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.locationValidationEnabled = dbUser.locationValidationEnabled;
         }
       }
+
+      // Check if session is still valid
+      if (token.sessionToken) {
+        const activeSession = await prisma.userSession.findUnique({
+          where: { token: token.sessionToken as string },
+        });
+        if (!activeSession) {
+          // If session is not found in DB (kicked out), invalidate JWT
+          return {}; // Returning empty token effectively logs them out
+        }
+      }
+
       return token;
     },
     session({ session, token }) {
+      if (!token.id) {
+        // This handles the kicked out state
+        session.user = null as any; 
+        return session;
+      }
       session.user.id = token.id as string;
       session.user.role = token.role as string;
       session.user.closerId = token.closerId as number | undefined;
       session.user.locationValidationEnabled = token.locationValidationEnabled as boolean | undefined;
+      (session as any).sessionToken = token.sessionToken;
       return session;
     },
   },
