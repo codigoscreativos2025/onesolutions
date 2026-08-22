@@ -342,6 +342,8 @@ interface VisitDetails {
     notes: string | null;
     additionalFileUrl?: string | null;
     additionalFileName?: string | null;
+    additionalFile2Url?: string | null;
+    additionalFile2Name?: string | null;
   } | null;
   projectDetails?: Record<string, unknown> & { createdAt?: string };
   projects: {
