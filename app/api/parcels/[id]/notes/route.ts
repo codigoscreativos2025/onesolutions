@@ -58,7 +58,7 @@ export async function GET(
         allNotes.push({
           id: -1,
           content: parcel.parcelNotes,
-          createdAt: parcel.createdAt || new Date(),
+          createdAt: (parcel as any).createdAt || new Date(),
           user: { id: 0, name: "Nota de Mapa", role: "" }
         });
       }
@@ -136,7 +136,7 @@ export async function POST(
              currentNotes = [{
                id: -1,
                content: parcel.parcelNotes,
-               createdAt: parcel.createdAt || new Date(),
+               createdAt: (parcel as any).createdAt || new Date(),
                user: { id: 0, name: "Nota de Mapa", role: "" }
              }];
           }
@@ -144,7 +144,7 @@ export async function POST(
           currentNotes = [{
             id: -1,
             content: parcel.parcelNotes,
-            createdAt: parcel.createdAt || new Date(),
+            createdAt: (parcel as any).createdAt || new Date(),
             user: { id: 0, name: "Nota de Mapa", role: "" }
           }];
         }
@@ -171,4 +171,5 @@ export async function POST(
     return NextResponse.json({ error: "Error creating note" }, { status: 500 });
   }
 }
+
 
