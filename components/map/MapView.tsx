@@ -179,61 +179,58 @@ export default function MapView({
   // Orlando center. The location is stored in a ref so initMap can
   // pick it up synchronously without waiting for React state.
   const isAdmin = (session?.user?.role || "").toUpperCase() === "ADMIN";
-  const watchIdRef = useRef<number | null>(null);
-
-  const requestUserLocation = useCallback((forceRefresh = false) => {
+  // Set up continuous geolocation tracking
+  useEffect(() => {
+    if (!session || isAdmin) return;
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       setLocationStatus("unavailable");
       return;
     }
-    
-    // Si ya estamos "granted" y no forzaron refresco, no hacer nada
-    if (!forceRefresh && locationStatus === "granted" && userLocationRef.current) return;
-    
-    if (watchIdRef.current !== null) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
-      watchIdRef.current = null;
-    }
-    
-    setLocationStatus("requesting");
-    
-    const handleSuccess = (pos: GeolocationPosition) => {
-      const loc: [number, number] = [pos.coords.latitude, pos.coords.longitude];
-      userLocationRef.current = loc;
-      setUserLocation(loc);
-      setLocationStatus("granted");
-      
-      if (forceRefresh && map.current) {
-        map.current.flyTo({ center: [loc[1], loc[0]], zoom: 18 });
-        map.current.once("moveend", () => {
-          fetchParcelsRef.current?.();
-          fetchMarkersRef.current?.();
-        });
-      }
-    };
-    
-    const handleError = (err: GeolocationPositionError) => {
-      setLocationStatus(err.code === err.PERMISSION_DENIED ? "denied" : "unavailable");
-    };
 
-    // Usamos watchPosition para seguimiento en vivo
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      handleSuccess,
-      handleError,
+    setLocationStatus("requesting");
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const loc: [number, number] = [pos.coords.latitude, pos.coords.longitude];
+        userLocationRef.current = loc;
+        setUserLocation(loc);
+        setLocationStatus("granted");
+      },
+      (err) => {
+        setLocationStatus(err.code === err.PERMISSION_DENIED ? "denied" : "unavailable");
+      },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
-  }, [locationStatus]);
 
-  useEffect(() => {
-    if (!session) return;
-    if (!isAdmin) requestUserLocation();
-    
     return () => {
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-      }
+      navigator.geolocation.clearWatch(watchId);
     };
-  }, [session, isAdmin, requestUserLocation]);
+  }, [session, isAdmin]);
+
+  const handleFlyToUser = useCallback(() => {
+    if (locationStatus === "requesting") {
+      toast.loading("Obteniendo ubicación...", { id: "geo-req", duration: 2000 });
+      return;
+    }
+    if (locationStatus === "denied") {
+      toast.error("Ubicación bloqueada. Actívala en los permisos del navegador.");
+      return;
+    }
+    if (locationStatus === "unavailable") {
+      toast.error("Tu navegador no soporta geolocalización.");
+      return;
+    }
+    
+    // If we have a location, fly to it
+    if (userLocationRef.current && map.current) {
+      const loc = userLocationRef.current;
+      map.current.flyTo({ center: [loc[1], loc[0]], zoom: 18 });
+      map.current.once("moveend", () => {
+        fetchParcelsRef.current?.();
+        fetchMarkersRef.current?.();
+      });
+      toast.loading("Ubicándote...", { id: "geo-req", duration: 2000 });
+    }
+  }, [locationStatus]);
 
   const initMap = useCallback(() => {
     if (!mapContainer.current || initializedRef.current) return;
@@ -1297,23 +1294,7 @@ const loadViewportParcels = async () => {
       {mapReady && !isAdmin && (
         <button
           type="button"
-          onClick={() => {
-            if (locationStatus === "requesting") {
-              toast.loading("Obteniendo ubicación...", { id: "geo-req", duration: 2000 });
-              return;
-            }
-            if (locationStatus === "denied") {
-              toast.error("Ubicación bloqueada. Actívala en los permisos del navegador.");
-              return;
-            }
-            if (locationStatus === "unavailable") {
-              toast.error("Tu navegador no soporta geolocalización.");
-              return;
-            }
-            // Always force a refresh when the user clicks the button
-            requestUserLocation(true);
-            toast.loading("Ubicándote...", { id: "geo-req", duration: 2000 });
-          }}
+          onClick={handleFlyToUser}
           aria-label="Ubicarme"
           title={
             locationStatus === "denied"
