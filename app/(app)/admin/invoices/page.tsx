@@ -590,12 +590,20 @@ export default function AdminInvoicesPage() {
         <div className="flex-1 lg:min-w-0 max-h-[90vh] sticky top-4">
           <div ref={previewRef} className="bg-white shadow-lg" style={{ fontFamily: "Arial, sans-serif", minWidth: "400px" }}>
             <div style={{ display: "flex", minHeight: 160 }}>
-              <div style={{ backgroundColor: "#f19e38", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column" }}>
-                <div style={{ textAlign: "center", color: "black" }}>
-                  <div style={{ fontSize: 32, fontWeight: 900, lineHeight: 1, border: "4px solid black", borderRadius: "50%", width: 50, height: 50, display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 5 }}>S</div>
-                  <div style={{ fontWeight: 900, fontSize: 24, letterSpacing: 1, lineHeight: 1 }}>ONE</div>
-                  <div style={{ fontSize: 9, letterSpacing: 1.5, fontWeight: 600, marginTop: 4 }}>SOLUTIONS</div>
-                </div>
+              <div style={{ backgroundColor: "#ffffff", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column" }}>
+                <svg viewBox="0 0 300 400" style={{ width: "100px", height: "auto" }}>
+                  <polygon points="30,100 150,30 270,100 270,120 150,50 30,120" fill="#f48221"/>
+                  <polygon points="210,115 235,95 255,115 230,135" fill="#1d1d1b"/>
+                  <circle cx="150" cy="180" r="65" fill="none" stroke="#1d1d1b" strokeWidth="18"/>
+                  <text x="150" y="228" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="130" textAnchor="middle" fill="#1d1d1b">S</text>
+                  <g fill="#f48221">
+                    <text x="150" y="325" fontFamily="'Arial Black', Impact, sans-serif" fontWeight="900" fontSize="95" textAnchor="middle" letterSpacing="1">ONE</text>
+                    <rect x="73" y="240" width="6" height="90" fill="#ffffff"/>
+                    <rect x="135" y="240" width="6" height="90" fill="#ffffff" transform="skewX(-25)"/>
+                    <rect x="228" y="240" width="8" height="90" fill="#ffffff"/>
+                  </g>
+                  <text x="150" y="375" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="36" textAnchor="middle" fill="#000000" letterSpacing="2">SOLUTIONS</text>
+                </svg>
               </div>
               <div style={{ backgroundColor: "#dfe26a", color: "white", flex: 1, textAlign: "right", display: "flex", flexDirection: "column", justifyContent: "center", paddingRight: 50 }}>
                 <h1 style={{ margin: 0, fontSize: 28, textTransform: "uppercase", fontWeight: "bold", letterSpacing: 1 }}>Invoice</h1>

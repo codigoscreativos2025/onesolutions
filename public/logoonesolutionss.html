@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logo S - One Solutions</title>
+<style>
+    body { 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        min-height: 100vh; 
+        margin: 0; 
+        background-color: #ffffff; 
+    }
+    .logo-container { 
+        width: 100%; 
+        max-width: 400px; 
+        padding: 20px;
+    }
+    svg {
+        width: 100%;
+        height: auto;
+    }
+</style>
+</head>
+<body>
+<div class="logo-container">
+    <svg viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg">
+        <!-- Techo naranja -->
+        <polygon points="30,100 150,30 270,100 270,120 150,50 30,120" fill="#f48221"/>
+        
+        <!-- Pestaña de la lupa/taza -->
+        <polygon points="210,115 235,95 255,115 230,135" fill="#1d1d1b"/>
+        
+        <!-- Anillo negro -->
+        <circle cx="150" cy="180" r="65" fill="none" stroke="#1d1d1b" stroke-width="18"/>
+        
+        <!-- Letra S -->
+        <text x="150" y="228" font-family="Arial, sans-serif" font-weight="900" font-size="130" text-anchor="middle" fill="#1d1d1b">S</text>
+        
+        <!-- Texto ONE -->
+        <g fill="#f48221">
+            <text x="150" y="325" font-family="'Arial Black', Impact, sans-serif" font-weight="900" font-size="95" text-anchor="middle" letter-spacing="1">ONE</text>
+            <!-- Cortes estilo stencil aproximados -->
+            <rect x="73" y="240" width="6" height="90" fill="#ffffff"/>
+            <rect x="135" y="240" width="6" height="90" fill="#ffffff" transform="skewX(-25)"/>
+            <rect x="228" y="240" width="8" height="90" fill="#ffffff"/>
+        </g>
+        
+        <!-- Texto SOLUTIONS -->
+        <text x="150" y="375" font-family="Arial, sans-serif" font-weight="900" font-size="36" text-anchor="middle" fill="#000000" letter-spacing="2">SOLUTIONS</text>
+    </svg>
+</div>
+</body>
+</html>
