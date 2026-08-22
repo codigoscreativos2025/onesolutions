@@ -44,6 +44,7 @@ interface Parcel {
     outcome?: string;
     closerId?: number | null;
     createdAt?: string;
+    legacyNotes?: string;
     setter?: { id: number; name: string; role?: string };
     projects?: { projectType: { name: string } }[];
     notAvailableTags?: { tag: NotAvailTag; notes?: string }[];
