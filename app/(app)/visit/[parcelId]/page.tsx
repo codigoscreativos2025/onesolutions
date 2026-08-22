@@ -351,7 +351,7 @@ export default function VisitPage() {
         </div>
 
         <div className="mt-4">
-          <NotesPanel visitId={visit.id} visitCreatedAt={visit?.createdAt} />
+          <NotesPanel visitId={visit.id} parcelId={parcelId} visitCreatedAt={visit?.createdAt} />
         </div>
 
         <section className="space-y-4 border-t border-outline-variant pt-6">
