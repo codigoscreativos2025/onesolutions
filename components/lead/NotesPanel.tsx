@@ -18,7 +18,7 @@ interface Note {
 interface NotesPanelProps {
   visitId?: number;
   parcelId?: string;
-  parcelData?: { address: string; geometry: string; externalId?: string };
+  parcelData?: { address?: string; geometry?: string; externalId?: string };
   visitCreatedAt?: string;
   disabled?: boolean;
 }
@@ -405,5 +405,6 @@ export function NotesPanel({ visitId, parcelId, parcelData, visitCreatedAt, disa
     </Panel>
   );
 }
+
 
 
