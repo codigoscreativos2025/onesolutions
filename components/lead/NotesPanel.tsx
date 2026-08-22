@@ -16,7 +16,9 @@ interface Note {
 }
 
 interface NotesPanelProps {
-  visitId: number;
+  visitId?: number;
+  parcelId?: string;
+  parcelData?: { address: string; geometry: string; externalId?: string };
   visitCreatedAt?: string;
   disabled?: boolean;
 }
@@ -33,7 +35,7 @@ function Panel({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function NotesPanel({ visitId, visitCreatedAt, disabled }: NotesPanelProps) {
+export function NotesPanel({ visitId, parcelId, parcelData, visitCreatedAt, disabled }: NotesPanelProps) {
   const { data: session } = useSession();
   const { t } = useLocale();
   const userId = session?.user?.id ? parseInt(session.user.id) : null;
@@ -58,9 +60,10 @@ export function NotesPanel({ visitId, visitCreatedAt, disabled }: NotesPanelProp
 
   const fetchNotes = useCallback(async () => {
     try {
+      const endpoint = parcelId ? `/api/parcels/${encodeURIComponent(parcelId)}/notes` : `/api/visits/${visitId}/notes`;
       const url = filterDate
-        ? `/api/visits/${visitId}/notes?date=${filterDate}`
-        : `/api/visits/${visitId}/notes`;
+        ? `${endpoint}?date=${filterDate}`
+        : endpoint;
       const res = await fetch(url);
       if (res.ok) {
         setNotes(await res.json());
@@ -70,7 +73,7 @@ export function NotesPanel({ visitId, visitCreatedAt, disabled }: NotesPanelProp
     } finally {
       setLoading(false);
     }
-  }, [visitId, filterDate]);
+  }, [visitId, parcelId, filterDate]);
 
   useEffect(() => {
     fetchNotes();
@@ -114,10 +117,11 @@ export function NotesPanel({ visitId, visitCreatedAt, disabled }: NotesPanelProp
     if (!newContent.trim()) return;
     setSaving(true);
     try {
-      const res = await fetch(`/api/visits/${visitId}/notes`, {
+      const endpoint = parcelId ? `/api/parcels/${encodeURIComponent(parcelId)}/notes` : `/api/visits/${visitId}/notes`;
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: newContent.trim() }),
+        body: JSON.stringify({ content: newContent.trim(), visitId, parcelData }),
       });
       if (res.ok) {
         toast.success("Nota agregada");
@@ -138,14 +142,14 @@ export function NotesPanel({ visitId, visitCreatedAt, disabled }: NotesPanelProp
     if (!selectedNote || !editContent.trim()) return;
     setSaving(true);
     try {
-      const res = await fetch(
-        `/api/visits/${visitId}/notes/${selectedNote.id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: editContent.trim() }),
-        }
-      );
+      const endpoint = parcelId 
+        ? `/api/parcels/${encodeURIComponent(parcelId)}/notes/${selectedNote.id}` 
+        : `/api/visits/${visitId}/notes/${selectedNote.id}`;
+      const res = await fetch(endpoint, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: editContent.trim() }),
+      });
       if (res.ok) {
         toast.success("Nota editada");
         setShowEditModal(false);
@@ -164,10 +168,10 @@ export function NotesPanel({ visitId, visitCreatedAt, disabled }: NotesPanelProp
     if (!selectedNote) return;
     setSaving(true);
     try {
-      const res = await fetch(
-        `/api/visits/${visitId}/notes/${selectedNote.id}`,
-        { method: "DELETE" }
-      );
+      const endpoint = parcelId 
+        ? `/api/parcels/${encodeURIComponent(parcelId)}/notes/${selectedNote.id}` 
+        : `/api/visits/${visitId}/notes/${selectedNote.id}`;
+      const res = await fetch(endpoint, { method: "DELETE" });
       if (res.ok) {
         toast.success("Nota eliminada");
         setShowDeleteModal(false);
@@ -401,3 +405,5 @@ export function NotesPanel({ visitId, visitCreatedAt, disabled }: NotesPanelProp
     </Panel>
   );
 }
+
+

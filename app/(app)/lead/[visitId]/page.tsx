@@ -1620,9 +1620,7 @@ export default function LeadDetailPage() {
                     role={role}
                   />
                   <div className="mt-6">
-                    <NotesPanel
-                      visitId={visitId}
-                      visitCreatedAt={visit?.createdAt}
+                    <NotesPanel visitId={visitId} parcelId={visit?.parcel?.id} visitCreatedAt={visit?.createdAt}
                     />
                   </div>
                 </>
@@ -1709,9 +1707,7 @@ export default function LeadDetailPage() {
                   onBillFileUpload={handleBillFileUpload}
                 />
                 <div className="mt-6">
-                  <NotesPanel
-                    visitId={visitId}
-                    visitCreatedAt={visit?.createdAt}
+                  <NotesPanel visitId={visitId} parcelId={visit?.parcel?.id} visitCreatedAt={visit?.createdAt}
                   />
                 </div>
               </>
@@ -1740,9 +1736,7 @@ export default function LeadDetailPage() {
                   onBillFileClear={handleBillFileClear}
                 />
                 <div className="mt-6">
-                  <NotesPanel
-                    visitId={visitId}
-                    visitCreatedAt={visit?.createdAt}
+                  <NotesPanel visitId={visitId} parcelId={visit?.parcel?.id} visitCreatedAt={visit?.createdAt}
                     disabled={closeRequested}
                   />
                 </div>
@@ -1777,9 +1771,7 @@ export default function LeadDetailPage() {
                   onRefresh={fetchVisitDetails}
                 />
                 <div className="mt-6">
-                  <NotesPanel
-                    visitId={visitId}
-                    visitCreatedAt={visit?.createdAt}
+                  <NotesPanel visitId={visitId} parcelId={visit?.parcel?.id} visitCreatedAt={visit?.createdAt}
                     disabled={true}
                   />
                 </div>
@@ -4559,3 +4551,5 @@ function ReadOnlyField({
     </div>
   );
 }
+
+

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { CreateLeadModal } from "@/components/leads/CreateLeadModal";
 import { DoorOpen, X, User, DoorClosed, ThumbsDown, Clock, UserX, Home, Loader2 } from "lucide-react";
+import { NotesPanel } from "@/components/lead/NotesPanel";
 
 import { useLocale } from "@/lib/locale-context";
 import { getPropertyClassLabel } from "@/lib/utils";
@@ -92,10 +93,7 @@ export function ParcelSheet({
   const [showConfirmClaim, setShowConfirmClaim] = useState(false);
   const [visitNotAvailTags, setVisitNotAvailTags] = useState<NotAvailTag[]>([]);
 
-  const [mapNotes, setMapNotes] = useState("");
-
-  const noteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isSavingRef = useRef(false);
+      const isSavingRef = useRef(false);
 
   const saveTagsAuto = useCallback(async (newTags: TagObject[]) => {
     if (!parcel || isSavingRef.current) return;
@@ -137,12 +135,7 @@ export function ParcelSheet({
       return;
     }
 
-    if (parcel.id) {
-      fetch(`/api/map-notes?parcelId=${parcel.id}`, { cache: 'no-store' })
-        .then((res) => (res.ok ? res.json() : { note: "" }))
-        .then((data) => setMapNotes(data?.note || ""))
-        .catch(() => setMapNotes(""));
-    }
+
 
     const pId = parcel.id;
     if (!pId) return;
@@ -159,29 +152,6 @@ export function ParcelSheet({
     }
   }, [parcel?.id]);
 
-  const saveNotesAuto = useCallback(async (notes: string) => {
-    if (!parcel) return;
-    try {
-      await fetch(`/api/map-notes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ parcelId: parcel.id, note: notes }),
-      });
-    } catch { /* ignore */ }
-  }, [parcel]);
-
-  const debouncedSaveNotes = useCallback((notes: string) => {
-    if (noteTimerRef.current) clearTimeout(noteTimerRef.current);
-    noteTimerRef.current = setTimeout(() => {
-      saveNotesAuto(notes);
-    }, 800);
-  }, [saveNotesAuto]);
-
-  useEffect(() => {
-    return () => {
-      if (noteTimerRef.current) clearTimeout(noteTimerRef.current);
-    };
-  }, []);
 
   if (!parcel) return null;
 
@@ -372,18 +342,14 @@ export function ParcelSheet({
                 <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO VIVE EL PROPIETARIO", "#eab308")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#eab308" }}><Home className="w-3.5 h-3.5 mr-1" />{t.map.tagOwnerNotResident}</Button>
               </div>
 
-              <div className="space-y-1">
-                <textarea
-                  value={mapNotes}
-                  onChange={(e) => { 
-                    setMapNotes(e.target.value); 
-                    debouncedSaveNotes(e.target.value); 
-                  }}
-                  placeholder="Notas..."
-                  rows={3}
-                  className="w-full px-3 py-2 rounded-xl border border-glass-border bg-white/40 dark:bg-black/20 text-on-surface text-sm placeholder:text-on-surface-variant/60 resize-none outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition-colors"
-                />
-              </div>
+              <NotesPanel 
+                parcelId={parcel.id} 
+                parcelData={{ 
+                  address: parcel.address, 
+                  geometry: parcel.geometry, 
+                  externalId: parcel.externalId 
+                }} 
+              />
             </>
           )}
 
@@ -617,3 +583,6 @@ function InfoCard({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+
+
