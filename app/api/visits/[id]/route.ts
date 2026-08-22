@@ -340,7 +340,18 @@ export async function PATCH(
   }
 
   if (contractFields && !contractType) {
-    updateData.contractFields = contractFields;
+    try {
+      const incoming = JSON.parse(contractFields);
+      let existing: Record<string, any> = {};
+      if (visit.contractFields) {
+        try {
+          existing = JSON.parse(visit.contractFields);
+        } catch {}
+      }
+      updateData.contractFields = JSON.stringify({ ...existing, ...incoming });
+    } catch {
+      updateData.contractFields = contractFields;
+    }
   }
 
   if (Object.keys(updateData).length > 0) {

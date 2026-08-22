@@ -922,7 +922,9 @@ export default function LeadDetailPage() {
               : prev,
           );
         } else {
-          if (!silent) toast.error("Error al guardar detalles");
+          const errBody = await res.json().catch(() => ({}));
+          const message = (errBody as { error?: string }).error || "Error al guardar detalles del proyecto";
+          if (!silent) toast.error(`Detalles: ${message}`);
           return;
         }
       } else {
@@ -1948,11 +1950,15 @@ export default function LeadDetailPage() {
                             payload.siteSurveyDate,
                           ).toISOString();
                         if (Object.keys(payload).length > 0) {
-                          await fetch("/api/project-details", {
+                          const pRes = await fetch("/api/project-details", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ visitId, ...payload }),
                           });
+                          if (!pRes.ok) {
+                            const errBody = await pRes.json().catch(() => ({}));
+                            throw new Error(errBody.error || "Error al guardar detalles del proyecto");
+                          }
                         }
                         const billData: Record<string, string | null> = {
                           phone:
@@ -2001,8 +2007,8 @@ export default function LeadDetailPage() {
                         });
                         toast.success("Cambios guardados");
                         fetchVisitDetails(true);
-                      } catch {
-                        toast.error("Error al guardar");
+                      } catch (error: any) {
+                        toast.error(error.message || "Error al guardar");
                       } finally {
                         setSaving(false);
                       }
