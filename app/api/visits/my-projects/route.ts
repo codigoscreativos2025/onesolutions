@@ -171,6 +171,8 @@ export async function GET(request: Request) {
             clientEmail: true,
             additionalFileUrl: true,
             additionalFileName: true,
+            additionalFile2Url: true,
+            additionalFile2Name: true,
           },
         },
       },

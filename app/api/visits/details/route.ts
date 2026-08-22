@@ -139,6 +139,8 @@ export async function GET(request: Request) {
             notes: true,
             additionalFileUrl: true,
             additionalFileName: true,
+            additionalFile2Url: true,
+            additionalFile2Name: true,
           },
         },
         projects: {

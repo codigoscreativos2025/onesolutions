@@ -59,6 +59,8 @@ export async function GET(
             notes: true,
             additionalFileUrl: true,
             additionalFileName: true,
+            additionalFile2Url: true,
+            additionalFile2Name: true,
           },
         },
         projectDetails: true,
