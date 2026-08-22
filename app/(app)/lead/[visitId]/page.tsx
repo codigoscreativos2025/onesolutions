@@ -2408,6 +2408,22 @@ function DatosLeadPanel({
   const isTraineeLead = visit.setter?.role === "SETTER";
   const isReadOnly = role === "ADMIN" || visit.stage === "CANCELLED";
 
+  let fallbackId1 = "";
+  let fallbackId2 = "";
+  if (visit.projectDetails?.idDocumentUrl) {
+    try {
+      const parsed = JSON.parse(String(visit.projectDetails.idDocumentUrl));
+      if (Array.isArray(parsed)) {
+        fallbackId1 = parsed[0] || "";
+        fallbackId2 = parsed[1] || "";
+      } else {
+        fallbackId1 = String(visit.projectDetails.idDocumentUrl);
+      }
+    } catch {
+      fallbackId1 = String(visit.projectDetails.idDocumentUrl);
+    }
+  }
+
   useEffect(() => {
     fetch("/api/project-types")
       .then((r) => r.json())
@@ -2504,17 +2520,12 @@ function DatosLeadPanel({
             label="ID del Cliente"
             files={[
               {
-                url: visit.bill?.additionalFileUrl || "",
+                url: visit.bill?.additionalFileUrl || fallbackId1,
                 name: visit.bill?.additionalFileName,
               },
               {
-                url:
-                  (visit.bill as unknown as {
-                    additionalFile2Url?: string | null;
-                  })?.additionalFile2Url || "",
-                name: (visit.bill as unknown as {
-                  additionalFile2Name?: string | null;
-                })?.additionalFile2Name,
+                url: visit.bill?.additionalFile2Url || fallbackId2,
+                name: visit.bill?.additionalFile2Name,
               },
             ]}
             onUpload={async (slot, file) => {
@@ -2972,6 +2983,23 @@ function DatosProjectPanel({
   onBillFileClear?: (slot: "first" | "second") => Promise<void>;
 }) {
   const pd = visit.projectDetails || {};
+  
+  let fallbackId1 = "";
+  let fallbackId2 = "";
+  if (pd.idDocumentUrl) {
+    try {
+      const parsed = JSON.parse(String(pd.idDocumentUrl));
+      if (Array.isArray(parsed)) {
+        fallbackId1 = parsed[0] || "";
+        fallbackId2 = parsed[1] || "";
+      } else {
+        fallbackId1 = String(pd.idDocumentUrl);
+      }
+    } catch {
+      fallbackId1 = String(pd.idDocumentUrl);
+    }
+  }
+
   const nonCommonFields = fieldMetas.filter(
     (m) => !COMMON_FIELDS.includes(m.fieldName),
   );
@@ -3123,17 +3151,12 @@ function DatosProjectPanel({
             label="ID del Cliente"
             files={[
               {
-                url: visit.bill?.additionalFileUrl || "",
+                url: visit.bill?.additionalFileUrl || fallbackId1,
                 name: visit.bill?.additionalFileName,
               },
               {
-                url:
-                  (visit.bill as unknown as {
-                    additionalFile2Url?: string | null;
-                  })?.additionalFile2Url || "",
-                name: (visit.bill as unknown as {
-                  additionalFile2Name?: string | null;
-                })?.additionalFile2Name,
+                url: visit.bill?.additionalFile2Url || fallbackId2,
+                name: visit.bill?.additionalFile2Name,
               },
             ]}
             onUpload={async (slot, file) => {
