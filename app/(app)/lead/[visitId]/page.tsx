@@ -2073,7 +2073,6 @@ function FieldRow({
   onFileUpload,
   fileUrl,
   required,
-  minDate,
 }: {
   label: string;
   value: string;
@@ -2086,7 +2085,6 @@ function FieldRow({
   onFileUpload?: (fieldName: string, file: File) => void;
   fileUrl?: string;
   required?: boolean;
-  minDate?: string;
 }) {
   if (readOnly && !isFile) {
     return <ReadOnlyField label={label} value={value || "-"} />;
@@ -2162,7 +2160,6 @@ function FieldRow({
         <input
           type="date"
           value={value}
-          min={minDate}
           onChange={(e) => onChange?.(field, e.target.value)}
           onBlur={onBlur}
           readOnly={readOnly}
@@ -2769,14 +2766,6 @@ function DatosProjectFieldsPanel({
     return meta?.fieldType === "DATE" ? "date" : "text";
   };
 
-  let closingMinDate: string | undefined = undefined;
-  const baseDate = visit.scheduledAt
-    ? new Date(visit.scheduledAt)
-    : new Date(visit.createdAt);
-  if (!isNaN(baseDate.getTime())) {
-    baseDate.setDate(baseDate.getDate() + 14);
-    closingMinDate = baseDate.toISOString().split("T")[0];
-  }
 
   const isFieldFile = (key: string): boolean => {
     const meta = fieldMetas.find((m) => m.fieldName === key);
@@ -2837,7 +2826,7 @@ function DatosProjectFieldsPanel({
                       ? true
                       : false
                 }
-                minDate={key === "closingDate" ? closingMinDate : undefined}
+
               />
             ))}
           </div>
@@ -3030,14 +3019,6 @@ function DatosProjectPanel({
     return String(val);
   };
 
-  let closingMinDate: string | undefined = undefined;
-  const baseDate = visit.scheduledAt
-    ? new Date(visit.scheduledAt)
-    : new Date(visit.createdAt);
-  if (!isNaN(baseDate.getTime())) {
-    baseDate.setDate(baseDate.getDate() + 14);
-    closingMinDate = baseDate.toISOString().split("T")[0];
-  }
 
   const getType = (key: string): string => {
     if (FIELD_TYPES[key]) return FIELD_TYPES[key];
@@ -3211,7 +3192,7 @@ function DatosProjectPanel({
                     ? true
                     : false
               }
-              minDate={key === "closingDate" ? closingMinDate : undefined}
+
             />
           ))}
         </div>
