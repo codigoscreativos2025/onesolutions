@@ -472,27 +472,35 @@ export function ParcelSheet({
                 <span className="text-sm text-on-surface-variant">{t.map.takenBy}</span>
               </div>
               
-              <div className="bg-surface-container-low border border-outline-variant/30 rounded-xl p-4 my-2">
-                <div className="flex items-center gap-2 text-sm text-on-surface">
-                  <User className="w-4 h-4 text-primary shrink-0" />
-                  <span className="font-medium">{parcel.visits?.[0]?.setter?.name || "Desconocido"}</span>
-                  <span className="text-on-surface-variant">|</span>
-                  <span className="text-on-surface-variant">
-                    {parcel.visits?.[0]?.createdAt
-                      ? new Date(parcel.visits[0].createdAt).toLocaleDateString("es-MX", { year: "numeric", month: "numeric", day: "numeric" })
-                      : "Fecha desconocida"}
-                  </span>
-                </div>
-                {parcel.visits?.[0]?.projects && parcel.visits[0].projects.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {parcel.visits[0].projects.map((p, idx) => (
-                      <span key={idx} className="text-xs font-semibold text-green-700 bg-green-100 dark:bg-green-500/10 dark:text-green-400 px-2.5 py-1 rounded-md">
-                        {p.projectType.name}
-                      </span>
-                    ))}
+              {parcel.visits?.map((v, i) => (
+                <div key={v.id || i} className="bg-surface-container-low border border-outline-variant/30 rounded-xl p-4 my-2">
+                  <div className="flex items-center gap-2 text-sm text-on-surface">
+                    <User className="w-4 h-4 text-primary shrink-0" />
+                    <span className="font-medium">{v.setter?.name || "Desconocido"}</span>
+                    <span className="text-on-surface-variant">|</span>
+                    <span className="text-on-surface-variant">
+                      {v.createdAt
+                        ? new Date(v.createdAt).toLocaleDateString("es-MX", { year: "numeric", month: "numeric", day: "numeric" })
+                        : "Fecha desconocida"}
+                    </span>
                   </div>
-                )}
-              </div>
+                  {v.projects && v.projects.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {v.projects.map((p, idx) => (
+                        <span key={idx} className="text-xs font-semibold text-green-700 bg-green-100 dark:bg-green-500/10 dark:text-green-400 px-2.5 py-1 rounded-md">
+                          {p.projectType.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {v.legacyNotes && (
+                    <div className="mt-3 p-3 bg-white/50 dark:bg-black/20 rounded-lg border border-outline-variant/30 text-sm text-on-surface">
+                      <span className="font-semibold block mb-1 text-primary">Notas del Lead:</span>
+                      <p className="whitespace-pre-wrap">{v.legacyNotes}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
 
               {parcel.visits?.[0]?.id && (() => {
                 const visit = parcel.visits?.[0];

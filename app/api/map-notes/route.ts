@@ -37,27 +37,24 @@ export async function POST(request: Request) {
     const { parcelId, note } = await request.json();
     if (!parcelId) return NextResponse.json({ error: "Missing parcelId" }, { status: 400 });
     
-    let parcel = await prisma.parcel.findFirst({
+    const existing = await prisma.parcel.findFirst({
       where: { OR: [{ id: parcelId }, { externalId: parcelId }] }
     });
+    const parcelKey = existing?.id || parcelId;
 
-    if (parcel) {
-      await prisma.parcel.update({
-        where: { id: parcel.id },
-        data: { parcelNotes: note || null }
-      });
-    } else {
-      // If it's a GIS parcel that doesn't exist in our DB yet, create a placeholder
-      await prisma.parcel.create({
-        data: {
-          id: parcelId,
-          externalId: parcelId,
-          address: "Sin dirección",
-          geometry: JSON.stringify({ type: "Point", coordinates: [0, 0] }),
-          parcelNotes: note || null,
-        }
-      });
-    }
+    await prisma.parcel.upsert({
+      where: { id: parcelKey },
+      update: {
+        parcelNotes: note || null
+      },
+      create: {
+        id: parcelKey,
+        externalId: parcelId,
+        address: "Sin dirección",
+        geometry: JSON.stringify({ type: "Point", coordinates: [0, 0] }),
+        parcelNotes: note || null,
+      }
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {
