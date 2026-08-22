@@ -1732,6 +1732,8 @@ export default function LeadDetailPage() {
                   onCancelProject={handleCancelProjectAction}
                   onReturnLead={handleReturnLead}
                   onFileFieldUpload={handleFileUploadField}
+                  onBillFileUpload={handleBillFileUpload}
+                  onBillFileClear={handleBillFileClear}
                 />
                 <div className="mt-6">
                   <NotesPanel
@@ -2931,6 +2933,8 @@ function DatosProjectPanel({
   onReturnLead,
   closeRequested,
   isPartnerView,
+  onBillFileUpload,
+  onBillFileClear,
 }: {
   visit: VisitDetails;
   editFields: Record<string, string>;
@@ -2953,6 +2957,11 @@ function DatosProjectPanel({
   onReturnLead?: () => void;
   closeRequested?: boolean;
   isPartnerView?: boolean;
+  onBillFileUpload?: (
+    type: "imageUrl" | "additionalFileUrl" | "additionalFile2Url",
+    file: File,
+  ) => Promise<void>;
+  onBillFileClear?: (slot: "first" | "second") => Promise<void>;
 }) {
   const pd = visit.projectDetails || {};
   const nonCommonFields = fieldMetas.filter(
@@ -3102,16 +3111,36 @@ function DatosProjectPanel({
 
       <Panel title="Documentos" icon={FileText}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FieldRow
+          <IdUploadField
             label="ID del Cliente"
-            value={getValue("idDocumentUrl")}
-            field="idDocumentUrl"
-            isFile
-            required={true}
-            onFileUpload={onFileFieldUpload}
-            fileUrl={
-              pd["idDocumentUrl"] ? String(pd["idDocumentUrl"]) : undefined
-            }
+            files={[
+              {
+                url: visit.bill?.additionalFileUrl || "",
+                name: visit.bill?.additionalFileName,
+              },
+              {
+                url:
+                  (visit.bill as unknown as {
+                    additionalFile2Url?: string | null;
+                  })?.additionalFile2Url || "",
+                name: (visit.bill as unknown as {
+                  additionalFile2Name?: string | null;
+                })?.additionalFile2Name,
+              },
+            ]}
+            onUpload={async (slot, file) => {
+              if (closeRequested || role === "ADMIN") return;
+              if (!onBillFileUpload) return;
+              await onBillFileUpload(
+                slot === "first" ? "additionalFileUrl" : "additionalFile2Url",
+                file,
+              );
+            }}
+            onClear={async (slot) => {
+              if (closeRequested || role === "ADMIN") return;
+              if (!onBillFileClear) return;
+              await onBillFileClear(slot);
+            }}
             readOnly={closeRequested || role === "ADMIN"}
           />
           <FieldRow
@@ -3671,6 +3700,10 @@ function ArchivosPanel({
     } catch {
       addFile("ID del Cliente", String(hasIdUrl), "idDocumentUrl");
     }
+  }
+  const hasIdUrl2 = bill?.additionalFile2Url;
+  if (hasIdUrl2) {
+    addFile("ID del Cliente (Reverso)", String(hasIdUrl2), "idDocumentUrl2");
   }
   if (hasBillUrl)
     addFile("Recibo de Luz", String(hasBillUrl), "electricBillUrl");
