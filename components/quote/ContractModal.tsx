@@ -326,6 +326,9 @@ export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead 
         h2, h3, p, li, table, tr, .signature-block, .highlight-box, .cancellation-box, .client-info, .customer-info, .signatures-container, .mini-col, .section-row, .flex.gap-\\[1px\\], .fence-container, .footer-bar, .orange-bar, .details-total-container {
           page-break-inside: avoid !important;
           break-inside: avoid !important;
+          -webkit-column-break-inside: avoid !important;
+          -webkit-region-break-inside: avoid !important;
+          -webkit-page-break-inside: avoid !important;
         }
         ${tailwindCssString}
       `;
@@ -413,6 +416,9 @@ export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead 
         h2, h3, p, li, table, tr, .signature-block, .highlight-box, .cancellation-box, .client-info, .customer-info, .signatures-container, .mini-col, .section-row, .flex.gap-\\[1px\\], .fence-container, .footer-bar, .orange-bar, .details-total-container {
           page-break-inside: avoid !important;
           break-inside: avoid !important;
+          -webkit-column-break-inside: avoid !important;
+          -webkit-region-break-inside: avoid !important;
+          -webkit-page-break-inside: avoid !important;
         }
         ${tailwindCssString}
       `;

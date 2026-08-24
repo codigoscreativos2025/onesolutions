@@ -297,7 +297,7 @@ function techoHtml(data: Record<string, string>): string {
 <div class="document-container">
     <div class="header">
         <div class="logo-area">
-            <svg class="logo-s" viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg">
+            <svg class="logo-s" width="90" height="120" viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg">
                 <polygon points="30,100 150,30 270,100 270,120 150,50 30,120" fill="#f48221"/>
                 <polygon points="210,115 235,95 255,115 230,135" fill="#1d1d1b"/>
                 <circle cx="150" cy="180" r="65" fill="none" stroke="#1d1d1b" stroke-width="18"/>
@@ -727,7 +727,7 @@ function purificadorAguaHtml(data: Record<string, string>): string {
 <div class="document-container">
     <div class="header">
         <div class="logo-area">
-            <svg class="logo-s" viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg">
+            <svg class="logo-s" width="90" height="120" viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg">
                 <polygon points="30,100 150,30 270,100 270,120 150,50 30,120" fill="#f48221"/>
                 <polygon points="210,115 235,95 255,115 230,135" fill="#1d1d1b"/>
                 <circle cx="150" cy="180" r="65" fill="none" stroke="#1d1d1b" stroke-width="18"/>
