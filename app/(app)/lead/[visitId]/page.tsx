@@ -831,8 +831,12 @@ export default function LeadDetailPage() {
     try {
       const payload: Record<string, unknown> = {};
       if (visit?.bill?.imageUrl) payload.electricBillUrl = visit.bill.imageUrl;
-      if (visit?.bill?.additionalFileUrl)
-        payload.idDocumentUrl = visit.bill.additionalFileUrl;
+      if (visit?.bill?.additionalFileUrl || visit?.bill?.additionalFile2Url) {
+        const arr = [];
+        if (visit.bill?.additionalFileUrl) arr.push(visit.bill.additionalFileUrl);
+        if (visit.bill?.additionalFile2Url) arr.push(visit.bill.additionalFile2Url);
+        payload.idDocumentUrl = JSON.stringify(arr);
+      }
       if (visit?.bill?.clientName) payload.clientName = visit.bill.clientName;
       if (visit?.bill?.clientEmail)
         payload.clientEmail = visit.bill.clientEmail;
@@ -1000,8 +1004,13 @@ export default function LeadDetailPage() {
         // so the completion percentage is updated immediately, without
         // having to wait for the next saveProjectDetailsAction call.
         const projectDetailsMirror: Record<string, string> = {};
-        if (type === "additionalFileUrl") {
-          projectDetailsMirror.idDocumentUrl = url;
+        if (type === "additionalFileUrl" || type === "additionalFile2Url") {
+          const first = type === "additionalFileUrl" ? url : prev.bill?.additionalFileUrl;
+          const second = type === "additionalFile2Url" ? url : prev.bill?.additionalFile2Url;
+          const arr = [];
+          if (first) arr.push(first);
+          if (second) arr.push(second);
+          projectDetailsMirror.idDocumentUrl = JSON.stringify(arr);
         } else if (type === "imageUrl") {
           projectDetailsMirror.electricBillUrl = url;
         }
@@ -1046,7 +1055,12 @@ export default function LeadDetailPage() {
       setVisit((prev) => {
         if (!prev) return prev;
         const projectDetailsMirror: Record<string, string | null> = {};
-        if (slot === "first") projectDetailsMirror.idDocumentUrl = null;
+        const first = slot === "first" ? null : prev.bill?.additionalFileUrl;
+        const second = slot === "second" ? null : prev.bill?.additionalFile2Url;
+        const arr = [];
+        if (first) arr.push(first);
+        if (second) arr.push(second);
+        projectDetailsMirror.idDocumentUrl = arr.length > 0 ? JSON.stringify(arr) : null;
         return {
           ...prev,
           bill: prev.bill
@@ -1065,7 +1079,11 @@ export default function LeadDetailPage() {
 
   const handleFileUploadField = async (fieldName: string, file: File) => {
     if (fieldName === "idDocumentUrl") {
-      return handleBillFileUpload("additionalFileUrl", file);
+      if (!visit?.bill?.additionalFileUrl) {
+        return handleBillFileUpload("additionalFileUrl", file);
+      } else {
+        return handleBillFileUpload("additionalFile2Url", file);
+      }
     }
     if (fieldName === "electricBillUrl") {
       return handleBillFileUpload("imageUrl", file);
