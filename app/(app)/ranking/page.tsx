@@ -140,10 +140,11 @@ export default function RankingPage() {
         </svg>
       </button>
 
-      <div className="bg-[#1d1d1b] border-2 border-[#f48221] rounded-lg overflow-hidden shadow-[0_10px_30px_rgba(244,130,33,0.15)] relative">
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-30" style={{ opacity: 0.12 }}>
-          <div style={{ background: "radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)", width: "50vw", height: "50vw", maxWidth: "500px", maxHeight: "500px", position: "absolute" }} />
-          <svg viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg" style={{ width: "35vw", maxWidth: "400px" }}>
+      <div className="bg-[#1d1d1b] border-2 border-[#f48221] rounded-lg shadow-[0_10px_30px_rgba(244,130,33,0.15)] relative overflow-y-auto overflow-x-hidden max-h-[calc(100vh-140px)] custom-scrollbar">
+        <div className="sticky top-0 left-0 w-full h-0 pointer-events-none select-none z-30">
+          <div className="absolute top-[120px] left-1/2 -translate-x-1/2 flex items-center justify-center" style={{ opacity: 0.12 }}>
+            <div style={{ background: "radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)", width: "50vw", height: "50vw", maxWidth: "500px", maxHeight: "500px", position: "absolute" }} />
+            <svg viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg" style={{ width: "35vw", maxWidth: "400px" }}>
             <polygon points="30,100 150,30 270,100 270,120 150,50 30,120" fill="#f48221"/>
             <polygon points="210,115 235,95 255,115 230,135" fill="#1d1d1b"/>
             <circle cx="150" cy="180" r="65" fill="none" stroke="#ddd" strokeWidth="18"/>
@@ -156,10 +157,12 @@ export default function RankingPage() {
             </g>
             <text x="150" y="375" fontFamily="Arial,sans-serif" fontWeight="900" fontSize="36" textAnchor="middle" fill="#ddd" letterSpacing="2">SOLUTIONS</text>
           </svg>
+          </div>
         </div>
 
         <div className="relative z-20">
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-[#333]">
+          <div className="sticky top-0 z-40 bg-[#1d1d1b]">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-[#333]">
             <div className="w-8 h-8 rounded-full bg-[#f48221] flex items-center justify-center flex-shrink-0">
               <span className="text-[#1d1d1b] font-black text-sm">S</span>
             </div>
@@ -214,6 +217,7 @@ export default function RankingPage() {
                 {p === "day" ? "Hoy" : p === "week" ? "Esta Semana" : p === "month" ? "Este Mes" : "Global"}
               </button>
             ))}
+          </div>
           </div>
 
           {loading && (
