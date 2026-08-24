@@ -314,8 +314,16 @@ export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead 
           padding-bottom: 40px !important;
         }
         .w9-container {
-          padding: 0 !important;
-        }
+            padding: 0 !important;
+          }
+          .main-grid {
+            display: block !important;
+          }
+          .col {
+            width: 100% !important;
+            padding: 0 !important;
+            display: block !important;
+          }
         .signature-box {
           margin-top: 20px !important;
         }
@@ -331,12 +339,15 @@ export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead 
       targetEl.appendChild(styleEl);
 
       const opt: any = {
-        margin:       10,
+        margin:       [15, 10, 15, 10],
         filename:     `contrato_${visitId}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+        html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff', letterRendering: true },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak:    { mode: ['css', 'legacy'] }
+        pagebreak:    { 
+          mode: ['css', 'legacy'],
+          avoid: ['h1', 'h2', 'h3', 'h4', 'p', 'li', 'table', 'tr', '.signature-block', '.highlight-box', '.cancellation-box', '.client-info', '.customer-info', '.signatures-container', '.mini-col', '.section-row', '.fence-container', '.footer-bar', '.orange-bar', '.details-total-container', '.sig-line']
+        }
       };
 
       await html2pdf().set(opt).from(targetEl).save();
@@ -397,8 +408,16 @@ export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead 
           padding-bottom: 40px !important;
         }
         .w9-container {
-          padding: 0 !important;
-        }
+            padding: 0 !important;
+          }
+          .main-grid {
+            display: block !important;
+          }
+          .col {
+            width: 100% !important;
+            padding: 0 !important;
+            display: block !important;
+          }
         .signature-box {
           margin-top: 10px !important;
         }
@@ -414,12 +433,15 @@ export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead 
       targetEl.appendChild(styleEl);
 
       const opt: any = {
-        margin:       10,
+        margin:       [15, 10, 15, 10],
         filename:     `contrato_${visitId}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+        html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff', letterRendering: true },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak:    { mode: ['css', 'legacy'] }
+        pagebreak:    { 
+          mode: ['css', 'legacy'],
+          avoid: ['h1', 'h2', 'h3', 'h4', 'p', 'li', 'table', 'tr', '.signature-block', '.highlight-box', '.cancellation-box', '.client-info', '.customer-info', '.signatures-container', '.mini-col', '.section-row', '.fence-container', '.footer-bar', '.orange-bar', '.details-total-container', '.sig-line']
+        }
       };
 
       const pdfBase64DataUri = await html2pdf().set(opt).from(targetEl).output('datauristring');
