@@ -1002,6 +1002,8 @@ export default function LeadDetailPage() {
         const projectDetailsMirror: Record<string, string> = {};
         if (type === "additionalFileUrl") {
           projectDetailsMirror.idDocumentUrl = url;
+        } else if (type === "imageUrl") {
+          projectDetailsMirror.electricBillUrl = url;
         }
         return {
           ...prev,
@@ -1043,11 +1045,17 @@ export default function LeadDetailPage() {
       }
       setVisit((prev) => {
         if (!prev) return prev;
+        const projectDetailsMirror: Record<string, string | null> = {};
+        if (slot === "first") projectDetailsMirror.idDocumentUrl = null;
         return {
           ...prev,
           bill: prev.bill
             ? { ...prev.bill, ...billData }
             : (prev.bill as any),
+          projectDetails: {
+            ...(prev.projectDetails || {}),
+            ...projectDetailsMirror,
+          } as any,
         };
       });
     } catch {
@@ -1056,11 +1064,17 @@ export default function LeadDetailPage() {
   };
 
   const handleFileUploadField = async (fieldName: string, file: File) => {
+    if (fieldName === "idDocumentUrl") {
+      return handleBillFileUpload("additionalFileUrl", file);
+    }
+    if (fieldName === "electricBillUrl") {
+      return handleBillFileUpload("imageUrl", file);
+    }
     try {
       const url = await handleUpload(file);
       let finalVal: string = url;
       
-      if (fieldName === "propertyPhotosJson" || fieldName === "idDocumentUrl") {
+      if (fieldName === "propertyPhotosJson") {
          const current = visit?.projectDetails?.[fieldName];
          let arr: string[] = [];
          if (current) {
