@@ -1014,6 +1014,16 @@ export default function LeadDetailPage() {
         } else if (type === "imageUrl") {
           projectDetailsMirror.electricBillUrl = url;
         }
+
+        // Save immediately to avoid losing it on next poll
+        if (Object.keys(projectDetailsMirror).length > 0) {
+          fetch("/api/project-details", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ visitId: visit?.id, ...projectDetailsMirror }),
+          }).catch(() => {});
+        }
+
         return {
           ...prev,
           bill: prev.bill
@@ -1061,6 +1071,13 @@ export default function LeadDetailPage() {
         if (first) arr.push(first);
         if (second) arr.push(second);
         projectDetailsMirror.idDocumentUrl = arr.length > 0 ? JSON.stringify(arr) : null;
+        
+        fetch("/api/project-details", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ visitId: visit?.id, idDocumentUrl: projectDetailsMirror.idDocumentUrl }),
+        }).catch(() => {});
+
         return {
           ...prev,
           bill: prev.bill
