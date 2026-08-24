@@ -2838,7 +2838,12 @@ function DatosProjectFieldsPanel({
         fieldMetasByProject.map((project) => {
           const isExpanded = expandedProjects.has(project.projectTypeId);
           const projectFields = project.fields
-            .filter((m) => !COMMON_FIELDS.includes(m.fieldName))
+            .filter(
+              (m) =>
+                !COMMON_FIELDS.includes(m.fieldName) &&
+                m.fieldName !== "idDocumentUrl" &&
+                m.fieldName !== "electricBillUrl"
+            )
             .filter(
               (m) =>
                 !isPartner ||
@@ -3203,7 +3208,10 @@ function DatosProjectPanel({
         visibleProjects.map((project) => {
           const isExpanded = expandedProjects.has(project.projectTypeId);
           const projectFields = project.fields.filter(
-            (m) => !COMMON_FIELDS.includes(m.fieldName),
+            (m) =>
+              !COMMON_FIELDS.includes(m.fieldName) &&
+              m.fieldName !== "idDocumentUrl" &&
+              m.fieldName !== "electricBillUrl"
           );
 
           const isPanelSolar = project.projectTypeName
@@ -3459,7 +3467,12 @@ function DatosClosedPanel({
         visibleProjects.map((project) => {
           const isExpanded = expandedProjects.has(project.projectTypeId);
           const projectFields = project.fields
-            .filter((m) => !COMMON_FIELDS.includes(m.fieldName))
+            .filter(
+              (m) =>
+                !COMMON_FIELDS.includes(m.fieldName) &&
+                m.fieldName !== "idDocumentUrl" &&
+                m.fieldName !== "electricBillUrl"
+            )
             .filter(
               (m) =>
                 role !== "PARTNER" ||
