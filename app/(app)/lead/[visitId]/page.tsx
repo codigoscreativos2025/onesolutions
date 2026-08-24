@@ -3737,29 +3737,27 @@ function ArchivosPanel({
     allFilesFlat.push({ name, url, fieldKey });
   };
 
-  const hasIdUrl = pd.idDocumentUrl || bill?.additionalFileUrl;
-  const hasBillUrl = pd.electricBillUrl || bill?.imageUrl;
-
-  if (hasIdUrl) {
-    try {
-      const parsed = JSON.parse(String(hasIdUrl));
-      if (Array.isArray(parsed)) {
-        parsed.forEach((url: string, i: number) => {
-          allFilesFlat.push({ name: `ID del Cliente ${i + 1}`, url, fieldKey: "idDocumentUrl" });
-        });
-      } else {
-        addFile("ID del Cliente", String(hasIdUrl), "idDocumentUrl");
-      }
-    } catch {
-      addFile("ID del Cliente", String(hasIdUrl), "idDocumentUrl");
+  const parsedIds: string[] = [];
+  try {
+    if (pd.idDocumentUrl) {
+      const parsed = JSON.parse(String(pd.idDocumentUrl));
+      if (Array.isArray(parsed)) parsedIds.push(...parsed);
+      else parsedIds.push(String(pd.idDocumentUrl));
     }
+  } catch {
+    if (pd.idDocumentUrl) parsedIds.push(String(pd.idDocumentUrl));
   }
-  const hasIdUrl2 = bill?.additionalFile2Url;
-  if (hasIdUrl2) {
-    addFile("ID del Cliente (Reverso)", String(hasIdUrl2), "idDocumentUrl2");
-  }
-  if (hasBillUrl)
+  
+  const idFront = bill?.additionalFileUrl || parsedIds[0];
+  const idBack = bill?.additionalFile2Url || parsedIds[1];
+
+  if (idFront) addFile("ID del Cliente", idFront, "idDocumentUrl");
+  if (idBack) addFile("ID del Cliente (Reverso)", idBack, "idDocumentUrl2");
+
+  const hasBillUrl = pd.electricBillUrl || bill?.imageUrl;
+  if (hasBillUrl) {
     addFile("Recibo de Luz", String(hasBillUrl), "electricBillUrl");
+  }
   addFile(
     "Seguro de Hogar",
     pd.homeInsuranceUrl ? String(pd.homeInsuranceUrl) : undefined,
