@@ -385,15 +385,37 @@ export async function PATCH(
       if (visit.closerId) userIdsToNotify.push(visit.closerId);
       
       const uniqueIds = Array.from(new Set(userIdsToNotify));
-      for (const id of uniqueIds) {
+      const { sendEmail } = await import("@/lib/email");
+      const { emailTemplates } = await import("@/lib/email-templates");
+
+      const usersToNotify = await prisma.user.findMany({
+        where: { id: { in: uniqueIds } },
+        select: { id: true, name: true, email: true }
+      });
+
+      for (const user of usersToNotify) {
+        // Notification
         await prisma.notification.create({
           data: {
-            userId: id,
+            userId: user.id,
             title: "Proyecto Cerrado",
             body: `El proyecto en ${address} ha sido cerrado por el Admin.`,
             link: `/lead/${visitId}`,
           }
         });
+
+        // Email
+        if (user.email) {
+          try {
+            await sendEmail({
+              to: user.email,
+              subject: "Proyecto Cerrado - One Solutions",
+              html: emailTemplates.projectProgress(user.name, address, "Proyecto Cerrado"),
+            });
+          } catch (e) {
+            console.error(`Error sending email to ${user.email}:`, e);
+          }
+        }
       }
     }
   }

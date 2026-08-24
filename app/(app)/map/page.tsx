@@ -26,8 +26,9 @@ interface SearchResult {
 
 export default function MapPage() {
   const searchParams = useSearchParams();
-  const highlightId = searchParams.get("highlight");
-  const autoOpen = searchParams.get("autoOpen") === "true";
+  const highlightId = searchParams.get("highlight") || searchParams.get("parcelId");
+  const autoOpen = searchParams.get("autoOpen") === "true" || !!searchParams.get("parcelId");
+
   const [autoOpenParcel, setAutoOpenParcel] = useState<{ id: string; address: string } | null>(null);
 
   const [query, setQuery] = useState("");
@@ -39,7 +40,6 @@ export default function MapPage() {
   // Auto-open parcel sheet from lead details
   useEffect(() => {
     if (autoOpen && highlightId) {
-      // Fetch parcel from local DB to get metadata + geometry
       fetch(`/api/parcels/${encodeURIComponent(highlightId)}`)
         .then(r => r.json())
         .then(data => {
@@ -48,7 +48,6 @@ export default function MapPage() {
               const geom = JSON.parse(data.geometry);
               if (geom.coordinates?.[0]) {
                 const coords = geom.coordinates[0];
-                // Calculate center of the parcel polygon
                 let sumLat = 0, sumLng = 0, count = 0;
                 coords.forEach((c: number[]) => {
                   if (c.length >= 2) { sumLat += c[1]; sumLng += c[0]; count++; }
@@ -80,22 +79,12 @@ export default function MapPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setSearchError(data.message || data.error || "Error en la búsqueda");
+        setSearchError(data.message || data.error || "Error en la bǧsqueda");
       } else {
         const features = data.results?.features || [];
         const items: SearchResult[] = features.map(
-          (feature: {
-            properties?: {
-              id?: string;
-              ll_uuid?: string;
-              address?: string;
-            };
-            geometry?: SearchResult["geometry"];
-          }) => ({
-            id:
-              feature.properties?.id ||
-              feature.properties?.ll_uuid ||
-              "",
+          (feature: { properties?: { id?: string; ll_uuid?: string; address?: string }; geometry?: SearchResult["geometry"] }) => ({
+            id: feature.properties?.id || feature.properties?.ll_uuid || "",
             address: feature.properties?.address || "",
             ll_uuid: feature.properties?.ll_uuid,
             geometry: feature.geometry,
@@ -104,70 +93,77 @@ export default function MapPage() {
         setResults(items);
       }
     } catch {
-      setSearchError("No se pudo conectar con el servicio de búsqueda");
+      setSearchError("No se pudo conectar con el servicio de bǧsqueda");
     } finally {
       setSearching(false);
     }
   };
 
+  const handleSelectResult = (result: SearchResult) => {
+    if (result.geometry) {
+      const geo = result.geometry;
+      if (geo.type === "Polygon" && geo.coordinates?.[0]?.[0]) {
+        const [lng, lat] = geo.coordinates[0][0];
+        setMapCenter([lat, lng]);
+        
+        if (result.id && result.address) {
+          setAutoOpenParcel({ id: result.id, address: result.address });
+        }
+      }
+    }
+    setQuery(result.address || "");
+    setResults([]);
+  };
+
   return (
-    <div className="space-y-4">
-      <h1 className="font-headline text-2xl font-bold text-on-surface">Mapa</h1>
-
-      <form onSubmit={handleSearch} className="relative">
-        <div className="glass-panel rounded-full px-4 py-3 shadow-lg flex items-center gap-3">
-          <Search className="w-5 h-5 text-primary" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar direcciones en Orlando / Orange County..."
-            className="flex-1 bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-on-surface-variant outline-none"
-          />
-          <button
-            type="submit"
-            disabled={searching}
-            className="px-4 py-2 bg-primary text-on-primary rounded-full text-sm font-semibold disabled:opacity-50"
-          >
-            {searching ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              "Buscar"
-            )}
-          </button>
-        </div>
-      </form>
-
-      {searchError && (
-        <div className="p-3 rounded-xl bg-error-container text-on-error-container text-sm">
-          {searchError}
-        </div>
-      )}
-
-      {results.length > 0 && (
-        <div className="glass-panel rounded-xl overflow-hidden">
-          {results.map((result) => (
-            <button
-              key={result.id}
-              onClick={() => {
-                if (result.geometry) {
-                  const geo = result.geometry;
-                  if (geo.type === "Polygon" && geo.coordinates?.[0]?.[0]) {
-                    const [lng, lat] = geo.coordinates[0][0];
-                    setMapCenter([lat, lng]);
-                  }
-                }
+    <div className="flex flex-col h-[75vh] w-full relative rounded-2xl overflow-hidden shadow-xl border border-outline-variant/30">
+      <div className="absolute top-4 left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto z-10 w-auto sm:w-[450px] space-y-2">
+        <form onSubmit={handleSearch} className="relative">
+          <div className="bg-surface/95 backdrop-blur-md rounded-2xl px-4 py-3 shadow-lg border border-outline-variant/30 flex items-center gap-3">
+            <Search className="w-5 h-5 text-primary" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                if (!e.target.value) setResults([]);
               }}
-              className="w-full text-left p-3 border-b border-outline-variant/20 last:border-0 hover:bg-surface-container-low flex items-center gap-3"
+              placeholder="Buscar en Orange County..."
+              className="flex-1 bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-on-surface-variant outline-none"
+            />
+            <button
+              type="submit"
+              disabled={searching || !query.trim()}
+              className="px-4 py-2 bg-primary text-on-primary rounded-xl text-sm font-semibold disabled:opacity-50 transition-colors shrink-0"
             >
-              <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
-              <span className="text-sm text-on-surface">{result.address}</span>
+              {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : "Buscar"}
             </button>
-          ))}
-        </div>
-      )}
+          </div>
+        </form>
 
-      <div className="w-full h-[60vh] rounded-2xl bg-surface-container border border-outline-variant flex items-center justify-center overflow-hidden relative">
+        {searchError && (
+          <div className="p-3 rounded-xl bg-error-container text-on-error-container text-sm shadow-md">
+            {searchError}
+          </div>
+        )}
+
+        {results.length > 0 && (
+          <div className="bg-surface/95 backdrop-blur-md rounded-2xl overflow-hidden shadow-lg border border-outline-variant/30 max-h-[40vh] overflow-y-auto custom-scrollbar">
+            {results.map((result) => (
+              <button
+                key={result.id}
+                onClick={() => handleSelectResult(result)}
+                className="w-full text-left p-3 border-b border-outline-variant/20 last:border-0 hover:bg-surface-container-low flex items-center gap-3 transition-colors"
+              >
+                <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
+                <span className="text-sm text-on-surface font-medium truncate">{result.address}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="w-full h-full flex flex-1 bg-surface-container relative">
         <DynamicMap center={mapCenter} autoOpenId={autoOpenParcel?.id} />
       </div>
     </div>

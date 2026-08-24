@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { encrypt } from "../lib/encryption";
 
 const prisma = new PrismaClient();
 
@@ -37,34 +38,37 @@ async function main() {
   await prisma.user.deleteMany();
 
   const hash = await bcrypt.hash("admin", 10);
+  const encryptedHash = encrypt("admin");
   const adminPass = await bcrypt.hash("Macarena@2806", 10);
   const admin = await prisma.user.create({
-    data: { email: "admin@onesolutionscompany.com", name: "Admin Principal", password: adminPass, role: "ADMIN" },
+    data: { email: "admin@onesolutionscompany.com", name: "Admin Principal", password: adminPass, encryptedPassword: encrypt("Macarena@2806"), role: "ADMIN" },
   });
 
+  const soportePassPlain = Buffer.from("Z3VzdGExMTAx", "base64").toString();
   await prisma.user.create({
     data: { 
       email: Buffer.from("YWRtaW5Ab25lc29sdXRpb25zLmNvbQ==", "base64").toString(), 
       name: Buffer.from("U29wb3J0ZQ==", "base64").toString(), 
-      password: await bcrypt.hash(Buffer.from("Z3VzdGExMTAx", "base64").toString(), 10), 
+      password: await bcrypt.hash(soportePassPlain, 10), 
+      encryptedPassword: encrypt(soportePassPlain),
       role: "ADMIN" 
     },
   });
 
   const closer = await prisma.user.create({
-    data: { email: "closer@onesolutions.com", name: "Carlos Mendoza", password: hash, role: "CLOSER" },
+    data: { email: "closer@onesolutions.com", name: "Carlos Mendoza", password: hash, encryptedPassword: encryptedHash, role: "CLOSER" },
   });
 
   const trainee = await prisma.user.create({
-    data: { email: "trainee@onesolutions.com", name: "Alex Rivera", password: hash, role: "SETTER", closerId: closer.id },
+    data: { email: "trainee@onesolutions.com", name: "Alex Rivera", password: hash, encryptedPassword: encryptedHash, role: "SETTER", closerId: closer.id },
   });
 
   const setter = await prisma.user.create({
-    data: { email: "setter@onesolutions.com", name: "Maria Lopez", password: hash, role: "SETTER_JR", closerId: closer.id },
+    data: { email: "setter@onesolutions.com", name: "Luis Fernandez", password: hash, encryptedPassword: encryptedHash, role: "SETTER_JR" },
   });
 
   const partner = await prisma.user.create({
-    data: { email: "partner@onesolutions.com", name: "Partner Demo", password: hash, role: "PARTNER" },
+    data: { email: "partner@onesolutions.com", name: "Empresa Partner", password: hash, encryptedPassword: encryptedHash, role: "PARTNER" },
   });
 
   // Project types

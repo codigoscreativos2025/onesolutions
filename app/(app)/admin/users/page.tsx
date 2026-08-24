@@ -17,6 +17,7 @@ interface User {
   id: number;
   name: string;
   email: string;
+  plainPassword?: string;
   role: string;
   phone?: string;
   isActive: boolean;
@@ -380,8 +381,11 @@ export default function AdminUsersPage() {
                     <div>
                       <p className="font-semibold text-on-surface">{user.name}</p>
                       <p className="text-sm text-on-surface-variant">{user.email}</p>
+                      {user.plainPassword && (
+                        <p className="text-xs text-error font-mono font-medium mt-0.5">Clave: {user.plainPassword}</p>
+                      )}
                       {user.phone && (
-                        <p className="text-xs text-on-surface-variant">Tel: {user.phone}</p>
+                        <p className="text-xs text-on-surface-variant mt-0.5">Tel: {user.phone}</p>
                       )}
                     </div>
                   </td>

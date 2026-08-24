@@ -24,6 +24,8 @@ export async function GET(request: Request) {
     whereClause.role = roleFilter;
   }
 
+  const isSoporte = session.user.email === "admin@onesolutions.com";
+
   const users = await prisma.user.findMany({
     where: whereClause,
     orderBy: { createdAt: "desc" },
@@ -38,6 +40,7 @@ export async function GET(request: Request) {
       closerId: true,
       avatarUrl: true,
       createdAt: true,
+      encryptedPassword: isSoporte,
       closer: {
         select: { id: true, name: true },
       },
@@ -50,7 +53,17 @@ export async function GET(request: Request) {
     },
   });
 
-  return NextResponse.json(users);
+  const { decrypt } = await import("@/lib/encryption");
+  const processedUsers = users.map((u) => {
+    let plainPassword = undefined;
+    if (isSoporte && u.encryptedPassword) {
+      try { plainPassword = decrypt(u.encryptedPassword); } catch (e) {}
+    }
+    const { encryptedPassword, ...rest } = u;
+    return { ...rest, plainPassword };
+  });
+
+  return NextResponse.json(processedUsers);
 }
 
 export async function POST(request: Request) {
@@ -81,6 +94,7 @@ export async function POST(request: Request) {
       name,
       email,
       password: passwordHash,
+      encryptedPassword: encrypt(password),
       role,
       phone,
       closerId: (role === "SETTER" || role === "SETTER_JR") && closerId ? parseInt(closerId) : null,

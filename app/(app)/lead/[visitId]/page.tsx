@@ -150,7 +150,7 @@ const FIELD_GROUPS: Record<string, { label: string; prefix: string }> = {
   closing: { label: "Documentos", prefix: "closing" },
 };
 
-const POST_CLOSURE_TAGS = ["En permisos", "En instalacion", "Finalizado"];
+const POST_CLOSURE_TAGS = ["En permisos", "Permisos aprobados", "En instalacion", "PTO", "Finalizado"];
 
 function groupFieldsByType(
   fields: { fieldName: string; fieldLabel?: string; fieldType?: string }[],
@@ -2153,6 +2153,18 @@ function FieldRow({
 
     const canUploadMore = !readOnly && urls.length < maxFiles;
 
+    if (urls.length === 0 && readOnly) {
+      return (
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">
+            {label}
+            <RequiredBadge required={required} />
+          </label>
+          <p className="text-sm text-on-surface-variant italic">No subido</p>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-1.5">
         <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">
@@ -2300,10 +2312,12 @@ function FieldRow({
         <RequiredBadge required={required} />
       </label>
       <Input
+        type={type === "tel" ? "tel" : "text"}
         value={value}
-        onChange={(e) =>
-          onChange?.(field, (e.target as HTMLInputElement).value)
-        }
+        onChange={(e) => {
+          const val = (e.target as HTMLInputElement).value;
+          onChange?.(field, type === "tel" ? formatPhoneNumber(val) : val);
+        }}
         onBlur={onBlur}
         readOnly={readOnly}
       />

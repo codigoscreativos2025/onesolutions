@@ -390,7 +390,7 @@ export function ParcelSheet({
             </p>
           )}
 
-          {canVisit && isAvailable && (
+          {canVisit && (isAvailable || parcel.status === "CUSTOMER" || hasPriorProjects) && !hasActiveLead && (
             <div className="flex flex-col gap-3">
               {!showConfirmClaim ? (
                 <Button
@@ -432,14 +432,14 @@ export function ParcelSheet({
             </div>
           )}
 
-          {!isAvailable && !hasPriorProjects && parcel.status !== "CUSTOMER" && (
+          {hasActiveLead && (
             <>
               <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-surface-container-low border border-outline-variant/30">
                 <span className="w-3 h-3 rounded-full bg-green-500 inline-block shrink-0" />
                 <span className="text-sm text-on-surface-variant">{t.map.takenBy}</span>
               </div>
               
-              {parcel.visits?.map((v, i) => (
+              {activeVisits.map((v, i) => (
                 <div key={v.id || i} className="bg-surface-container-low border border-outline-variant/30 rounded-xl p-4 my-2">
                   <div className="flex items-center gap-2 text-sm text-on-surface">
                     <User className="w-4 h-4 text-primary shrink-0" />
@@ -469,8 +469,8 @@ export function ParcelSheet({
                 </div>
               ))}
 
-              {parcel.visits?.[0]?.id && (() => {
-                const visit = parcel.visits?.[0];
+              {activeVisits[0]?.id && (() => {
+                const visit = activeVisits[0];
                 const visitStage = visit?.stage || "IN_PROGRESS";
                 const isLeadStage = visitStage === "IN_PROGRESS";
                 const hasPanelSolar = visit?.projects?.some((p) =>

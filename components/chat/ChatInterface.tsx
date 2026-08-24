@@ -1010,11 +1010,15 @@ export function ChatInterface({
                                 const tagColor =
                                   tag === "En permisos"
                                     ? "#f59e0b"
-                                    : tag === "En instalacion"
-                                      ? "#06b6d4"
-                                      : tag === "Finalizado"
-                                        ? "#22c55e"
-                                        : "#6b7280";
+                                    : tag === "Permisos aprobados"
+                                      ? "#3b82f6"
+                                      : tag === "En instalacion"
+                                        ? "#06b6d4"
+                                        : tag === "PTO"
+                                          ? "#a855f7"
+                                          : tag === "Finalizado"
+                                            ? "#22c55e"
+                                            : "#6b7280";
                                 return (
                                   <p
                                     className="text-[10px] font-semibold mt-1 px-1.5 py-0.5 rounded-full inline-flex w-fit items-center gap-1"
@@ -1753,11 +1757,15 @@ function InfoPanelContent({
                       const tagColor =
                         tag === "En permisos"
                           ? "#f59e0b"
-                          : tag === "En instalacion"
-                            ? "#06b6d4"
-                            : tag === "Finalizado"
-                              ? "#22c55e"
-                              : "#6b7280";
+                          : tag === "Permisos aprobados"
+                            ? "#3b82f6"
+                            : tag === "En instalacion"
+                              ? "#06b6d4"
+                              : tag === "PTO"
+                                ? "#a855f7"
+                                : tag === "Finalizado"
+                                  ? "#22c55e"
+                                  : "#6b7280";
                       return (
                         <span
                           className="px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1"

@@ -1,4 +1,4 @@
-﻿export interface ContractField {
+export interface ContractField {
   key: string;
   label: string;
   type: "text" | "number" | "date" | "money" | "signature" | "select" | "checkbox";
@@ -1253,7 +1253,7 @@ export function metalRoofHtml(data: Record<string, string>): string {
                         <li class="no-bullet"><strong>Roof Installation</strong></li>
                         <li>Install one layer of POLYGLASS POLYSTICK MTS PLUS underlayment as a dry-in application per 2023 FL BLDG Code.</li>
                         <li>Install valley metal in all valleys.</li>
-                        <li>Install 2Ã‚Â½ in. drip edge around perimeter of the roof. COLOR: ${d("dripEdgeColor")}</li>
+                        <li>Install 2½ in. drip edge around perimeter of the roof. COLOR: ${d("dripEdgeColor")}</li>
                         <li>Install new (<span class="text-brand">${d("leadBoots2In")}</span>) 2 in. & (<span class="text-brand">${d("leadBoots3In")}</span>) 3 in. lead boots.</li>
                         <li>Install (<span class="text-brand">${d("exhaustVents")}</span>) new exhaust vents.</li>
                         <li>Install (<span class="text-brand">${d("ridgeVentsFt")}</span> ft) new ridge vents.</li>
@@ -1753,7 +1753,7 @@ export function metalRoofIsoHtml(data: Record<string, string>): string {
                         <li>Install one Layer of Owens Corning DeckSeal Self-Adhered Base (Roof System Underlayment) as a dry in application per 2023 FL BLDG Code.</li>
                         <li>Install one layer of POLYGLASS POLYSTICK underlayment as a dry in application per 2021 FL BLDG Code.</li>
                         <li>Install valley metal in all valleys.</li>
-                        <li>Install 2Ã‚Â½ in. drip edge around perimeter of the roof. COLOR: ${d("color")}</li>
+                        <li>Install 2½ in. drip edge around perimeter of the roof. COLOR: ${d("color")}</li>
                         <li>Install new (${d("new2InLeadBoots")}) 2 in. & (${d("new3InLeadBoots")}) 3 in. lead boots.</li>
                         <li>Install (${d("newExhaustVents")}) new exhaust vents.</li>
                         <li>Install (${d("newRidgeVentsFt")} ft) new ridge vents.</li>
@@ -2237,7 +2237,7 @@ export function taperedHtml(data: Record<string, string>): string {
                             <li>Re-nail entire decking to code to meet code specifications.</li>
                             <li>Roof Installation.</li>
                             <li>Install one Layer of Owens Corning DeckSeal Self-Adhered Base (Roof System Underlayment) as a dry in application per 2023 FL BLDG Code.</li>
-                            <li>Install 2Ã‚Â½ in. drip edge around perimeter of the roof. COLOR: ${d("dripEdgeColor")}</li>
+                            <li>Install 2½ in. drip edge around perimeter of the roof. COLOR: ${d("dripEdgeColor")}</li>
                             <li>Install new (<span class="text-brand">${d("leadBoots2in")}</span>) 2in. & (<span class="text-brand">${d("leadBoots3in")}</span>) 3in. lead boots.</li>
                             <li>Install (<span class="text-brand">${d("cobraRidgeVents")}</span>) new (cobra ridge) vents and/or (<span class="text-brand">${d("offRidgeVents")}</span>) new (off ridge) vents.</li>
                             <li>Install (<span class="text-brand">${d("exhaustVents")}</span>) new exhaust vents.</li>
@@ -2496,14 +2496,14 @@ export function flatRoofingHtml(data: Record<string, string>): string {
                             <li>Re-nail entire decking to code.</li>
                             <li>Roof Installation.</li>
                             <li>Install one layer of self-adhered Polyglass Polystick TU PLUS as a dry in application per 2023 FL BLDG Code.</li>
-                            <li>Install 2Ã‚Â½ In. drip edge around perimeter of the roof with bird stop or anti ponding at eaves and rakes. COLOR: ${d("dripEdgeColor")}</li>
+                            <li>Install 2½ in. drip edge around perimeter of the roof with bird stop or anti ponding at eaves and rakes. COLOR: ${d("dripEdgeColor")}</li>
                             <li>Install 26 Gauge 24" formed tile valley.</li>
                             <li>Install new (<span class="text-brand">${d("twoInchLeadBoots")}</span>) 2in. & (<span class="text-brand">${d("threeInchLeadBoots")}</span>) 3in. lead boots.</li>
                             <li>Install (<span class="text-brand">${d("exhaustVents")}</span>) new exhaust vents.</li>
                             <li>Install (<span class="text-brand">${d("offRidgeVents")}</span>) new (off ridge) vents.</li>
-                            <li>Install rake and ridge caps. Rake caps fastened with #8 x 2-Ã‚Â½" threaded tile roofing fasteners. Ridge end rake caps to be set with tile-tight mortar substitute (tinted to match tile as closely as possible).</li>
+                            <li>Install rake and ridge caps. Rake caps fastened with #8 x 2-½" threaded tile roofing fasteners. Ridge end rake caps to be set with tile-tight mortar substitute (tinted to match tile as closely as possible).</li>
                             <li>Install new tiles.</li>
-                            <li>Mechanically attach tiles to battens using Quick drive 2Ã‚Â½ In. ZINC 1.5m screws.</li>
+                            <li>Mechanically attach tiles to battens using Quick drive 2½ in. ZINC 1.5m screws.</li>
                             <li>Remove all debris and dispose of it properly.</li>
                             <li>Conduct a magnetic sweep of the yard and driveway.</li>
                             <li>The price includes the specified roofing materials, the cost of the specified labor, taxes, and permits fees (if applicable).</li>
@@ -2651,7 +2651,7 @@ export function representantesHtml(data: Record<string, string>): string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contrato de Representante - One Solutions</title>
+    <title>Representative Agreement - One Solutions</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
@@ -3023,8 +3023,8 @@ export function representantesHtml(data: Record<string, string>): string {
             </div>
             
             <h1 class="title-h1">
-                <span class="text-brand">CONTRATO DE</span><br>
-                <span class="text-dark">REPRESENTANTE DE VENTAS INDEPENDIENTE</span>
+                <span class="text-brand">INDEPENDENT SALES</span><br>
+                <span class="text-dark">REPRESENTATIVE AGREEMENT</span>
             </h1>
         </header>
 
@@ -3039,10 +3039,10 @@ export function representantesHtml(data: Record<string, string>): string {
                             <i class="fa-regular fa-circle-user text-brand" style="font-size:24px;"></i>
                         </div>
                         <div class="content-col">
-                            <h2 class="section-title">1. PARTES</h2>
+                            <h2 class="section-title">1. PARTIES</h2>
                             <p class="content-text">
-                                Este acuerdo se celebra entre ONE SOLUTIONS COMPANIES LLC (en adelante "La CompaÃƒÂ±ÃƒÂ­a") y el Representante de Ventas Independiente (en adelante "El Representante").<br>
-                                Ambas partes acuerdan cumplir con los tÃƒÂ©rminos y condiciones establecidos en este documento.
+                                This agreement is made between ONE SOLUTIONS COMPANIES LLC (hereinafter "The Company") and the Independent Sales Representative (hereinafter "The Representative").<br>
+                                Both parties agree to comply with the terms and conditions set forth in this document.
                             </p>
                         </div>
                     </div>
@@ -3052,10 +3052,10 @@ export function representantesHtml(data: Record<string, string>): string {
                             <i class="fa-regular fa-handshake text-brand" style="font-size:24px;"></i>
                         </div>
                         <div class="content-col">
-                            <h2 class="section-title">2. NATURALEZA DEL ACUERDO</h2>
+                            <h2 class="section-title">2. NATURE OF THE AGREEMENT</h2>
                             <p class="content-text">
-                                El Representante actuarÃƒÂ¡ como contratista independiente (1099). Este acuerdo constituye a la forma de pago por comisiones.<br>
-                                El Representante no tendrÃƒÂ¡ derecho a salario fijo, beneficios laborales, seguro mÃƒÂ©dico, vacaciones pagadas ni otros beneficios tÃƒÂ­picos de una relaciÃƒÂ³n de empleo.
+                                The Representative will act as an independent contractor (1099). This agreement constitutes a commission-based payment structure.<br>
+                                The Representative will not be entitled to a fixed salary, employment benefits, health insurance, paid vacations, or other typical employment benefits.
                             </p>
                         </div>
                     </div>
@@ -3065,17 +3065,17 @@ export function representantesHtml(data: Record<string, string>): string {
                             <i class="fa-regular fa-circle-check text-brand" style="font-size:24px;"></i>
                         </div>
                         <div class="content-col">
-                            <h2 class="section-title">3. ALCANCE DE LOS SERVICIOS</h2>
-                            <p class="content-text">El Representante realizarÃƒÂ¡ actividades de:</p>
+                            <h2 class="section-title">3. SCOPE OF SERVICES</h2>
+                            <p class="content-text">The Representative will perform the following activities:</p>
                             <ul class="content-list">
-                                <li>ProspecciÃƒÂ³n de clientes.</li>
-                                <li>GeneraciÃƒÂ³n de leads.</li>
-                                <li>Seguimiento y cierre de ventas.</li>
-                                <li>RecolecciÃƒÂ³n y entrega de documentaciÃƒÂ³n requerida.</li>
-                                <li>Ventas puerta a puerta (D2D).</li>
-                                <li>PresentaciÃƒÂ³n de productos y servicios.</li>
+                                <li>Client prospecting.</li>
+                                <li>Lead generation.</li>
+                                <li>Sales follow-up and closing.</li>
+                                <li>Collection and delivery of required documentation.</li>
+                                <li>Door-to-door (D2D) sales.</li>
+                                <li>Product and service presentations.</li>
                             </ul>
-                            <p class="content-text">Los servicios podrÃƒÂ¡n incluir la comercializaciÃƒÂ³n de todos los servicios ofrecidos por ONE SOLUTIONS COMPANIES LLC.</p>
+                            <p class="content-text">The services may include the commercialization of all services offered by ONE SOLUTIONS COMPANIES LLC.</p>
                         </div>
                     </div>
 
@@ -3086,26 +3086,26 @@ export function representantesHtml(data: Record<string, string>): string {
                             </div>
                         </div>
                         <div class="content-col">
-                            <h2 class="section-title">4. COMPENSACIÃƒâ€œN</h2>
-                            <p class="content-text" style="font-weight:700;">&bull; Redline 2.35$ (cerrador)</p>
-                            <p class="content-text">Con 3 ventas SOLARES, el trainee se gradÃƒÂºa y pasa a ser cerrador, accediendo al 100% de la comisiÃƒÂ³n.</p>
+                            <h2 class="section-title">4. COMPENSATION</h2>
+                            <p class="content-text" style="font-weight:700;">&bull; Redline $2.35 (Closer)</p>
+                            <p class="content-text">With 3 SOLAR sales, the trainee graduates and becomes a closer, accessing 100% of the commission.</p>
                             
-                            <p class="content-text" style="font-weight:700; margin-top:6px;">&bull; Ventas realizadas con apoyo de su closer: Split de comisiÃƒÂ³n 50/50.</p>
-                            <p class="content-text">Si el trainee realiza una venta con otro closer que no es el suyo, sin previa conversaciÃƒÂ³n su 50% de comisiÃƒÂ³n quedarÃƒÂ¡ anulada y transferida al closer original. Y el otro 50% al closer que contactÃƒÂ³ para el cierre de la venta.</p>
+                            <p class="content-text" style="font-weight:700; margin-top:6px;">&bull; Sales made with closer support: 50/50 Commission Split.</p>
+                            <p class="content-text">If the trainee makes a sale with another closer who is not their own, without prior conversation, their 50% commission will be voided and transferred to the original closer. The other 50% goes to the closer who was contacted to close the sale.</p>
                             
-                            <p class="content-text" style="font-weight:700; margin-top:6px;">&bull; Nuevos ingresos con experiencia:</p>
-                            <p class="content-text">Si ha sido por otro cerrador deberÃƒÂ¡ completar un mÃƒÂ­nimo de 2 ventas SOLARES aprobadas dentro de ONE SOLUTIONS COMPANIES LLC para acceder al estatus de Cerrador.</p>
+                            <p class="content-text" style="font-weight:700; margin-top:6px;">&bull; New hires with experience:</p>
+                            <p class="content-text">If brought in by another closer, they must complete a minimum of 2 approved SOLAR sales within ONE SOLUTIONS COMPANIES LLC to access Closer status.</p>
                             <ul class="content-list">
-                                <li>Durante estas primeras 2 ventas, la comisiÃƒÂ³n serÃƒÂ¡ 50/50 con su reclutador.</li>
-                                <li>Una vez completadas las 2 ventas solares aprobadas, pasarÃƒÂ¡ a recibir el 100% de la comisiÃƒÂ³n correspondiente.</li>
+                                <li>During these first 2 sales, the commission will be split 50/50 with their recruiter.</li>
+                                <li>Once the 2 approved solar sales are completed, they will receive 100% of the corresponding commission.</li>
                             </ul>
                             
-                            <p class="content-text" style="font-weight:700; margin-top:6px;">Todas las comisiones estarÃƒÂ¡n sujetas a:</p>
+                            <p class="content-text" style="font-weight:700; margin-top:6px;">All commissions are subject to:</p>
                             <div style="display: flex; flex-wrap: wrap; font-size: 8px; font-weight: 500; color: #1f2937;">
-                                <div style="width: 50%; margin-bottom: 2px;"><i class="fa-solid fa-check text-brand" style="margin-right:2px;"></i> AprobaciÃƒÂ³n del proyecto.</div>
-                                <div style="width: 50%; margin-bottom: 2px;"><i class="fa-solid fa-check text-brand" style="margin-right:2px;"></i> InstalaciÃƒÂ³n del proyecto.</div>
-                                <div style="width: 50%;"><i class="fa-solid fa-check text-brand" style="margin-right:2px;"></i> Permanencia activa del cliente.</div>
-                                <div style="width: 50%;"><i class="fa-solid fa-check text-brand" style="margin-right:2px;"></i> Cumplimiento de las polÃƒÂ­ticas.</div>
+                                <div style="width: 50%; margin-bottom: 2px;"><i class="fa-solid fa-check text-brand" style="margin-right:2px;"></i> Project approval.</div>
+                                <div style="width: 50%; margin-bottom: 2px;"><i class="fa-solid fa-check text-brand" style="margin-right:2px;"></i> Project installation.</div>
+                                <div style="width: 50%;"><i class="fa-solid fa-check text-brand" style="margin-right:2px;"></i> Active client retention.</div>
+                                <div style="width: 50%;"><i class="fa-solid fa-check text-brand" style="margin-right:2px;"></i> Policy compliance.</div>
                             </div>
                         </div>
                     </div>
@@ -3115,20 +3115,19 @@ export function representantesHtml(data: Record<string, string>): string {
                             <i class="fa-regular fa-credit-card text-brand" style="font-size:24px;"></i>
                         </div>
                         <div class="content-col">
-                            <h2 class="section-title">5. FORMA DE PAGO</h2>
-                            <p class="content-text">Las comisiones serÃƒÂ¡n pagadas una vez que el proyecto alcance el estado de NTP (Notice to Proceed) aprobado por la entidad financiera correspondiente.</p>
+                            <h2 class="section-title">5. PAYMENT METHOD</h2>
+                            <p class="content-text">Commissions will be paid once the project reaches the NTP (Notice to Proceed) status approved by the corresponding financial entity.</p>
                             <p class="content-text" style="font-weight:700;">Solar:</p>
                             <ul class="content-list" style="list-style-type: none; padding-left: 0;">
-                                <li>&bull; M1: $1,500 quince (15) dÃƒÂ­as despuÃƒÂ©s del NTP completo.</li>
-                                <li>&bull; M2: 80% quince (15) dÃƒÂ­as despuÃƒÂ©s de la instalaciÃƒÂ³n.</li>
-                                <li>&bull; M3: 20% luego de haberse firmado la interconexiÃƒÂ³n y el proyecto estÃƒÂ© en PTO. (Si hay algÃƒÂºn electrical upgrade se tomarÃƒÂ¡ del 20% de la comisiÃƒÂ³n restante).</li>
+                                <li>&bull; M1: $1,500 fifteen (15) days after complete NTP.</li>
+                                <li>&bull; M2: 80% fifteen (15) days after installation.</li>
+                                <li>&bull; M3: 20% after interconnection is signed and the project is in PTO. (If there is any electrical upgrade, it will be taken from the remaining 20% of the commission).</li>
                             </ul>
-                            <p class="content-text">No se generarÃƒÂ¡ pago de comisiÃƒÂ³n cuando:</p>
+                            <p class="content-text">No commission payment will be generated when:</p>
                             <ul class="content-list">
-                                <li>El cliente cancele el proyecto.</li>
-                                <li>El proyecto sea rechazado.</li>
-                                <li>El proyecto no llegue a completarse.</li>
-                                <li>Exista informaciÃƒÂ³n falsa o documentaciÃƒÂ³n fraudulenta.</li>
+                                <li>The client cancels the project.</li>
+                                <li>The project is rejected.</li>
+                                <li>The project is not completed.</li>
                             </ul>
                         </div>
                     </div>
@@ -3138,17 +3137,17 @@ export function representantesHtml(data: Record<string, string>): string {
                             <i class="fa-solid fa-clipboard-list text-brand" style="font-size:24px;"></i>
                         </div>
                         <div class="content-col">
-                            <h2 class="section-title">6. RESPONSABILIDADES DEL REPRESENTANTE</h2>
-                            <p class="content-text">El Representante acepta:</p>
+                            <h2 class="section-title">6. REPRESENTATIVE RESPONSIBILITIES</h2>
+                            <p class="content-text">The Representative agrees to:</p>
                             <ul class="content-list">
-                                <li>Actuar con honestidad, profesionalismo y ÃƒÂ©tica.</li>
-                                <li>Representar adecuadamente la imagen de la compaÃƒÂ±ÃƒÂ­a.</li>
-                                <li>Cumplir con todos los procedimientos internos.</li>
-                                <li>Presentar documentaciÃƒÂ³n completa y precisa.</li>
-                                <li>Mantener una comunicaciÃƒÂ³n profesional con los clientes y compaÃƒÂ±eros de equipo.</li>
-                                <li>Cumplir con las metas mÃƒÂ­nimas de actividad establecidas por la compaÃƒÂ±ÃƒÂ­a.</li>
+                                <li>Act with honesty, professionalism, and ethics.</li>
+                                <li>Properly represent the company"s image.</li>
+                                <li>Comply with all internal procedures.</li>
+                                <li>Submit complete and accurate documentation.</li>
+                                <li>Maintain professional communication with clients and teammates.</li>
+                                <li>Meet the minimum activity goals set by the company.</li>
                             </ul>
-                            <p class="content-text">Cualquier incumplimiento de las responsabilidades anteriormente mencionadas serÃƒÂ¡ motivo para la terminaciÃƒÂ³n inmediata de este acuerdo.</p>
+                            <p class="content-text">Any breach of the aforementioned responsibilities will be grounds for immediate termination of this agreement.</p>
                         </div>
                     </div>
                 </div>
@@ -3160,17 +3159,17 @@ export function representantesHtml(data: Record<string, string>): string {
                             <i class="fa-solid fa-lock text-brand" style="font-size:24px;"></i>
                         </div>
                         <div class="content-col">
-                            <h2 class="section-title">7. CONFIDENCIALIDAD</h2>
-                            <p class="content-text">El Representante se compromete a mantener estricta confidencialidad sobre:</p>
+                            <h2 class="section-title">7. CONFIDENTIALITY</h2>
+                            <p class="content-text">The Representative agrees to maintain strict confidentiality regarding:</p>
                             <ul class="content-list">
-                                <li>InformaciÃƒÂ³n de clientes.</li>
-                                <li>Estrategias comerciales.</li>
-                                <li>Estructuras de precios.</li>
-                                <li>Bases de datos.</li>
-                                <li>Procesos internos.</li>
-                                <li>Material de entrenamiento.</li>
+                                <li>Client information.</li>
+                                <li>Business strategies.</li>
+                                <li>Pricing structures.</li>
+                                <li>Databases.</li>
+                                <li>Internal processes.</li>
+                                <li>Training materials.</li>
                             </ul>
-                            <p class="content-text">Esta obligaciÃƒÂ³n continuarÃƒÂ¡ vigente incluso despuÃƒÂ©s de finalizada la relaciÃƒÂ³n contractual.</p>
+                            <p class="content-text">This obligation will remain in effect even after the contractual relationship has ended.</p>
                         </div>
                     </div>
 
@@ -3179,9 +3178,9 @@ export function representantesHtml(data: Record<string, string>): string {
                             <i class="fa-solid fa-ban text-brand" style="font-size:24px;"></i>
                         </div>
                         <div class="content-col">
-                            <h2 class="section-title">8. NO COMPETENCIA</h2>
-                            <p class="content-text">Durante la vigencia del presente acuerdo, el Representante no podrÃƒÂ¡ utilizar informaciÃƒÂ³n obtenida a travÃƒÂ©s de la compaÃƒÂ±ÃƒÂ­a para beneficio propio o de terceros.</p>
-                            <p class="content-text">Asimismo, no podrÃƒÂ¡ desviar clientes, oportunidades comerciales o informaciÃƒÂ³n estratÃƒÂ©gica perteneciente a la compaÃƒÂ±ÃƒÂ­a.</p>
+                            <h2 class="section-title">8. NON-COMPETITION</h2>
+                            <p class="content-text">During the term of this agreement, the Representative may not use information obtained through the company for their own benefit or for third parties.</p>
+                            <p class="content-text">Likewise, they may not divert clients, business opportunities, or strategic information belonging to the company.</p>
                         </div>
                     </div>
 
@@ -3190,15 +3189,15 @@ export function representantesHtml(data: Record<string, string>): string {
                             <i class="fa-solid fa-hand-holding-dollar text-brand" style="font-size:24px;"></i>
                         </div>
                         <div class="content-col">
-                            <h2 class="section-title">9. CHARGEBACK Y PAGOS PENDIENTES</h2>
-                            <p class="content-text">El Representante serÃƒÂ¡ responsable de reembolsar cualquier comisiÃƒÂ³n previamente pagada cuando el proyecto sea cancelado por causas atribuibles a su gestiÃƒÂ³n, informaciÃƒÂ³n incorrecta, omisiones relevantes o incumplimientos de polÃƒÂ­ticas.</p>
-                            <p class="content-text" style="font-weight:700;">La CompaÃƒÂ±ÃƒÂ­a podrÃƒÂ¡:</p>
+                            <h2 class="section-title">9. CHARGEBACKS AND PENDING PAYMENTS</h2>
+                            <p class="content-text">The Representative will be responsible for reimbursing any previously paid commission when the project is canceled due to causes attributable to their management, incorrect information, relevant omissions, or policy breaches.</p>
+                            <p class="content-text" style="font-weight:700;">The Company may:</p>
                             <ul class="content-list">
-                                <li>Descontar dichos montos de futuras comisiones.</li>
-                                <li>Solicitar el reembolso directo.</li>
-                                <li>Iniciar acciones legales para la recuperaciÃƒÂ³n de fondos.</li>
+                                <li>Deduct such amounts from future commissions.</li>
+                                <li>Request direct reimbursement.</li>
+                                <li>Initiate legal action for the recovery of funds.</li>
                             </ul>
-                            <p class="content-text">En caso de incumplimiento, la deuda podrÃƒÂ¡ ser remitida a agencias de cobro autorizadas en el Estado de Florida.</p>
+                            <p class="content-text">In case of default, the debt may be referred to authorized collection agencies in the State of Florida.</p>
                         </div>
                     </div>
 
@@ -3207,20 +3206,20 @@ export function representantesHtml(data: Record<string, string>): string {
                             <i class="fa-solid fa-list-check text-brand" style="font-size:24px;"></i>
                         </div>
                         <div class="content-col">
-                            <h2 class="section-title">10. REQUISITOS DE PERMANENCIA ACTIVA</h2>
-                            <p class="content-text">Con el propÃƒÂ³sito de mantener una participaciÃƒÂ³n activa dentro de la organizaciÃƒÂ³n, el Representante deberÃƒÂ¡ cumplir con los siguientes requisitos:</p>
+                            <h2 class="section-title">10. ACTIVE STATUS REQUIREMENTS</h2>
+                            <p class="content-text">In order to maintain active participation within the organization, the Representative must meet the following requirements:</p>
                             
-                            <p class="content-text" style="font-weight:700; color:var(--brand);">A ParticipaciÃƒÂ³n Obligatoria en Blitz grupales</p>
-                            <p class="content-text">El Representante deberÃƒÂ¡ asistir como mÃƒÂ­nimo a un (1) Blitz semanal organizado por la compaÃƒÂ±ÃƒÂ­a.<br>La participaciÃƒÂ³n en los Blitz constituye una actividad esencial para el desarrollo comercial, generaciÃƒÂ³n de oportunidades y crecimiento profesional del Representante.<br>La falta reiterada de participaciÃƒÂ³n podrÃƒÂ¡ ser considerada motivo de suspensiÃƒÂ³n o inactivaciÃƒÂ³n.</p>
+                            <p class="content-text" style="font-weight:700; color:var(--brand);">A. Mandatory Participation in Group Blitzes</p>
+                            <p class="content-text">The Representative must attend at least one (1) weekly Blitz organized by the company.<br>Participation in Blitzes constitutes an essential activity for commercial development, opportunity generation, and professional growth.<br>Repeated failure to participate may be considered grounds for suspension or inactivation.</p>
                             
-                            <p class="content-text" style="font-weight:700; color:var(--brand); margin-top:4px;">B ProducciÃƒÂ³n MÃƒÂ­nima Mensual</p>
-                            <p class="content-text">El Representante deberÃƒÂ¡ generar un mÃƒÂ­nimo de una (1) venta aprobada por mes calendario para mantener su condiciÃƒÂ³n activa dentro de la compaÃƒÂ±ÃƒÂ­a.<br>La falta de cumplimiento podrÃƒÂ¡ resultar en revisiÃƒÂ³n de estatus, suspensiÃƒÂ³n temporal o terminaciÃƒÂ³n de la relaciÃƒÂ³n comercial.</p>
+                            <p class="content-text" style="font-weight:700; color:var(--brand); margin-top:4px;">B. Minimum Monthly Production</p>
+                            <p class="content-text">The Representative must generate a minimum of one (1) approved sale per calendar month to maintain active status within the company.<br>Failure to comply may result in status review, temporary suspension, or termination of the business relationship.</p>
                             
-                            <p class="content-text" style="font-weight:700; color:var(--brand); margin-top:4px;">C Reporte Semanal Obligatorio</p>
-                            <p class="content-text">Se discutirÃƒÂ¡ reporte semanal personalmente, el periodo semanal serÃƒÂ¡ comprendido desde el jueves hasta el miÃƒÂ©rcoles de cada semana.<br>La omisiÃƒÂ³n reiterada de reportes podrÃƒÂ¡ ser considerada incumplimiento contractual.</p>
+                            <p class="content-text" style="font-weight:700; color:var(--brand); margin-top:4px;">C. Mandatory Weekly Report</p>
+                            <p class="content-text">The weekly report will be discussed in person; the weekly period runs from Thursday to Wednesday of each week.<br>Repeated failure to submit reports may be considered a breach of contract.</p>
                             
-                            <p class="content-text" style="font-weight:700; color:var(--brand); margin-top:4px;">D Capacitaciones y Reuniones</p>
-                            <p class="content-text">La asistencia a capacitaciones, reuniones corporativas, entrenamientos, Zooms y Meetings oficiales de la compaÃƒÂ±ÃƒÂ­a es obligatoria. La ausencia sin circunstancias justificadas cuando exista una causa justificada y esta sea comunicada previamente a la administraciÃƒÂ³n o gerencia correspondiente.</p>
+                            <p class="content-text" style="font-weight:700; color:var(--brand); margin-top:4px;">D. Trainings and Meetings</p>
+                            <p class="content-text">Attendance at trainings, corporate meetings, Zooms, and official company meetings is mandatory. Absence without justified circumstances communicated in advance to the corresponding administration or management is prohibited.</p>
                         </div>
                     </div>
 
@@ -3229,22 +3228,22 @@ export function representantesHtml(data: Record<string, string>): string {
                             <i class="fa-solid fa-file-excel text-brand" style="font-size:24px;"></i>
                         </div>
                         <div class="content-col">
-                            <h2 class="section-title">11. TERMINACIÃƒâ€œN</h2>
-                            <p class="content-text">La CompaÃƒÂ±ÃƒÂ­a podrÃƒÂ¡ terminar este acuerdo de manera inmediata por:</p>
+                            <h2 class="section-title">11. TERMINATION</h2>
+                            <p class="content-text">The Company may terminate this agreement immediately for:</p>
                             <div style="display:flex;">
                                 <ul class="content-list" style="width:50%;">
-                                    <li>Fraude.</li>
-                                    <li>Conducta inapropiada.</li>
+                                    <li>Fraud.</li>
+                                    <li>Inappropriate conduct.</li>
                                 </ul>
                                 <ul class="content-list" style="width:50%;">
-                                    <li>Incumplimiento de polÃƒÂ­ticas.</li>
-                                    <li>FalsificaciÃƒÂ³n de documentos.</li>
+                                    <li>Policy breach.</li>
+                                    <li>Falsification of documents.</li>
                                 </ul>
                             </div>
                             <ul class="content-list">
-                                <li>Incumplimiento de cualquiera de las clÃƒÂ¡usulas establecidas en este contrato.</li>
+                                <li>Breach of any of the clauses set forth in this contract.</li>
                             </ul>
-                            <p class="content-text" style="margin-top:2px; font-style:italic;">El Representante podrÃƒÂ¡ finalizar este acuerdo en cualquier momento mediante notificaciÃƒÂ³n escrita.</p>
+                            <p class="content-text" style="margin-top:2px; font-style:italic;">The Representative may terminate this agreement at any time upon written notice.</p>
                         </div>
                     </div>
 
@@ -3257,8 +3256,8 @@ export function representantesHtml(data: Record<string, string>): string {
                                     <i class="fa-solid fa-file-invoice text-brand" style="font-size:18px;"></i>
                                 </div>
                                 <div>
-                                    <div class="section-title">12. IMPUESTOS</div>
-                                    <div class="content-text">El Representante reconoce que es responsable de declarar y pagar sus propios impuestos como contratista independiente. La CompaÃƒÂ±ÃƒÂ­a no realizarÃƒÂ¡ retenciones fiscales ni aportes de seguridad social.</div>
+                                    <div class="section-title">12. TAXES</div>
+                                    <div class="content-text">The Representative acknowledges they are responsible for reporting and paying their own taxes as an independent contractor. The Company will not withhold taxes or make social security contributions.</div>
                                 </div>
                             </div>
                         </div>
@@ -3269,8 +3268,8 @@ export function representantesHtml(data: Record<string, string>): string {
                                     <i class="fa-solid fa-scale-balanced text-brand" style="font-size:18px;"></i>
                                 </div>
                                 <div>
-                                    <div class="section-title">13. LEY APLICABLE</div>
-                                    <div class="content-text">Este contrato serÃƒÂ¡ interpretado y regido conforme a las leyes del Estado de Florida.</div>
+                                    <div class="section-title">13. GOVERNING LAW</div>
+                                    <div class="content-text">This contract will be interpreted and governed in accordance with the laws of the State of Florida.</div>
                                 </div>
                             </div>
                         </div>
@@ -3281,13 +3280,13 @@ export function representantesHtml(data: Record<string, string>): string {
                                     <i class="fa-solid fa-user-tie text-brand" style="font-size:18px;"></i>
                                 </div>
                                 <div>
-                                    <div class="section-title">14. CONDUCTA PROFESIONAL</div>
-                                    <div class="content-text">El Representante deberÃƒÂ¡:</div>
+                                    <div class="section-title">14. PROFESSIONAL CONDUCT</div>
+                                    <div class="content-text">The Representative must:</div>
                                     <ul class="content-list" style="list-style-type:none; padding-left:0; margin-top:2px;">
-                                        <li>&bull; Mantener una apariencia profesional.</li>
-                                        <li>&bull; Tratar a los clientes con respeto.</li>
-                                        <li>&bull; Actuar con honestidad.</li>
-                                        <li>&bull; Proteger la reputaciÃƒÂ³n de la compaÃƒÂ±ÃƒÂ­a.</li>
+                                        <li>&bull; Maintain a professional appearance.</li>
+                                        <li>&bull; Treat clients with respect.</li>
+                                        <li>&bull; Act with honesty.</li>
+                                        <li>&bull; Protect the company"s reputation.</li>
                                     </ul>
                                 </div>
                             </div>

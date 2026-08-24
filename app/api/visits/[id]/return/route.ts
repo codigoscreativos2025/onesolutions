@@ -53,6 +53,29 @@ export async function POST(
           link: `/lead/${visitId}`,
         })),
       });
+
+      // Send emails
+      const { sendEmail } = await import("@/lib/email");
+      const { emailTemplates } = await import("@/lib/email-templates");
+      
+      const usersToEmail = await prisma.user.findMany({
+        where: { id: { in: Array.from(userIdsToNotify) } },
+        select: { email: true, name: true, role: true }
+      });
+
+      for (const user of usersToEmail) {
+        if (user.email) {
+          try {
+            await sendEmail({
+              to: user.email,
+              subject: "Proyecto Devuelto - One Solutions",
+              html: emailTemplates.projectProgress(user.name, address, "Proyecto Devuelto (Requiere edición)"),
+            });
+          } catch (e) {
+            console.error(`Error sending email to ${user.email}:`, e);
+          }
+        }
+      }
     }
 
     return NextResponse.json({ success: true });

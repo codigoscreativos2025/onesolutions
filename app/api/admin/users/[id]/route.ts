@@ -32,6 +32,7 @@ export async function PATCH(
 
   if (password) {
     data.password = await bcrypt.hash(password, 10);
+    data.encryptedPassword = encrypt(password);
   }
 
   if (role === "SETTER" || role === "SETTER_JR") {
