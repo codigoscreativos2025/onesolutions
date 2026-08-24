@@ -316,14 +316,7 @@ export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead 
         .w9-container {
             padding: 0 !important;
           }
-          .main-grid {
-            display: block !important;
-          }
-          .col {
-            width: 100% !important;
-            padding: 0 !important;
-            display: block !important;
-          }
+
         .signature-box {
           margin-top: 20px !important;
         }
@@ -410,14 +403,7 @@ export function ContractModal({ isOpen, onClose, visitId, inline, isTraineeLead 
         .w9-container {
             padding: 0 !important;
           }
-          .main-grid {
-            display: block !important;
-          }
-          .col {
-            width: 100% !important;
-            padding: 0 !important;
-            display: block !important;
-          }
+
         .signature-box {
           margin-top: 10px !important;
         }
