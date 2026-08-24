@@ -3830,6 +3830,19 @@ function ArchivosPanel({
               },
             }),
           });
+        } else if (file.fieldKey === "idDocumentUrl2") {
+          await fetch(`/api/visits/${visit.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              bill: {
+                upsert: {
+                  create: { additionalFile2Url: null, additionalFile2Name: null },
+                  update: { additionalFile2Url: null, additionalFile2Name: null },
+                },
+              },
+            }),
+          });
         } else if (file.fieldKey === "propertyPhotosJson" || file.fieldKey === "idDocumentUrl") {
            let updatedArr: string[] = [];
            const currentVal = pd[file.fieldKey];
