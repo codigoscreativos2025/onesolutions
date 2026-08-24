@@ -11,6 +11,7 @@ import { ArrowLeft, Upload, Phone, User, Loader2, FileText, X, CheckCircle, Aler
 import { ContractModal } from "@/components/quote/ContractModal";
 import { NotesPanel } from "@/components/lead/NotesPanel";
 import { SlotPicker } from "@/components/calendar/SlotPicker";
+import { formatPhoneNumber } from "@/lib/utils";
 
 interface Closer { id: number; name: string; email: string }
 interface ProjectType { id: number; name: string; description?: string }
@@ -328,7 +329,7 @@ export default function VisitPage() {
           <label className={labelClass}>Teléfono *</label>
           <div className="relative">
             <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
-            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Número de teléfono" required className={inputClass} />
+            <input type="tel" value={phone} onChange={(e) => setPhone(formatPhoneNumber(e.target.value))} placeholder="Número de teléfono" required className={inputClass} />
           </div>
         </div>
 
