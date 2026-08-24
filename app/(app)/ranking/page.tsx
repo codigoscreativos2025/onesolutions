@@ -67,7 +67,28 @@ export default function RankingPage() {
     try {
       const res = await fetch(`/api/ranking?type=${type}&period=${period}`);
       const json = await res.json();
-      setData(json);
+      
+      const mockUsers: RankingItem[] = Array.from({ length: 20 }, (_, i) => ({
+        id: 9000 + i,
+        name: `Usuario Prueba ${i + 1}`,
+        role: type === "trainers" ? "CLOSER" : "SETTER",
+        phone: "555-0000",
+        projectsClosed: Math.floor(Math.random() * 5),
+        leads: Math.floor(Math.random() * 10),
+        doors: Math.floor(Math.random() * 20),
+        leadsGenerated: Math.floor(Math.random() * 10),
+      }));
+
+      // Merge and sort them along with real data
+      const mergedData = [...json, ...mockUsers].sort((a, b) => {
+        if (type === "trainers") {
+          return (b.projectsClosed || 0) - (a.projectsClosed || 0);
+        } else {
+          return (b.leadsGenerated || 0) - (a.leadsGenerated || 0);
+        }
+      });
+      
+      setData(mergedData);
     } finally {
       setLoading(false);
     }
@@ -175,10 +196,6 @@ export default function RankingPage() {
                   {activeTab === "trainers" ? "Trainees & Closers" : "Setters"}
                 </span>
               )}
-            </div>
-
-            <div className="ml-auto text-[#f48221] font-bold text-sm">
-              {data !== null ? data.length : "-"}
             </div>
           </div>
 
