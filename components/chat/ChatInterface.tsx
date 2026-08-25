@@ -616,7 +616,7 @@ export function ChatInterface({
     if (stageFilter === "CLOSED") {
       return [
         { name: "En permisos", color: "#f59e0b" },
-        { name: "Instalado y ya", color: "#06b6d4" },
+        { name: "Instalado", color: "#06b6d4" },
         { name: "Finalizado", color: "#22c55e" },
       ];
     }
@@ -1012,7 +1012,7 @@ export function ChatInterface({
                                     ? "#f59e0b"
                                     : tag === "Permisos aprobados"
                                       ? "#3b82f6"
-                                      : tag === "Instalado y ya"
+                                      : tag === "Instalado"
                                         ? "#06b6d4"
                                         : tag === "PTO"
                                           ? "#a855f7"
@@ -1759,7 +1759,7 @@ function InfoPanelContent({
                           ? "#f59e0b"
                           : tag === "Permisos aprobados"
                             ? "#3b82f6"
-                            : tag === "Instalado y ya"
+                            : tag === "Instalado"
                               ? "#06b6d4"
                               : tag === "PTO"
                                 ? "#a855f7"
