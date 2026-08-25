@@ -68,19 +68,8 @@ export default function RankingPage() {
       const res = await fetch(`/api/ranking?type=${type}&period=${period}`);
       const json = await res.json();
       
-      const mockUsers: RankingItem[] = Array.from({ length: 20 }, (_, i) => ({
-        id: 9000 + i,
-        name: `Usuario Prueba ${i + 1}`,
-        role: type === "trainers" ? "CLOSER" : "SETTER",
-        phone: "555-0000",
-        projectsClosed: Math.floor(Math.random() * 5),
-        leads: Math.floor(Math.random() * 10),
-        doors: Math.floor(Math.random() * 20),
-        leadsGenerated: Math.floor(Math.random() * 10),
-      }));
-
-      // Merge and sort them along with real data
-      const mergedData = [...json, ...mockUsers].sort((a, b) => {
+      // Sort real data
+      const mergedData = json.sort((a: RankingItem, b: RankingItem) => {
         if (type === "trainers") {
           return (b.projectsClosed || 0) - (a.projectsClosed || 0);
         } else {
