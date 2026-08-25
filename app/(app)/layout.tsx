@@ -5,6 +5,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { PageLoadingTransition } from "@/components/layout/PageLoadingTransition";
 import { ParticleBackground } from "@/components/ui/ParticleBackground";
 import { SessionGuard } from "@/components/layout/SessionGuard";
+import { GlobalNotifier } from "@/components/layout/GlobalNotifier";
 
 export default async function AppLayout({
   children,
@@ -66,6 +67,7 @@ export default async function AppLayout({
         <PageLoadingTransition>{children}</PageLoadingTransition>
       </main>
       <BottomNav />
+      <GlobalNotifier />
     </div>
     </SessionGuard>
   );
