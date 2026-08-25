@@ -150,7 +150,7 @@ const FIELD_GROUPS: Record<string, { label: string; prefix: string }> = {
   closing: { label: "Documentos", prefix: "closing" },
 };
 
-const POST_CLOSURE_TAGS = ["En permisos", "Permisos aprobados", "PTO", "Finalizado"];
+const POST_CLOSURE_TAGS = ["En permisos", "Permisos aprobados", "Instalado y ya", "PTO", "Finalizado"];
 
 function groupFieldsByType(
   fields: { fieldName: string; fieldLabel?: string; fieldType?: string }[],
