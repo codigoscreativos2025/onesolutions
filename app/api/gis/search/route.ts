@@ -65,6 +65,27 @@ export async function GET(request: Request) {
 
     const mappedFeatures = features
       .map((f) => {
+        if ("id" in f && typeof f.geometry === "string") {
+          let geoObj = null;
+          try {
+            geoObj = JSON.parse(f.geometry);
+          } catch (e) {}
+          
+          if (!geoObj) return null;
+          
+          return {
+            type: "Feature",
+            geometry: geoObj,
+            properties: {
+              id: f.externalId || f.id,
+              ll_uuid: f.externalId || f.id,
+              address: f.address,
+              ownerName: f.ownerName,
+              status: f.status || "AVAILABLE",
+            },
+          };
+        }
+
         const geo = toMapLibreFeature(f);
         if (!geo) return null;
         return {
