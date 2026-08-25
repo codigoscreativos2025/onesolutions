@@ -258,12 +258,12 @@ export async function gisSearchAddress(
   const merged = await queryProvidersSequential(
     [...countyConfigs, statewideConfig],
     (p) => p.searchAddress(q),
-    { minCountyResults: 15 }
+    { minCountyResults: 1 }
   );
 
   // Final FDOR fallback if we still don't have enough (covers the 37
   // counties without a dedicated provider + ones where FGDL has no data)
-  if (merged.length < 15 && fdorConfig) {
+  if (merged.length < 1 && fdorConfig) {
     try {
       const fdorResults = await getProvider("fl-fdor").searchAddress(q);
       const seen = new Set(merged.map((f) => f.externalId));

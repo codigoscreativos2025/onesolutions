@@ -482,9 +482,9 @@ export function createCountyProvider(
         }
       };
 
-      await tryWhere(`UPPER(${addrField}) LIKE '%${safe}%'`);
+      await tryWhere(`UPPER(${addrField}) LIKE '${safe}%'`);
       if (results.length < 15 && ownerField) {
-        await tryWhere(`UPPER(${ownerField}) LIKE '%${safe}%'`);
+        await tryWhere(`UPPER(${ownerField}) LIKE '${safe}%'`);
       }
 
       return results.slice(0, 15);

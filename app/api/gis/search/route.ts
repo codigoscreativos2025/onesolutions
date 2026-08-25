@@ -1,9 +1,11 @@
+
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { gisSearchAddress, toMapLibreFeature } from "@/lib/gis";
+import { gisSearchAddress, gisQueryPoint, toMapLibreFeature } from "@/lib/gis";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -19,20 +21,47 @@ export async function GET(request: Request) {
   }
 
   try {
-    const features = await gisSearchAddress(query.trim());
-    const externalIds = features.map((f) => f.externalId);
+    const q = query.trim();
+    let features: any[] = [];
+    
+    // First, try fast Geocoding using Nominatim (OpenStreetMap)
+    try {
+      const nomRes = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q + ", florida")}&format=json&limit=1`,
+        { headers: { "User-Agent": "OneSolutions/1.0", "Accept-Language": "en,es" } }
+      );
+      if (nomRes.ok) {
+        const nomData = await nomRes.json();
+        if (nomData && nomData.length > 0) {
+          const lat = parseFloat(nomData[0].lat);
+          const lon = parseFloat(nomData[0].lon);
+          // Query the specific point on our GIS providers
+          const pointResults = await gisQueryPoint(lat, lon);
+          if (pointResults && pointResults.length > 0) {
+            features = pointResults;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Nominatim geocoding failed", e);
+    }
 
-    const existing =
-      externalIds.length > 0
+    // Fallback to slow native ArcGIS string matching if Nominatim fails or finds nothing
+    if (features.length === 0) {
+      features = await gisSearchAddress(q);
+      const existing = features.length > 0
         ? await prisma.parcel.findMany({
-            where: { externalId: { in: externalIds } },
+            where: { externalId: { in: features.map(f => f.externalId!) } },
             select: { externalId: true, status: true },
           })
         : [];
-
-    const statusMap = new Map(
-      existing.map((p) => [p.externalId!, p.status])
-    );
+      
+      const statusMap = new Map(existing.map((p) => [p.externalId!, p.status]));
+      features = features.map(f => {
+        f.status = statusMap.get(f.externalId!) || "AVAILABLE";
+        return f;
+      });
+    }
 
     const mappedFeatures = features
       .map((f) => {
@@ -46,7 +75,7 @@ export async function GET(request: Request) {
             ll_uuid: f.externalId,
             address: f.address,
             ownerName: f.ownerName,
-            status: statusMap.get(f.externalId) || "AVAILABLE",
+            status: f.status || "AVAILABLE",
           },
         };
       })
@@ -66,3 +95,4 @@ export async function GET(request: Request) {
     );
   }
 }
+
