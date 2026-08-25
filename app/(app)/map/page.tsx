@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Search, MapPin, Loader2 } from "lucide-react";
@@ -38,6 +38,11 @@ export default function MapPage() {
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
+  
+  // State for dynamic search placeholder
+  const [currentCity, setCurrentCity] = useState("Orange County");
+  const [isFar, setIsFar] = useState(false);
+  const [isGeocoding, setIsGeocoding] = useState(false);
 
   useEffect(() => {
     if (autoOpen && highlightId) {
@@ -64,6 +69,28 @@ export default function MapPage() {
         .catch(() => {});
     }
   }, [autoOpen, highlightId]);
+
+  const handleMapMove = useCallback((center: [number, number], zoom: number) => {
+    if (zoom < 12) {
+      setIsFar(true);
+    } else {
+      setIsFar(false);
+      // Debounce the reverse geocoding to not spam Nominatim
+      // Store timeout ID in a data attribute or variable outside closure is tricky without useRef,
+      // but we can just use a simple setTimeout trick with a module-level or state-level variable.
+      // Since it is useCallback, let us just trigger the fetch directly but Nominatim has a rate limit of 1 req/sec.
+      // Let`s do a quick naive fetch.
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${center[0]}&lon=${center[1]}&format=json&zoom=10`, {
+        headers: { "Accept-Language": "es" }
+      })
+      .then(r => r.json())
+      .then(data => {
+        let city = data.address?.city || data.address?.town || data.address?.village || data.address?.county || "Orange County";
+        setCurrentCity(city);
+      })
+      .catch(() => {});
+    }
+  }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,6 +153,10 @@ export default function MapPage() {
     setResults([]);
   };
 
+  const searchPlaceholder = isFar 
+    ? t.placeholders.searchZoomIn 
+    : (t.placeholders.searchInCity as string).replace("{city}", currentCity);
+
   return (
     <div className="flex flex-col h-[75vh] w-full relative rounded-2xl overflow-hidden shadow-xl border border-outline-variant/30">
       <div className="absolute top-4 left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto z-10 w-auto sm:w-[450px] space-y-2">
@@ -139,7 +170,7 @@ export default function MapPage() {
                 setQuery(e.target.value);
                 if (!e.target.value) setResults([]);
               }}
-              placeholder="Buscar en Orange County..."
+              placeholder={searchPlaceholder}
               className="flex-1 bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-on-surface-variant outline-none"
             />
             <button
@@ -178,6 +209,7 @@ export default function MapPage() {
         <DynamicMap
           center={mapCenter}
           autoOpenId={autoOpenParcel?.id || null}
+          onMapMove={handleMapMove}
         />
       </div>
     </div>

@@ -56,9 +56,11 @@ function getTagColor(parcelTags?: string): string | null {
 export default function MapView({
   center,
   autoOpenId,
+  onMapMove,
 }: {
   center?: [number, number] | null;
   autoOpenId?: string | null;
+  onMapMove?: (center: [number, number], zoom: number) => void;
 }) {
   const { data: session } = useSession();
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -282,6 +284,11 @@ export default function MapView({
 
     m.on("load", () => {
       if (mapTimeout.current) clearTimeout(mapTimeout.current);
+
+      if (onMapMove) {
+        const c = m.getCenter();
+        onMapMove([c.lat, c.lng], m.getZoom());
+      }
 
       // County-level layer: shows the whole state of Florida at z=6-10.
       // Green polygons are counties with a dedicated GIS provider; gray
@@ -1165,6 +1172,10 @@ const loadViewportParcels = async () => {
       m.on("moveend", () => {
         fetchStatusMarkers();
         scheduleParcelLoad();
+        if (onMapMove) {
+          const c = m.getCenter();
+          onMapMove([c.lat, c.lng], m.getZoom());
+        }
       });
       m.on("zoom", () => {
         refreshVisible();
@@ -1172,6 +1183,10 @@ const loadViewportParcels = async () => {
       m.on("zoomend", () => {
         fetchStatusMarkers();
         scheduleParcelLoad();
+        if (onMapMove) {
+          const c = m.getCenter();
+          onMapMove([c.lat, c.lng], m.getZoom());
+        }
       });
 
       fetchStatusMarkers();

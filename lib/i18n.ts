@@ -219,6 +219,8 @@ export const translations = {
       mapErrorBody: "OneSolutions cuenta con un mapeado estricto por favor ingrese tal cual la dirección sin fallos, disculpe las molestias"
     },
     placeholders: {
+      searchInCity: "Buscar en calle de {city}...",
+      searchZoomIn: "Acércate al mapa para buscar...",
       filterAddress: "Filtrar por dirección...",
       filterClient: "Filtrar por cliente...",
       address: "Dirección...",
@@ -455,6 +457,8 @@ export const translations = {
       mapErrorBody: "OneSolutions has strict mapping, please enter the exact address without errors. Sorry for the inconvenience."
     },
     placeholders: {
+      searchInCity: "Search street in {city}...",
+      searchZoomIn: "Zoom in to search...",
       filterAddress: "Filter by address...",
       filterClient: "Filter by client...",
       address: "Address...",
