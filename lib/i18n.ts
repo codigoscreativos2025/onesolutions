@@ -209,6 +209,15 @@ export const translations = {
       financing: "Financiamiento",
       creditCard: "Tarjeta de Crédito",
     },
+    notifier: {
+      newMsgTitle: "Hola buenas, tienes un nuevo mensaje",
+      unreadMsgTitle: "Hola buenas, tienes mensajes sin leer",
+      msgBody: "Verifica y deja leídos los mensajes pendientes, mantener el flujo de desarrollo es importante.",
+      newNotifTitle: "Tienes una nueva notificación",
+      notifBody: "Revisa tus notificaciones recientes para estar al tanto del flujo del proyecto.",
+      mapErrorTitle: "Dirección incorrecta",
+      mapErrorBody: "OneSolutions cuenta con un mapeado estricto por favor ingrese tal cual la dirección sin fallos, disculpe las molestias"
+    },
     placeholders: {
       filterAddress: "Filtrar por dirección...",
       filterClient: "Filtrar por cliente...",
@@ -435,6 +444,15 @@ export const translations = {
       check: "Check",
       financing: "Financing",
       creditCard: "Credit Card",
+    },
+    notifier: {
+      newMsgTitle: "Hello, you have a new message",
+      unreadMsgTitle: "Hello, you have unread messages",
+      msgBody: "Please check and mark your pending messages as read. Maintaining the development flow is important.",
+      newNotifTitle: "You have a new notification",
+      notifBody: "Check your recent notifications to stay updated on the project flow.",
+      mapErrorTitle: "Incorrect address",
+      mapErrorBody: "OneSolutions has strict mapping, please enter the exact address without errors. Sorry for the inconvenience."
     },
     placeholders: {
       filterAddress: "Filter by address...",

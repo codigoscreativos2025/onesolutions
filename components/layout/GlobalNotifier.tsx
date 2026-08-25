@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { Mail, Bell, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Mail, Bell, X, MapPinOff } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useLocale } from "@/lib/locale-context";
 
 interface UnreadStatus {
   unreadNotificationsCount: number;
@@ -15,22 +16,34 @@ interface UnreadStatus {
 export function GlobalNotifier() {
   const { data: session } = useSession();
   const router = useRouter();
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { t } = useLocale();
   
   // Local state for the custom toast
   const [toastData, setToastData] = useState<{
-    type: "message" | "notification";
+    type: "message" | "notification" | "error";
     title: string;
     body: string;
     messageId?: number | null;
     notificationId?: number | null;
   } | null>(null);
 
+  // Listen for custom global events (e.g. from MapView)
+  useEffect(() => {
+    const handleGlobalToast = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        setToastData(customEvent.detail);
+      }
+    };
+    window.addEventListener("show-global-toast", handleGlobalToast);
+    return () => window.removeEventListener("show-global-toast", handleGlobalToast);
+  }, []);
+
   useEffect(() => {
     if (!session) return;
 
     const checkUnreadStatus = async () => {
-      // Don`t fetch if a toast is currently visible
+      // Dont fetch if a toast is currently visible
       if (toastData) return;
 
       try {
@@ -56,21 +69,21 @@ export function GlobalNotifier() {
         // 1. Check for completely NEW messages
         if (data.latestUnreadMessageId && data.latestUnreadMessageId > storedMessageId) {
           shouldShowMessageToast = true;
-          messageTitle = "Hola buenas, tienes un nuevo mensaje";
-          messageBody = "Verifica y deja leídos los mensajes pendientes, mantener el flujo de desarrollo es importante.";
+          messageTitle = t.notifier.newMsgTitle;
+          messageBody = t.notifier.msgBody;
         } 
         // 2. Check for daily reminder of UNREAD messages
         else if (data.unreadMessagesCount > 0 && lastReminderDate !== today) {
           shouldShowMessageToast = true;
-          messageTitle = "Hola buenas, tienes mensajes sin leer";
-          messageBody = "Verifica y deja leídos los mensajes pendientes, mantener el flujo de desarrollo es importante.";
+          messageTitle = t.notifier.unreadMsgTitle;
+          messageBody = t.notifier.msgBody;
         }
 
         // 3. Check for NEW notifications
         if (data.latestUnreadNotificationId && data.latestUnreadNotificationId > storedNotificationId) {
           shouldShowNotificationToast = true;
-          notifTitle = "Tienes una nueva notificación";
-          notifBody = "Revisa tus notificaciones recientes para estar al tanto del flujo del proyecto.";
+          notifTitle = t.notifier.newNotifTitle;
+          notifBody = t.notifier.notifBody;
         }
 
         // Show toast (prioritize messages, wait for user to dismiss to update localStorage)
@@ -105,11 +118,12 @@ export function GlobalNotifier() {
       clearTimeout(initTimer);
       clearInterval(interval);
     };
-  }, [session, toastData]);
+  }, [session, toastData, t]);
 
   if (!toastData) return null;
 
   const isMessage = toastData.type === "message";
+  const isError = toastData.type === "error";
 
   const dismissToast = (navigateToChat: boolean = false) => {
     // Update local storage so it doesnt pop up again immediately
@@ -120,7 +134,7 @@ export function GlobalNotifier() {
         localStorage.setItem("lastUnreadReminderDate", new Date().toISOString().split("T")[0]);
       }
       if (navigateToChat) router.push("/chat");
-    } else {
+    } else if (toastData.type === "notification") {
       if (toastData.notificationId) {
         localStorage.setItem("latestUnreadNotificationId", toastData.notificationId.toString());
       }
@@ -128,19 +142,34 @@ export function GlobalNotifier() {
     setToastData(null);
   };
 
+  let bgClass = "bg-[#fff3e0] border-[#ff9800]";
+  let iconClass = "bg-[#ff9800]/20 text-[#ff9800]";
+  let titleClass = "text-[#e65100]";
+  let Icon = Bell;
+
+  if (isMessage) {
+    bgClass = "bg-[#e8f5e9] border-[#4caf50]";
+    iconClass = "bg-[#4caf50]/20 text-[#4caf50]";
+    titleClass = "text-[#2e7d32]";
+    Icon = Mail;
+  } else if (isError) {
+    bgClass = "bg-[#ffebee] border-[#f44336]";
+    iconClass = "bg-[#f44336]/20 text-[#f44336]";
+    titleClass = "text-[#c62828]";
+    Icon = MapPinOff;
+  }
+
   return (
     <div className="fixed bottom-28 left-4 z-[9999] animate-in slide-in-from-bottom-5 fade-in duration-300">
       <div 
-        onClick={() => dismissToast(true)}
-        className={`relative cursor-pointer overflow-hidden flex items-start gap-3 p-4 pr-8 w-[340px] rounded-xl shadow-2xl border transition-transform hover:scale-[1.02] ${
-          isMessage ? "bg-[#e8f5e9] border-[#4caf50]" : "bg-[#fff3e0] border-[#ff9800]"
-        }`}
+        onClick={() => dismissToast(isMessage)}
+        className={`relative cursor-pointer overflow-hidden flex items-start gap-3 p-4 pr-8 w-[340px] rounded-xl shadow-2xl border transition-transform hover:scale-[1.02] ${bgClass}`}
       >
-        <div className={`shrink-0 p-2 rounded-full ${isMessage ? "bg-[#4caf50]/20 text-[#4caf50]" : "bg-[#ff9800]/20 text-[#ff9800]"}`}>
-          {isMessage ? <Mail className="w-6 h-6" /> : <Bell className="w-6 h-6" />}
+        <div className={`shrink-0 p-2 rounded-full ${iconClass}`}>
+          <Icon className="w-6 h-6" />
         </div>
         <div className="flex-1">
-          <h1 className={`text-sm font-bold mb-1 ${isMessage ? "text-[#2e7d32]" : "text-[#e65100]"}`}>
+          <h1 className={`text-sm font-bold mb-1 ${titleClass}`}>
             {toastData.title}
           </h1>
           <p className="text-xs text-black/70 leading-relaxed">

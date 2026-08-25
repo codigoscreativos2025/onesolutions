@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Search, MapPin, Loader2 } from "lucide-react";
+import { useLocale } from "@/lib/locale-context";
 
 const DynamicMap = dynamic(() => import("@/components/map/MapView"), {
   ssr: false,
@@ -25,6 +26,7 @@ interface SearchResult {
 }
 
 export default function MapPage() {
+  const { t } = useLocale();
   const searchParams = useSearchParams();
   const highlightId = searchParams.get("highlight") || searchParams.get("parcelId");
   const autoOpen = searchParams.get("autoOpen") === "true" || !!searchParams.get("parcelId");
@@ -37,7 +39,6 @@ export default function MapPage() {
   const [searchError, setSearchError] = useState("");
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
 
-  // Auto-open parcel sheet from lead details
   useEffect(() => {
     if (autoOpen && highlightId) {
       fetch(`/api/parcels/${encodeURIComponent(highlightId)}`)
@@ -79,21 +80,31 @@ export default function MapPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setSearchError(data.message || data.error || "Error en la bǧsqueda");
+        window.dispatchEvent(new CustomEvent("show-global-toast", {
+          detail: { type: "error", title: t.notifier.mapErrorTitle, body: t.notifier.mapErrorBody }
+        }));
       } else {
         const features = data.results?.features || [];
-        const items: SearchResult[] = features.map(
-          (feature: { properties?: { id?: string; ll_uuid?: string; address?: string }; geometry?: SearchResult["geometry"] }) => ({
-            id: feature.properties?.id || feature.properties?.ll_uuid || "",
-            address: feature.properties?.address || "",
-            ll_uuid: feature.properties?.ll_uuid,
-            geometry: feature.geometry,
-          })
-        );
-        setResults(items);
+        if (features.length === 0) {
+          window.dispatchEvent(new CustomEvent("show-global-toast", {
+            detail: { type: "error", title: t.notifier.mapErrorTitle, body: t.notifier.mapErrorBody }
+          }));
+        } else {
+          const items: SearchResult[] = features.map(
+            (feature: { properties?: { id?: string; ll_uuid?: string; address?: string }; geometry?: SearchResult["geometry"] }) => ({
+              id: feature.properties?.id || feature.properties?.ll_uuid || "",
+              address: feature.properties?.address || "",
+              ll_uuid: feature.properties?.ll_uuid,
+              geometry: feature.geometry,
+            })
+          );
+          setResults(items);
+        }
       }
     } catch {
-      setSearchError("No se pudo conectar con el servicio de bǧsqueda");
+      window.dispatchEvent(new CustomEvent("show-global-toast", {
+        detail: { type: "error", title: t.notifier.mapErrorTitle, body: t.notifier.mapErrorBody }
+      }));
     } finally {
       setSearching(false);
     }
@@ -163,8 +174,16 @@ export default function MapPage() {
         )}
       </div>
 
-      <div className="w-full h-full flex flex-1 bg-surface-container relative">
-        <DynamicMap center={mapCenter} autoOpenId={autoOpenParcel?.id} />
+      <div className="flex-1 w-full relative z-0">
+        <DynamicMap
+          mapCenter={mapCenter}
+          autoOpenParcel={autoOpenParcel}
+          onParcelSelect={(parcel) => {
+            if (parcel?.id && parcel?.address) {
+              setAutoOpenParcel({ id: parcel.id, address: parcel.address });
+            }
+          }}
+        />
       </div>
     </div>
   );
