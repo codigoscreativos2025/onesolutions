@@ -1,19 +1,19 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { auth } from '@/auth';
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const userId = parseInt(session.user.id);
   const role = session.user.role;
 
   // Solo setters y closers pueden crear leads
-  if (role !== 'SETTER' && role !== 'SETTER_JR' && role !== 'CLOSER' && role !== 'ADMIN') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (role !== "SETTER" && role !== "SETTER_JR" && role !== "CLOSER" && role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   try {
@@ -21,13 +21,13 @@ export async function POST(request: Request) {
     const { address, ownerName, phone, notes, clientEmail, projectTypeIds, setterId, closerId, scheduledDate } = body;
 
     if (!address) {
-      return NextResponse.json({ error: 'Address is required' }, { status: 400 });
+      return NextResponse.json({ error: "Address is required" }, { status: 400 });
     }
 
-    const assignedSetterId = role === 'ADMIN' && setterId ? setterId : userId;
-    const assignedCloserId = closerId ? parseInt(closerId) : (role === 'CLOSER' ? userId : null);
+    const assignedSetterId = role === "ADMIN" && setterId ? setterId : userId;
+    const assignedCloserId = closerId ? parseInt(closerId) : (role === "CLOSER" ? userId : null);
 
-    // Generar un ID único para la parcela
+    // Generar un ID unico para la parcela
     const parcelId = `manual-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     // Crear la parcela
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
         id: parcelId,
         address,
         ownerName,
-        status: 'LEAD',
+        status: "LEAD",
         setterId: assignedSetterId,
         claimedAt: new Date(),
         lastActivityAt: new Date(),
@@ -48,8 +48,8 @@ export async function POST(request: Request) {
           isManual: true,
         }),
         geometry: JSON.stringify({
-          type: 'Point',
-          coordinates: [0, 0], // Coordenadas placeholder para leads manuales
+          type: "Point",
+          coordinates: [0, 0],
         }),
       },
     });
@@ -60,8 +60,8 @@ export async function POST(request: Request) {
         parcelId: parcel.id,
         setterId: assignedSetterId,
         closerId: assignedCloserId,
-        stage: 'PROPOSAL_ACCEPTED',
-        outcome: 'MANUAL_LEAD',
+        stage: "PROPOSAL_ACCEPTED",
+        outcome: "MANUAL_LEAD",
         legacyNotes: notes || null,
         scheduledAt: scheduledDate ? new Date(scheduledDate) : null,
       },
@@ -104,17 +104,16 @@ export async function POST(request: Request) {
       });
     }
 
-    // Notificar al closer si fue asignado y no es quien está creando el lead
-    if (assignedCloserId && assignedCloserId !== userId) {
-      const addressName = address || "un lead manual";
-      let roleName = "Usuario";
-      if (role === "SETTER") roleName = "Trainee";
-      else if (role === "SETTER_JR") roleName = "Setter";
-      else if ((role as string) === "TRAINEE") roleName = "Trainee";
-      else if (role === "ADMIN") roleName = "Admin";
+    let roleName = "Usuario";
+    if (role === "SETTER") roleName = "Trainee";
+    else if (role === "SETTER_JR") roleName = "Setter";
+    else if ((role as string) === "TRAINEE") roleName = "Trainee";
+    else if (role === "CLOSER") roleName = "Closer";
+    else if (role === "ADMIN") roleName = "Admin";
+    const addressName = address || "un lead manual";
 
-      // Podemos chequear si es panel solar, pero como es manual y recién se crea
-      // simplemente notificamos de la asignación.
+    // Notificar al closer si fue asignado y no es quien esta creando el lead
+    if (assignedCloserId && assignedCloserId !== userId) {
       await prisma.notification.create({
         data: {
           userId: assignedCloserId,
@@ -125,13 +124,30 @@ export async function POST(request: Request) {
       });
     }
 
+    // Notificar a todos los administradores (solicitado por el usuario)
+    if (role !== "ADMIN") {
+      const admins = await prisma.user.findMany({
+        where: { role: "ADMIN" }
+      });
+      if (admins.length > 0) {
+        await prisma.notification.createMany({
+          data: admins.map((admin: any) => ({
+            userId: admin.id,
+            title: "Nuevo Lead Manual",
+            body: `El ${roleName} ${session.user.name} ha creado un nuevo lead manual en ${addressName}.`,
+            link: `/lead/${visit.id}`,
+          }))
+        });
+      }
+    }
+
     // Registrar en el historial
     await prisma.parcelVisitHistory.create({
       data: {
         parcelId: parcel.id,
         setterId: assignedSetterId,
         visitedAt: new Date(),
-        status: 'MANUAL_LEAD',
+        status: "MANUAL_LEAD",
         notes: notes || null,
       },
     });
@@ -142,7 +158,7 @@ export async function POST(request: Request) {
       visit,
     });
   } catch (error) {
-    console.error('Error creating manual lead:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error("Error creating manual lead:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

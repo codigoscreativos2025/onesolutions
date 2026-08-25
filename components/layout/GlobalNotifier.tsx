@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Mail, Bell } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Mail, Bell, X } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
@@ -15,18 +15,24 @@ interface UnreadStatus {
 export function GlobalNotifier() {
   const { data: session } = useSession();
   const router = useRouter();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   
   // Local state for the custom toast
   const [toastData, setToastData] = useState<{
     type: "message" | "notification";
     title: string;
     body: string;
+    messageId?: number | null;
+    notificationId?: number | null;
   } | null>(null);
 
   useEffect(() => {
     if (!session) return;
 
     const checkUnreadStatus = async () => {
+      // Don`t fetch if a toast is currently visible
+      if (toastData) return;
+
       try {
         const res = await fetch("/api/unread-status");
         if (!res.ok) return;
@@ -52,14 +58,12 @@ export function GlobalNotifier() {
           shouldShowMessageToast = true;
           messageTitle = "Hola buenas, tienes un nuevo mensaje";
           messageBody = "Verifica y deja leídos los mensajes pendientes, mantener el flujo de desarrollo es importante.";
-          localStorage.setItem("latestUnreadMessageId", data.latestUnreadMessageId.toString());
         } 
         // 2. Check for daily reminder of UNREAD messages
         else if (data.unreadMessagesCount > 0 && lastReminderDate !== today) {
           shouldShowMessageToast = true;
-          messageTitle = "Tienes mensajes sin leer";
+          messageTitle = "Hola buenas, tienes mensajes sin leer";
           messageBody = "Verifica y deja leídos los mensajes pendientes, mantener el flujo de desarrollo es importante.";
-          localStorage.setItem("lastUnreadReminderDate", today);
         }
 
         // 3. Check for NEW notifications
@@ -67,16 +71,23 @@ export function GlobalNotifier() {
           shouldShowNotificationToast = true;
           notifTitle = "Tienes una nueva notificación";
           notifBody = "Revisa tus notificaciones recientes para estar al tanto del flujo del proyecto.";
-          localStorage.setItem("latestUnreadNotificationId", data.latestUnreadNotificationId.toString());
         }
 
-        // Show toast (prioritize messages)
+        // Show toast (prioritize messages, wait for user to dismiss to update localStorage)
         if (shouldShowMessageToast) {
-          setToastData({ type: "message", title: messageTitle, body: messageBody });
-          setTimeout(() => setToastData(null), 10000); // hide after 10s
+          setToastData({ 
+            type: "message", 
+            title: messageTitle, 
+            body: messageBody,
+            messageId: data.latestUnreadMessageId
+          });
         } else if (shouldShowNotificationToast) {
-          setToastData({ type: "notification", title: notifTitle, body: notifBody });
-          setTimeout(() => setToastData(null), 10000); // hide after 10s
+          setToastData({ 
+            type: "notification", 
+            title: notifTitle, 
+            body: notifBody,
+            notificationId: data.latestUnreadNotificationId
+          });
         }
 
       } catch (error) {
@@ -84,8 +95,8 @@ export function GlobalNotifier() {
       }
     };
 
-    // Initial check (delay by 2 seconds to not crowd initial load)
-    const initTimer = setTimeout(checkUnreadStatus, 2000);
+    // Initial check (delay by 3 seconds)
+    const initTimer = setTimeout(checkUnreadStatus, 3000);
 
     // Check every 5 minutes (300000 ms)
     const interval = setInterval(checkUnreadStatus, 300000);
@@ -94,20 +105,34 @@ export function GlobalNotifier() {
       clearTimeout(initTimer);
       clearInterval(interval);
     };
-  }, [session]);
+  }, [session, toastData]);
 
   if (!toastData) return null;
 
   const isMessage = toastData.type === "message";
 
+  const dismissToast = (navigateToChat: boolean = false) => {
+    // Update local storage so it doesnt pop up again immediately
+    if (isMessage) {
+      if (toastData.messageId) {
+        localStorage.setItem("latestUnreadMessageId", toastData.messageId.toString());
+      } else {
+        localStorage.setItem("lastUnreadReminderDate", new Date().toISOString().split("T")[0]);
+      }
+      if (navigateToChat) router.push("/chat");
+    } else {
+      if (toastData.notificationId) {
+        localStorage.setItem("latestUnreadNotificationId", toastData.notificationId.toString());
+      }
+    }
+    setToastData(null);
+  };
+
   return (
     <div className="fixed bottom-28 left-4 z-[9999] animate-in slide-in-from-bottom-5 fade-in duration-300">
       <div 
-        onClick={() => {
-          if (isMessage) router.push("/chat");
-          setToastData(null);
-        }}
-        className={`relative cursor-pointer overflow-hidden flex items-start gap-3 p-4 w-[340px] rounded-xl shadow-2xl border transition-transform hover:scale-[1.02] ${
+        onClick={() => dismissToast(true)}
+        className={`relative cursor-pointer overflow-hidden flex items-start gap-3 p-4 pr-8 w-[340px] rounded-xl shadow-2xl border transition-transform hover:scale-[1.02] ${
           isMessage ? "bg-[#e8f5e9] border-[#4caf50]" : "bg-[#fff3e0] border-[#ff9800]"
         }`}
       >
@@ -125,11 +150,11 @@ export function GlobalNotifier() {
         <button 
           onClick={(e) => {
             e.stopPropagation();
-            setToastData(null);
+            dismissToast(false);
           }}
-          className="absolute top-2 right-2 text-black/40 hover:text-black transition-colors"
+          className="absolute top-2 right-2 text-black/40 hover:text-black transition-colors p-1"
         >
-          &times;
+          <X className="w-4 h-4" />
         </button>
       </div>
     </div>
