@@ -176,13 +176,8 @@ export default function MapPage() {
 
       <div className="flex-1 w-full relative z-0">
         <DynamicMap
-          mapCenter={mapCenter}
-          autoOpenParcel={autoOpenParcel}
-          onParcelSelect={(parcel) => {
-            if (parcel?.id && parcel?.address) {
-              setAutoOpenParcel({ id: parcel.id, address: parcel.address });
-            }
-          }}
+          center={mapCenter}
+          autoOpenId={autoOpenParcel?.id || null}
         />
       </div>
     </div>
