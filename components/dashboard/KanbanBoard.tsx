@@ -561,7 +561,7 @@ export function KanbanBoard({
             <span className="text-xs text-on-surface-variant self-center mr-1">
               Estado:
             </span>
-            {["En permisos", "Permisos aprobados", "En instalacion", "PTO", "Finalizado"].map((tag) => {
+            {["En permisos", "Permisos aprobados", "PTO", "Finalizado"].map((tag) => {
               const isActive = postCloseFilter === tag;
               return (
                 <button
@@ -964,9 +964,7 @@ function KanbanCard({
               ? "#f59e0b"
               : tag === "Permisos aprobados"
                 ? "#3b82f6"
-                : tag === "En instalacion"
-                  ? "#06b6d4"
-                  : tag === "PTO"
+                : tag === "PTO"
                     ? "#a855f7"
                     : tag === "Finalizado"
                       ? "#22c55e"
