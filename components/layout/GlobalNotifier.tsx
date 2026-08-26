@@ -54,9 +54,9 @@ export function GlobalNotifier() {
         // Retrieve stored state
         const storedMessageId = parseInt(localStorage.getItem("latestUnreadMessageId") || "0");
         const storedNotificationId = parseInt(localStorage.getItem("latestUnreadNotificationId") || "0");
-        const lastReminderDate = localStorage.getItem("lastUnreadReminderDate") || "";
-
-        const today = new Date().toISOString().split("T")[0];
+        const lastReminderTime = parseInt(localStorage.getItem("lastUnreadReminderTime") || "0");
+        const now = Date.now();
+        const TWENTY_MINUTES = 20 * 60 * 1000;
 
         let shouldShowMessageToast = false;
         let shouldShowNotificationToast = false;
@@ -72,8 +72,8 @@ export function GlobalNotifier() {
           messageTitle = t.notifier.newMsgTitle;
           messageBody = t.notifier.msgBody;
         } 
-        // 2. Check for daily reminder of UNREAD messages
-        else if (data.unreadMessagesCount > 0 && lastReminderDate !== today) {
+        // 2. Check for reminder of UNREAD messages (every 20 mins)
+        else if (data.unreadMessagesCount > 0 && (now - lastReminderTime > TWENTY_MINUTES)) {
           shouldShowMessageToast = true;
           messageTitle = t.notifier.unreadMsgTitle;
           messageBody = t.notifier.msgBody;
@@ -85,6 +85,12 @@ export function GlobalNotifier() {
           notifTitle = t.notifier.newNotifTitle;
           notifBody = t.notifier.notifBody;
         }
+        // 4. Check for reminder of UNREAD notifications (every 20 mins, shares timer with messages)
+        else if (data.unreadNotificationsCount > 0 && (now - lastReminderTime > TWENTY_MINUTES)) {
+          shouldShowNotificationToast = true;
+          notifTitle = t.notifier.newNotifTitle;
+          notifBody = t.notifier.notifBody;
+        }
 
         // Show toast (prioritize messages, wait for user to dismiss to update localStorage)
         if (shouldShowMessageToast) {
@@ -92,14 +98,14 @@ export function GlobalNotifier() {
             type: "message", 
             title: messageTitle, 
             body: messageBody,
-            messageId: data.latestUnreadMessageId
+            messageId: data.latestUnreadMessageId // pass ID to update it on dismiss
           });
         } else if (shouldShowNotificationToast) {
           setToastData({ 
             type: "notification", 
             title: notifTitle, 
             body: notifBody,
-            notificationId: data.latestUnreadNotificationId
+            notificationId: data.latestUnreadNotificationId // pass ID to update it on dismiss
           });
         }
 
@@ -130,14 +136,17 @@ export function GlobalNotifier() {
     if (isMessage) {
       if (toastData.messageId) {
         localStorage.setItem("latestUnreadMessageId", toastData.messageId.toString());
-      } else {
-        localStorage.setItem("lastUnreadReminderDate", new Date().toISOString().split("T")[0]);
       }
+      // Always reset the 20-min reminder timer when dismissing a message toast
+      localStorage.setItem("lastUnreadReminderTime", Date.now().toString());
+      
       if (navigateToChat) router.push("/chat");
     } else if (toastData.type === "notification") {
       if (toastData.notificationId) {
         localStorage.setItem("latestUnreadNotificationId", toastData.notificationId.toString());
       }
+      // Reset reminder for notifications too
+      localStorage.setItem("lastUnreadReminderTime", Date.now().toString());
     }
     setToastData(null);
   };

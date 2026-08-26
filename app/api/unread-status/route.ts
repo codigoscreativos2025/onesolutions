@@ -1,3 +1,4 @@
+
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
@@ -13,7 +14,19 @@ export async function GET() {
   const userId = parseInt(session.user.id);
   const role = session.user.role;
 
-  const notifications = await prisma.notification.findMany({
+  // Fetch cancelled visits & rooms to filter out their notifications
+  const cancelledVisits = await prisma.visit.findMany({
+    where: { stage: "CANCELLED" },
+    select: {
+      id: true,
+      chatRooms: { select: { id: true } }
+    }
+  });
+
+  const cancelledVisitIds = new Set(cancelledVisits.map(v => v.id));
+  const cancelledRoomIds = new Set(cancelledVisits.flatMap(v => v.chatRooms.map(r => r.id)));
+
+  const allNotifications = await prisma.notification.findMany({
     where: { 
       userId: userId,
       isRead: false
@@ -21,21 +34,43 @@ export async function GET() {
     orderBy: { id: "desc" }
   });
 
+  const notifications = allNotifications.filter(n => {
+    if (!n.link) return true;
+    
+    // Filter out /lead/:id
+    const leadMatch = n.link.match(/^\/lead\/(\d+)/);
+    if (leadMatch && cancelledVisitIds.has(parseInt(leadMatch[1]))) return false;
+
+    // Filter out /admin/chats?room=:id
+    const roomMatch = n.link.match(/room=(\d+)/);
+    if (roomMatch && cancelledRoomIds.has(parseInt(roomMatch[1]))) return false;
+
+    return true;
+  });
+
   const unreadNotificationsCount = notifications.length;
   const latestUnreadNotificationId = notifications.length > 0 ? notifications[0].id : null;
 
-  let roomCondition: any = {};
+  let roomCondition: any = {
+    visit: {
+      stage: { not: "CANCELLED" }
+    }
+  };
+  
   if (role === "ADMIN") {
-    roomCondition = {}; 
+    // Admin can see everything (except cancelled)
   } else if (role === "PARTNER") {
     roomCondition = {
+      ...roomCondition,
       type: "PARTNER",
       partnerId: userId
     };
   } else {
     roomCondition = {
+      ...roomCondition,
       type: "GENERAL",
       visit: {
+        stage: { not: "CANCELLED" },
         OR: [{ setterId: userId }, { closerId: userId }]
       }
     };
@@ -60,3 +95,4 @@ export async function GET() {
     latestUnreadMessageId
   });
 }
+
