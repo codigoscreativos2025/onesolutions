@@ -50,9 +50,11 @@ export async function GET(request: NextRequest) {
 
     const data = raw.map((user) => {
       const leadsGenerated = user.visitsAsSetter.filter(
-        (v) => v.stage === "PROPOSAL_ACCEPTED"
+        (v) => v.stage === "PROPOSAL_ACCEPTED" || v.stage === "PROJECT" || v.stage === "CLOSED"
       ).length;
-      const doors = user.visitsAsSetter.length;
+      const doors = user.visitsAsSetter.filter(
+        (v) => v.stage !== "CANCELLED"
+      ).length;
       return {
         id: user.id,
         name: user.name,
@@ -67,7 +69,11 @@ export async function GET(request: NextRequest) {
 
     data.sort((a, b) => b.leadsGenerated - a.leadsGenerated);
 
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+      },
+    });
   }
 
   const raw = await prisma.user.findMany({
@@ -95,7 +101,7 @@ export async function GET(request: NextRequest) {
 
   const data = raw.map((user) => {
     const projectsClosed = user.visitsAsCloser.filter(
-      (v) => v.completedAt !== null
+      (v) => v.stage === "CLOSED" || v.stage === "PROJECT"
     ).length;
     const leads = user.visitsAsCloser.filter(
       (v) => v.stage === "PROPOSAL_ACCEPTED"
@@ -116,5 +122,9 @@ export async function GET(request: NextRequest) {
 
   data.sort((a, b) => b.projectsClosed - a.projectsClosed);
 
-  return NextResponse.json(data);
+  return NextResponse.json(data, {
+    headers: {
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+    },
+  });
 }
