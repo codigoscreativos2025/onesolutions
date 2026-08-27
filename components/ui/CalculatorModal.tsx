@@ -31,7 +31,7 @@ export function CalculatorModal() {
   const calculate = (nextOp?: string) => {
     try {
       const safeEq = equation + " " + display;
-      const evalEq = safeEq.replace(/x/g, '*').replace(/๗/g, '/');
+      const evalEq = safeEq.replace(/x/g, '*').replace(/รท/g, '/');
       const result = new Function('return ' + evalEq)();
       const finalResult = Number.isInteger(result) ? result : parseFloat(result.toFixed(4));
       
@@ -87,22 +87,20 @@ export function CalculatorModal() {
       <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Calculadora">
         <div className="w-full max-w-sm mx-auto p-4 bg-surface dark:bg-surface-container rounded-3xl border border-green-500/30 shadow-lg shadow-green-500/10">
           
-          {/* Pantalla */}
           <div className="bg-green-50 dark:bg-green-950/20 p-4 rounded-2xl mb-4 text-right overflow-hidden border border-green-200 dark:border-green-800">
             <div className="text-sm text-green-600 dark:text-green-400 h-5 mb-1 opacity-80">{equation}</div>
             <div className="text-4xl font-bold text-green-700 dark:text-green-300 tracking-tight truncate">{display}</div>
           </div>
 
-          {/* Botones */}
           <div className="grid grid-cols-4 gap-2">
             <button onClick={handleClear} className="col-span-2 p-4 rounded-xl bg-red-100 dark:bg-red-900/30 text-red-600 font-bold hover:bg-red-200 transition-colors">AC</button>
             <button onClick={handleDelete} className="p-4 rounded-xl bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-bold hover:bg-green-200 transition-colors">DEL</button>
-            <button onClick={() => handleOperator('๗')} className="p-4 rounded-xl bg-green-200 dark:bg-green-800/50 text-green-800 dark:text-green-200 font-bold text-xl hover:bg-green-300 transition-colors">๗</button>
+            <button onClick={() => handleOperator('รท')} className="p-4 rounded-xl bg-green-200 dark:bg-green-800/50 text-green-800 dark:text-green-200 font-bold text-xl hover:bg-green-300 transition-colors">รท</button>
 
             <button onClick={() => handleNumber('7')} className="p-4 rounded-xl bg-surface-container-low text-on-surface font-bold text-xl hover:bg-surface-container transition-colors shadow-sm">7</button>
             <button onClick={() => handleNumber('8')} className="p-4 rounded-xl bg-surface-container-low text-on-surface font-bold text-xl hover:bg-surface-container transition-colors shadow-sm">8</button>
             <button onClick={() => handleNumber('9')} className="p-4 rounded-xl bg-surface-container-low text-on-surface font-bold text-xl hover:bg-surface-container transition-colors shadow-sm">9</button>
-            <button onClick={() => handleOperator('x')} className="p-4 rounded-xl bg-green-200 dark:bg-green-800/50 text-green-800 dark:text-green-200 font-bold text-xl hover:bg-green-300 transition-colors">ื</button>
+            <button onClick={() => handleOperator('x')} className="p-4 rounded-xl bg-green-200 dark:bg-green-800/50 text-green-800 dark:text-green-200 font-bold text-xl hover:bg-green-300 transition-colors">x</button>
 
             <button onClick={() => handleNumber('4')} className="p-4 rounded-xl bg-surface-container-low text-on-surface font-bold text-xl hover:bg-surface-container transition-colors shadow-sm">4</button>
             <button onClick={() => handleNumber('5')} className="p-4 rounded-xl bg-surface-container-low text-on-surface font-bold text-xl hover:bg-surface-container transition-colors shadow-sm">5</button>
