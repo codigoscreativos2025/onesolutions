@@ -4,6 +4,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "./ThemeToggle";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { CalculatorModal } from "@/components/ui/CalculatorModal";
 import { NotificationsDropdown } from "./NotificationsDropdown";
 import { useLocale } from "@/lib/locale-context";
 import { LogOut } from "lucide-react";
@@ -70,6 +71,7 @@ export function TopAppBar() {
       </div>
 
       <div className="flex items-center gap-1">
+        {role !== "PARTNER" && <CalculatorModal />}
         <LanguageSwitcher />
         <ThemeToggle />
         {role !== "SETTER_JR" && <NotificationsDropdown />}
@@ -84,3 +86,4 @@ export function TopAppBar() {
     </header>
   );
 }
+
