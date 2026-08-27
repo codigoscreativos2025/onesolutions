@@ -902,14 +902,14 @@ export function ChatInterface({
                             <div className="flex justify-between items-start mb-1 gap-2">
                               <p className="font-semibold text-sm truncate">
                                 {room.type === "ANNOUNCEMENTS" ? (
-                                  <span className="flex items-center gap-1 text-orange-600 font-bold">?? Chat Informativo • {room.personalUser?.name || "Usuario"}</span>
+                                  <span className="flex items-center gap-1 text-orange-600 font-bold">?? Chat Informativo  {room.personalUser?.name || "Usuario"}</span>
                                 ) : (
                                   <span className="flex items-center gap-1"><User className="w-4 h-4 text-blue-500" /> {room.personalUser?.name || "Privado"}</span>
                                 )}
                               </p>
                             </div>
                             <p className="text-xs text-blue-400 font-semibold mt-1">
-                                {room.type === "PERSONAL" ? `{room.type === "PERSONAL" ? "Chat Personal • " : ""}{room.personalUser?.role || "Usuario"}` : room.personalUser?.role || "Usuario"}
+                                {room.type === "PERSONAL" ? `{room.type === "PERSONAL" ? "Chat Personal â€¢ " : ""}{room.personalUser?.role || "Usuario"}` : room.personalUser?.role || "Usuario"}
                             </p>
                           </button>
                         ))}
@@ -1005,7 +1005,7 @@ export function ChatInterface({
                         <div className="flex justify-between items-start mb-1 gap-2">
                           <p className="font-semibold text-sm truncate">
                             {room.type === "ANNOUNCEMENTS" ? (
-                              <span className="flex items-center gap-1 text-orange-600 font-bold">?? Chat Informativo • {room.personalUser?.name || "Usuario"}</span>
+                              <span className="flex items-center gap-1 text-orange-600 font-bold">?? Chat Informativo  {room.personalUser?.name || "Usuario"}</span>
                             ) : room.type === "PERSONAL" ? (
                               <span className="flex items-center gap-1"><User className="w-4 h-4 text-blue-500" /> {room.personalUser?.name || "Privado"}</span>
                             ) : (
@@ -1064,7 +1064,7 @@ export function ChatInterface({
                           </p>
                         ) : (
                           <p className="text-xs text-blue-400 font-semibold mt-1">
-                            {room.type === "PERSONAL" ? "Chat Personal • " : ""}{room.personalUser?.role || "Usuario"}
+                            {room.type === "PERSONAL" ? "Chat Personal â€¢ " : ""}{room.personalUser?.role || "Usuario"}
                           </p>
                         )}
                         {room.visit?.stage === "CLOSED" &&
@@ -1524,7 +1524,7 @@ export function ChatInterface({
                       )}
                       {selectedRoom.personalUser?.phone && (
                         <div>
-                          <p className="text-xs text-on-surface-variant mb-1 flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> Teléfono</p>
+                          <p className="text-xs text-on-surface-variant mb-1 flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> TelÃ©fono</p>
                           <p className="text-sm">{selectedRoom.personalUser.phone}</p>
                         </div>
                       )}
