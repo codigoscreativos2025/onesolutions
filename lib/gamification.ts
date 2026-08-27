@@ -6,11 +6,12 @@ export async function broadcastGamificationEvent(
   link: string | null = null,
   excludeUserId?: number
 ) {
-  // Gamification feed is visible to: SETTER, SETTER_JR, CLOSER, ADMIN
+  // Gamification feed is visible to: SETTER (Trainee), CLOSER, ADMIN
+  // SETTER_JR (Setter) is excluded as they don't have notification bell or chat
   const users = await prisma.user.findMany({
     where: {
       isActive: true,
-      role: { in: ["SETTER", "SETTER_JR", "CLOSER", "ADMIN"] },
+      role: { in: ["SETTER", "CLOSER", "ADMIN"] },
       ...(excludeUserId ? { id: { not: excludeUserId } } : {}),
     },
     select: { id: true },
