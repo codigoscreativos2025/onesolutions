@@ -1404,6 +1404,11 @@ export function ChatInterface({
                   <div ref={messagesEndRef} />
                 </div>
 
+                {selectedRoom?.type === "ANNOUNCEMENTS" && role !== "ADMIN" ? (
+                  <div className="p-4 border-t border-outline-variant/30 text-center text-sm text-on-surface-variant bg-orange-50 dark:bg-orange-950/20">
+                    📢 Canal de avisos — Solo lectura
+                  </div>
+                ) : (
                 <form
                   onSubmit={handleSend}
                   className="p-4 border-t border-outline-variant/30 flex gap-2 relative"
@@ -1458,6 +1463,7 @@ export function ChatInterface({
                     <Send className="w-5 h-5" />
                   </Button>
                 </form>
+                )}
               </>
             ) : (
               <div className="flex-1 flex items-center justify-center text-on-surface-variant">
