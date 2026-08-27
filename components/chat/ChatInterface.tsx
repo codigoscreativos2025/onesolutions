@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import {
   Send,
-  Paperclip,
+  Paperclip, Mail,
   Loader2,
   MessageSquare,
   Package,
@@ -906,14 +906,14 @@ export function ChatInterface({
                             <div className="flex justify-between items-start mb-1 gap-2">
                               <p className="font-semibold text-sm truncate">
                                 {room.type === "ANNOUNCEMENTS" ? (
-                                  <span className="flex items-center gap-1 text-orange-600 font-bold">Y" Chat de Avisos</span>
+                                  <span className="flex items-center gap-1 text-orange-600 font-bold">?? Chat Informativo • {room.personalUser?.name || "Usuario"}</span>
                                 ) : (
                                   <span className="flex items-center gap-1"><User className="w-4 h-4 text-blue-500" /> {room.personalUser?.name || "Privado"}</span>
                                 )}
                               </p>
                             </div>
                             <p className="text-xs text-blue-400 font-semibold mt-1">
-                                {room.type === "PERSONAL" ? `Chat Personal ? ${room.personalUser?.role || "Usuario"}` : "Canal del Sistema"}
+                                {room.type === "PERSONAL" ? `{room.type === "PERSONAL" ? "Chat Personal • " : ""}{room.personalUser?.role || "Usuario"}` : room.personalUser?.role || "Usuario"}
                             </p>
                           </button>
                         ))}
@@ -1009,7 +1009,7 @@ export function ChatInterface({
                         <div className="flex justify-between items-start mb-1 gap-2">
                           <p className="font-semibold text-sm truncate">
                             {room.type === "ANNOUNCEMENTS" ? (
-                              <span className="flex items-center gap-1 text-orange-600 font-bold">ðŸ“¢ Chat de Avisos</span>
+                              <span className="flex items-center gap-1 text-orange-600 font-bold">?? Chat Informativo • {room.personalUser?.name || "Usuario"}</span>
                             ) : room.type === "PERSONAL" ? (
                               <span className="flex items-center gap-1"><User className="w-4 h-4 text-blue-500" /> {room.personalUser?.name || "Privado"}</span>
                             ) : (
@@ -1048,7 +1048,7 @@ export function ChatInterface({
                           </span>
                         </div>
                         
-                        {room.type !== "PERSONAL" && (
+                        {room.type !== "PERSONAL" && room.type !== "ANNOUNCEMENTS" && (
                           <p
                             className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5"
                             title={t.chat.address}
@@ -1058,7 +1058,7 @@ export function ChatInterface({
                           </p>
                         )}
                         
-                        {room.type !== "PERSONAL" ? (
+                        {room.type !== "PERSONAL" && room.type !== "ANNOUNCEMENTS" ? (
                           <p
                             className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5"
                             title="Status"
@@ -1068,7 +1068,7 @@ export function ChatInterface({
                           </p>
                         ) : (
                           <p className="text-xs text-blue-400 font-semibold mt-1">
-                            Chat Personal â€¢ {room.personalUser?.role || "Usuario"}
+                            {room.type === "PERSONAL" ? "Chat Personal • " : ""}{room.personalUser?.role || "Usuario"}
                           </p>
                         )}
                         {room.visit?.stage === "CLOSED" &&
@@ -1439,11 +1439,6 @@ export function ChatInterface({
                   <div ref={messagesEndRef} />
                 </div>
 
-                {selectedRoom?.type === "ANNOUNCEMENTS" && role !== "ADMIN" ? (
-                  <div className="p-4 border-t border-outline-variant/30 text-center text-sm text-on-surface-variant bg-orange-50 dark:bg-orange-950/20">
-                    ðŸ“¢ Canal de avisos â€” Solo lectura
-                  </div>
-                ) : (
                 <form
                   onSubmit={handleSend}
                   className="p-4 border-t border-outline-variant/30 flex gap-2 relative"
@@ -1498,7 +1493,6 @@ export function ChatInterface({
                     <Send className="w-5 h-5" />
                   </Button>
                 </form>
-                )}
               </>
             ) : (
               <div className="flex-1 flex items-center justify-center text-on-surface-variant">
@@ -1514,16 +1508,41 @@ export function ChatInterface({
                   ${role === "SETTER" || role === "SETTER_JR" ? "hidden" : (!showInfoPanel && mobileColumn !== "info" ? "hidden lg:flex" : "flex")}
                   ${mobileColumn === "info" ? "absolute inset-0 z-10 bg-surface/95 backdrop-blur-md" : ""}`}
                 >
-                  <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center text-center">
-                    <div className="w-24 h-24 bg-blue-500/10 rounded-full flex items-center justify-center mb-4">
-                      <User className="w-12 h-12 text-blue-500" />
+                  <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center text-center">
+                    <div className="w-24 h-24 bg-blue-500/10 rounded-full flex items-center justify-center mb-4 overflow-hidden">
+                      {selectedRoom.personalUser?.profile?.profilePhoto ? (
+                        <img src={selectedRoom.personalUser.profile.profilePhoto} alt={selectedRoom.personalUser?.name || ""} className="w-full h-full object-cover" />
+                      ) : (
+                        <User className="w-12 h-12 text-blue-500" />
+                      )}
                     </div>
                     <h3 className="text-xl font-bold">{selectedRoom.personalUser?.name}</h3>
                     <p className="text-sm text-on-surface-variant mb-6">{selectedRoom.personalUser?.role}</p>
+
+                    <div className="w-full space-y-4 text-left mt-4 border-t border-outline-variant/20 pt-4">
+                      {selectedRoom.personalUser?.email && (
+                        <div>
+                          <p className="text-xs text-on-surface-variant mb-1 flex items-center gap-1"><Mail className="w-3.5 h-3.5" /> Correo</p>
+                          <p className="text-sm">{selectedRoom.personalUser.email}</p>
+                        </div>
+                      )}
+                      {selectedRoom.personalUser?.phone && (
+                        <div>
+                          <p className="text-xs text-on-surface-variant mb-1 flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> Teléfono</p>
+                          <p className="text-sm">{selectedRoom.personalUser.phone}</p>
+                        </div>
+                      )}
+                      {selectedRoom.personalUser?.profile?.address && (
+                        <div>
+                          <p className="text-xs text-on-surface-variant mb-1 flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Vivienda</p>
+                          <p className="text-sm">{selectedRoom.personalUser.profile.address}</p>
+                        </div>
+                      )}
+                    </div>
                     
-                    <Link href={`/profile/${selectedRoom.personalUser?.id}`}>
+                    <Link href={`/profile/${selectedRoom.personalUser?.id}`} className="w-full mt-6">
                       <Button variant="outline" className="w-full">
-                        Ver Perfil
+                        Ver Perfil Completo
                       </Button>
                     </Link>
                     
@@ -2150,6 +2169,13 @@ function AdminRoomSelector({
     </div>
   );
 }
+
+
+
+
+
+
+
 
 
 

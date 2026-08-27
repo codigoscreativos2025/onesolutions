@@ -47,7 +47,7 @@ export async function GET() {
       where: { type: "PERSONAL" },
       orderBy: { createdAt: "desc" },
       include: {
-        personalUser: { select: { id: true, name: true, role: true } },
+        personalUser: { select: { id: true, name: true, role: true, email: true, phone: true, profile: { select: { address: true, profilePhoto: true } } } },
         messages: {
           orderBy: { createdAt: "desc" },
           take: 1,
@@ -60,7 +60,7 @@ export async function GET() {
       where: { type: "ANNOUNCEMENTS" },
       orderBy: { createdAt: "desc" },
       include: {
-        personalUser: { select: { id: true, name: true, role: true } },
+        personalUser: { select: { id: true, name: true, role: true, email: true, phone: true, profile: { select: { address: true, profilePhoto: true } } } },
         messages: {
           orderBy: { createdAt: "desc" },
           take: 1,
@@ -143,7 +143,7 @@ export async function GET() {
       },
       orderBy: { createdAt: "desc" },
       include: {
-        personalUser: { select: { id: true, name: true, role: true } },
+        personalUser: { select: { id: true, name: true, role: true, email: true, phone: true, profile: { select: { address: true, profilePhoto: true } } } },
         messages: {
           orderBy: { createdAt: "desc" },
           take: 1,
@@ -159,7 +159,7 @@ export async function GET() {
       },
       orderBy: { createdAt: "desc" },
       include: {
-        personalUser: { select: { id: true, name: true, role: true } },
+        personalUser: { select: { id: true, name: true, role: true, email: true, phone: true, profile: { select: { address: true, profilePhoto: true } } } },
         messages: {
           orderBy: { createdAt: "desc" },
           take: 1,
@@ -175,3 +175,4 @@ export async function GET() {
 
   return NextResponse.json(rooms);
 }
+
