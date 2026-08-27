@@ -135,15 +135,12 @@ export default function MetricsPage() {
         </div>
       )}
 
-      {!loading && (personalData || isAdmin) && role !== "PARTNER" && (
-        <PersonalView data={personalData || ({} as PersonalMetrics)} isAdmin={isAdmin} adminData={adminData || undefined} t={t} />
+      {!loading && !isAdmin && personalData && role !== "PARTNER" && (
+        <PersonalView data={personalData} t={t} />
       )}
       
       {!loading && isAdmin && adminData && (
-        <>
-          <AdminView data={adminData} t={t} />
-          <AdminExtraViews data={adminData} t={t} />
-        </>
+        <AdminView data={adminData} t={t} />
       )}
 
       <ChartsSection isAdmin={isAdmin} t={t} />
@@ -151,37 +148,91 @@ export default function MetricsPage() {
   );
 }
 
-function AdminExtraViews({ data, t }: { data: AdminMetrics, t: any }) {
+function MetricCard({
+  icon: Icon,
+  label,
+  color,
+  today,
+  week,
+  month,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  color: string;
+  today: number;
+  week: number;
+  month: number;
+}) {
   return (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+    <div className="glass-panel p-4 rounded-xl flex flex-col justify-between">
+      <div className="flex items-center gap-2 mb-1">
+        <Icon className={`w-5 h-5 ${color}`} />
+        <span className="text-xs text-on-surface-variant uppercase tracking-wide">
+          {label}
+        </span>
+      </div>
+      <div className={`text-2xl font-bold mt-1 ${color}`}>{today}</div>
+      <div className="flex gap-4 mt-2">
+        <span className="text-xs text-on-surface-variant">
+          <span className="font-medium text-on-surface">{week}</span> sem.
+        </span>
+        <span className="text-xs text-on-surface-variant">
+          <span className="font-medium text-on-surface">{month}</span> mes
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function AdminView({ data, t }: { data: AdminMetrics, t: any }) {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <MetricCard
+          icon={DoorOpen}
+          label={t.metrics.globalDoorsKnocked}
+          color="text-orange-400"
+          today={data.doorsKnockedToday}
+          week={data.doorsKnockedWeek}
+          month={data.doorsKnockedMonth}
+        />
+        <MetricCard
+          icon={UserPlus}
+          label={t.metrics.globalLeads}
+          color="text-blue-400"
+          today={data.leadsCreatedToday}
+          week={data.leadsCreatedWeek}
+          month={data.leadsCreatedMonth}
+        />
+        <MetricCard
+          icon={CheckCircle}
+          label={t.metrics.globalProjects}
+          color="text-green-400"
+          today={data.projectsClosedToday}
+          week={data.projectsClosedWeek}
+          month={data.projectsClosedMonth}
+        />
         <div className="glass-panel p-4 rounded-xl flex flex-col justify-between">
           <div className="flex items-center gap-2 mb-1">
             <DollarSign className="w-5 h-5 text-yellow-400" />
             <span className="text-xs text-on-surface-variant uppercase tracking-wide">
-              {t.dashboard.globalBilling}
+              {t.metrics.globalBilling}
             </span>
           </div>
           <div className="text-2xl font-bold text-yellow-400 mt-1">
             {formatCurrency(data.totalBilling)}
           </div>
           <span className="text-xs text-on-surface-variant mt-2">
-            {t.dashboard.totalProjectsClosed}
+            {t.metrics.totalProjectsClosed}
           </span>
         </div>
       </div>
-    </>
-  );
-}
 
-function AdminView({ data, t }: { data: AdminMetrics, t: any }) {
-  return (
-    <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="glass-panel p-4 rounded-xl">
           <h3 className="text-sm font-semibold text-on-surface mb-3 flex items-center gap-2">
             <CheckCircle className="w-4 h-4 text-green-400" />
-            {t.dashboard.top3Closers}
+            {t.metrics.top3Closers}
           </h3>
           {data.topClosers.length === 0 && (
             <p className="text-sm text-on-surface-variant">Sin datos</p>
@@ -212,7 +263,7 @@ function AdminView({ data, t }: { data: AdminMetrics, t: any }) {
         <div className="glass-panel p-4 rounded-xl">
           <h3 className="text-sm font-semibold text-on-surface mb-3 flex items-center gap-2">
             <DoorOpen className="w-4 h-4 text-orange-400" />
-            {t.dashboard.top3Setters}
+            {t.metrics.top3Setters}
           </h3>
           {data.topSetters.length === 0 && (
             <p className="text-sm text-on-surface-variant">Sin datos</p>
@@ -240,36 +291,25 @@ function AdminView({ data, t }: { data: AdminMetrics, t: any }) {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
-function PersonalView({ data, isAdmin, adminData, t }: { data: PersonalMetrics, isAdmin?: boolean, adminData?: AdminMetrics, t: any }) {
+function PersonalView({ data, t }: { data: PersonalMetrics, t: any }) {
   return (
     <div className="space-y-4">
       <div className="glass-panel p-4 rounded-xl">
         <div className="flex items-center gap-2 mb-3">
           <DoorOpen className="w-5 h-5 text-orange-400" />
           <h3 className="text-sm font-semibold text-on-surface">
-            {isAdmin ? t.dashboard.globalDoorsKnocked : t.dashboard.myDoorsKnocked}
+            {t.metrics.myDoorsKnocked}
           </h3>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {isAdmin && adminData ? (
-            <>
-              <PeriodStat label="Hoy" value={adminData.doorsKnockedToday} color="text-orange-400" />
-              <PeriodStat label="Esta Semana" value={adminData.doorsKnockedWeek} color="text-orange-400" />
-              <PeriodStat label="Este Mes" value={adminData.doorsKnockedMonth} color="text-orange-400" />
-              <PeriodStat label="Total" value={adminData.doorsKnockedTotal} color="text-orange-400" />
-            </>
-          ) : (
-            <>
-              <PeriodStat label="Hoy" value={data.doorsKnockedToday} color="text-orange-400" />
-              <PeriodStat label="Esta Semana" value={data.doorsKnockedWeek} color="text-orange-400" />
-              <PeriodStat label="Este Mes" value={data.doorsKnockedMonth} color="text-orange-400" />
-              <PeriodStat label="Total" value={data.doorsKnockedTotal} color="text-orange-400" />
-            </>
-          )}
+          <PeriodStat label="Hoy" value={data.doorsKnockedToday} color="text-orange-400" />
+          <PeriodStat label="Esta Semana" value={data.doorsKnockedWeek} color="text-orange-400" />
+          <PeriodStat label="Este Mes" value={data.doorsKnockedMonth} color="text-orange-400" />
+          <PeriodStat label="Total" value={data.doorsKnockedTotal} color="text-orange-400" />
         </div>
       </div>
 
@@ -277,25 +317,14 @@ function PersonalView({ data, isAdmin, adminData, t }: { data: PersonalMetrics, 
         <div className="flex items-center gap-2 mb-3">
           <UserPlus className="w-5 h-5 text-blue-400" />
           <h3 className="text-sm font-semibold text-on-surface">
-            {isAdmin ? t.dashboard.globalLeads : t.dashboard.myLeads}
+            {t.metrics.myLeads}
           </h3>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {isAdmin && adminData ? (
-            <>
-              <PeriodStat label="Hoy" value={adminData.leadsCreatedToday} color="text-blue-400" />
-              <PeriodStat label="Esta Semana" value={adminData.leadsCreatedWeek} color="text-blue-400" />
-              <PeriodStat label="Este Mes" value={adminData.leadsCreatedMonth} color="text-blue-400" />
-              <PeriodStat label="Total" value={adminData.leadsCreatedTotal} color="text-blue-400" />
-            </>
-          ) : (
-            <>
-              <PeriodStat label="Hoy" value={data.leadsGeneratedToday} color="text-blue-400" />
-              <PeriodStat label="Esta Semana" value={data.leadsGeneratedWeek} color="text-blue-400" />
-              <PeriodStat label="Este Mes" value={data.leadsGeneratedMonth} color="text-blue-400" />
-              <PeriodStat label="Total" value={data.leadsGeneratedTotal} color="text-blue-400" />
-            </>
-          )}
+          <PeriodStat label="Hoy" value={data.leadsGeneratedToday} color="text-blue-400" />
+          <PeriodStat label="Esta Semana" value={data.leadsGeneratedWeek} color="text-blue-400" />
+          <PeriodStat label="Este Mes" value={data.leadsGeneratedMonth} color="text-blue-400" />
+          <PeriodStat label="Total" value={data.leadsGeneratedTotal} color="text-blue-400" />
         </div>
       </div>
 
@@ -303,25 +332,14 @@ function PersonalView({ data, isAdmin, adminData, t }: { data: PersonalMetrics, 
         <div className="flex items-center gap-2 mb-3">
           <CheckCircle className="w-5 h-5 text-green-400" />
           <h3 className="text-sm font-semibold text-on-surface">
-            {isAdmin ? t.dashboard.globalProjects : t.dashboard.myProjects}
+            {t.metrics.myProjects}
           </h3>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {isAdmin && adminData ? (
-            <>
-              <PeriodStat label="Hoy" value={adminData.projectsClosedToday} color="text-green-400" />
-              <PeriodStat label="Esta Semana" value={adminData.projectsClosedWeek} color="text-green-400" />
-              <PeriodStat label="Este Mes" value={adminData.projectsClosedMonth} color="text-green-400" />
-              <PeriodStat label="Total" value={adminData.projectsClosedTotal} color="text-green-400" />
-            </>
-          ) : (
-            <>
-              <PeriodStat label="Hoy" value={data.projectsClosedToday} color="text-green-400" />
-              <PeriodStat label="Esta Semana" value={data.projectsClosedWeek} color="text-green-400" />
-              <PeriodStat label="Este Mes" value={data.projectsClosedMonth} color="text-green-400" />
-              <PeriodStat label="Total" value={data.projectsClosedTotal} color="text-green-400" />
-            </>
-          )}
+          <PeriodStat label="Hoy" value={data.projectsClosedToday} color="text-green-400" />
+          <PeriodStat label="Esta Semana" value={data.projectsClosedWeek} color="text-green-400" />
+          <PeriodStat label="Este Mes" value={data.projectsClosedMonth} color="text-green-400" />
+          <PeriodStat label="Total" value={data.projectsClosedTotal} color="text-green-400" />
         </div>
       </div>
     </div>
@@ -418,7 +436,7 @@ function NotificationsSection({ t }: { t: any }) {
     <section>
       <h2 className="font-headline text-lg font-bold text-on-surface mb-3 flex items-center gap-2">
         <Bell className="w-5 h-5 text-primary" />
-        {t.dashboard.feed}
+        {t.metrics.feed}
       </h2>
       <div className="glass-panel rounded-2xl divide-y divide-outline-variant/20">
         {notifications.map((n) => {
@@ -495,13 +513,13 @@ function ChartsSection({ isAdmin, t }: { isAdmin: boolean, t: any }) {
     <section>
       <h2 className="font-headline text-lg font-bold text-on-surface mb-3 flex items-center gap-2">
         <BarChart3 className="w-5 h-5 text-primary" />
-        {t.dashboard.statistics}
+        {t.metrics.statistics}
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="glass-panel rounded-2xl p-4">
           <h3 className="text-sm font-bold text-on-surface mb-4 flex items-center gap-1.5">
             <TrendingUp className="w-4 h-4 text-primary" />
-            {t.dashboard.leadsLast7Days}
+            {t.metrics.leadsLast7Days}
           </h3>
           <div className="flex items-end gap-2 h-40">
             {data.labels.map((label, i) => (
@@ -531,7 +549,7 @@ function ChartsSection({ isAdmin, t }: { isAdmin: boolean, t: any }) {
         <div className="glass-panel rounded-2xl p-4">
           <h3 className="text-sm font-bold text-on-surface mb-4 flex items-center gap-1.5">
             <Package className="w-4 h-4 text-primary" />
-            {t.dashboard.projectTypes}
+            {t.metrics.projectTypes}
           </h3>
           <div className="flex items-center gap-6">
             <div className="relative w-32 h-32 shrink-0">
