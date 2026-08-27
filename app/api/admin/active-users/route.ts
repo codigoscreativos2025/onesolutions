@@ -30,7 +30,7 @@ export async function GET() {
     include: {
       parcel: { select: { address: true } },
     },
-    orderBy: { updatedAt: "desc" },
+    orderBy: { createdAt: "desc" },
   });
 
   const usersWithProjects = users.map((u) => {

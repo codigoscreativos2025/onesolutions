@@ -74,7 +74,8 @@ export async function POST(
   const role = session.user.role;
   const hasAccess =
     role === "ADMIN" ||
-    (room.type === "GENERAL" && (room.visit.setterId === userId || room.visit.closerId === userId)) ||
+    (room.type === "PERSONAL" && room.personalUserId === userId) ||
+    (room.type === "GENERAL" && room.visit && (room.visit.setterId === userId || room.visit.closerId === userId)) ||
     (role === "PARTNER" && room.type === "PARTNER" && room.partnerId === userId);
 
   if (!hasAccess) {

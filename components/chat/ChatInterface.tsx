@@ -104,7 +104,13 @@ interface Room {
   id: number;
   type?: string;
   partnerId?: number | null;
-  visit: {
+  createdAt?: string;
+  personalUser?: {
+    id: number;
+    name: string;
+    role: string;
+  };
+  visit?: {
     id: number;
     setterId: number;
     closerId?: number;
@@ -1123,78 +1129,82 @@ export function ChatInterface({
                         >
                           <ArrowLeft className="w-4 h-4" />
                         </button>
-                        <div className="flex-1 min-w-0">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-headline font-bold text-lg text-primary truncate">
-                            {selectedRoom?.type === "PERSONAL" ? (
-                              <span className="flex items-center gap-1.5"><User className="w-5 h-5 text-blue-500" /> {selectedRoom.personalUser?.name || "Chat Privado"}</span>
-                            ) : (
-                              <>
-                                {selectedRoom?.visit?.bill?.clientName ||
-                                  selectedRoom?.visit?.projectDetails?.clientName ||
-                                  selectedRoom?.visit?.parcel?.ownerName ||
-                                  t.common.none}
-                              </>
+                      </div>
+
+                      <div className="flex-1 min-w-0 mt-2">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-headline font-bold text-lg text-primary truncate">
+                              {selectedRoom?.type === "PERSONAL" ? (
+                                <span className="flex items-center gap-1.5"><User className="w-5 h-5 text-blue-500" /> {selectedRoom.personalUser?.name || "Chat Privado"}</span>
+                              ) : (
+                                <>
+                                  {selectedRoom?.visit?.bill?.clientName ||
+                                    selectedRoom?.visit?.projectDetails?.clientName ||
+                                    selectedRoom?.visit?.parcel?.ownerName ||
+                                    t.common.none}
+                                </>
+                              )}
+                            </p>
+                            {selectedRoom?.type !== "PERSONAL" && (
+                              <span className="px-2 py-0.5 bg-brand-orange/10 text-brand-orange rounded-full text-[10px] font-bold">
+                                {selectedRoom?.visit?.parcel?.address || "Sin dirección"}
+                              </span>
                             )}
-                          </p>
-                          {selectedRoom?.type !== "PERSONAL" && (
-                            <span className="px-2 py-0.5 bg-brand-orange/10 text-brand-orange rounded-full text-[10px] font-bold">
-                              {selectedRoom?.visit?.parcel?.address || "Sin dirección"}
-                            </span>
+                          </div>
+                          
+                          {selectedRoom?.type !== "PERSONAL" ? (
+                            <div className="flex flex-col gap-0.5">
+                              {selectedRoom?.type === "PARTNER" &&
+                                (() => {
+                                  const covered = selectedRoom?.visit?.projects
+                                    ?.filter(
+                                      (p) => p.partner?.id === selectedRoom?.partnerId,
+                                    )
+                                    .map((p) => p.projectType.name)
+                                    .join(", ");
+                                  return covered ? (
+                                    <p className="text-xs text-on-surface-variant font-medium">
+                                      Proyecto: {covered}
+                                    </p>
+                                  ) : null;
+                                })()}
+                              <p className="text-xs text-on-surface-variant flex items-center gap-1">
+                                {selectedRoom?.visit?.setter && (
+                                  <>
+                                    Setter:{" "}
+                                    <Link
+                                      href={`/profile/${selectedRoom?.visit?.setter.id}`}
+                                      className="hover:underline"
+                                    >
+                                      {selectedRoom?.visit?.setter.name}
+                                    </Link>
+                                  </>
+                                )}
+                                {selectedRoom?.visit?.closer && (
+                                  <>
+                                    {" • Closer: "}
+                                    <Link
+                                      href={`/profile/${selectedRoom?.visit?.closer.id}`}
+                                      className="hover:underline"
+                                    >
+                                      {selectedRoom?.visit?.closer.name}
+                                    </Link>
+                                  </>
+                                )}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col gap-0.5">
+                              <p className="text-xs text-blue-400 font-semibold flex items-center gap-1">
+                                {selectedRoom.personalUser?.role || "Usuario"}
+                              </p>
+                            </div>
                           )}
                         </div>
-                        
-                        {selectedRoom?.type !== "PERSONAL" ? (
-                          <div className="flex flex-col gap-0.5">
-                            {selectedRoom?.type === "PARTNER" &&
-                              (() => {
-                                const covered = selectedRoom?.visit?.projects
-                                  ?.filter(
-                                    (p) => p.partner?.id === selectedRoom?.partnerId,
-                                  )
-                                  .map((p) => p.projectType.name)
-                                  .join(", ");
-                                return covered ? (
-                                  <p className="text-xs text-on-surface-variant font-medium">
-                                    Proyecto: {covered}
-                                  </p>
-                                ) : null;
-                              })()}
-                            <p className="text-xs text-on-surface-variant flex items-center gap-1">
-                              {selectedRoom?.visit?.setter && (
-                                <>
-                                  Setter:{" "}
-                                  <Link
-                                    href={`/profile/${selectedRoom?.visit?.setter.id}`}
-                                    className="hover:underline"
-                                  >
-                                    {selectedRoom?.visit?.setter.name}
-                                  </Link>
-                                </>
-                              )}
-                              {selectedRoom?.visit?.closer && (
-                                <>
-                                  {" • Closer: "}
-                                  <Link
-                                    href={`/profile/${selectedRoom?.visit?.closer.id}`}
-                                    className="hover:underline"
-                                  >
-                                    {selectedRoom?.visit?.closer.name}
-                                  </Link>
-                                </>
-                              )}
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col gap-0.5">
-                            <p className="text-xs text-blue-400 font-semibold flex items-center gap-1">
-                              {selectedRoom.personalUser?.role || "Usuario"}
-                            </p>
-                          </div>
-                        )}
                       </div>
                     </div>
+                    
                     <div className="flex gap-2 flex-shrink-0">
                       {/* Info toggle for md */}
                       <button
@@ -1447,34 +1457,38 @@ export function ChatInterface({
 
           {/* RIGHT COLUMN: Info Panel */}
           {selectedRoom && selectedRoom.type === "PERSONAL" ? (
-              <div
-                className={`w-full lg:w-80 border-l border-outline-variant/30 bg-surface-container-low/30 flex-shrink-0 min-h-0 flex flex-col
-                  ${showMobileInfo ? "flex absolute inset-0 z-10 bg-surface/95 backdrop-blur-md" : "hidden lg:flex"}`}
-              >
-                <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center text-center">
-                  <div className="w-24 h-24 bg-blue-500/10 rounded-full flex items-center justify-center mb-4">
-                    <User className="w-12 h-12 text-blue-500" />
+                <div
+                  className={`w-full lg:w-80 border-l border-outline-variant/30 bg-surface-container-low/30 flex-shrink-0 min-h-0 flex flex-col
+                  ${!showInfoPanel && mobileColumn !== "info" ? "hidden lg:flex" : "flex"}
+                  ${mobileColumn === "info" ? "absolute inset-0 z-10 bg-surface/95 backdrop-blur-md" : ""}`}
+                >
+                  <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center text-center">
+                    <div className="w-24 h-24 bg-blue-500/10 rounded-full flex items-center justify-center mb-4">
+                      <User className="w-12 h-12 text-blue-500" />
+                    </div>
+                    <h3 className="text-xl font-bold">{selectedRoom.personalUser?.name}</h3>
+                    <p className="text-sm text-on-surface-variant mb-6">{selectedRoom.personalUser?.role}</p>
+                    
+                    <Link href={`/profile/${selectedRoom.personalUser?.id}`}>
+                      <Button variant="outline" className="w-full">
+                        Ver Perfil
+                      </Button>
+                    </Link>
+                    
+                    {mobileColumn === "info" && (
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          setMobileColumn("conversation");
+                          setShowInfoPanel(false);
+                        }}
+                        className="mt-6 lg:hidden w-full"
+                      >
+                        Cerrar
+                      </Button>
+                    )}
                   </div>
-                  <h3 className="text-xl font-bold">{selectedRoom.personalUser?.name}</h3>
-                  <p className="text-sm text-on-surface-variant mb-6">{selectedRoom.personalUser?.role}</p>
-                  
-                  <Link href={`/profile/${selectedRoom.personalUser?.id}`}>
-                    <Button variant="outline" className="w-full">
-                      Ver Perfil
-                    </Button>
-                  </Link>
-                  
-                  {showMobileInfo && (
-                    <Button
-                      variant="ghost"
-                      onClick={() => setShowMobileInfo(false)}
-                      className="mt-6 lg:hidden w-full"
-                    >
-                      Cerrar
-                    </Button>
-                  )}
                 </div>
-              </div>
           ) : selectedRoom && (
             <div
               className={`w-full lg:w-80 border-l border-outline-variant/30 bg-surface-container-low/30 flex-shrink-0 min-h-0 flex flex-col
