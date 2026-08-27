@@ -202,6 +202,13 @@ export default function TemplatesPage() {
 
   // Filter users based on dispatch mode and search
   const filteredOptions = activeUsers.filter((u) => {
+    if (templateToSend && templateToSend.roles) {
+      try {
+        const allowedRoles: string[] = JSON.parse(templateToSend.roles);
+        if (allowedRoles.length > 0 && !allowedRoles.includes(u.role)) return false;
+      } catch (e) {}
+    }
+
     if (dispatchMode === "project" && !u.activeProject) return false;
     if (!searchQuery) return true;
     
@@ -581,6 +588,9 @@ export default function TemplatesPage() {
     </div>
   );
 }
+
+
+
 
 
 
