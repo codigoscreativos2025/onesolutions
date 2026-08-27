@@ -56,7 +56,20 @@ export async function GET() {
       },
     });
 
-    rooms = [...rooms, ...personalRooms].sort(
+    const announcementsRooms = await prisma.chatRoom.findMany({
+      where: { type: "ANNOUNCEMENTS" },
+      orderBy: { createdAt: "desc" },
+      include: {
+        personalUser: { select: { id: true, name: true, role: true } },
+        messages: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          include: { user: { select: { name: true } } },
+        },
+      },
+    });
+
+    rooms = [...rooms, ...personalRooms, ...announcementsRooms].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   } else if (role === "PARTNER") {
@@ -139,7 +152,23 @@ export async function GET() {
       },
     });
 
-    rooms = [...rooms, ...personalRooms].sort(
+    const announcementsRooms = await prisma.chatRoom.findMany({
+      where: {
+        type: "ANNOUNCEMENTS",
+        personalUserId: userId,
+      },
+      orderBy: { createdAt: "desc" },
+      include: {
+        personalUser: { select: { id: true, name: true, role: true } },
+        messages: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          include: { user: { select: { name: true } } },
+        },
+      },
+    });
+
+    rooms = [...rooms, ...personalRooms, ...announcementsRooms].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   }

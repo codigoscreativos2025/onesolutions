@@ -23,20 +23,80 @@ export async function POST(
   }
 
   const body = await request.json();
-  const { targetType, targetId } = body;
-
-  if (!targetType || !targetId) {
-    return NextResponse.json({ error: "Missing targetType or targetId" }, { status: 400 });
-  }
+  const { targetType, targetId, broadcastRole } = body;
 
   const senderName = session.user.name || "Administrador";
-  const messageBody = `<div style="text-align: center; margin-bottom: 15px;"><img src="/logo-company.png" alt="OneSolutions" style="max-height: 60px; display: inline-block;" /></div>${template.content}<br/><br/><i>⚡ Enviado por ${senderName} (Admin)</i>`;
+  const messageBody = `${template.content}<br/><br/><i>⚡ Enviado por ${senderName} (Admin)</i>`;
+  const adminUserId = parseInt(session.user.id);
 
-  let roomId: number;
-  let notificationUserId: number;
+  // Helper: find or create ANNOUNCEMENTS room for a user
+  async function getOrCreateAnnouncementsRoom(userId: number) {
+    let room = await prisma.chatRoom.findFirst({
+      where: { personalUserId: userId, type: "ANNOUNCEMENTS" },
+    });
+    if (!room) {
+      room = await prisma.chatRoom.create({
+        data: { personalUserId: userId, type: "ANNOUNCEMENTS" },
+      });
+    }
+    return room;
+  }
+
+  // Helper: send template to a single user via their announcements room
+  async function sendToUser(userId: number) {
+    const room = await getOrCreateAnnouncementsRoom(userId);
+    await prisma.chatMessage.create({
+      data: {
+        roomId: room.id,
+        userId: adminUserId,
+        body: messageBody,
+      },
+    });
+    await prisma.notification.create({
+      data: {
+        userId,
+        title: `[TEMPLATE] ${template!.title}`,
+        body: template!.content,
+        link: `/chat?room=${room.id}`,
+        isRead: false,
+      },
+    });
+    return room.id;
+  }
+
+  // === BROADCAST MODE ===
+  if (broadcastRole) {
+    let whereClause: any = { isActive: true, role: { not: "ADMIN" } };
+
+    if (broadcastRole === "ALL") {
+      // all non-admin active users
+    } else if (broadcastRole === "SETTER") {
+      whereClause.role = "SETTER";
+    } else if (broadcastRole === "CLOSER") {
+      whereClause.role = "CLOSER";
+    } else if (broadcastRole === "PARTNER") {
+      whereClause.role = "PARTNER";
+    } else if (broadcastRole === "SETTER_JR") {
+      whereClause.role = "SETTER_JR";
+    } else {
+      return NextResponse.json({ error: "Invalid broadcastRole" }, { status: 400 });
+    }
+
+    const users = await prisma.user.findMany({ where: whereClause, select: { id: true } });
+
+    for (const user of users) {
+      await sendToUser(user.id);
+    }
+
+    return NextResponse.json({ success: true, sentTo: users.length });
+  }
+
+  // === SINGLE TARGET MODE ===
+  if (!targetType || !targetId) {
+    return NextResponse.json({ error: "Missing targetType/targetId or broadcastRole" }, { status: 400 });
+  }
 
   if (targetType === "project") {
-    // Find or create GENERAL chat room for the visit
     const visitId = parseInt(targetId);
     let room = await prisma.chatRoom.findFirst({
       where: { visitId, type: "GENERAL" },
@@ -47,9 +107,8 @@ export async function POST(
         data: { visitId, type: "GENERAL" },
       });
     }
-    roomId = room.id;
+    const roomId = room.id;
 
-    // Determine who to notify for the project (setter and closer)
     const visit = await prisma.visit.findUnique({ where: { id: visitId } });
     if (visit) {
       const userIds = [visit.setterId, visit.closerId].filter(Boolean) as number[];
@@ -65,42 +124,17 @@ export async function POST(
         });
       }
     }
+
+    await prisma.chatMessage.create({
+      data: { roomId, userId: adminUserId, body: messageBody },
+    });
+
+    return NextResponse.json({ success: true, roomId });
   } else if (targetType === "user") {
-    // PERSONAL CHAT
     const userId = parseInt(targetId);
-    let room = await prisma.chatRoom.findFirst({
-      where: { personalUserId: userId, type: "PERSONAL" },
-    });
-
-    if (!room) {
-      room = await prisma.chatRoom.create({
-        data: { personalUserId: userId, type: "PERSONAL" },
-      });
-    }
-    roomId = room.id;
-
-    // Send notification to the specific user
-    await prisma.notification.create({
-      data: {
-        userId,
-        title: `[TEMPLATE] ${template.title}`,
-        body: template.content,
-        link: `/chat?room=${roomId}`,
-        isRead: false,
-      },
-    });
+    const roomId = await sendToUser(userId);
+    return NextResponse.json({ success: true, roomId });
   } else {
     return NextResponse.json({ error: "Invalid targetType" }, { status: 400 });
   }
-
-  // Create the actual chat message in the room
-  await prisma.chatMessage.create({
-    data: {
-      roomId,
-      userId: parseInt(session.user.id),
-      body: messageBody,
-    },
-  });
-
-  return NextResponse.json({ success: true, roomId });
 }
