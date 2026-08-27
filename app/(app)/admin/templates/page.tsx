@@ -616,6 +616,22 @@ export default function TemplatesPage() {
 
               </div>
 
+              
+              {/* Emojis Rápidos */}
+              <div className="mb-4 bg-surface-variant/20 p-2 rounded-xl flex flex-wrap gap-1 border border-outline-variant/30">
+                <span className="text-xs text-on-surface-variant w-full mb-1 ml-1">Emojis rápidos (se añaden al final):</span>
+                {['😊', '👍', '✅', '❌', '🚨', '📌', '📅', '🤝', '💵', '🏢', '🎉', '🔥', '👀', '👇', '👉', '💡', '⚠️', '🚩', '🏁'].map(emoji => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => setFormContent(prev => prev + emoji)}
+                    className="w-8 h-8 flex items-center justify-center hover:bg-surface-variant/50 rounded-lg text-lg transition-colors"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+
               {/* Attachments */}
               <div className="mb-6">
                 <label className="block text-sm font-semibold text-on-surface mb-2">
