@@ -152,7 +152,7 @@ function getVisitSpecialTag(visit: {
   stage?: string;
   contractFields?: string | null;
 }): string {
-  if (!visit.contractFields) return "";
+  if (!visit?.contractFields) return "";
   try {
     const cf = JSON.parse(visit.contractFields);
     if (visit.stage === "CLOSED") {
@@ -596,8 +596,8 @@ export function ChatInterface({
 
   const filteredRooms = rooms.filter((room) => {
     const q = searchQuery.trim().toLowerCase();
-    const address = room.visit?.parcel.address.toLowerCase();
-    const clientName = (room.visit?.bill?.clientName || "").toLowerCase();
+    const address = (room.visit?.parcel?.address || "").toLowerCase();
+    const clientName = (room.visit?.bill?.clientName || room.personalUser?.name || "").toLowerCase();
     const matchesSearch = !q || address.includes(q) || clientName.includes(q);
     const matchesStage = !stageFilter || room.visit?.stage === stageFilter;
     const matchesTag =
@@ -614,6 +614,7 @@ export function ChatInterface({
       { visit: Room["visit"]; general?: Room; partners: Room[] }
     >();
     for (const r of rooms) {
+      if (!r.visit) continue;
       if (!map.has(r.visit.id))
         map.set(r.visit.id, { visit: r.visit, partners: [] });
       const g = map.get(r.visit.id)!;
@@ -1473,7 +1474,7 @@ export function ChatInterface({
           </div>
 
           {/* RIGHT COLUMN: Info Panel */}
-          {selectedRoom && selectedRoom.type === "PERSONAL" ? (
+          {selectedRoom && (selectedRoom.type === "PERSONAL" || selectedRoom.type === "ANNOUNCEMENTS") ? (
                 <div
                   className={`w-full lg:w-80 border-l border-outline-variant/30 bg-surface-container-low/30 flex-shrink-0 min-h-0 flex flex-col
                   ${role === "SETTER" || role === "SETTER_JR" ? "hidden" : (!showInfoPanel && mobileColumn !== "info" ? "hidden lg:flex" : "flex")}
@@ -1823,9 +1824,10 @@ function InfoPanelContent({
   const isPartner = session?.user?.role === "PARTNER";
   const { visit } = room;
   const [projectDetails, setProjectDetails] = useState<any>(
-    visit.projectDetails,
+    visit?.projectDetails || {},
   );
   useEffect(() => {
+    if (!visit?.id) return;
     // Initial fetch
     fetch(`/api/project-details?visitId=${visit.id}&t=${Date.now()}`, {
       cache: "no-store",
@@ -1848,7 +1850,7 @@ function InfoPanelContent({
         .catch(() => {});
     }, 2000);
     return () => clearInterval(interval);
-  }, [visit.id]);
+  }, [visit?.id]);
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -2114,6 +2116,11 @@ function AdminRoomSelector({
     </div>
   );
 }
+
+
+
+
+
 
 
 
