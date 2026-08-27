@@ -1185,7 +1185,7 @@ export function ChatInterface({
                                 </>
                               )}
                             </p>
-                            {selectedRoom?.type !== "PERSONAL" && (
+                            {selectedRoom?.type !== "PERSONAL" && selectedRoom?.type !== "ANNOUNCEMENTS" && (
                               <span className="px-2 py-0.5 bg-brand-orange/10 text-brand-orange rounded-full text-[10px] font-bold">
                                 {selectedRoom?.visit?.parcel?.address || "Sin dirección"}
                               </span>
@@ -1516,31 +1516,23 @@ export function ChatInterface({
                     <p className="text-sm text-on-surface-variant mb-6">{selectedRoom.personalUser?.role}</p>
 
                     <div className="w-full space-y-4 text-left mt-4 border-t border-outline-variant/20 pt-4">
-                      {selectedRoom.personalUser?.email && (
-                        <div>
-                          <p className="text-xs text-on-surface-variant mb-1 flex items-center gap-1"><Mail className="w-3.5 h-3.5" /> Correo</p>
-                          <p className="text-sm">{selectedRoom.personalUser.email}</p>
-                        </div>
-                      )}
+                      <div>
+                            <p className="text-xs text-on-surface-variant mb-1 flex items-center gap-1"><Mail className="w-3.5 h-3.5" /> Correo</p>
+                            <p className="text-sm">{selectedRoom.personalUser?.email || "No registrado"}</p>
+                          </div>
                       {selectedRoom.personalUser?.phone && (
                         <div>
                           <p className="text-xs text-on-surface-variant mb-1 flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> Teléfono</p>
                           <p className="text-sm">{selectedRoom.personalUser.phone}</p>
                         </div>
                       )}
-                      {selectedRoom.personalUser?.profile?.address && (
-                        <div>
-                          <p className="text-xs text-on-surface-variant mb-1 flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Vivienda</p>
-                          <p className="text-sm">{selectedRoom.personalUser.profile.address}</p>
-                        </div>
-                      )}
+                      <div>
+                            <p className="text-xs text-on-surface-variant mb-1 flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Vivienda</p>
+                            <p className="text-sm">{selectedRoom.personalUser?.profile?.address || "No registrada"}</p>
+                          </div>
                     </div>
                     
-                    <Link href={`/profile/${selectedRoom.personalUser?.id}`} className="w-full mt-6">
-                      <Button variant="outline" className="w-full">
-                        Ver Perfil Completo
-                      </Button>
-                    </Link>
+                    
                     
                     {mobileColumn === "info" && (
                       <Button
