@@ -149,6 +149,9 @@ export async function GET(request: NextRequest) {
 
   // ── PERSONAL VIEW ───────────────────────────────────────────
   if (mode === "own") {
+    const personalWhereClause = role === "ADMIN" ? { setterId: userId } : whereClause;
+    const personalCloserWhere = role === "ADMIN" ? { closerId: userId } : whereClause;
+
     const [
       doorsToday,
       doorsWeek,
@@ -163,30 +166,30 @@ export async function GET(request: NextRequest) {
       closedMonth,
       closedTotal,
     ] = await Promise.all([
-      prisma.visit.count({ where: { ...whereClause, createdAt: { gte: startOfToday } } }),
-      prisma.visit.count({ where: { ...whereClause, createdAt: { gte: startOfWeek } } }),
-      prisma.visit.count({ where: { ...whereClause, createdAt: { gte: startOfMonth } } }),
-      prisma.visit.count({ where: whereClause }),
+      prisma.visit.count({ where: { ...personalWhereClause, createdAt: { gte: startOfToday } } }),
+      prisma.visit.count({ where: { ...personalWhereClause, createdAt: { gte: startOfWeek } } }),
+      prisma.visit.count({ where: { ...personalWhereClause, createdAt: { gte: startOfMonth } } }),
+      prisma.visit.count({ where: personalWhereClause }),
       prisma.visit.count({
-        where: { ...whereClause, stage: "PROPOSAL_ACCEPTED", createdAt: { gte: startOfToday } },
+        where: { ...personalWhereClause, stage: "PROPOSAL_ACCEPTED", createdAt: { gte: startOfToday } },
       }),
       prisma.visit.count({
-        where: { ...whereClause, stage: "PROPOSAL_ACCEPTED", createdAt: { gte: startOfWeek } },
+        where: { ...personalWhereClause, stage: "PROPOSAL_ACCEPTED", createdAt: { gte: startOfWeek } },
       }),
       prisma.visit.count({
-        where: { ...whereClause, stage: "PROPOSAL_ACCEPTED", createdAt: { gte: startOfMonth } },
+        where: { ...personalWhereClause, stage: "PROPOSAL_ACCEPTED", createdAt: { gte: startOfMonth } },
       }),
-      prisma.visit.count({ where: { ...whereClause, stage: "PROPOSAL_ACCEPTED" } }),
+      prisma.visit.count({ where: { ...personalWhereClause, stage: "PROPOSAL_ACCEPTED" } }),
       prisma.visit.count({
-        where: { ...whereClause, stage: "CLOSED", completedAt: { gte: startOfToday } },
-      }),
-      prisma.visit.count({
-        where: { ...whereClause, stage: "CLOSED", completedAt: { gte: startOfWeek } },
+        where: { ...personalCloserWhere, stage: "CLOSED", completedAt: { gte: startOfToday } },
       }),
       prisma.visit.count({
-        where: { ...whereClause, stage: "CLOSED", completedAt: { gte: startOfMonth } },
+        where: { ...personalCloserWhere, stage: "CLOSED", completedAt: { gte: startOfWeek } },
       }),
-      prisma.visit.count({ where: { ...whereClause, stage: "CLOSED" } }),
+      prisma.visit.count({
+        where: { ...personalCloserWhere, stage: "CLOSED", completedAt: { gte: startOfMonth } },
+      }),
+      prisma.visit.count({ where: { ...personalCloserWhere, stage: "CLOSED" } }),
     ]);
 
     return NextResponse.json({

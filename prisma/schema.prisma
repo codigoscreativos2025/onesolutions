@@ -583,3 +583,13 @@ model UserSession {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model Template {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  roles     String   // JSON array: ["SETTER","CLOSER","SETTER_JR","PARTNER"]
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

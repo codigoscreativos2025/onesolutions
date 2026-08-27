@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";
-import { Users, BarChart3, ReceiptText, Mail } from "lucide-react";
+import { Users, BarChart3, ReceiptText, Mail, Target, FileText } from "lucide-react";
 import { useLocale } from "@/lib/locale-context";
 
 export default function AdminPage() {
@@ -23,7 +23,9 @@ export default function AdminPage() {
   const menuItems = [
     { title: t.admin.users, description: t.admin.usersDesc, href: "/admin/users", icon: Users, color: "bg-primary/10 text-primary" },
     { title: t.admin.metrics, description: t.admin.metricsDesc, href: "/admin/metrics", icon: BarChart3, color: "bg-tertiary/10 text-tertiary" },
-    { title: "Facturas", description: "Genera facturas personalizadas y descarga PDFs", href: "/admin/invoices", icon: ReceiptText, color: "bg-primary/10 text-primary" },
+    { title: t.admin.goals, description: t.admin.goalsDesc, href: "/admin/badges", icon: Target, color: "bg-orange-500/10 text-orange-500" },
+    { title: t.admin.templates, description: t.admin.templatesDesc, href: "/admin/templates", icon: FileText, color: "bg-yellow-500/10 text-yellow-500" },
+    { title: "Facturas", description: "Genera facturas personalizadas y descarga PDFs", href: "/admin/invoices", icon: ReceiptText, color: "bg-green-500/10 text-green-500" },
     { title: "Correos", description: "Envia correos con plantillas predeterminadas a usuarios y clientes", href: "/admin/emails", icon: Mail, color: "bg-secondary/10 text-secondary" },
   ];
 

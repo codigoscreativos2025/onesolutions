@@ -132,45 +132,26 @@ export default function MetricsPage() {
         </div>
       )}
 
-      {!loading && isAdmin && adminData && <AdminView data={adminData} />}
-      {!loading && !isAdmin && personalData && <PersonalView data={personalData} />}
+      {!loading && personalData && role !== "PARTNER" && (
+        <PersonalView data={personalData} isAdmin={isAdmin} adminData={adminData || undefined} />
+      )}
+      
+      {!loading && isAdmin && adminData && (
+        <AdminExtraViews data={adminData} />
+      )}
     </div>
   );
 }
 
-function AdminView({ data }: { data: AdminMetrics }) {
+function AdminExtraViews({ data }: { data: AdminMetrics }) {
   return (
     <>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard
-          icon={DoorOpen}
-          label="Puertas Tocadas"
-          color="text-orange-400"
-          today={data.doorsKnockedToday}
-          week={data.doorsKnockedWeek}
-          month={data.doorsKnockedMonth}
-        />
-        <MetricCard
-          icon={UserPlus}
-          label="Leads Creados"
-          color="text-blue-400"
-          today={data.leadsCreatedToday}
-          week={data.leadsCreatedWeek}
-          month={data.leadsCreatedMonth}
-        />
-        <MetricCard
-          icon={CheckCircle}
-          label="Proyectos Cerrados"
-          color="text-green-400"
-          today={data.projectsClosedToday}
-          week={data.projectsClosedWeek}
-          month={data.projectsClosedMonth}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
         <div className="glass-panel p-4 rounded-xl flex flex-col justify-between">
           <div className="flex items-center gap-2 mb-1">
             <DollarSign className="w-5 h-5 text-yellow-400" />
             <span className="text-xs text-on-surface-variant uppercase tracking-wide">
-              Facturacion
+              Facturacion Global
             </span>
           </div>
           <div className="text-2xl font-bold text-yellow-400 mt-1">
@@ -182,6 +163,9 @@ function AdminView({ data }: { data: AdminMetrics }) {
         </div>
       </div>
 
+function AdminView({ data }: { data: AdminMetrics }) {
+  return (
+    <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="glass-panel p-4 rounded-xl">
           <h3 className="text-sm font-semibold text-on-surface mb-3 flex items-center gap-2">
@@ -249,45 +233,62 @@ function AdminView({ data }: { data: AdminMetrics }) {
   );
 }
 
-function PersonalView({ data }: { data: PersonalMetrics }) {
+function PersonalView({ data, isAdmin, adminData }: { data: PersonalMetrics, isAdmin?: boolean, adminData?: AdminMetrics }) {
   return (
     <div className="space-y-4">
-      <div className="glass-panel p-4 rounded-xl">
-        <div className="flex items-center gap-2 mb-3">
-          <DoorOpen className="w-5 h-5 text-orange-400" />
-          <h3 className="text-sm font-semibold text-on-surface">Mis Puertas Tocadas</h3>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <PeriodStat label="Hoy" value={data.doorsKnockedToday} color="text-orange-400" />
-          <PeriodStat label="Esta Semana" value={data.doorsKnockedWeek} color="text-orange-400" />
-          <PeriodStat label="Este Mes" value={data.doorsKnockedMonth} color="text-orange-400" />
-          <PeriodStat label="Total" value={data.doorsKnockedTotal} color="text-orange-400" />
-        </div>
-      </div>
+      {!isAdmin && (
+        <>
+          <div className="glass-panel p-4 rounded-xl">
+            <div className="flex items-center gap-2 mb-3">
+              <DoorOpen className="w-5 h-5 text-orange-400" />
+              <h3 className="text-sm font-semibold text-on-surface">Mis Puertas Tocadas</h3>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <PeriodStat label="Hoy" value={data.doorsKnockedToday} color="text-orange-400" />
+              <PeriodStat label="Esta Semana" value={data.doorsKnockedWeek} color="text-orange-400" />
+              <PeriodStat label="Este Mes" value={data.doorsKnockedMonth} color="text-orange-400" />
+              <PeriodStat label="Total" value={data.doorsKnockedTotal} color="text-orange-400" />
+            </div>
+          </div>
 
-      <div className="glass-panel p-4 rounded-xl">
-        <div className="flex items-center gap-2 mb-3">
-          <UserPlus className="w-5 h-5 text-blue-400" />
-          <h3 className="text-sm font-semibold text-on-surface">Mis Leads Generados</h3>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <PeriodStat label="Hoy" value={data.leadsGeneratedToday} color="text-blue-400" />
-          <PeriodStat label="Esta Semana" value={data.leadsGeneratedWeek} color="text-blue-400" />
-          <PeriodStat label="Este Mes" value={data.leadsGeneratedMonth} color="text-blue-400" />
-          <PeriodStat label="Total" value={data.leadsGeneratedTotal} color="text-blue-400" />
-        </div>
-      </div>
+          <div className="glass-panel p-4 rounded-xl">
+            <div className="flex items-center gap-2 mb-3">
+              <UserPlus className="w-5 h-5 text-blue-400" />
+              <h3 className="text-sm font-semibold text-on-surface">Mis Leads Generados</h3>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <PeriodStat label="Hoy" value={data.leadsGeneratedToday} color="text-blue-400" />
+              <PeriodStat label="Esta Semana" value={data.leadsGeneratedWeek} color="text-blue-400" />
+              <PeriodStat label="Este Mes" value={data.leadsGeneratedMonth} color="text-blue-400" />
+              <PeriodStat label="Total" value={data.leadsGeneratedTotal} color="text-blue-400" />
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="glass-panel p-4 rounded-xl">
         <div className="flex items-center gap-2 mb-3">
           <CheckCircle className="w-5 h-5 text-green-400" />
-          <h3 className="text-sm font-semibold text-on-surface">Mis Proyectos Cerrados</h3>
+          <h3 className="text-sm font-semibold text-on-surface">
+            {isAdmin ? "Proyectos Cerrados Globales" : "Mis Proyectos Cerrados"}
+          </h3>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <PeriodStat label="Hoy" value={data.projectsClosedToday} color="text-green-400" />
-          <PeriodStat label="Esta Semana" value={data.projectsClosedWeek} color="text-green-400" />
-          <PeriodStat label="Este Mes" value={data.projectsClosedMonth} color="text-green-400" />
-          <PeriodStat label="Total" value={data.projectsClosedTotal} color="text-green-400" />
+          {isAdmin && adminData ? (
+            <>
+              <PeriodStat label="Hoy" value={adminData.projectsClosedToday} color="text-green-400" />
+              <PeriodStat label="Esta Semana" value={adminData.projectsClosedWeek} color="text-green-400" />
+              <PeriodStat label="Este Mes" value={adminData.projectsClosedMonth} color="text-green-400" />
+              <PeriodStat label="Total" value={data.projectsClosedTotal} color="text-green-400" />
+            </>
+          ) : (
+            <>
+              <PeriodStat label="Hoy" value={data.projectsClosedToday} color="text-green-400" />
+              <PeriodStat label="Esta Semana" value={data.projectsClosedWeek} color="text-green-400" />
+              <PeriodStat label="Este Mes" value={data.projectsClosedMonth} color="text-green-400" />
+              <PeriodStat label="Total" value={data.projectsClosedTotal} color="text-green-400" />
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -357,6 +358,7 @@ interface Notification {
 }
 
 function NotificationsSection() {
+  const { t } = useLocale();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -384,27 +386,37 @@ function NotificationsSection() {
     <section>
       <h2 className="font-headline text-lg font-bold text-on-surface mb-3 flex items-center gap-2">
         <Bell className="w-5 h-5 text-primary" />
-        Notificaciones
+        Feed
       </h2>
       <div className="glass-panel rounded-2xl divide-y divide-outline-variant/20">
-        {notifications.map((n) => (
-          <div key={n.id} className="p-4 flex items-start gap-3">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                n.link ? "bg-primary/10" : "bg-orange-100"
+        {notifications.map((n) => {
+          const isTemplate = n.title.startsWith("[TEMPLATE]");
+          const displayTitle = isTemplate ? n.title.replace("[TEMPLATE]", "").trim() : n.title;
+
+          return (
+            <div 
+              key={n.id} 
+              className={`p-4 flex items-start gap-3 transition-colors ${
+                isTemplate ? "border-l-4 border-l-yellow-400 bg-yellow-500/5" : ""
               }`}
             >
-              <Bell
-                className={`w-4 h-4 ${n.link ? "text-primary" : "text-orange-500"}`}
-              />
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                  isTemplate ? "bg-yellow-100 dark:bg-yellow-500/20" : n.link ? "bg-primary/10" : "bg-orange-100 dark:bg-orange-500/20"
+                }`}
+              >
+                <Bell
+                  className={`w-4 h-4 ${isTemplate ? "text-yellow-500" : n.link ? "text-primary" : "text-orange-500"}`}
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-on-surface">{displayTitle}</p>
+                <p className="text-xs text-on-surface-variant mt-0.5">{n.body}</p>
+                <p className="text-[10px] text-on-surface-variant/60 mt-1">{timeAgo(n.createdAt)}</p>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-on-surface">{n.title}</p>
-              <p className="text-xs text-on-surface-variant mt-0.5">{n.body}</p>
-              <p className="text-[10px] text-on-surface-variant/60 mt-1">{timeAgo(n.createdAt)}</p>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
