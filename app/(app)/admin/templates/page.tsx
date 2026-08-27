@@ -46,8 +46,7 @@ interface ActiveUser {
 const ROLE_OPTIONS = [
   { value: "SETTER", label: "Trainee", color: "bg-blue-500" },
   { value: "CLOSER", label: "Closer", color: "bg-green-500" },
-  { value: "SETTER_JR", label: "Setter", color: "bg-orange-500" },
-  { value: "PARTNER", label: "Partner", color: "bg-purple-500" },
+    { value: "PARTNER", label: "Partner", color: "bg-purple-500" },
 ];
 
 export default function TemplatesPage() {
@@ -202,6 +201,7 @@ export default function TemplatesPage() {
 
   // Filter users based on dispatch mode and search
   const filteredOptions = activeUsers.filter((u) => {
+    if (u.role === "SETTER_JR") return false;
     if (templateToSend && templateToSend.roles) {
       try {
         const allowedRoles: string[] = JSON.parse(templateToSend.roles);
@@ -588,6 +588,8 @@ export default function TemplatesPage() {
     </div>
   );
 }
+
+
 
 
 
