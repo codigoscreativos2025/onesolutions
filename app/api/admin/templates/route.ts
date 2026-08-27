@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { title, content, roles, color } = body;
+  const { title, content, roles, color, attachments } = body;
 
   if (!title?.trim() || !content?.trim()) {
     return NextResponse.json({ error: "Title and content are required" }, { status: 400 });
@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
       title: title.trim(),
       content: content.trim(),
       roles: JSON.stringify(roles || []),
+      attachments: attachments ? JSON.stringify(attachments) : null,
       color: color || "yellow",
     },
   });

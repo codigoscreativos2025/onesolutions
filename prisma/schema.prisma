@@ -18,6 +18,7 @@ model User {
   phone     String?
   avatarUrl String?
   isActive  Boolean  @default(true)
+  attachments String?
   locationValidationEnabled Boolean @default(true)
   onboardingToken       String?
   onboardingTokenExpires DateTime?
@@ -594,6 +595,9 @@ model Template {
   roles     String   // JSON array: ["SETTER","CLOSER","SETTER_JR","PARTNER"]
   color     String   @default("yellow") // Color for the border
   isActive  Boolean  @default(true)
+  attachments String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+

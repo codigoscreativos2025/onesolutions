@@ -18,7 +18,7 @@ import {
   Users,
   Search,
   MapPin,
-  User,
+  User, Paperclip, Loader2,
 } from "lucide-react";
 
 interface Template {
@@ -27,6 +27,7 @@ interface Template {
   content: string;
   roles: string;
   color: string;
+  attachments?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -72,6 +73,8 @@ export default function TemplatesPage() {
   // Form state
   const [formTitle, setFormTitle] = useState("");
   const [formContent, setFormContent] = useState("");
+  const [attachments, setAttachments] = useState<{name: string, url: string}[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const [formRoles, setFormRoles] = useState<string[]>([]);
   const [formColor, setFormColor] = useState("yellow");
 
@@ -113,6 +116,7 @@ export default function TemplatesPage() {
     setEditingTemplate(null);
     setFormTitle("");
     setFormContent("");
+    setAttachments([]);
     setFormRoles([]);
     setFormColor("yellow");
     setShowModal(true);
@@ -122,6 +126,7 @@ export default function TemplatesPage() {
     setEditingTemplate(tmpl);
     setFormTitle(tmpl.title);
     setFormContent(tmpl.content);
+    setAttachments(tmpl.attachments ? JSON.parse(tmpl.attachments) : []);
     setFormColor(tmpl.color || "yellow");
     try {
       setFormRoles(JSON.parse(tmpl.roles));
@@ -129,6 +134,33 @@ export default function TemplatesPage() {
       setFormRoles([]);
     }
     setShowModal(true);
+  };
+
+  
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const uploadData = await uploadRes.json();
+      setAttachments(prev => [...prev, { name: file.name, url: uploadData.url }]);
+    } catch (err) {
+      console.error(err);
+      alert("Error al subir archivo");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSave = async () => {
@@ -610,34 +642,6 @@ export default function TemplatesPage() {
               </div>
             </div>
 
-            {/* Color selector */}
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-on-surface mb-2">
-                Color de la tarjeta
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {["yellow", "blue", "green", "red", "purple", "orange"].map((c) => {
-                  const isSelected = formColor === c;
-                  const colorMap: Record<string, string> = {
-                    yellow: "bg-yellow-400",
-                    blue: "bg-blue-400",
-                    green: "bg-green-400",
-                    red: "bg-red-400",
-                    purple: "bg-purple-400",
-                    orange: "bg-orange-400",
-                  };
-                  return (
-                    <button
-                      key={c}
-                      onClick={() => setFormColor(c)}
-                      className={`w-8 h-8 rounded-full ${colorMap[c]} transition-all ${isSelected ? "ring-2 ring-offset-2 ring-primary scale-110" : "opacity-70 hover:opacity-100"}`}
-                      title={c}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-
             {/* Save button */}
             <div className="flex gap-3">
               <button
@@ -660,6 +664,8 @@ export default function TemplatesPage() {
     </div>
   );
 }
+
+
 
 
 

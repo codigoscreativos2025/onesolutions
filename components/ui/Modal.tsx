@@ -45,7 +45,8 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
         {children}
       </div>
     </div>
-  ),
+  ,
     document.body
   );
 }
+

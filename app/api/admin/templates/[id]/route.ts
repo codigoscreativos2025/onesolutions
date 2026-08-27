@@ -12,7 +12,7 @@ export async function PUT(
   }
 
   const body = await request.json();
-  const { title, content, roles, isActive, color } = body;
+  const { title, content, roles, isActive, color, attachments } = body;
 
   const template = await prisma.template.update({
     where: { id: parseInt(params.id) },

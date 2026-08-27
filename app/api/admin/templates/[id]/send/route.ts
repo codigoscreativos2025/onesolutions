@@ -29,6 +29,25 @@ export async function POST(
   const messageBody = `${template.content}<br/><br/><i>⚡ Enviado por ${senderName} (Admin)</i>`;
   const adminUserId = parseInt(session.user.id);
 
+    const attachments = template.attachments ? JSON.parse(template.attachments) : [];
+    
+    async function sendAttachments(roomId: number) {
+      if (attachments && attachments.length > 0) {
+        for (const att of attachments) {
+          await prisma.chatMessage.create({
+            data: {
+              roomId,
+              userId: adminUserId,
+              body: "Archivo adjunto: " + att.name,
+              fileUrl: att.url,
+              fileName: att.name,
+            }
+          });
+        }
+      }
+    }
+
+
   // Helper: find or create ANNOUNCEMENTS room for a user
   async function getOrCreateAnnouncementsRoom(userId: number) {
     let room = await prisma.chatRoom.findFirst({
