@@ -106,11 +106,7 @@ interface Room {
   type?: string;
   partnerId?: number | null;
   createdAt?: string;
-  personalUser?: {
-    id: number;
-    name: string;
-    role: string;
-  };
+  personalUser?: { id: number; name: string; role: string; email?: string; phone?: string; profile?: { address?: string; profilePhoto?: string } };
   visit?: any;
   messages: {
     userId: number;
@@ -2169,6 +2165,7 @@ function AdminRoomSelector({
     </div>
   );
 }
+
 
 
 
