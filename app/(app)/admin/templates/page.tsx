@@ -249,9 +249,18 @@ export default function TemplatesPage() {
               try { return JSON.parse(tmpl.roles); } catch { return []; }
             })();
 
-            const colorClass = tmpl.color 
-                ? `border-l-${tmpl.color}-400 hover:border-l-${tmpl.color}-500` 
-                : "border-l-yellow-400 hover:border-l-yellow-500";
+            const borderMap: Record<string, string> = {
+              yellow: "border-l-yellow-400 hover:border-l-yellow-500",
+              blue: "border-l-blue-400 hover:border-l-blue-500",
+              green: "border-l-green-400 hover:border-l-green-500",
+              red: "border-l-red-400 hover:border-l-red-500",
+              purple: "border-l-purple-400 hover:border-l-purple-500",
+              orange: "border-l-orange-400 hover:border-l-orange-500",
+            };
+
+            const colorClass = tmpl.color && borderMap[tmpl.color] 
+                ? borderMap[tmpl.color] 
+                : borderMap.yellow;
 
             return (
               <div

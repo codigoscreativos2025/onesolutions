@@ -200,6 +200,9 @@ export function ChatInterface({
     { id: number; name: string; role: string }[]
   >([]);
   const [showMentionDropdown, setShowMentionDropdown] = useState(false);
+  const [showTemplatesModal, setShowTemplatesModal] = useState(false);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [mentionSearch, setMentionSearch] = useState("");
   const [commonFields, setCommonFields] = useState<CommonField[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -509,6 +512,29 @@ export function ChatInterface({
       }
       return part;
     });
+  };
+
+  const openTemplatesModal = async () => {
+    setShowTemplatesModal(true);
+    if (templates.length === 0) {
+      setLoadingTemplates(true);
+      try {
+        const res = await fetch(/api/admin/templates);
+        const data = await res.json();
+        if (Array.isArray(data)) setTemplates(data.filter((t: any) => t.isActive));
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingTemplates(false);
+      }
+    }
+  };
+
+  const handleSendTemplate = async (tmpl: any) => {
+    setShowTemplatesModal(false);
+    if (!selectedRoom) return;
+    const messageBody = `<div style="text-align: center; margin-bottom: 15px;"><img src="/logo-company.png" alt="OneSolutions" style="max-height: 60px; display: inline-block;" /></div>`;
+    await handleSendMessage(null, messageBody);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1354,7 +1380,8 @@ export function ChatInterface({
                   onSubmit={handleSend}
                   className="p-4 border-t border-outline-variant/30 flex gap-2 relative"
                 >
-                  <label className="w-11 h-11 flex items-center justify-center rounded-xl bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest transition-colors cursor-pointer flex-shrink-0">
+                  <button type="button" onClick={openTemplatesModal} className="w-11 h-11 flex items-center justify-center rounded-xl bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest transition-colors cursor-pointer flex-shrink-0" title="Enviar Plantilla"><FileText className="w-5 h-5" /></button>
+                    <label className="w-11 h-11 flex items-center justify-center rounded-xl bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest transition-colors cursor-pointer flex-shrink-0">
                     <Paperclip className="w-5 h-5" />
                     <input
                       type="file"
@@ -1712,11 +1739,28 @@ export function ChatInterface({
       </Modal>
 
       {selectedRoom && (
-        <ContractModal
-          isOpen={showContractModal}
-          onClose={() => setShowContractModal(false)}
-          visitId={selectedRoom?.visit?.id}
-        />
+        
+
+        <Modal isOpen={showTemplatesModal} onClose={() => setShowTemplatesModal(false)} title="Plantillas Disponibles">
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto p-4">
+            {loadingTemplates ? (
+              <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+            ) : templates.length === 0 ? (
+              <div className="text-center p-8 text-on-surface-variant">No hay plantillas disponibles</div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3">
+                {templates.map(tmpl => (
+                  <div key={tmpl.id} className="p-4 border border-outline-variant/30 rounded-xl hover:border-primary/50 transition-colors cursor-pointer flex justify-between items-center bg-surface-container-low" onClick={() => handleSendTemplate(tmpl)}>
+                    <div>
+                      <h4 className="font-bold text-on-surface">{tmpl.title}</h4>
+                    </div>
+                    <Send className="w-4 h-4 text-primary" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Modal>
       )}
     </div>
   );
@@ -2036,4 +2080,6 @@ function AdminRoomSelector({
     </div>
   );
 }
+
+
 
