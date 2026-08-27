@@ -63,9 +63,10 @@ export default function TemplatesPage() {
   const [showSendModal, setShowSendModal] = useState(false);
   const [templateToSend, setTemplateToSend] = useState<Template | null>(null);
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
-  const [dispatchMode, setDispatchMode] = useState<"project" | "user">("project");
+  const [dispatchMode, setDispatchMode] = useState<"project" | "user" | "broadcast">("project");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTarget, setSelectedTarget] = useState<{ type: "project" | "user"; id: number } | null>(null);
+  const [broadcastTarget, setBroadcastTarget] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
 
   // Form state
@@ -163,12 +164,38 @@ export default function TemplatesPage() {
     setTemplateToSend(tmpl);
     setSearchQuery("");
     setSelectedTarget(null);
+    setBroadcastTarget(null);
     setDispatchMode("project");
     setShowSendModal(true);
   };
 
   const handleConfirmSend = async () => {
-    if (!templateToSend || !selectedTarget) return;
+    if (!templateToSend) return;
+    
+    // Broadcast mode
+    if (dispatchMode === "broadcast" && broadcastTarget) {
+      setSending(true);
+      try {
+        const res = await fetch(`/api/admin/templates/${templateToSend.id}/send`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ broadcastRole: broadcastTarget })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert(t.templates.broadcastSuccess?.replace("{count}", data.sentTo?.toString() || "0") || `Plantilla enviada a ${data.sentTo} usuarios`);
+          setShowSendModal(false);
+        } else {
+          alert("Error: " + data.error);
+        }
+      } finally {
+        setSending(false);
+      }
+      return;
+    }
+
+    // Single target mode  
+    if (!selectedTarget) return;
     setSending(true);
     try {
       const res = await fetch(`/api/admin/templates/${templateToSend.id}/send`, { 
@@ -356,7 +383,7 @@ export default function TemplatesPage() {
               </label>
               <div className="flex gap-2 mb-6">
                 <button
-                  onClick={() => { setDispatchMode("project"); setSelectedTarget(null); }}
+                  onClick={() => { setDispatchMode("project"); setSelectedTarget(null); setBroadcastTarget(null); }}
                   className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all border ${
                     dispatchMode === "project" 
                       ? "bg-primary text-on-primary border-primary" 
@@ -366,7 +393,7 @@ export default function TemplatesPage() {
                   {t.templates.sendToProject}
                 </button>
                 <button
-                  onClick={() => { setDispatchMode("user"); setSelectedTarget(null); }}
+                  onClick={() => { setDispatchMode("user"); setSelectedTarget(null); setBroadcastTarget(null); }}
                   className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all border ${
                     dispatchMode === "user" 
                       ? "bg-primary text-on-primary border-primary" 
@@ -375,79 +402,124 @@ export default function TemplatesPage() {
                 >
                   {t.templates.sendToUser}
                 </button>
+                <button
+                  onClick={() => { setDispatchMode("broadcast"); setSelectedTarget(null); setBroadcastTarget(null); }}
+                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all border ${
+                    dispatchMode === "broadcast" 
+                      ? "bg-orange-500 text-white border-orange-500" 
+                      : "bg-surface-variant/30 text-on-surface border-outline-variant/30 hover:bg-surface-variant/50"
+                  }`}
+                >
+                  📢 {t.templates.broadcastMode || "Difusión Masiva"}
+                </button>
               </div>
 
-              <label className="block text-sm font-semibold text-on-surface mb-2">
-                {dispatchMode === "project" ? t.templates.selectProject : t.templates.selectUser}
-              </label>
-              
-              <div className="relative mb-4">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
-                <input
-                  type="text"
-                  placeholder={t.templates.searchPlaceholder}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 bg-surface-variant/30 border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1">
-                {filteredOptions.length === 0 ? (
-                  <div className="text-center py-6 text-sm text-on-surface-variant">
-                    {dispatchMode === "project" ? "No se encontraron proyectos activos." : "No se encontraron usuarios."}
-                  </div>
-                ) : (
-                  filteredOptions.map((u) => {
-                    const isSelected = dispatchMode === "project" 
-                      ? (selectedTarget?.type === "project" && selectedTarget?.id === u.activeProject?.visitId)
-                      : (selectedTarget?.type === "user" && selectedTarget?.id === u.id);
-
-                    return (
-                      <button
-                        key={`${dispatchMode}-${u.id}`}
-                        onClick={() => setSelectedTarget({
-                          type: dispatchMode,
-                          id: dispatchMode === "project" ? u.activeProject!.visitId : u.id
-                        })}
-                        className={`flex items-center p-3 rounded-xl border text-left transition-all ${
-                          isSelected 
-                            ? "border-primary bg-primary/5" 
-                            : "border-outline-variant/20 hover:border-primary/40 bg-surface-variant/10"
-                        }`}
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-sm truncate">{u.name}</span>
-                            <span className="text-[10px] bg-surface-variant px-2 py-0.5 rounded-full font-medium">
-                              {u.role}
-                            </span>
-                          </div>
-                          
-                          {dispatchMode === "project" ? (
-                            <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
-                              <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-brand-orange" />
-                              <span className="truncate">{u.activeProject?.address}</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
-                              <User className="w-3.5 h-3.5 flex-shrink-0 text-blue-500" />
-                              <span className="truncate">
-                                {u.activeProject?.address ? `Proyecto actual: ${u.activeProject.address}` : t.templates.noActiveProject}
-                              </span>
-                            </div>
-                          )}
+              {dispatchMode === "broadcast" ? (
+                <div className="space-y-3">
+                  <label className="block text-sm font-semibold text-on-surface mb-2">
+                    📢 {t.templates.broadcastMode || "Seleccionar Audiencia"}
+                  </label>
+                  {[
+                    { key: "ALL", label: t.templates.broadcastAll || "Enviar a Todos", icon: "🌍", color: "border-primary bg-primary/5" },
+                    { key: "SETTER", label: t.templates.broadcastTrainees || "Enviar a Todos los Trainees", icon: "🎓", color: "border-blue-500 bg-blue-500/5" },
+                    { key: "CLOSER", label: t.templates.broadcastClosers || "Enviar a Todos los Closers", icon: "🎯", color: "border-green-500 bg-green-500/5" },
+                    { key: "PARTNER", label: t.templates.broadcastPartners || "Enviar a Todos los Partners", icon: "🤝", color: "border-purple-500 bg-purple-500/5" },
+                    { key: "SETTER_JR", label: t.templates.broadcastSetters || "Enviar a Todos los Setters", icon: "🚀", color: "border-orange-500 bg-orange-500/5" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.key}
+                      onClick={() => setBroadcastTarget(opt.key)}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
+                        broadcastTarget === opt.key 
+                          ? `${opt.color} border-2 shadow-sm` 
+                          : "border-outline-variant/20 hover:border-primary/40 bg-surface-variant/10"
+                      }`}
+                    >
+                      <span className="text-xl">{opt.icon}</span>
+                      <span className="font-semibold text-sm">{opt.label}</span>
+                      {broadcastTarget === opt.key && (
+                        <div className="ml-auto w-5 h-5 bg-primary text-on-primary rounded-full flex items-center justify-center">
+                          <Check className="w-3 h-3" />
                         </div>
-                        {isSelected && (
-                          <div className="w-5 h-5 bg-primary text-on-primary rounded-full flex items-center justify-center flex-shrink-0 ml-3">
-                            <Check className="w-3 h-3" />
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })
-                )}
-              </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <label className="block text-sm font-semibold text-on-surface mb-2">
+                    {dispatchMode === "project" ? t.templates.selectProject : t.templates.selectUser}
+                  </label>
+                  
+                  <div className="relative mb-4">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
+                    <input
+                      type="text"
+                      placeholder={t.templates.searchPlaceholder}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2.5 bg-surface-variant/30 border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1">
+                    {filteredOptions.length === 0 ? (
+                      <div className="text-center py-6 text-sm text-on-surface-variant">
+                        {dispatchMode === "project" ? "No se encontraron proyectos activos." : "No se encontraron usuarios."}
+                      </div>
+                    ) : (
+                      filteredOptions.map((u) => {
+                        const isSelected = dispatchMode === "project" 
+                          ? (selectedTarget?.type === "project" && selectedTarget?.id === u.activeProject?.visitId)
+                          : (selectedTarget?.type === "user" && selectedTarget?.id === u.id);
+
+                        return (
+                          <button
+                            key={`${dispatchMode}-${u.id}`}
+                            onClick={() => setSelectedTarget({
+                              type: dispatchMode as "project" | "user",
+                              id: dispatchMode === "project" ? u.activeProject!.visitId : u.id
+                            })}
+                            className={`flex items-center p-3 rounded-xl border text-left transition-all ${
+                              isSelected 
+                                ? "border-primary bg-primary/5" 
+                                : "border-outline-variant/20 hover:border-primary/40 bg-surface-variant/10"
+                            }`}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-semibold text-sm truncate">{u.name}</span>
+                                <span className="text-[10px] bg-surface-variant px-2 py-0.5 rounded-full font-medium">
+                                  {u.role}
+                                </span>
+                              </div>
+                              
+                              {dispatchMode === "project" ? (
+                                <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
+                                  <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-brand-orange" />
+                                  <span className="truncate">{u.activeProject?.address}</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
+                                  <User className="w-3.5 h-3.5 flex-shrink-0 text-blue-500" />
+                                  <span className="truncate">
+                                    {u.activeProject?.address ? `Proyecto actual: ${u.activeProject.address}` : (t.templates.noActiveProject || "Sin proyecto activo")}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            {isSelected && (
+                              <div className="w-5 h-5 bg-primary text-on-primary rounded-full flex items-center justify-center flex-shrink-0 ml-3">
+                                <Check className="w-3 h-3" />
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="p-6 border-t border-glass-border flex gap-3">
@@ -459,7 +531,7 @@ export default function TemplatesPage() {
               </button>
               <button
                 onClick={handleConfirmSend}
-                disabled={!selectedTarget || sending}
+                disabled={sending || (dispatchMode === "broadcast" ? !broadcastTarget : !selectedTarget)}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-yellow-500 text-white rounded-xl font-semibold text-sm hover:bg-yellow-600 transition disabled:opacity-50"
               >
                 {sending ? (

@@ -304,7 +304,13 @@ export function ChatInterface({
     try {
       const res = await fetch("/api/chat/rooms");
       const data = await res.json();
-      setRooms(data);
+      const sorted = Array.isArray(data) ? data : [];
+      sorted.sort((a: any, b: any) => {
+        if (a.type === "ANNOUNCEMENTS" && b.type !== "ANNOUNCEMENTS") return -1;
+        if (a.type !== "ANNOUNCEMENTS" && b.type === "ANNOUNCEMENTS") return 1;
+        return 0;
+      });
+      setRooms(sorted);
     } catch (error) {
       console.error(error);
     } finally {
@@ -963,11 +969,13 @@ export function ChatInterface({
                                   parseInt(session?.user?.id || "0")
                               ? "bg-primary text-on-primary"
                               : "hover:bg-surface-container-low text-on-surface"
-                        }`}
+                        } ${room.type === "ANNOUNCEMENTS" ? "bg-orange-50 dark:bg-orange-950/20 border border-orange-400" : ""}`}
                       >
                         <div className="flex justify-between items-start mb-1 gap-2">
                           <p className="font-semibold text-sm truncate">
-                            {room.type === "PERSONAL" ? (
+                            {room.type === "ANNOUNCEMENTS" ? (
+                              <span className="flex items-center gap-1 text-orange-600 font-bold">📢 Chat de Avisos</span>
+                            ) : room.type === "PERSONAL" ? (
                               <span className="flex items-center gap-1"><User className="w-4 h-4 text-blue-500" /> {room.personalUser?.name || "Privado"}</span>
                             ) : (
                               <>
@@ -1216,7 +1224,7 @@ export function ChatInterface({
                         Info
                       </button>
                       )}
-                      {role !== "PARTNER" && (
+                      {role !== "PARTNER" && selectedRoom?.type !== "ANNOUNCEMENTS" && (
                         <button
                           onClick={() => setShowContractModal(true)}
                           className="px-3 py-1 text-xs font-medium rounded-full transition-colors flex items-center gap-1"
@@ -1230,7 +1238,7 @@ export function ChatInterface({
                         </button>
                       )}
                       {(session?.user?.role === "ADMIN" ||
-                        session?.user?.role === "CLOSER") && (
+                        session?.user?.role === "CLOSER") && selectedRoom?.type !== "ANNOUNCEMENTS" && (
                         <>
                           <Link
                             href={`/lead/${selectedRoom?.visit?.id}?tab=archivos`}
@@ -1316,7 +1324,7 @@ export function ChatInterface({
                     )}
                   </div>
 
-                  {projectDetails && (
+                  {projectDetails && selectedRoom?.type !== "ANNOUNCEMENTS" && (
                     <div className="mt-3">
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-xs text-on-surface-variant">
