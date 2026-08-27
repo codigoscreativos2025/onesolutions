@@ -148,41 +148,7 @@ export default function MetricsPage() {
   );
 }
 
-function MetricCard({
-  icon: Icon,
-  label,
-  color,
-  today,
-  week,
-  month,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  color: string;
-  today: number;
-  week: number;
-  month: number;
-}) {
-  return (
-    <div className="glass-panel p-4 rounded-xl flex flex-col justify-between">
-      <div className="flex items-center gap-2 mb-1">
-        <Icon className={`w-5 h-5 ${color}`} />
-        <span className="text-xs text-on-surface-variant uppercase tracking-wide">
-          {label}
-        </span>
-      </div>
-      <div className={`text-2xl font-bold mt-1 ${color}`}>{today}</div>
-      <div className="flex gap-4 mt-2">
-        <span className="text-xs text-on-surface-variant">
-          <span className="font-medium text-on-surface">{week}</span> sem.
-        </span>
-        <span className="text-xs text-on-surface-variant">
-          <span className="font-medium text-on-surface">{month}</span> mes
-        </span>
-      </div>
-    </div>
-  );
-}
+
 
 function AdminView({ data, t }: { data: AdminMetrics, t: any }) {
   return (
