@@ -162,6 +162,9 @@ function AdminExtraViews({ data }: { data: AdminMetrics }) {
           </span>
         </div>
       </div>
+    </>
+  );
+}
 
 function AdminView({ data }: { data: AdminMetrics }) {
   return (
