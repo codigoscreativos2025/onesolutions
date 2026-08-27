@@ -1215,6 +1215,7 @@ export function ChatInterface({
                         <Info className="w-3 h-3" />
                         Info
                       </button>
+                      )}
                       {role !== "PARTNER" && (
                         <button
                           onClick={() => setShowContractModal(true)}
@@ -2099,6 +2100,8 @@ function AdminRoomSelector({
     </div>
   );
 }
+
+
 
 
 
