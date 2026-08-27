@@ -34,11 +34,13 @@ export async function POST(
     return NextResponse.json({ error: "No users found for selected roles" }, { status: 400 });
   }
 
+  const senderName = session.user.name || "Administrador";
+
   // Create notifications for all target users - reusing existing Notification model
   const notifications = users.map((user) => ({
     userId: user.id,
     title: `[TEMPLATE] ${template.title}`,
-    body: template.content,
+    body: `${template.content}\n\n— Enviado por ${senderName} (Admin)`,
     link: "/chat",
     isRead: false,
   }));

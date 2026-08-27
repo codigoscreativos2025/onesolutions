@@ -54,6 +54,15 @@ export async function POST(
         })),
       });
 
+      // Gamification broadcast
+      const { broadcastGamificationEvent } = await import("@/lib/gamification");
+      await broadcastGamificationEvent(
+        "🔙 Lead Devuelto",
+        `El Admin ${session.user.name || "Usuario"} ha devuelto el lead en ${address} para revisión.`,
+        `/lead/${visitId}`,
+        parseInt(session.user.id)
+      );
+
       // Send emails
       const { sendEmail } = await import("@/lib/email");
       const { emailTemplates } = await import("@/lib/email-templates");

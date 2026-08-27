@@ -161,6 +161,22 @@ export async function PATCH(
       });
     }
 
+    // Gamification broadcast
+    let roleName = "Usuario";
+    if (session.user.role === "SETTER") roleName = "Trainee";
+    else if (session.user.role === "SETTER_JR") roleName = "Setter";
+    else if (session.user.role === "CLOSER") roleName = "Closer";
+    else if (session.user.role === "ADMIN") roleName = "Admin";
+    else if (session.user.role === "PARTNER") roleName = "Partner";
+
+    const { broadcastGamificationEvent } = await import("@/lib/gamification");
+    await broadcastGamificationEvent(
+      "🔥 Lead a Potencial",
+      `El ${roleName} ${session.user.name || "Usuario"} ha pasado a potencial el lead en ${visit.parcel.address}.`,
+      `/lead/${visit.id}`,
+      parseInt(session.user.id)
+    );
+
     try {
       const closer = await prisma.user.findUnique({
         where: { id: effectiveCloserId },

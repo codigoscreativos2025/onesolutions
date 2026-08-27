@@ -124,22 +124,14 @@ export async function POST(request: Request) {
       });
     }
 
-    // Notificar a todos los administradores (solicitado por el usuario)
-    if (role !== "ADMIN") {
-      const admins = await prisma.user.findMany({
-        where: { role: "ADMIN" }
-      });
-      if (admins.length > 0) {
-        await prisma.notification.createMany({
-          data: admins.map((admin: any) => ({
-            userId: admin.id,
-            title: "Nuevo Lead Manual",
-            body: `El ${roleName} ${session.user.name} ha creado un nuevo lead manual en ${addressName}.`,
-            link: `/lead/${visit.id}`,
-          }))
-        });
-      }
-    }
+    // Notificar a todos mediante gamification feed (incluye admins)
+    const { broadcastGamificationEvent } = await import("@/lib/gamification");
+    await broadcastGamificationEvent(
+      "🌱 Nuevo Lead Creado",
+      `El ${roleName} ${session.user.name} ha creado un lead manualmente en ${addressName}.`,
+      `/lead/${visit.id}`,
+      userId // Exclude the creator from getting their own notification
+    );
 
     // Registrar en el historial
     await prisma.parcelVisitHistory.create({

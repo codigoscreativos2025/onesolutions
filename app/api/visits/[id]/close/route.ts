@@ -211,6 +211,20 @@ export async function PATCH(
           },
         });
       }
+      // Gamification broadcast
+      let roleName = "Usuario";
+      if (session.user.role === "SETTER") roleName = "Trainee";
+      else if (session.user.role === "SETTER_JR") roleName = "Setter";
+      else if (session.user.role === "CLOSER") roleName = "Closer";
+      else if (session.user.role === "ADMIN") roleName = "Admin";
+      
+      const { broadcastGamificationEvent } = await import("@/lib/gamification");
+      await broadcastGamificationEvent(
+        "🏆 Proyecto Cerrado",
+        `¡Boom! El ${roleName} ${session.user.name || "Usuario"} acaba de cerrar un proyecto en ${visit.parcel.address}.`,
+        `/lead/${visit.id}`,
+        parseInt(session.user.id)
+      );
     }
 
     if (commissions && Array.isArray(commissions) && commissions.length > 0) {
