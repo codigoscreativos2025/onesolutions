@@ -885,7 +885,39 @@ export function ChatInterface({
 
               <div className="flex-1 overflow-y-auto min-h-0">
                 {isAdminRole
-                  ? filteredAdminGroups.map((g) => {
+                  ? (
+                      <>
+                        {filteredRooms.filter(r => !r.visit).map((room) => (
+                          <button
+                            key={room.id}
+                            onClick={() => { setSelectedVisitId(null); handleSelectRoom(room); }}
+                            className={`w-full text-left p-4 border-b border-outline-variant/20 last:border-0 transition-colors ${
+                              selectedRoomId === room.id
+                                ? "bg-primary/10 text-on-surface"
+                                : room.messages &&
+                                    room.messages.length > 0 &&
+                                    !room.messages[0].isRead &&
+                                    room.messages[0].userId !==
+                                      parseInt(session?.user?.id || "0")
+                                  ? "bg-primary text-on-primary"
+                                  : "hover:bg-surface-container-low text-on-surface"
+                            } ${room.type === "ANNOUNCEMENTS" ? "bg-orange-50 dark:bg-orange-950/20 border border-orange-400" : ""}`}
+                          >
+                            <div className="flex justify-between items-start mb-1 gap-2">
+                              <p className="font-semibold text-sm truncate">
+                                {room.type === "ANNOUNCEMENTS" ? (
+                                  <span className="flex items-center gap-1 text-orange-600 font-bold">Y" Chat de Avisos</span>
+                                ) : (
+                                  <span className="flex items-center gap-1"><User className="w-4 h-4 text-blue-500" /> {room.personalUser?.name || "Privado"}</span>
+                                )}
+                              </p>
+                            </div>
+                            <p className="text-xs text-blue-400 font-semibold mt-1">
+                                {room.type === "PERSONAL" ? `Chat Personal ? ${room.personalUser?.role || "Usuario"}` : "Canal del Sistema"}
+                            </p>
+                          </button>
+                        ))}
+                        {filteredAdminGroups.map((g) => {
                       const partnerNames = g.partners.map((pr) => {
                         const pp = pr.visit.projects?.find(
                           (p: any) => p.partner?.id === pr.partnerId,
@@ -953,9 +985,11 @@ export function ChatInterface({
                           <div className="mt-2 flex items-center gap-2">
                             {getStageBadge(g.visit.stage)}
                           </div>
-                        </button>
-                      );
-                    })
+                          </button>
+                        );
+                      })}
+                      </>
+                    )
                   : filteredRooms.map((room) => (
                       <button
                         key={room.id}
@@ -1099,7 +1133,7 @@ export function ChatInterface({
                       </button>
                     ))}
                 {isAdminRole
-                  ? filteredAdminGroups.length === 0 && (
+                  ? filteredAdminGroups.length === 0 && filteredRooms.filter(r => !r.visit).length === 0 && (
                       <div className="p-4 text-center text-sm text-on-surface-variant">
                         Sin resultados
                       </div>
@@ -2116,6 +2150,7 @@ function AdminRoomSelector({
     </div>
   );
 }
+
 
 
 
