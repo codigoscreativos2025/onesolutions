@@ -456,7 +456,7 @@ export default function TemplatesPage() {
                     { key: "SETTER", label: t.templates.broadcastTrainees || "Enviar a Todos los Trainees", icon: "🎓", color: "border-blue-500 bg-blue-500/5" },
                     { key: "CLOSER", label: t.templates.broadcastClosers || "Enviar a Todos los Closers", icon: "🎯", color: "border-green-500 bg-green-500/5" },
                     { key: "PARTNER", label: t.templates.broadcastPartners || "Enviar a Todos los Partners", icon: "🤝", color: "border-purple-500 bg-purple-500/5" },
-                    { key: "SETTER_JR", label: t.templates.broadcastSetters || "Enviar a Todos los Setters", icon: "🚀", color: "border-orange-500 bg-orange-500/5" },
+                    
                   ].map((opt) => (
                     <button
                       key={opt.key}

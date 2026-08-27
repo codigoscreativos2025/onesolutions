@@ -69,9 +69,10 @@ export async function POST(
         roomId: room.id,
         userId: adminUserId,
         body: messageBody,
-      },
-    });
-    await prisma.notification.create({
+        },
+      });
+      await sendAttachments(room.id);
+      await prisma.notification.create({
       data: {
         userId,
         title: `[TEMPLATE] ${template!.title}`,
@@ -95,8 +96,7 @@ export async function POST(
       whereClause.role = "CLOSER";
     } else if (broadcastRole === "PARTNER") {
       whereClause.role = "PARTNER";
-    } else if (broadcastRole === "SETTER_JR") {
-      whereClause.role = "SETTER_JR";
+    
     } else {
       return NextResponse.json({ error: "Invalid broadcastRole" }, { status: 400 });
     }
@@ -146,9 +146,10 @@ export async function POST(
 
     await prisma.chatMessage.create({
       data: { roomId, userId: adminUserId, body: messageBody },
-    });
+      });
+      await sendAttachments(roomId);
 
-    return NextResponse.json({ success: true, roomId });
+      return NextResponse.json({ success: true, roomId });
   } else if (targetType === "user") {
     const userId = parseInt(targetId);
     const roomId = await sendToUser(userId);
