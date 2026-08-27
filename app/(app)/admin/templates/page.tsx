@@ -613,7 +613,33 @@ export default function TemplatesPage() {
                 {t.templates.contentLabel}
               </label>
               <div className="bg-surface-variant/30 text-on-surface rounded-xl overflow-hidden"><ReactQuill theme="snow" value={formContent} onChange={setFormContent} className="quill-editor" /></div>
-            </div>
+
+              </div>
+
+              {/* Attachments */}
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-on-surface mb-2">
+                  Archivos Adjuntos
+                </label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {attachments.map((att, i) => (
+                    <div key={i} className="flex items-center gap-2 bg-surface-container-high px-3 py-1.5 rounded-lg text-sm text-on-surface">
+                      <span className="truncate max-w-[200px]">{att.name}</span>
+                      <button type="button" onClick={() => removeAttachment(i)} className="text-red-500 hover:text-red-700">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-surface-variant/50 hover:bg-surface-variant text-on-surface-variant rounded-xl transition-colors text-sm font-medium">
+                    {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
+                    {isUploading ? "Subiendo..." : "Adjuntar archivo"}
+                    <input type="file" className="hidden" onChange={handleFileUpload} disabled={isUploading} />
+                  </label>
+                </div>
+              </div>
+
 
             {/* Role selector (For UI labels context, not strictly used for direct dispatch anymore) */}
             <div className="mb-6">
