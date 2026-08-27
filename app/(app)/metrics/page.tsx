@@ -128,21 +128,24 @@ export default function MetricsPage() {
 
       <NotificationsSection />
 
-      <ChartsSection isAdmin={isAdmin} />
-
       {loading && (
         <div className="flex items-center justify-center h-48">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       )}
 
-      {!loading && personalData && role !== "PARTNER" && (
-        <PersonalView data={personalData} isAdmin={isAdmin} adminData={adminData || undefined} />
+      {!loading && (personalData || isAdmin) && role !== "PARTNER" && (
+        <PersonalView data={personalData || ({} as PersonalMetrics)} isAdmin={isAdmin} adminData={adminData || undefined} />
       )}
       
       {!loading && isAdmin && adminData && (
-        <AdminExtraViews data={adminData} />
+        <>
+          <AdminView data={adminData} />
+          <AdminExtraViews data={adminData} />
+        </>
       )}
+
+      <ChartsSection isAdmin={isAdmin} />
     </div>
   );
 }
