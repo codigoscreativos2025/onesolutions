@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { DoorOpen, UserPlus, CheckCircle, DollarSign, Bell, BarChart3, TrendingUp, Package } from "lucide-react";
+import { useLocale } from "@/lib/locale-context";
 
 const roleLabels: Record<string, string> = {
   ADMIN: "Admin",
