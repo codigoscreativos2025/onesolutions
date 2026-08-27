@@ -519,7 +519,7 @@ export function ChatInterface({
     if (templates.length === 0) {
       setLoadingTemplates(true);
       try {
-        const res = await fetch(/api/admin/templates);
+        const res = await fetch("/api/admin/templates");
         const data = await res.json();
         if (Array.isArray(data)) setTemplates(data.filter((t: any) => t.isActive));
       } catch (err) {
@@ -533,8 +533,26 @@ export function ChatInterface({
   const handleSendTemplate = async (tmpl: any) => {
     setShowTemplatesModal(false);
     if (!selectedRoom) return;
-    const messageBody = `<div style="text-align: center; margin-bottom: 15px;"><img src="/logo-company.png" alt="OneSolutions" style="max-height: 60px; display: inline-block;" /></div>`;
-    await handleSendMessage(null, messageBody);
+
+    setSending(true);
+    const messageBody = `<div style="text-align: center; margin-bottom: 15px;"><img src="/logo-company.png" alt="OneSolutions" style="max-height: 60px; display: inline-block;" /></div>${tmpl.content}`;
+
+    try {
+      const res = await fetch(`/api/chat/rooms/${selectedRoom.id}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ body: messageBody }),
+      });
+
+      if (res.ok) {
+        fetchMessages(selectedRoom.id);
+        fetchRooms();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
