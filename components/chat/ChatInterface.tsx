@@ -1174,9 +1174,11 @@ export function ChatInterface({
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-2">
                             <p className="font-headline font-bold text-lg text-primary truncate">
-                              {selectedRoom?.type === "PERSONAL" ? (
-                                <span className="flex items-center gap-1.5"><User className="w-5 h-5 text-blue-500" /> {selectedRoom.personalUser?.name || "Chat Privado"}</span>
-                              ) : (
+                              {selectedRoom?.type === "ANNOUNCEMENTS" ? (
+                                  <span className="flex items-center gap-1.5 text-orange-600 font-bold"><MessageSquare className="w-5 h-5" /> Chat Informativo • {selectedRoom.personalUser?.name || "Usuario"}</span>
+                                ) : selectedRoom?.type === "PERSONAL" ? (
+                                  <span className="flex items-center gap-1.5"><User className="w-5 h-5 text-blue-500" /> {selectedRoom.personalUser?.name || "Chat Privado"}</span>
+                                ) : (
                                 <>
                                   {selectedRoom?.visit?.bill?.clientName ||
                                     selectedRoom?.visit?.projectDetails?.clientName ||
@@ -1520,12 +1522,10 @@ export function ChatInterface({
                             <p className="text-xs text-on-surface-variant mb-1 flex items-center gap-1"><Mail className="w-3.5 h-3.5" /> Correo</p>
                             <p className="text-sm">{selectedRoom.personalUser?.email || "No registrado"}</p>
                           </div>
-                      {selectedRoom.personalUser?.phone && (
-                        <div>
-                          <p className="text-xs text-on-surface-variant mb-1 flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> Teléfono</p>
-                          <p className="text-sm">{selectedRoom.personalUser.phone}</p>
-                        </div>
-                      )}
+                      <div>
+                            <p className="text-xs text-on-surface-variant mb-1 flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> Teléfono</p>
+                            <p className="text-sm">{selectedRoom.personalUser?.phone || "No registrado"}</p>
+                          </div>
                       <div>
                             <p className="text-xs text-on-surface-variant mb-1 flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Vivienda</p>
                             <p className="text-sm">{selectedRoom.personalUser?.profile?.address || "No registrada"}</p>
