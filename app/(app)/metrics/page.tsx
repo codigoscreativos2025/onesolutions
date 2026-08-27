@@ -335,7 +335,10 @@ function MetricCard({
           {label}
         </span>
       </div>
-      <div className={`text-3xl font-bold ${color} mt-1`}>{today}</div>
+      <div className="flex items-end gap-2 mt-1">
+        <div className={`text-3xl font-bold ${color}`}>{today}</div>
+        <span className="text-xs text-on-surface-variant mb-1 font-medium">Hoy</span>
+      </div>
       <div className="flex gap-4 mt-2">
         <span className="text-xs text-on-surface-variant">
           <span className="font-medium text-on-surface">{week}</span> sem.
