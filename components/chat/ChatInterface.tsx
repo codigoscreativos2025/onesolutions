@@ -110,49 +110,7 @@ interface Room {
     name: string;
     role: string;
   };
-  visit?: {
-    id: number;
-    setterId: number;
-    closerId?: number;
-    stage?: string;
-    createdAt?: string;
-    finalizedAt?: string;
-    contractFields?: string | null;
-    parcel: {
-      id: string;
-      address: string;
-      ownerName?: string;
-      parcelTags?: string | null;
-    };
-    setter: { id: number; name: string };
-    closer?: { id: number; name: string };
-    bill?: {
-      imageUrl: string;
-      phone: string;
-      clientName: string;
-      clientEmail: string;
-      additionalFileUrl?: string;
-      additionalFileName?: string;
-    };
-    projectDetails?: ProjectDetails;
-    projects?: {
-      projectType: ProjectType;
-      partner?: { id: number; name: string } | null;
-    }[];
-    objections?: ObjectionEntry[];
-    closerObjections?: ObjectionEntry[];
-    commissions?: {
-      id: number;
-      percentage: number;
-      role: string;
-      user: { id: number; name: string };
-    }[];
-    notes?: string;
-    cancelledAt?: string;
-    cancellationReason?: string;
-    completedAt?: string;
-    scheduledAt?: string;
-  };
+  visit?: any;
   messages: {
     userId: number;
     isRead: boolean;
@@ -286,7 +244,7 @@ export function ChatInterface({
       const fetchFieldMetas = async () => {
         const allMetas: { fieldName: string; isRequired?: boolean }[] = [];
         const uniqueIds = Array.from(
-          new Set(selectedRoom?.visit?.projects!.map((p) => p.projectType.id)),
+          new Set(selectedRoom?.visit?.projects!.map((p: any) => p.projectType.id)),
         );
         for (const typeId of uniqueIds) {
           try {
@@ -881,7 +839,7 @@ export function ChatInterface({
                   ? filteredAdminGroups.map((g) => {
                       const partnerNames = g.partners.map((pr) => {
                         const pp = pr.visit.projects?.find(
-                          (p) => p.partner?.id === pr.partnerId,
+                          (p: any) => p.partner?.id === pr.partnerId,
                         );
                         return pp?.partner?.name || "Partner";
                       });
@@ -1159,9 +1117,9 @@ export function ChatInterface({
                                 (() => {
                                   const covered = selectedRoom?.visit?.projects
                                     ?.filter(
-                                      (p) => p.partner?.id === selectedRoom?.partnerId,
+                                      (p: any) => p.partner?.id === selectedRoom?.partnerId,
                                     )
-                                    .map((p) => p.projectType.name)
+                                    .map((p: any) => p.projectType.name)
                                     .join(", ");
                                   return covered ? (
                                     <p className="text-xs text-on-surface-variant font-medium">
@@ -1296,7 +1254,7 @@ export function ChatInterface({
                       >
                         CHAT PARTNER '
                         {selectedRoom?.visit?.projects?.find(
-                          (p) => p.partner?.id === selectedRoom.partnerId,
+                          (p: any) => p.partner?.id === selectedRoom.partnerId,
                         )?.partner?.name || "Desconocido"}
                         '
                       </span>
@@ -1587,7 +1545,7 @@ export function ChatInterface({
             />
           </div>
 
-          {projects.some((p) => p.projectType.name === "Panel Solar") && (
+          {projects.some((p: any) => p.projectType.name === "Panel Solar") && (
             <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-3">
               <p className="text-sm font-semibold text-on-surface">
                 {t.chat.solarPanel}
@@ -1904,7 +1862,7 @@ function InfoPanelContent({
             </span>
             <span className="text-on-surface text-right break-words">
               {projects.length > 0
-                ? projects.map((p) => p.projectType.name).join(", ")
+                ? projects.map((p: any) => p.projectType.name).join(", ")
                 : t.common.none}
             </span>
           </div>
@@ -2050,12 +2008,12 @@ function AdminRoomSelector({
 
       {group.partners.map((pr) => {
         const pp = pr.visit.projects?.find(
-          (p) => p.partner?.id === pr.partnerId,
+          (p: any) => p.partner?.id === pr.partnerId,
         );
         const partnerName = pp?.partner?.name || "Partner";
         const coveredContracts = pr.visit.projects
-          ?.filter((p) => p.partner?.id === pr.partnerId)
-          .map((p) => p.projectType.name)
+          ?.filter((p: any) => p.partner?.id === pr.partnerId)
+          .map((p: any) => p.projectType.name)
           .join(", ");
         return (
           <button
