@@ -10,13 +10,36 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const notifications = await prisma.notification.findMany({
-    where: { userId: parseInt(session.user.id) },
-    orderBy: { createdAt: "desc" },
-    take: 20,
+  const cancelledVisits = await prisma.visit.findMany({
+    where: { stage: "CANCELLED" },
+    select: {
+      id: true,
+      chatRooms: { select: { id: true } }
+    }
   });
 
-  return NextResponse.json(notifications);
+  const cancelledVisitIds = new Set(cancelledVisits.map(v => v.id));
+  const cancelledRoomIds = new Set(cancelledVisits.flatMap(v => v.chatRooms.map(r => r.id)));
+
+  const allNotifications = await prisma.notification.findMany({
+    where: { userId: parseInt(session.user.id) },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  });
+
+  const notifications = allNotifications.filter(n => {
+    if (!n.link) return true;
+    
+    const leadMatch = n.link.match(/^\/lead\/(\d+)/);
+    if (leadMatch && cancelledVisitIds.has(parseInt(leadMatch[1]))) return false;
+
+    const roomMatch = n.link.match(/room=(\d+)/);
+    if (roomMatch && cancelledRoomIds.has(parseInt(roomMatch[1]))) return false;
+
+    return true;
+  });
+
+  return NextResponse.json(notifications.slice(0, 20));
 }
 
 export async function PATCH() {

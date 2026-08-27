@@ -85,6 +85,7 @@ const COLORS = ["#f48221", "#3b82f6", "#22c55e", "#eab308", "#8b5cf6", "#ef4444"
 
 export default function MetricsPage() {
   const { data: session } = useSession();
+  const { t } = useLocale();
   const role = session?.user?.role || "";
   const isAdmin = role === "ADMIN";
 
@@ -126,7 +127,7 @@ export default function MetricsPage() {
         </h1>
       </div>
 
-      <NotificationsSection />
+      <NotificationsSection t={t} />
 
       {loading && (
         <div className="flex items-center justify-center h-48">
@@ -135,22 +136,22 @@ export default function MetricsPage() {
       )}
 
       {!loading && (personalData || isAdmin) && role !== "PARTNER" && (
-        <PersonalView data={personalData || ({} as PersonalMetrics)} isAdmin={isAdmin} adminData={adminData || undefined} />
+        <PersonalView data={personalData || ({} as PersonalMetrics)} isAdmin={isAdmin} adminData={adminData || undefined} t={t} />
       )}
       
       {!loading && isAdmin && adminData && (
         <>
-          <AdminView data={adminData} />
-          <AdminExtraViews data={adminData} />
+          <AdminView data={adminData} t={t} />
+          <AdminExtraViews data={adminData} t={t} />
         </>
       )}
 
-      <ChartsSection isAdmin={isAdmin} />
+      <ChartsSection isAdmin={isAdmin} t={t} />
     </div>
   );
 }
 
-function AdminExtraViews({ data }: { data: AdminMetrics }) {
+function AdminExtraViews({ data, t }: { data: AdminMetrics, t: any }) {
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
@@ -158,14 +159,14 @@ function AdminExtraViews({ data }: { data: AdminMetrics }) {
           <div className="flex items-center gap-2 mb-1">
             <DollarSign className="w-5 h-5 text-yellow-400" />
             <span className="text-xs text-on-surface-variant uppercase tracking-wide">
-              Facturacion Global
+              {t.dashboard.globalBilling}
             </span>
           </div>
           <div className="text-2xl font-bold text-yellow-400 mt-1">
             {formatCurrency(data.totalBilling)}
           </div>
           <span className="text-xs text-on-surface-variant mt-2">
-            Total proyectos cerrados
+            {t.dashboard.totalProjectsClosed}
           </span>
         </div>
       </div>
@@ -173,14 +174,14 @@ function AdminExtraViews({ data }: { data: AdminMetrics }) {
   );
 }
 
-function AdminView({ data }: { data: AdminMetrics }) {
+function AdminView({ data, t }: { data: AdminMetrics, t: any }) {
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="glass-panel p-4 rounded-xl">
           <h3 className="text-sm font-semibold text-on-surface mb-3 flex items-center gap-2">
             <CheckCircle className="w-4 h-4 text-green-400" />
-            Top 3 Closers
+            {t.dashboard.top3Closers}
           </h3>
           {data.topClosers.length === 0 && (
             <p className="text-sm text-on-surface-variant">Sin datos</p>
@@ -211,17 +212,17 @@ function AdminView({ data }: { data: AdminMetrics }) {
         <div className="glass-panel p-4 rounded-xl">
           <h3 className="text-sm font-semibold text-on-surface mb-3 flex items-center gap-2">
             <DoorOpen className="w-4 h-4 text-orange-400" />
-            Top 3 Trainees / Setters
+            {t.dashboard.top3Setters}
           </h3>
           {data.topSetters.length === 0 && (
             <p className="text-sm text-on-surface-variant">Sin datos</p>
           )}
           <div className="space-y-2">
-            {data.topSetters.map((s, i) => {
-              const [first, last] = splitName(s.name);
+            {data.topSetters.map((c, i) => {
+              const [first, last] = splitName(c.name);
               return (
                 <div
-                  key={s.id}
+                  key={c.id}
                   className="flex items-center justify-between py-1.5 border-b border-glass-border last:border-b-0"
                 >
                   <div className="flex items-center gap-2">
@@ -232,7 +233,7 @@ function AdminView({ data }: { data: AdminMetrics }) {
                       {first} {last && <span className="font-bold">{last}</span>}
                     </span>
                   </div>
-                  <span className="text-sm font-bold text-orange-400">{s.count}</span>
+                  <span className="text-sm font-bold text-orange-400">{c.count}</span>
                 </div>
               );
             })}
@@ -243,14 +244,14 @@ function AdminView({ data }: { data: AdminMetrics }) {
   );
 }
 
-function PersonalView({ data, isAdmin, adminData }: { data: PersonalMetrics, isAdmin?: boolean, adminData?: AdminMetrics }) {
+function PersonalView({ data, isAdmin, adminData, t }: { data: PersonalMetrics, isAdmin?: boolean, adminData?: AdminMetrics, t: any }) {
   return (
     <div className="space-y-4">
       <div className="glass-panel p-4 rounded-xl">
         <div className="flex items-center gap-2 mb-3">
           <DoorOpen className="w-5 h-5 text-orange-400" />
           <h3 className="text-sm font-semibold text-on-surface">
-            {isAdmin ? "Puertas Tocadas Globales" : "Mis Puertas Tocadas"}
+            {isAdmin ? t.dashboard.globalDoorsKnocked : t.dashboard.myDoorsKnocked}
           </h3>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -276,7 +277,7 @@ function PersonalView({ data, isAdmin, adminData }: { data: PersonalMetrics, isA
         <div className="flex items-center gap-2 mb-3">
           <UserPlus className="w-5 h-5 text-blue-400" />
           <h3 className="text-sm font-semibold text-on-surface">
-            {isAdmin ? "Leads Generados Globales" : "Mis Leads Generados"}
+            {isAdmin ? t.dashboard.globalLeads : t.dashboard.myLeads}
           </h3>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -302,7 +303,7 @@ function PersonalView({ data, isAdmin, adminData }: { data: PersonalMetrics, isA
         <div className="flex items-center gap-2 mb-3">
           <CheckCircle className="w-5 h-5 text-green-400" />
           <h3 className="text-sm font-semibold text-on-surface">
-            {isAdmin ? "Proyectos Cerrados Globales" : "Mis Proyectos Cerrados"}
+            {isAdmin ? t.dashboard.globalProjects : t.dashboard.myProjects}
           </h3>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -389,8 +390,7 @@ interface Notification {
   isRead: boolean;
 }
 
-function NotificationsSection() {
-  const { t } = useLocale();
+function NotificationsSection({ t }: { t: any }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -418,7 +418,7 @@ function NotificationsSection() {
     <section>
       <h2 className="font-headline text-lg font-bold text-on-surface mb-3 flex items-center gap-2">
         <Bell className="w-5 h-5 text-primary" />
-        Feed
+        {t.dashboard.feed}
       </h2>
       <div className="glass-panel rounded-2xl divide-y divide-outline-variant/20">
         {notifications.map((n) => {
@@ -462,7 +462,7 @@ interface ChartData {
   projectTypes: { name: string; count: number }[];
 }
 
-function ChartsSection({ isAdmin }: { isAdmin: boolean }) {
+function ChartsSection({ isAdmin, t }: { isAdmin: boolean, t: any }) {
   const [data, setData] = useState<ChartData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -495,13 +495,13 @@ function ChartsSection({ isAdmin }: { isAdmin: boolean }) {
     <section>
       <h2 className="font-headline text-lg font-bold text-on-surface mb-3 flex items-center gap-2">
         <BarChart3 className="w-5 h-5 text-primary" />
-        Estadisticas
+        {t.dashboard.statistics}
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="glass-panel rounded-2xl p-4">
           <h3 className="text-sm font-bold text-on-surface mb-4 flex items-center gap-1.5">
             <TrendingUp className="w-4 h-4 text-primary" />
-            Leads Generados (ultimos 7 dias)
+            {t.dashboard.leadsLast7Days}
           </h3>
           <div className="flex items-end gap-2 h-40">
             {data.labels.map((label, i) => (
@@ -531,7 +531,7 @@ function ChartsSection({ isAdmin }: { isAdmin: boolean }) {
         <div className="glass-panel rounded-2xl p-4">
           <h3 className="text-sm font-bold text-on-surface mb-4 flex items-center gap-1.5">
             <Package className="w-4 h-4 text-primary" />
-            Tipos de Proyecto
+            {t.dashboard.projectTypes}
           </h3>
           <div className="flex items-center gap-6">
             <div className="relative w-32 h-32 shrink-0">
