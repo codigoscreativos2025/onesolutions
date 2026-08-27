@@ -117,8 +117,8 @@ export function GlobalNotifier() {
     // Initial check (delay by 3 seconds)
     const initTimer = setTimeout(checkUnreadStatus, 3000);
 
-    // Check every 20 minutes (1200000 ms)
-    const interval = setInterval(checkUnreadStatus, 1200000);
+    // Check every 30 seconds to catch NEW messages quickly
+    const interval = setInterval(checkUnreadStatus, 30000);
 
     return () => {
       clearTimeout(initTimer);

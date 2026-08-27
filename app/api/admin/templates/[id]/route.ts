@@ -12,7 +12,7 @@ export async function PUT(
   }
 
   const body = await request.json();
-  const { title, content, roles, isActive } = body;
+  const { title, content, roles, isActive, color } = body;
 
   const template = await prisma.template.update({
     where: { id: parseInt(params.id) },
@@ -21,6 +21,7 @@ export async function PUT(
       ...(content !== undefined && { content: content.trim() }),
       ...(roles !== undefined && { roles: JSON.stringify(roles) }),
       ...(isActive !== undefined && { isActive }),
+      ...(color !== undefined && { color }),
     },
   });
 

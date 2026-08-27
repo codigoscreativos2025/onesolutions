@@ -592,6 +592,7 @@ model Template {
   title     String
   content   String
   roles     String   // JSON array: ["SETTER","CLOSER","SETTER_JR","PARTNER"]
+  color     String   @default("yellow") // Color for the border
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

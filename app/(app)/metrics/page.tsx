@@ -409,23 +409,62 @@ function NotificationsSection({ t }: { t: any }) {
       </h2>
       <div className="glass-panel rounded-2xl divide-y divide-outline-variant/20">
         {notifications.map((n) => {
-          const isTemplate = n.title.startsWith("[TEMPLATE]");
-          const displayTitle = isTemplate ? n.title.replace("[TEMPLATE]", "").trim() : n.title;
+          let isTemplate = false;
+          let templateColor = "yellow";
+          let displayTitle = n.title;
+
+          if (n.title.startsWith("[TEMPLATE")) {
+            isTemplate = true;
+            const match = n.title.match(/^\[TEMPLATE\|?([a-z]+)?\]/);
+            if (match) {
+              templateColor = match[1] || "yellow";
+              displayTitle = n.title.replace(match[0], "").trim();
+            } else {
+              displayTitle = n.title.replace("[TEMPLATE]", "").trim();
+            }
+          }
+
+          const borderMap: Record<string, string> = {
+            yellow: "border-l-4 border-l-yellow-400 bg-yellow-500/5",
+            blue: "border-l-4 border-l-blue-400 bg-blue-500/5",
+            green: "border-l-4 border-l-green-400 bg-green-500/5",
+            red: "border-l-4 border-l-red-400 bg-red-500/5",
+            purple: "border-l-4 border-l-purple-400 bg-purple-500/5",
+            orange: "border-l-4 border-l-orange-400 bg-orange-500/5",
+          };
+
+          const iconBgMap: Record<string, string> = {
+            yellow: "bg-yellow-100 dark:bg-yellow-500/20",
+            blue: "bg-blue-100 dark:bg-blue-500/20",
+            green: "bg-green-100 dark:bg-green-500/20",
+            red: "bg-red-100 dark:bg-red-500/20",
+            purple: "bg-purple-100 dark:bg-purple-500/20",
+            orange: "bg-orange-100 dark:bg-orange-500/20",
+          };
+
+          const iconTextMap: Record<string, string> = {
+            yellow: "text-yellow-500",
+            blue: "text-blue-500",
+            green: "text-green-500",
+            red: "text-red-500",
+            purple: "text-purple-500",
+            orange: "text-orange-500",
+          };
 
           return (
             <div 
               key={n.id} 
               className={`p-4 flex items-start gap-3 transition-colors ${
-                isTemplate ? "border-l-4 border-l-yellow-400 bg-yellow-500/5" : ""
+                isTemplate ? (borderMap[templateColor] || borderMap.yellow) : ""
               }`}
             >
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                  isTemplate ? "bg-yellow-100 dark:bg-yellow-500/20" : n.link ? "bg-primary/10" : "bg-orange-100 dark:bg-orange-500/20"
+                  isTemplate ? (iconBgMap[templateColor] || iconBgMap.yellow) : n.link ? "bg-primary/10" : "bg-orange-100 dark:bg-orange-500/20"
                 }`}
               >
                 <Bell
-                  className={`w-4 h-4 ${isTemplate ? "text-yellow-500" : n.link ? "text-primary" : "text-orange-500"}`}
+                  className={`w-4 h-4 ${isTemplate ? (iconTextMap[templateColor] || iconTextMap.yellow) : n.link ? "text-primary" : "text-orange-500"}`}
                 />
               </div>
               <div className="flex-1 min-w-0">

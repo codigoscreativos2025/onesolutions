@@ -23,6 +23,7 @@ interface Template {
   title: string;
   content: string;
   roles: string;
+  color: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -69,6 +70,7 @@ export default function TemplatesPage() {
   const [formTitle, setFormTitle] = useState("");
   const [formContent, setFormContent] = useState("");
   const [formRoles, setFormRoles] = useState<string[]>([]);
+  const [formColor, setFormColor] = useState("yellow");
 
   useEffect(() => {
     if (status === "unauthenticated" || (status === "authenticated" && session?.user?.role !== "ADMIN")) {
@@ -109,6 +111,7 @@ export default function TemplatesPage() {
     setFormTitle("");
     setFormContent("");
     setFormRoles([]);
+    setFormColor("yellow");
     setShowModal(true);
   };
 
@@ -116,6 +119,7 @@ export default function TemplatesPage() {
     setEditingTemplate(tmpl);
     setFormTitle(tmpl.title);
     setFormContent(tmpl.content);
+    setFormColor(tmpl.color || "yellow");
     try {
       setFormRoles(JSON.parse(tmpl.roles));
     } catch {
@@ -127,7 +131,7 @@ export default function TemplatesPage() {
   const handleSave = async () => {
     if (!formTitle.trim() || !formContent.trim()) return;
 
-    const body = { title: formTitle, content: formContent, roles: formRoles };
+    const body = { title: formTitle, content: formContent, roles: formRoles, color: formColor };
 
     if (editingTemplate) {
       await fetch(`/api/admin/templates/${editingTemplate.id}`, {
@@ -242,10 +246,14 @@ export default function TemplatesPage() {
               try { return JSON.parse(tmpl.roles); } catch { return []; }
             })();
 
+            const colorClass = tmpl.color 
+                ? `border-l-${tmpl.color}-400 hover:border-l-${tmpl.color}-500` 
+                : "border-l-yellow-400 hover:border-l-yellow-500";
+
             return (
               <div
                 key={tmpl.id}
-                className="glass-panel rounded-2xl p-5 border-l-4 border-l-yellow-400 hover:border-l-yellow-500 transition-all flex flex-col"
+                className={`glass-panel rounded-2xl p-5 border-l-4 transition-all flex flex-col ${colorClass}`}
               >
                 {/* Title & Status */}
                 <div className="flex items-start justify-between mb-3">
@@ -517,6 +525,34 @@ export default function TemplatesPage() {
               </div>
             </div>
 
+            {/* Color selector */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-on-surface mb-2">
+                Color de la tarjeta
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {["yellow", "blue", "green", "red", "purple", "orange"].map((c) => {
+                  const isSelected = formColor === c;
+                  const colorMap: Record<string, string> = {
+                    yellow: "bg-yellow-400",
+                    blue: "bg-blue-400",
+                    green: "bg-green-400",
+                    red: "bg-red-400",
+                    purple: "bg-purple-400",
+                    orange: "bg-orange-400",
+                  };
+                  return (
+                    <button
+                      key={c}
+                      onClick={() => setFormColor(c)}
+                      className={`w-8 h-8 rounded-full ${colorMap[c]} transition-all ${isSelected ? "ring-2 ring-offset-2 ring-primary scale-110" : "opacity-70 hover:opacity-100"}`}
+                      title={c}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Save button */}
             <div className="flex gap-3">
               <button
@@ -539,3 +575,5 @@ export default function TemplatesPage() {
     </div>
   );
 }
+
+

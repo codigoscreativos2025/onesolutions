@@ -57,7 +57,7 @@ export async function POST(
         await prisma.notification.createMany({
           data: userIds.map((uId) => ({
             userId: uId,
-            title: `[TEMPLATE] ${template.title}`,
+            title: `[TEMPLATE|${template.color || "yellow"}] ${template.title}`,
             body: template.content,
             link: `/chat?room=${roomId}`,
             isRead: false,
@@ -83,7 +83,7 @@ export async function POST(
     await prisma.notification.create({
       data: {
         userId,
-        title: `[TEMPLATE] ${template.title}`,
+        title: `[TEMPLATE|${template.color || "yellow"}] ${template.title}`,
         body: template.content,
         link: `/chat?room=${roomId}`,
         isRead: false,
