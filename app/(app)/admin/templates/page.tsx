@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import dynamic from "next/dynamic";
+const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
+import "react-quill/dist/quill.snow.css";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "@/lib/locale-context";
@@ -489,13 +492,7 @@ export default function TemplatesPage() {
               <label className="block text-sm font-semibold text-on-surface mb-1.5">
                 {t.templates.contentLabel}
               </label>
-              <textarea
-                value={formContent}
-                onChange={(e) => setFormContent(e.target.value)}
-                rows={5}
-                className="w-full px-3 py-2.5 bg-surface-variant/30 border border-outline-variant/30 rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary resize-none"
-                placeholder="Escribe tu plantilla aquí... los emojis son bienvenidos 🎉✨🏆"
-              />
+              <div className="bg-surface-variant/30 text-on-surface rounded-xl overflow-hidden"><ReactQuill theme="snow" value={formContent} onChange={setFormContent} className="quill-editor" /></div>
             </div>
 
             {/* Role selector (For UI labels context, not strictly used for direct dispatch anymore) */}
@@ -575,5 +572,6 @@ export default function TemplatesPage() {
     </div>
   );
 }
+
 
 

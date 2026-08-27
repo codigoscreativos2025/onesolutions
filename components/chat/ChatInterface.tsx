@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { useSession } from "next-auth/react";
 import { formatPhoneNumber } from "@/lib/utils";
+import DOMPurify from "dompurify";
 import Link from "next/link";
 import Image from "next/image";
 import { useLocale } from "@/lib/locale-context";
@@ -497,17 +498,14 @@ export function ChatInterface({
   );
 
   const renderMessageWithMentions = (text: string) => {
+    if (text.trim().startsWith("<") && text.includes("</")) {
+      const cleanHtml = DOMPurify.sanitize(text);
+      return <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: cleanHtml }} />;
+    }
     const parts = text.split(/(@\w+)/g);
     return parts.map((part, index) => {
       if (part.startsWith("@")) {
-        return (
-          <span
-            key={index}
-            className="font-semibold bg-primary/20 px-1 rounded"
-          >
-            {part}
-          </span>
-        );
+        return <span key={index} className="font-semibold bg-primary/20 px-1 rounded">{part}</span>;
       }
       return part;
     });
@@ -2038,3 +2036,4 @@ function AdminRoomSelector({
     </div>
   );
 }
+

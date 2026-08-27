@@ -30,7 +30,7 @@ export async function POST(
   }
 
   const senderName = session.user.name || "Administrador";
-  const messageBody = `${template.content}\n\n— Enviado por ${senderName} (Admin)`;
+  const messageBody = `<div style="text-align: center; margin-bottom: 15px;"><img src="/logo-company.png" alt="OneSolutions" style="max-height: 60px; display: inline-block;" /></div>${template.content}<br/><br/><i>⚡ Enviado por ${senderName} (Admin)</i>`;
 
   let roomId: number;
   let notificationUserId: number;
@@ -57,7 +57,7 @@ export async function POST(
         await prisma.notification.createMany({
           data: userIds.map((uId) => ({
             userId: uId,
-            title: `[TEMPLATE|${template.color || "yellow"}] ${template.title}`,
+            title: `[TEMPLATE] ${template.title}`,
             body: template.content,
             link: `/chat?room=${roomId}`,
             isRead: false,
@@ -83,7 +83,7 @@ export async function POST(
     await prisma.notification.create({
       data: {
         userId,
-        title: `[TEMPLATE|${template.color || "yellow"}] ${template.title}`,
+        title: `[TEMPLATE] ${template.title}`,
         body: template.content,
         link: `/chat?room=${roomId}`,
         isRead: false,
