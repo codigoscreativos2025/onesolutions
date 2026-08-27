@@ -789,7 +789,7 @@ export function ChatInterface({
           >
             <MessageSquare className="w-5 h-5" />
           </button>
-          {selectedRoom && (
+          {selectedRoom && role !== "SETTER" && role !== "SETTER_JR" && (
             <button
               onClick={() => {
                 setShowInfoPanel(!showInfoPanel);
@@ -1207,6 +1207,7 @@ export function ChatInterface({
                     
                     <div className="flex gap-2 flex-shrink-0">
                       {/* Info toggle for md */}
+                        {role !== "SETTER" && role !== "SETTER_JR" && (
                       <button
                         onClick={() => setShowInfoPanel(!showInfoPanel)}
                         className="hidden md:flex lg:hidden px-3 py-1 text-xs font-medium rounded-full transition-colors bg-primary/10 text-primary hover:bg-primary/20 items-center gap-1"
@@ -1460,7 +1461,7 @@ export function ChatInterface({
           {selectedRoom && selectedRoom.type === "PERSONAL" ? (
                 <div
                   className={`w-full lg:w-80 border-l border-outline-variant/30 bg-surface-container-low/30 flex-shrink-0 min-h-0 flex flex-col
-                  ${!showInfoPanel && mobileColumn !== "info" ? "hidden lg:flex" : "flex"}
+                  ${role === "SETTER" || role === "SETTER_JR" ? "hidden" : (!showInfoPanel && mobileColumn !== "info" ? "hidden lg:flex" : "flex")}
                   ${mobileColumn === "info" ? "absolute inset-0 z-10 bg-surface/95 backdrop-blur-md" : ""}`}
                 >
                   <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center text-center">
@@ -1493,7 +1494,7 @@ export function ChatInterface({
           ) : selectedRoom && (
             <div
               className={`w-full lg:w-80 border-l border-outline-variant/30 bg-surface-container-low/30 flex-shrink-0 min-h-0 flex flex-col
-              ${!showInfoPanel && mobileColumn !== "info" ? "hidden lg:flex" : "flex"}
+              ${role === "SETTER" || role === "SETTER_JR" ? "hidden" : (!showInfoPanel && mobileColumn !== "info" ? "hidden lg:flex" : "flex")}
             `}
             >
               <div className="p-4 border-b border-outline-variant/20 flex items-center justify-between flex-shrink-0">
@@ -2098,6 +2099,9 @@ function AdminRoomSelector({
     </div>
   );
 }
+
+
+
 
 
 
