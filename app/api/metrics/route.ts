@@ -57,16 +57,19 @@ export async function GET(request: NextRequest) {
   if (type === "admin") {
     const adminWhere = {};
 
-    const [
+      const [
       doorsToday,
       doorsWeek,
       doorsMonth,
+      doorsTotal,
       leadsToday,
       leadsWeek,
       leadsMonth,
+      leadsTotal,
       closedToday,
       closedWeek,
       closedMonth,
+      closedTotal,
       billingDetails,
       topClosersRaw,
       topSettersRaw,
@@ -74,6 +77,7 @@ export async function GET(request: NextRequest) {
       prisma.visit.count({ where: { ...adminWhere, createdAt: { gte: startOfToday } } }),
       prisma.visit.count({ where: { ...adminWhere, createdAt: { gte: startOfWeek } } }),
       prisma.visit.count({ where: { ...adminWhere, createdAt: { gte: startOfMonth } } }),
+      prisma.visit.count({ where: { ...adminWhere } }),
       prisma.visit.count({
         where: { ...adminWhere, stage: "PROPOSAL_ACCEPTED", createdAt: { gte: startOfToday } },
       }),
@@ -84,6 +88,9 @@ export async function GET(request: NextRequest) {
         where: { ...adminWhere, stage: "PROPOSAL_ACCEPTED", createdAt: { gte: startOfMonth } },
       }),
       prisma.visit.count({
+        where: { ...adminWhere, stage: "PROPOSAL_ACCEPTED" },
+      }),
+      prisma.visit.count({
         where: { ...adminWhere, stage: "CLOSED", completedAt: { gte: startOfToday } },
       }),
       prisma.visit.count({
@@ -91,6 +98,9 @@ export async function GET(request: NextRequest) {
       }),
       prisma.visit.count({
         where: { ...adminWhere, stage: "CLOSED", completedAt: { gte: startOfMonth } },
+      }),
+      prisma.visit.count({
+        where: { ...adminWhere, stage: "CLOSED" },
       }),
       prisma.projectDetails.findMany({
         where: { visit: { stage: "CLOSED" } },
@@ -135,12 +145,15 @@ export async function GET(request: NextRequest) {
       doorsKnockedToday: doorsToday,
       doorsKnockedWeek: doorsWeek,
       doorsKnockedMonth: doorsMonth,
+      doorsKnockedTotal: doorsTotal,
       leadsCreatedToday: leadsToday,
       leadsCreatedWeek: leadsWeek,
       leadsCreatedMonth: leadsMonth,
+      leadsCreatedTotal: leadsTotal,
       projectsClosedToday: closedToday,
       projectsClosedWeek: closedWeek,
       projectsClosedMonth: closedMonth,
+      projectsClosedTotal: closedTotal,
       totalBilling,
       topClosers,
       topSetters,

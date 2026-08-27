@@ -23,12 +23,15 @@ interface AdminMetrics {
   doorsKnockedToday: number;
   doorsKnockedWeek: number;
   doorsKnockedMonth: number;
+  doorsKnockedTotal: number;
   leadsCreatedToday: number;
   leadsCreatedWeek: number;
   leadsCreatedMonth: number;
+  leadsCreatedTotal: number;
   projectsClosedToday: number;
   projectsClosedWeek: number;
   projectsClosedMonth: number;
+  projectsClosedTotal: number;
   totalBilling: number;
   topClosers: TopUser[];
   topSetters: TopUser[];
@@ -240,35 +243,57 @@ function AdminView({ data }: { data: AdminMetrics }) {
 function PersonalView({ data, isAdmin, adminData }: { data: PersonalMetrics, isAdmin?: boolean, adminData?: AdminMetrics }) {
   return (
     <div className="space-y-4">
-      {!isAdmin && (
-        <>
-          <div className="glass-panel p-4 rounded-xl">
-            <div className="flex items-center gap-2 mb-3">
-              <DoorOpen className="w-5 h-5 text-orange-400" />
-              <h3 className="text-sm font-semibold text-on-surface">Mis Puertas Tocadas</h3>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="glass-panel p-4 rounded-xl">
+        <div className="flex items-center gap-2 mb-3">
+          <DoorOpen className="w-5 h-5 text-orange-400" />
+          <h3 className="text-sm font-semibold text-on-surface">
+            {isAdmin ? "Puertas Tocadas Globales" : "Mis Puertas Tocadas"}
+          </h3>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {isAdmin && adminData ? (
+            <>
+              <PeriodStat label="Hoy" value={adminData.doorsKnockedToday} color="text-orange-400" />
+              <PeriodStat label="Esta Semana" value={adminData.doorsKnockedWeek} color="text-orange-400" />
+              <PeriodStat label="Este Mes" value={adminData.doorsKnockedMonth} color="text-orange-400" />
+              <PeriodStat label="Total" value={adminData.doorsKnockedTotal} color="text-orange-400" />
+            </>
+          ) : (
+            <>
               <PeriodStat label="Hoy" value={data.doorsKnockedToday} color="text-orange-400" />
               <PeriodStat label="Esta Semana" value={data.doorsKnockedWeek} color="text-orange-400" />
               <PeriodStat label="Este Mes" value={data.doorsKnockedMonth} color="text-orange-400" />
               <PeriodStat label="Total" value={data.doorsKnockedTotal} color="text-orange-400" />
-            </div>
-          </div>
+            </>
+          )}
+        </div>
+      </div>
 
-          <div className="glass-panel p-4 rounded-xl">
-            <div className="flex items-center gap-2 mb-3">
-              <UserPlus className="w-5 h-5 text-blue-400" />
-              <h3 className="text-sm font-semibold text-on-surface">Mis Leads Generados</h3>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="glass-panel p-4 rounded-xl">
+        <div className="flex items-center gap-2 mb-3">
+          <UserPlus className="w-5 h-5 text-blue-400" />
+          <h3 className="text-sm font-semibold text-on-surface">
+            {isAdmin ? "Leads Generados Globales" : "Mis Leads Generados"}
+          </h3>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {isAdmin && adminData ? (
+            <>
+              <PeriodStat label="Hoy" value={adminData.leadsCreatedToday} color="text-blue-400" />
+              <PeriodStat label="Esta Semana" value={adminData.leadsCreatedWeek} color="text-blue-400" />
+              <PeriodStat label="Este Mes" value={adminData.leadsCreatedMonth} color="text-blue-400" />
+              <PeriodStat label="Total" value={adminData.leadsCreatedTotal} color="text-blue-400" />
+            </>
+          ) : (
+            <>
               <PeriodStat label="Hoy" value={data.leadsGeneratedToday} color="text-blue-400" />
               <PeriodStat label="Esta Semana" value={data.leadsGeneratedWeek} color="text-blue-400" />
               <PeriodStat label="Este Mes" value={data.leadsGeneratedMonth} color="text-blue-400" />
               <PeriodStat label="Total" value={data.leadsGeneratedTotal} color="text-blue-400" />
-            </div>
-          </div>
-        </>
-      )}
+            </>
+          )}
+        </div>
+      </div>
 
       <div className="glass-panel p-4 rounded-xl">
         <div className="flex items-center gap-2 mb-3">
@@ -283,7 +308,7 @@ function PersonalView({ data, isAdmin, adminData }: { data: PersonalMetrics, isA
               <PeriodStat label="Hoy" value={adminData.projectsClosedToday} color="text-green-400" />
               <PeriodStat label="Esta Semana" value={adminData.projectsClosedWeek} color="text-green-400" />
               <PeriodStat label="Este Mes" value={adminData.projectsClosedMonth} color="text-green-400" />
-              <PeriodStat label="Total" value={data.projectsClosedTotal} color="text-green-400" />
+              <PeriodStat label="Total" value={adminData.projectsClosedTotal} color="text-green-400" />
             </>
           ) : (
             <>
