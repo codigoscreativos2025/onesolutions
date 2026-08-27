@@ -13,7 +13,9 @@ import {
   X,
   Check,
   Users,
-  ChevronDown,
+  Search,
+  MapPin,
+  User,
 } from "lucide-react";
 
 interface Template {
@@ -24,6 +26,17 @@ interface Template {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+interface ActiveUser {
+  id: number;
+  name: string;
+  role: string;
+  activeProject: {
+    visitId: number;
+    address: string;
+    stage: string;
+  } | null;
 }
 
 const ROLE_OPTIONS = [
@@ -42,7 +55,15 @@ export default function TemplatesPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
-  const [sending, setSending] = useState<number | null>(null);
+  
+  // Send Modal State
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [templateToSend, setTemplateToSend] = useState<Template | null>(null);
+  const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
+  const [dispatchMode, setDispatchMode] = useState<"project" | "user">("project");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTarget, setSelectedTarget] = useState<{ type: "project" | "user"; id: number } | null>(null);
+  const [sending, setSending] = useState(false);
 
   // Form state
   const [formTitle, setFormTitle] = useState("");
@@ -66,8 +87,21 @@ export default function TemplatesPage() {
     }
   }, []);
 
+  const fetchActiveUsers = async () => {
+    try {
+      const res = await fetch("/api/admin/active-users");
+      const data = await res.json();
+      if (Array.isArray(data)) setActiveUsers(data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
-    if (session?.user?.role === "ADMIN") fetchTemplates();
+    if (session?.user?.role === "ADMIN") {
+      fetchTemplates();
+      fetchActiveUsers();
+    }
   }, [session, fetchTemplates]);
 
   const openCreateModal = () => {
@@ -119,16 +153,35 @@ export default function TemplatesPage() {
     fetchTemplates();
   };
 
-  const handleSend = async (id: number) => {
-    setSending(id);
+  const openSendModal = (tmpl: Template) => {
+    setTemplateToSend(tmpl);
+    setSearchQuery("");
+    setSelectedTarget(null);
+    setDispatchMode("project");
+    setShowSendModal(true);
+  };
+
+  const handleConfirmSend = async () => {
+    if (!templateToSend || !selectedTarget) return;
+    setSending(true);
     try {
-      const res = await fetch(`/api/admin/templates/${id}/send`, { method: "POST" });
+      const res = await fetch(`/api/admin/templates/${templateToSend.id}/send`, { 
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetType: selectedTarget.type,
+          targetId: selectedTarget.id
+        })
+      });
       const data = await res.json();
       if (data.success) {
-        alert(`${t.templates.templateSent} (${data.sentTo} users)`);
+        alert(t.templates.templateSent);
+        setShowSendModal(false);
+      } else {
+        alert("Error: " + data.error);
       }
     } finally {
-      setSending(null);
+      setSending(false);
     }
   };
 
@@ -139,6 +192,18 @@ export default function TemplatesPage() {
   };
 
   if (status === "loading" || !session) return null;
+
+  // Filter users based on dispatch mode and search
+  const filteredOptions = activeUsers.filter((u) => {
+    if (dispatchMode === "project" && !u.activeProject) return false;
+    if (!searchQuery) return true;
+    
+    const q = searchQuery.toLowerCase();
+    const nameMatch = u.name?.toLowerCase().includes(q);
+    const roleMatch = u.role?.toLowerCase().includes(q);
+    const projectMatch = u.activeProject?.address?.toLowerCase().includes(q);
+    return nameMatch || roleMatch || projectMatch;
+  });
 
   return (
     <div className="space-y-6 pb-28">
@@ -180,7 +245,7 @@ export default function TemplatesPage() {
             return (
               <div
                 key={tmpl.id}
-                className="glass-panel rounded-2xl p-5 border-l-4 border-l-yellow-400 hover:border-l-yellow-500 transition-all group"
+                className="glass-panel rounded-2xl p-5 border-l-4 border-l-yellow-400 hover:border-l-yellow-500 transition-all flex flex-col"
               >
                 {/* Title & Status */}
                 <div className="flex items-start justify-between mb-3">
@@ -202,42 +267,19 @@ export default function TemplatesPage() {
                 </div>
 
                 {/* Content preview */}
-                <div className="bg-surface-variant/30 rounded-xl p-3 mb-3 max-h-24 overflow-hidden">
+                <div className="bg-surface-variant/30 rounded-xl p-3 mb-3 max-h-24 overflow-hidden flex-1">
                   <p className="text-sm text-on-surface whitespace-pre-wrap leading-relaxed">
                     {tmpl.content}
                   </p>
                 </div>
 
-                {/* Roles chips */}
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  {roles.map((role) => {
-                    const opt = ROLE_OPTIONS.find((r) => r.value === role);
-                    return (
-                      <span
-                        key={role}
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-semibold text-white ${opt?.color || "bg-gray-500"}`}
-                      >
-                        {opt?.label || role}
-                      </span>
-                    );
-                  })}
-                  {roles.length === 0 && (
-                    <span className="text-xs text-on-surface-variant">{t.templates.allRoles}</span>
-                  )}
-                </div>
-
                 {/* Actions */}
-                <div className="flex items-center gap-2 pt-2 border-t border-glass-border">
+                <div className="flex items-center gap-2 pt-3 mt-auto border-t border-glass-border">
                   <button
-                    onClick={() => handleSend(tmpl.id)}
-                    disabled={sending === tmpl.id}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
+                    onClick={() => openSendModal(tmpl)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-xs font-semibold transition-colors"
                   >
-                    {sending === tmpl.id ? (
-                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <Send className="w-3 h-3" />
-                    )}
+                    <Send className="w-3 h-3" />
                     {t.templates.sendTemplate}
                   </button>
                   <div className="flex-1" />
@@ -259,6 +301,151 @@ export default function TemplatesPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* SEND MODAL */}
+      {showSendModal && templateToSend && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="glass-panel rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-glass-border">
+              <div>
+                <h2 className="font-headline text-xl font-bold text-on-surface flex items-center gap-2">
+                  <Send className="w-5 h-5 text-yellow-500" />
+                  {t.templates.sendTemplate}
+                </h2>
+                <p className="text-sm text-on-surface-variant mt-1 truncate max-w-[300px]">
+                  {templateToSend.title}
+                </p>
+              </div>
+              <button onClick={() => setShowSendModal(false)} className="p-1.5 hover:bg-surface-variant/50 rounded-lg">
+                <X className="w-5 h-5 text-on-surface-variant" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1">
+              <label className="block text-sm font-semibold text-on-surface mb-2">
+                {t.templates.sendMode}
+              </label>
+              <div className="flex gap-2 mb-6">
+                <button
+                  onClick={() => { setDispatchMode("project"); setSelectedTarget(null); }}
+                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all border ${
+                    dispatchMode === "project" 
+                      ? "bg-primary text-on-primary border-primary" 
+                      : "bg-surface-variant/30 text-on-surface border-outline-variant/30 hover:bg-surface-variant/50"
+                  }`}
+                >
+                  {t.templates.sendToProject}
+                </button>
+                <button
+                  onClick={() => { setDispatchMode("user"); setSelectedTarget(null); }}
+                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all border ${
+                    dispatchMode === "user" 
+                      ? "bg-primary text-on-primary border-primary" 
+                      : "bg-surface-variant/30 text-on-surface border-outline-variant/30 hover:bg-surface-variant/50"
+                  }`}
+                >
+                  {t.templates.sendToUser}
+                </button>
+              </div>
+
+              <label className="block text-sm font-semibold text-on-surface mb-2">
+                {dispatchMode === "project" ? t.templates.selectProject : t.templates.selectUser}
+              </label>
+              
+              <div className="relative mb-4">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
+                <input
+                  type="text"
+                  placeholder={t.templates.searchPlaceholder}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2.5 bg-surface-variant/30 border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1">
+                {filteredOptions.length === 0 ? (
+                  <div className="text-center py-6 text-sm text-on-surface-variant">
+                    {dispatchMode === "project" ? "No se encontraron proyectos activos." : "No se encontraron usuarios."}
+                  </div>
+                ) : (
+                  filteredOptions.map((u) => {
+                    const isSelected = dispatchMode === "project" 
+                      ? (selectedTarget?.type === "project" && selectedTarget?.id === u.activeProject?.visitId)
+                      : (selectedTarget?.type === "user" && selectedTarget?.id === u.id);
+
+                    return (
+                      <button
+                        key={`${dispatchMode}-${u.id}`}
+                        onClick={() => setSelectedTarget({
+                          type: dispatchMode,
+                          id: dispatchMode === "project" ? u.activeProject!.visitId : u.id
+                        })}
+                        className={`flex items-center p-3 rounded-xl border text-left transition-all ${
+                          isSelected 
+                            ? "border-primary bg-primary/5" 
+                            : "border-outline-variant/20 hover:border-primary/40 bg-surface-variant/10"
+                        }`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-sm truncate">{u.name}</span>
+                            <span className="text-[10px] bg-surface-variant px-2 py-0.5 rounded-full font-medium">
+                              {u.role}
+                            </span>
+                          </div>
+                          
+                          {dispatchMode === "project" ? (
+                            <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
+                              <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-brand-orange" />
+                              <span className="truncate">{u.activeProject?.address}</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
+                              <User className="w-3.5 h-3.5 flex-shrink-0 text-blue-500" />
+                              <span className="truncate">
+                                {u.activeProject?.address ? `Proyecto actual: ${u.activeProject.address}` : t.templates.noActiveProject}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        {isSelected && (
+                          <div className="w-5 h-5 bg-primary text-on-primary rounded-full flex items-center justify-center flex-shrink-0 ml-3">
+                            <Check className="w-3 h-3" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-glass-border flex gap-3">
+              <button
+                onClick={() => setShowSendModal(false)}
+                className="flex-1 px-4 py-2.5 border border-outline-variant/30 text-on-surface rounded-xl font-semibold text-sm hover:bg-surface-variant/20 transition"
+              >
+                {t.templates.cancel}
+              </button>
+              <button
+                onClick={handleConfirmSend}
+                disabled={!selectedTarget || sending}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-yellow-500 text-white rounded-xl font-semibold text-sm hover:bg-yellow-600 transition disabled:opacity-50"
+              >
+                {sending ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    {t.templates.send}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -303,7 +490,7 @@ export default function TemplatesPage() {
               />
             </div>
 
-            {/* Role selector */}
+            {/* Role selector (For UI labels context, not strictly used for direct dispatch anymore) */}
             <div className="mb-6">
               <label className="block text-sm font-semibold text-on-surface mb-2">
                 <Users className="w-4 h-4 inline mr-1" />

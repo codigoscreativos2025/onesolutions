@@ -961,11 +961,17 @@ export function ChatInterface({
                       >
                         <div className="flex justify-between items-start mb-1 gap-2">
                           <p className="font-semibold text-sm truncate">
-                            {(room as any).type === "PARTNER" ? "🤝 " : ""}
-                            {room.visit?.bill?.clientName ||
-                              room.visit?.projectDetails?.clientName ||
-                              room.visit?.parcel.ownerName ||
-                              t.common.none}
+                            {room.type === "PERSONAL" ? (
+                              <span className="flex items-center gap-1"><User className="w-4 h-4 text-blue-500" /> {room.personalUser?.name || "Privado"}</span>
+                            ) : (
+                              <>
+                                {room.type === "PARTNER" ? "🤝 " : ""}
+                                {room.visit?.bill?.clientName ||
+                                  room.visit?.projectDetails?.clientName ||
+                                  room.visit?.parcel?.ownerName ||
+                                  t.common.none}
+                              </>
+                            )}
                           </p>
                           <span className="text-[10px] opacity-70 whitespace-nowrap flex-shrink-0 mt-0.5">
                             {room.messages && room.messages.length > 0
@@ -982,23 +988,40 @@ export function ChatInterface({
                                     hour: "2-digit",
                                     minute: "2-digit",
                                   })
+                                : room.createdAt
+                                ? new Date(
+                                    room.createdAt,
+                                  ).toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })
                                 : ""}
                           </span>
                         </div>
-                        <p
-                          className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5"
-                          title={t.chat.address}
-                        >
-                          <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                          <span>{room.visit?.parcel.address}</span>
-                        </p>
-                        <p
-                          className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5"
-                          title="Status"
-                        >
-                          <Activity className="w-3.5 h-3.5 flex-shrink-0" />
-                          {getStageBadge(room.visit?.stage)}
-                        </p>
+                        
+                        {room.type !== "PERSONAL" && (
+                          <p
+                            className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5"
+                            title={t.chat.address}
+                          >
+                            <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span>{room.visit?.parcel?.address || "Sin dirección"}</span>
+                          </p>
+                        )}
+                        
+                        {room.type !== "PERSONAL" ? (
+                          <p
+                            className="text-xs opacity-80 mt-1 truncate flex items-center gap-1.5"
+                            title="Status"
+                          >
+                            <Activity className="w-3.5 h-3.5 flex-shrink-0" />
+                            {getStageBadge(room.visit?.stage)}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-blue-400 font-semibold mt-1">
+                            Chat Personal • {room.personalUser?.role || "Usuario"}
+                          </p>
+                        )}
                         {room.visit?.stage === "CLOSED" &&
                           (() => {
                             try {
@@ -1100,50 +1123,77 @@ export function ChatInterface({
                         >
                           <ArrowLeft className="w-4 h-4" />
                         </button>
-                        <p className="font-semibold text-on-surface">
-                          {selectedRoom?.visit?.bill?.clientName ||
-                            selectedRoom?.visit?.projectDetails?.clientName ||
-                            selectedRoom?.visit?.parcel.ownerName ||
-                            t.common.none}
-                        </p>
-                      </div>
-                      <p className="text-xs text-on-surface-variant ml-0 lg:ml-0 mt-1">
-                        {selectedRoom?.visit?.parcel.address}
-                      </p>
-                      {selectedRoom?.type === "PARTNER" &&
-                        (() => {
-                          const covered = selectedRoom?.visit?.projects
-                            ?.filter(
-                              (p) => p.partner?.id === selectedRoom?.partnerId,
-                            )
-                            .map((p) => p.projectType.name)
-                            .join(", ");
-                          return covered ? (
-                            <p className="text-xs text-orange-600 font-medium mt-1">
-                              Cubre: {covered}
+                        <div className="flex-1 min-w-0">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-headline font-bold text-lg text-primary truncate">
+                            {selectedRoom?.type === "PERSONAL" ? (
+                              <span className="flex items-center gap-1.5"><User className="w-5 h-5 text-blue-500" /> {selectedRoom.personalUser?.name || "Chat Privado"}</span>
+                            ) : (
+                              <>
+                                {selectedRoom?.visit?.bill?.clientName ||
+                                  selectedRoom?.visit?.projectDetails?.clientName ||
+                                  selectedRoom?.visit?.parcel?.ownerName ||
+                                  t.common.none}
+                              </>
+                            )}
+                          </p>
+                          {selectedRoom?.type !== "PERSONAL" && (
+                            <span className="px-2 py-0.5 bg-brand-orange/10 text-brand-orange rounded-full text-[10px] font-bold">
+                              {selectedRoom?.visit?.parcel?.address || "Sin dirección"}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {selectedRoom?.type !== "PERSONAL" ? (
+                          <div className="flex flex-col gap-0.5">
+                            {selectedRoom?.type === "PARTNER" &&
+                              (() => {
+                                const covered = selectedRoom?.visit?.projects
+                                  ?.filter(
+                                    (p) => p.partner?.id === selectedRoom?.partnerId,
+                                  )
+                                  .map((p) => p.projectType.name)
+                                  .join(", ");
+                                return covered ? (
+                                  <p className="text-xs text-on-surface-variant font-medium">
+                                    Proyecto: {covered}
+                                  </p>
+                                ) : null;
+                              })()}
+                            <p className="text-xs text-on-surface-variant flex items-center gap-1">
+                              {selectedRoom?.visit?.setter && (
+                                <>
+                                  Setter:{" "}
+                                  <Link
+                                    href={`/profile/${selectedRoom?.visit?.setter.id}`}
+                                    className="hover:underline"
+                                  >
+                                    {selectedRoom?.visit?.setter.name}
+                                  </Link>
+                                </>
+                              )}
+                              {selectedRoom?.visit?.closer && (
+                                <>
+                                  {" • Closer: "}
+                                  <Link
+                                    href={`/profile/${selectedRoom?.visit?.closer.id}`}
+                                    className="hover:underline"
+                                  >
+                                    {selectedRoom?.visit?.closer.name}
+                                  </Link>
+                                </>
+                              )}
                             </p>
-                          ) : null;
-                        })()}
-                      <p className="text-xs text-on-surface-variant">
-                        Trainee:{" "}
-                        <Link
-                          href={`/profile/${selectedRoom?.visit?.setter.id}`}
-                          className="hover:underline"
-                        >
-                          {selectedRoom?.visit?.setter.name}
-                        </Link>
-                        {selectedRoom?.visit?.closer && (
-                          <>
-                            {" • Closer: "}
-                            <Link
-                              href={`/profile/${selectedRoom?.visit?.closer.id}`}
-                              className="hover:underline"
-                            >
-                              {selectedRoom?.visit?.closer.name}
-                            </Link>
-                          </>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-0.5">
+                            <p className="text-xs text-blue-400 font-semibold flex items-center gap-1">
+                              {selectedRoom.personalUser?.role || "Usuario"}
+                            </p>
+                          </div>
                         )}
-                      </p>
+                      </div>
                     </div>
                     <div className="flex gap-2 flex-shrink-0">
                       {/* Info toggle for md */}
@@ -1396,7 +1446,36 @@ export function ChatInterface({
           </div>
 
           {/* RIGHT COLUMN: Info Panel */}
-          {selectedRoom && (
+          {selectedRoom && selectedRoom.type === "PERSONAL" ? (
+              <div
+                className={`w-full lg:w-80 border-l border-outline-variant/30 bg-surface-container-low/30 flex-shrink-0 min-h-0 flex flex-col
+                  ${showMobileInfo ? "flex absolute inset-0 z-10 bg-surface/95 backdrop-blur-md" : "hidden lg:flex"}`}
+              >
+                <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center text-center">
+                  <div className="w-24 h-24 bg-blue-500/10 rounded-full flex items-center justify-center mb-4">
+                    <User className="w-12 h-12 text-blue-500" />
+                  </div>
+                  <h3 className="text-xl font-bold">{selectedRoom.personalUser?.name}</h3>
+                  <p className="text-sm text-on-surface-variant mb-6">{selectedRoom.personalUser?.role}</p>
+                  
+                  <Link href={`/profile/${selectedRoom.personalUser?.id}`}>
+                    <Button variant="outline" className="w-full">
+                      Ver Perfil
+                    </Button>
+                  </Link>
+                  
+                  {showMobileInfo && (
+                    <Button
+                      variant="ghost"
+                      onClick={() => setShowMobileInfo(false)}
+                      className="mt-6 lg:hidden w-full"
+                    >
+                      Cerrar
+                    </Button>
+                  )}
+                </div>
+              </div>
+          ) : selectedRoom && (
             <div
               className={`w-full lg:w-80 border-l border-outline-variant/30 bg-surface-container-low/30 flex-shrink-0 min-h-0 flex flex-col
               ${!showInfoPanel && mobileColumn !== "info" ? "hidden lg:flex" : "flex"}

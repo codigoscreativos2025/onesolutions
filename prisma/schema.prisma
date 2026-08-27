@@ -37,6 +37,7 @@ model User {
   visitsAsCloser Visit[]        @relation("VisitCloser")
   slots          CloserSlot[]
   messages       ChatMessage[]
+  personalChats  ChatRoom[] @relation("PersonalChatUser")
   notifications  Notification[]
   weeklyPatterns WeeklyPattern[]
   userBadges     UserBadge[]
@@ -334,13 +335,15 @@ model Bill {
 }
 
 model ChatRoom {
-  id        Int           @id @default(autoincrement())
-  visitId   Int
-  type      String        @default("GENERAL")
-  partnerId Int?
-  visit     Visit         @relation(fields: [visitId], references: [id])
-  createdAt DateTime      @default(now())
-  messages  ChatMessage[]
+  id             Int           @id @default(autoincrement())
+  visitId        Int?
+  type           String        @default("GENERAL")
+  partnerId      Int?
+  personalUserId Int?
+  visit          Visit?        @relation(fields: [visitId], references: [id])
+  personalUser   User?         @relation("PersonalChatUser", fields: [personalUserId], references: [id])
+  createdAt      DateTime      @default(now())
+  messages       ChatMessage[]
 
   @@unique([visitId, type, partnerId])
 }
