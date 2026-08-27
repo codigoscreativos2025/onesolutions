@@ -902,7 +902,7 @@ export function ChatInterface({
                             <div className="flex justify-between items-start mb-1 gap-2">
                               <p className="font-semibold text-sm truncate">
                                 {room.type === "ANNOUNCEMENTS" ? (
-                                  <span className="flex items-center gap-1 text-orange-600 font-bold">?? Chat Informativo  {room.personalUser?.name || "Usuario"}</span>
+                                  <span className="flex items-center gap-1 text-orange-600 font-bold">📢 Chat Informativo • {room.personalUser?.name || "Usuario"}</span>
                                 ) : (
                                   <span className="flex items-center gap-1"><User className="w-4 h-4 text-blue-500" /> {room.personalUser?.name || "Privado"}</span>
                                 )}
@@ -1005,7 +1005,7 @@ export function ChatInterface({
                         <div className="flex justify-between items-start mb-1 gap-2">
                           <p className="font-semibold text-sm truncate">
                             {room.type === "ANNOUNCEMENTS" ? (
-                              <span className="flex items-center gap-1 text-orange-600 font-bold">?? Chat Informativo  {room.personalUser?.name || "Usuario"}</span>
+                              <span className="flex items-center gap-1 text-orange-600 font-bold">📢 Chat Informativo • {room.personalUser?.name || "Usuario"}</span>
                             ) : room.type === "PERSONAL" ? (
                               <span className="flex items-center gap-1"><User className="w-4 h-4 text-blue-500" /> {room.personalUser?.name || "Privado"}</span>
                             ) : (

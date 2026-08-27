@@ -89,8 +89,10 @@ export async function POST(
     let whereClause: any = { isActive: true, role: { not: "ADMIN" } };
 
     if (broadcastRole === "ALL") {
-      // all non-admin active users
-    } else if (broadcastRole === "CLOSER") {
+        // all non-admin active users
+      } else if (broadcastRole === "SETTER") {
+        whereClause.role = "SETTER";
+      } else if (broadcastRole === "CLOSER") {
       whereClause.role = "CLOSER";
     } else if (broadcastRole === "PARTNER") {
       whereClause.role = "PARTNER";
