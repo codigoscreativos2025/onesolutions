@@ -45,7 +45,6 @@ interface ActiveUser {
 }
 
 const ROLE_OPTIONS = [
-  { value: "SETTER", label: "Trainee", color: "bg-blue-500" },
   { value: "CLOSER", label: "Closer", color: "bg-green-500" },
     { value: "PARTNER", label: "Partner", color: "bg-purple-500" },
 ];
@@ -453,7 +452,6 @@ export default function TemplatesPage() {
                   </label>
                   {[
                     { key: "ALL", label: t.templates.broadcastAll || "Enviar a Todos", icon: "🌍", color: "border-primary bg-primary/5" },
-                    { key: "SETTER", label: t.templates.broadcastTrainees || "Enviar a Todos los Trainees", icon: "🎓", color: "border-blue-500 bg-blue-500/5" },
                     { key: "CLOSER", label: t.templates.broadcastClosers || "Enviar a Todos los Closers", icon: "🎯", color: "border-green-500 bg-green-500/5" },
                     { key: "PARTNER", label: t.templates.broadcastPartners || "Enviar a Todos los Partners", icon: "🤝", color: "border-purple-500 bg-purple-500/5" },
                     

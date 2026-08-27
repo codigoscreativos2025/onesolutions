@@ -90,8 +90,6 @@ export async function POST(
 
     if (broadcastRole === "ALL") {
       // all non-admin active users
-    } else if (broadcastRole === "SETTER") {
-      whereClause.role = "SETTER";
     } else if (broadcastRole === "CLOSER") {
       whereClause.role = "CLOSER";
     } else if (broadcastRole === "PARTNER") {
