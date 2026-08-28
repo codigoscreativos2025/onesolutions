@@ -504,7 +504,10 @@ export function ChatInterface({
 
   const renderMessageWithMentions = (text: string) => {
     if (text.trim().startsWith("<") && text.includes("</")) {
-      const cleanHtml = DOMPurify.sanitize(text);
+      const cleanHtml = DOMPurify.sanitize(text, { 
+        ADD_TAGS: ['img'], 
+        ADD_ATTR: ['src', 'alt', 'className', 'width', 'height'] 
+      });
       return <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: cleanHtml }} />;
     }
     const parts = text.split(/(@\w+)/g);
@@ -537,14 +540,50 @@ export function ChatInterface({
     if (!selectedRoom) return;
 
     setSending(true);
-    const messageBody = `<div style="text-align: center; margin-bottom: 15px;"><img src="/logo-company.png" alt="OneSolutions" style="max-height: 60px; display: inline-block;" /></div>${tmpl.content}`;
+    
+    let attachments = [];
+    try {
+      if (tmpl.attachments) {
+        attachments = JSON.parse(tmpl.attachments);
+        if (typeof attachments === 'string') attachments = JSON.parse(attachments);
+        if (!Array.isArray(attachments)) attachments = [];
+      }
+    } catch (e) {
+      attachments = [];
+    }
+
+    const firstImageAttIdx = attachments.findIndex((a: any) => /\.(jpe?g|png|webp|gif)$/i.test(a.name || a.url));
+    const mainAttachment = firstImageAttIdx !== -1 ? attachments[firstImageAttIdx] : null;
+    const remainingAttachments = firstImageAttIdx !== -1 
+      ? attachments.filter((_: any, idx: number) => idx !== firstImageAttIdx)
+      : attachments;
+
+    const messageBody = `<h2><strong>${tmpl.title}</strong></h2><br/>${tmpl.content}`;
 
     try {
       const res = await fetch(`/api/chat/rooms/${selectedRoom.id}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: messageBody }),
+        body: JSON.stringify({ 
+          body: messageBody,
+          fileUrl: mainAttachment?.url || null,
+          fileName: mainAttachment?.name || null
+        }),
       });
+
+      if (remainingAttachments.length > 0) {
+        for (const att of remainingAttachments) {
+          await fetch(`/api/chat/rooms/${selectedRoom.id}/messages`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              body: "Archivo adjunto: " + att.name,
+              fileUrl: att.url,
+              fileName: att.name
+            }),
+          });
+        }
+      }
 
       if (res.ok) {
         fetchMessages(selectedRoom.id);
@@ -1396,29 +1435,37 @@ export function ChatInterface({
                         }`}
                       >
                         <div
-                          className={`max-w-[80%] p-3 rounded-2xl flex flex-col ${
+                          className={`max-w-[80%] p-5 rounded-xl flex flex-col space-y-3 ${
                             isMe
                               ? "bg-primary text-on-primary rounded-br-sm"
                               : "bg-surface-container-high text-on-surface rounded-bl-sm"
                           }`}
                         >
                           {!isMe && (
-                            <p className="text-xs opacity-70 mb-1 font-semibold">
+                            <p className="text-xs opacity-70 font-semibold">
                               {session?.user?.role === "PARTNER"
                                 ? "OneSolutions"
                                 : msg.user.name}
                             </p>
                           )}
-                          <div className="flex items-end justify-between gap-3">
-                            <div className="text-sm break-words whitespace-pre-wrap">
+                          <div className="flex items-end justify-between gap-4">
+                            <div className="text-sm break-words whitespace-pre-wrap leading-relaxed flex-1">
+                              {msg.fileUrl && /\.(jpe?g|png|webp|gif)$/i.test(msg.fileName || msg.fileUrl) && (
+                                <img
+                                  src={msg.fileUrl}
+                                  alt={msg.fileName || "Imagen adjunta"}
+                                  className="w-full h-48 mb-3 rounded-lg object-cover bg-white/10"
+                                />
+                              )}
                               {renderMessageWithMentions(msg.body)}
-                              {msg.fileUrl && (
+                              {msg.fileUrl && !/\.(jpe?g|png|webp|gif)$/i.test(msg.fileName || msg.fileUrl) && (
                                 <a
                                   href={msg.fileUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-xs underline mt-1 block"
+                                  className="text-xs underline mt-2 flex items-center gap-1"
                                 >
+                                  <Paperclip className="w-3 h-3" />
                                   {msg.fileName || t.chat.viewFile}
                                 </a>
                               )}

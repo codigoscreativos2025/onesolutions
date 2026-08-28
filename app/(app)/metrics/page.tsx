@@ -385,7 +385,7 @@ function NotificationsSection({ t }: { t: any }) {
     fetch("/api/notifications")
       .then((r) => r.json())
       .then((data) => {
-        if (Array.isArray(data)) setNotifications(data.slice(0, 5));
+        if (Array.isArray(data)) setNotifications(data.slice(0, 20));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -399,7 +399,42 @@ function NotificationsSection({ t }: { t: any }) {
     );
   }
 
-  if (notifications.length === 0) return null;
+  const defaultNotifications: Notification[] = [
+    {
+      id: -1,
+      title: "Lead Creado",
+      body: t.metrics.notifications?.leadCreated?.replace("{leadName}", "Juan Pérez").replace("{userName}", "María López") || "Se creó el lead manual Juan Pérez por María López",
+      link: null,
+      createdAt: new Date().toISOString(),
+      isRead: false,
+    },
+    {
+      id: -2,
+      title: "Cambio a Potencial",
+      body: t.metrics.notifications?.leadPotential?.replace("{leadName}", "Familia Martínez").replace("{userName}", "Carlos Mendoza") || "El lead Familia Martínez pasó a estado POTENCIAL por Carlos Mendoza",
+      link: null,
+      createdAt: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+      isRead: false,
+    },
+    {
+      id: -3,
+      title: "Lead Devuelto",
+      body: t.metrics.notifications?.leadReturned?.replace("{leadName}", "Pedro Gómez").replace("{userName}", "Ana Soto") || "El lead Pedro Gómez fue devuelto a la lista de espera por Ana Soto",
+      link: null,
+      createdAt: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
+      isRead: false,
+    },
+    {
+      id: -4,
+      title: "Proyecto Cerrado",
+      body: t.metrics.notifications?.projectClosed?.replace("{projectName}", "Solar Roof #124").replace("{userName}", "Alex Rivera") || "¡Proyecto Solar Roof #124 CERRADO exitosamente por Alex Rivera!",
+      link: null,
+      createdAt: new Date(Date.now() - 10800000).toISOString(), // 3 hours ago
+      isRead: false,
+    }
+  ];
+
+  const displayNotifications = notifications.length > 0 ? notifications : defaultNotifications;
 
   return (
     <section>
@@ -407,8 +442,8 @@ function NotificationsSection({ t }: { t: any }) {
         <Bell className="w-5 h-5 text-primary" />
         {t.metrics.feed}
       </h2>
-      <div className="glass-panel rounded-2xl divide-y divide-outline-variant/20">
-        {notifications.map((n) => {
+      <div className="glass-panel rounded-2xl divide-y divide-outline-variant/20 max-h-[350px] overflow-y-auto custom-scrollbar">
+        {displayNotifications.map((n) => {
           const isTemplate = n.title.startsWith("[TEMPLATE]");
           const displayTitle = isTemplate ? n.title.replace("[TEMPLATE]", "").trim() : n.title;
 

@@ -84,6 +84,34 @@ export default function AdminInvoicesPage() {
 
   const [showStats, setShowStats] = useState(false);
 
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+  const [filterNum, setFilterNum] = useState("");
+  const [filterBillTo, setFilterBillTo] = useState("");
+
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter((inv) => {
+      const invDate = new Date(inv.date);
+      let matchDate = true;
+      if (filterDateFrom) {
+        matchDate = matchDate && invDate >= new Date(filterDateFrom);
+      }
+      if (filterDateTo) {
+        const toDate = new Date(filterDateTo);
+        toDate.setHours(23, 59, 59, 999);
+        matchDate = matchDate && invDate <= toDate;
+      }
+      
+      const matchNum = filterNum ? inv.invoiceNum.toLowerCase().includes(filterNum.toLowerCase()) : true;
+      const matchBillTo = filterBillTo ? inv.billToName.toLowerCase().includes(filterBillTo.toLowerCase()) : true;
+      return matchDate && matchNum && matchBillTo;
+    });
+  }, [invoices, filterDateFrom, filterDateTo, filterNum, filterBillTo]);
+
+  const totalHistorial = filteredInvoices.reduce((acc, inv) => acc + inv.total, 0);
+  const totalPagado = filteredInvoices.reduce((acc, inv) => acc + inv.paid, 0);
+  const totalBalance = filteredInvoices.reduce((acc, inv) => acc + inv.balance, 0);
+
   useEffect(() => {
     fetch("/api/admin/frequent-contacts")
       .then((r) => r.json())
@@ -98,9 +126,36 @@ export default function AdminInvoicesPage() {
       const res = await fetch("/api/invoices");
       setInvoices(await res.json());
     } catch {
+      toast.error("Error al cargar historial de facturas");
     } finally {
       setLoadingInvoices(false);
     }
+  };
+
+  const handleExportExcel = () => {
+    const headers = ["Nro Factura", "Fecha", "Facturar A", "Total", "Pagado", "Balance"];
+    const rows = filteredInvoices.map(inv => {
+      const d = new Date(inv.date);
+      const formattedDate = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+      return [
+        inv.invoiceNum,
+        formattedDate,
+        `"${inv.billToName.replace(/"/g, '""')}"`,
+        inv.total.toFixed(2),
+        inv.paid.toFixed(2),
+        inv.balance.toFixed(2)
+      ];
+    });
+    const csvContent = "\uFEFF" + [headers, ...rows].map(e => e.join(";")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "historial_facturas.csv");
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const fetchContacts = async () => {
@@ -236,6 +291,29 @@ export default function AdminInvoicesPage() {
     }
   };
 
+  const resetForm = () => {
+    // Attempt to increment invoice number if possible
+    let nextInvNum = "INV0001";
+    const numMatch = invoiceNum.match(/^(\D+)(\d+)$/);
+    if (numMatch) {
+      const prefix = numMatch[1];
+      const num = parseInt(numMatch[2], 10) + 1;
+      nextInvNum = `${prefix}${num.toString().padStart(numMatch[2].length, "0")}`;
+    } else {
+      nextInvNum = "";
+    }
+
+    setInvoiceNum(nextInvNum);
+    setDate(new Date().toISOString().split("T")[0]);
+    setDueDate("On receipt");
+    setBillToName("");
+    setBillToPhone("");
+    setBillToEmail("");
+    setBillToAddress("");
+    setPaid(0);
+    setItems([{ id: Date.now(), description: "", detail: "", quantity: 1, unitPrice: 0, isDiscount: false }]);
+  };
+
   const downloadPDF = async () => {
     if (!previewRef.current) return;
     const { default: jsPDF } = await import("jspdf");
@@ -247,8 +325,82 @@ export default function AdminInvoicesPage() {
     const h = (canvas.height * w) / canvas.width;
     pdf.addImage(img, "PNG", 0, 0, w, h);
     pdf.save(`Invoice_${invoiceNum}.pdf`);
+  };
+
+  const handleGenerarFactura = async () => {
+    if (!billToName.trim() || !invoiceNum.trim()) {
+      toast.error("Complete los datos requeridos (Nro Factura y Cliente)");
+      return;
+    }
     await saveInvoiceToHistory();
     fetchInvoices();
+    toast.success("Factura generada y guardada exitosamente");
+    resetForm();
+  };
+
+  const generatePdfFromHtml = async (htmlContent: string) => {
+    const { default: jsPDF } = await import("jspdf");
+    const { default: html2canvas } = await import("html2canvas");
+    
+    const container = document.createElement("div");
+    container.style.position = "absolute";
+    container.style.left = "-9999px";
+    container.style.top = "-9999px";
+    container.style.width = "800px";
+    container.style.backgroundColor = "white";
+    container.innerHTML = htmlContent;
+    document.body.appendChild(container);
+    
+    try {
+      await new Promise(r => setTimeout(r, 100)); // allow rendering
+      const canvas = await html2canvas(container, { scale: 1.5, backgroundColor: "#ffffff" });
+      const img = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const w = pdf.internal.pageSize.getWidth();
+      const h = (canvas.height * w) / canvas.width;
+      pdf.addImage(img, "PNG", 0, 0, w, h);
+      return { pdf, base64: pdf.output("datauristring").split(",")[1] };
+    } finally {
+      document.body.removeChild(container);
+    }
+  };
+
+  const downloadHistoryPDF = async (inv: GeneratedInvoice) => {
+    toast.info("Generando PDF...");
+    try {
+      const { pdf } = await generatePdfFromHtml(inv.html);
+      pdf.save(`Invoice_${inv.invoiceNum}.pdf`);
+    } catch {
+      toast.error("Error al generar PDF");
+    }
+  };
+
+  const sendHistoryEmail = async (inv: GeneratedInvoice) => {
+    const email = prompt("Email destinatario:", inv.billToEmail || "");
+    if (!email) return;
+
+    toast.info("Enviando email...");
+    try {
+      const { base64 } = await generatePdfFromHtml(inv.html);
+      const res = await fetch("/api/email/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: email,
+          subject: `Factura ${inv.invoiceNum}`,
+          html: `<p>Adjunto encontrara la factura ${inv.invoiceNum}.</p>`,
+          pdfBase64: base64,
+          pdfFilename: `Factura_${inv.invoiceNum}.pdf`,
+        }),
+      });
+      if (res.ok) {
+        toast.success("Factura enviada exitosamente");
+      } else {
+        toast.error("Error al enviar el email");
+      }
+    } catch {
+      toast.error("Error al enviar el email");
+    }
   };
 
   const generatePdfBase64 = async (): Promise<string> => {
@@ -370,50 +522,18 @@ export default function AdminInvoicesPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Facturas / Invoices</h1>
+          <h1 className="font-headline text-2xl font-bold text-on-surface">
+            Facturas / Invoices
+          </h1>
           <p className="text-on-surface-variant">Genera facturas personalizadas y descargalas en PDF</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={downloadPDF} className="gap-2">
-            <FileDown className="w-5 h-5" />
-            Descargar PDF
+        <div className="flex items-center gap-3">
+          <Button onClick={handleGenerarFactura} className="gap-2 bg-primary text-on-primary">
+            <Plus className="w-4 h-4" />
+            Generar Factura
           </Button>
-          {showEmailInput ? (
-            <div className="flex items-center gap-2">
-              <Input
-                value={sendToEmail}
-                onChange={(e) => setSendToEmail(e.target.value)}
-                placeholder={billToEmail || "Email destinatario"}
-                className="h-10 w-64 text-sm"
-                type="email"
-              />
-              <Button onClick={handleSendEmail} disabled={sendingEmail} className="gap-2">
-                {sendingEmail ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-                Enviar
-              </Button>
-              <Button variant="outline" onClick={() => setShowEmailInput(false)} size="sm">
-                X
-              </Button>
-            </div>
-          ) : (
-            <Button
-              onClick={() => {
-                setSendToEmail(billToEmail);
-                setShowEmailInput(true);
-              }}
-              variant="outline"
-              className="gap-2"
-            >
-              <Send className="w-5 h-5" />
-              Enviar por Email
-            </Button>
-          )}
         </div>
       </div>
 
@@ -698,9 +818,47 @@ export default function AdminInvoicesPage() {
 
       {/* Invoice History */}
       <div className="glass-panel rounded-2xl p-6 border-outline-variant">
-        <h2 className="font-headline text-lg font-bold text-on-surface mb-4">
-          Historial de Facturas
-        </h2>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+          <h2 className="font-headline text-lg font-bold text-on-surface">
+            Historial de Facturas
+          </h2>
+          <Button onClick={handleExportExcel} variant="outline" className="flex items-center gap-2 bg-surface-container-high border-outline-variant hover:bg-surface-variant">
+            <FileDown className="w-4 h-4" />
+            Exportar Excel
+          </Button>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          <div className="flex-1 flex gap-2">
+            <Input 
+              type="date"
+              placeholder="Desde..." 
+              value={filterDateFrom}
+              onChange={(e) => setFilterDateFrom(e.target.value)}
+              className="w-full text-sm"
+            />
+            <Input 
+              type="date"
+              placeholder="Hasta..." 
+              value={filterDateTo}
+              onChange={(e) => setFilterDateTo(e.target.value)}
+              className="w-full text-sm"
+            />
+          </div>
+          <Input 
+            placeholder="Filtrar por Nro Factura..." 
+            value={filterNum}
+            onChange={(e) => setFilterNum(e.target.value)}
+            className="flex-1"
+          />
+          <Input 
+            placeholder="Filtrar por Facturar A..." 
+            value={filterBillTo}
+            onChange={(e) => setFilterBillTo(e.target.value)}
+            className="flex-1"
+          />
+        </div>
+
         {loadingInvoices ? (
           <p className="text-center py-8 text-on-surface-variant">Cargando...</p>
         ) : invoices.length === 0 ? (
@@ -722,7 +880,7 @@ export default function AdminInvoicesPage() {
                 </tr>
               </thead>
               <tbody>
-                {invoices.map((inv) => (
+                {filteredInvoices.map((inv) => (
                   <tr key={inv.id} className="border-b border-outline-variant/50 hover:bg-surface-container-low">
                     <td className="py-2 px-3 font-medium">{inv.invoiceNum}</td>
                     <td className="py-2 px-3 text-on-surface-variant">{new Date(inv.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</td>
@@ -732,6 +890,20 @@ export default function AdminInvoicesPage() {
                     <td className="py-2 px-3 text-right font-medium">${inv.balance.toFixed(2)}</td>
                     <td className="py-2 px-3 text-center">
                       <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => downloadHistoryPDF(inv)}
+                          className="p-1.5 rounded-lg hover:bg-surface-container-high transition-colors"
+                          title="Descargar PDF"
+                        >
+                          <FileDown className="w-4 h-4 text-green-600" />
+                        </button>
+                        <button
+                          onClick={() => sendHistoryEmail(inv)}
+                          className="p-1.5 rounded-lg hover:bg-surface-container-high transition-colors"
+                          title="Enviar PDF"
+                        >
+                          <Send className="w-4 h-4 text-blue-600" />
+                        </button>
                         <button
                           onClick={() => handleViewInvoice(inv.id)}
                           className="p-1.5 rounded-lg hover:bg-surface-container-high transition-colors"
@@ -750,6 +922,22 @@ export default function AdminInvoicesPage() {
                     </td>
                   </tr>
                 ))}
+                {filteredInvoices.length > 0 && (
+                  <tr className="border-t-2 border-outline-variant font-bold bg-surface-container-low/50">
+                    <td colSpan={3} className="py-3 px-3 text-right">TOTALES:</td>
+                    <td className="py-3 px-3 text-right text-primary">${totalHistorial.toFixed(2)}</td>
+                    <td className="py-3 px-3 text-right text-green-600">${totalPagado.toFixed(2)}</td>
+                    <td className="py-3 px-3 text-right text-orange-600">${totalBalance.toFixed(2)}</td>
+                    <td></td>
+                  </tr>
+                )}
+                {filteredInvoices.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="text-center py-6 text-on-surface-variant">
+                      No hay resultados para los filtros actuales.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

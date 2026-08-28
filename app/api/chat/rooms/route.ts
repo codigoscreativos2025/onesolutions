@@ -15,8 +15,9 @@ export async function GET() {
   let rooms;
 
   if (role === "ADMIN") {
-    rooms = await prisma.chatRoom.findMany({
-      orderBy: { createdAt: "desc" },
+      rooms = await prisma.chatRoom.findMany({
+        where: { type: { notIn: ["PERSONAL", "ANNOUNCEMENTS"] } },
+        orderBy: { createdAt: "desc" },
       include: {
         visit: {
           include: {

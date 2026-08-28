@@ -166,7 +166,13 @@ export default function TemplatesPage() {
   const handleSave = async () => {
     if (!formTitle.trim() || !formContent.trim()) return;
 
-    const body = { title: formTitle, content: formContent, roles: formRoles, color: formColor };
+    const body = { 
+      title: formTitle, 
+      content: formContent, 
+      roles: formRoles, 
+      color: formColor,
+      attachments
+    };
 
     if (editingTemplate) {
       await fetch(`/api/admin/templates/${editingTemplate.id}`, {
@@ -315,6 +321,17 @@ export default function TemplatesPage() {
               try { return JSON.parse(tmpl.roles); } catch { return []; }
             })();
 
+            const attachments: {name: string, url: string}[] = (() => {
+              try { 
+                if (!tmpl.attachments) return [];
+                let parsed = JSON.parse(tmpl.attachments);
+                if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+                return Array.isArray(parsed) ? parsed : [];
+              } catch { return []; }
+            })();
+            const imageAttachments = attachments.filter(a => /\.(jpe?g|png|webp|gif)$/i.test(a.name || a.url));
+            const docAttachments = attachments.filter(a => !/\.(jpe?g|png|webp|gif)$/i.test(a.name || a.url));
+
             const borderMap: Record<string, string> = {
               yellow: "border-l-yellow-400 hover:border-l-yellow-500",
               blue: "border-l-blue-400 hover:border-l-blue-500",
@@ -331,58 +348,102 @@ export default function TemplatesPage() {
             return (
               <div
                 key={tmpl.id}
-                className={`glass-panel rounded-2xl p-5 border-l-4 transition-all flex flex-col ${colorClass}`}
+                className={`glass-panel rounded-2xl border-l-4 transition-all flex flex-col ${colorClass} overflow-hidden`}
               >
-                {/* Title & Status */}
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-on-surface text-lg truncate">{tmpl.title}</h3>
-                    <p className="text-xs text-on-surface-variant mt-0.5">
-                      {new Date(tmpl.createdAt).toLocaleDateString()}
-                    </p>
+                {/* Image Header */}
+                {imageAttachments.length > 0 && (
+                  <div className="w-full relative bg-surface-variant/20 border-b border-glass-border">
+                    <img 
+                      src={imageAttachments[0].url} 
+                      alt={imageAttachments[0].name}
+                      className="w-full h-48 object-cover"
+                    />
+                    {imageAttachments.length > 1 && (
+                      <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-lg">
+                        +{imageAttachments.length - 1} imágenes
+                      </div>
+                    )}
                   </div>
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      tmpl.isActive
-                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                        : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                    }`}
-                  >
-                    {tmpl.isActive ? t.templates.active : t.templates.inactive}
-                  </span>
-                </div>
+                )}
 
-                {/* Content preview */}
-                <div className="bg-surface-variant/30 rounded-xl p-3 mb-3 max-h-24 overflow-hidden flex-1">
-                  <p className="text-sm text-on-surface whitespace-pre-wrap leading-relaxed">
-                    {tmpl.content}
-                  </p>
-                </div>
+                <div className="p-5 flex flex-col flex-1">
+                  {/* Title & Status */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1 min-w-0 pr-2">
+                      <h3 className="font-bold text-on-surface text-lg truncate">{tmpl.title}</h3>
+                      <p className="text-xs text-on-surface-variant mt-0.5">
+                        {new Date(tmpl.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
+                        tmpl.isActive
+                          ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                          : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                      }`}
+                    >
+                      {tmpl.isActive ? t.templates.active : t.templates.inactive}
+                    </span>
+                  </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-2 pt-3 mt-auto border-t border-glass-border">
-                  <button
-                    onClick={() => openSendModal(tmpl)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-xs font-semibold transition-colors"
-                  >
-                    <Send className="w-3 h-3" />
-                    {t.templates.sendTemplate}
-                  </button>
-                  <div className="flex-1" />
-                  <button
-                    onClick={() => openEditModal(tmpl)}
-                    className="p-1.5 hover:bg-blue-500/10 rounded-lg transition-colors"
-                    title={t.templates.editTemplate}
-                  >
-                    <Pencil className="w-4 h-4 text-blue-500" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(tmpl.id)}
-                    className="p-1.5 hover:bg-red-500/10 rounded-lg transition-colors"
-                    title={t.templates.deleteTemplate}
-                  >
-                    <Trash2 className="w-4 h-4 text-red-500" />
-                  </button>
+                  {/* Content preview */}
+                  <div className="bg-surface-variant/30 rounded-xl p-3 mb-3 max-h-28 overflow-y-auto">
+                    <div 
+                      className="text-sm text-on-surface prose dark:prose-invert max-w-none prose-sm leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: tmpl.content }}
+                    />
+                  </div>
+
+                  {/* Document Attachments */}
+                  {docAttachments.length > 0 && (
+                    <div className="flex flex-col gap-2 mb-3">
+                      {docAttachments.map((doc, idx) => (
+                        <a 
+                          key={idx}
+                          href={doc.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-3 p-2 rounded-xl bg-surface-container-high hover:bg-surface-variant/50 transition border border-glass-border group"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                            <Paperclip className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-on-surface truncate group-hover:text-primary transition">
+                              {doc.name}
+                            </p>
+                            <p className="text-[10px] text-on-surface-variant">Documento adjunto</p>
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 pt-3 mt-auto border-t border-glass-border">
+                    <button
+                      onClick={() => openSendModal(tmpl)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-xs font-semibold transition-colors"
+                    >
+                      <Send className="w-3 h-3" />
+                      {t.templates.sendTemplate}
+                    </button>
+                    <div className="flex-1" />
+                    <button
+                      onClick={() => openEditModal(tmpl)}
+                      className="p-1.5 hover:bg-blue-500/10 rounded-lg transition-colors"
+                      title={t.templates.editTemplate}
+                    >
+                      <Pencil className="w-4 h-4 text-blue-500" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(tmpl.id)}
+                      className="p-1.5 hover:bg-red-500/10 rounded-lg transition-colors"
+                      title={t.templates.deleteTemplate}
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </button>
+                  </div>
                 </div>
               </div>
             );

@@ -193,6 +193,12 @@ export const translations = {
       projectTypes: "Tipos de Proyecto",
       leadsLast7Days: "Leads Generados (últimos 7 días)",
       totalProjectsClosed: "Total proyectos cerrados",
+      notifications: {
+        leadCreated: "Se creó el lead manual {leadName} por {userName}",
+        leadPotential: "El lead {leadName} pasó a estado POTENCIAL por {userName}",
+        leadReturned: "El lead {leadName} fue devuelto a la lista de espera por {userName}",
+        projectClosed: "¡Proyecto {projectName} CERRADO exitosamente por {userName}!"
+      }
     },
     visit: {
       notAvailable: "No Disponible",
@@ -488,7 +494,13 @@ export const translations = {
       statistics: "Statistics",
       projectTypes: "Project Types",
       leadsLast7Days: "Leads Generated (last 7 days)",
-      totalProjectsClosed: "Total projects closed",
+      totalProjectsClosed: "Total closed projects",
+      notifications: {
+        leadCreated: "Manual lead {leadName} was created by {userName}",
+        leadPotential: "Lead {leadName} changed to POTENTIAL status by {userName}",
+        leadReturned: "Lead {leadName} was returned to waiting list by {userName}",
+        projectClosed: "Project {projectName} successfully CLOSED by {userName}!"
+      }
     },
     visit: {
       notAvailable: "Not Available",

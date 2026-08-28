@@ -22,6 +22,7 @@ export async function PUT(
       ...(roles !== undefined && { roles: JSON.stringify(roles) }),
       ...(isActive !== undefined && { isActive }),
       ...(color !== undefined && { color }),
+        ...(attachments !== undefined && { attachments: attachments ? JSON.stringify(attachments) : null }),
     },
   });
 

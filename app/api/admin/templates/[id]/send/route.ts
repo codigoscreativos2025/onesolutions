@@ -26,26 +26,42 @@ export async function POST(
   const { targetType, targetId, broadcastRole } = body;
 
   const senderName = session.user.name || "Administrador";
-  const messageBody = `${template.content}<br/><br/><i>⚡ Enviado por ${senderName} (Admin)</i>`;
+  const messageBody = `<h2><strong>${template.title}</strong></h2><br/>${template.content}<br/><br/><i>⚡ Enviado por ${senderName} (Admin)</i>`;
   const adminUserId = parseInt(session.user.id);
 
-    const attachments = template.attachments ? JSON.parse(template.attachments) : [];
+  let attachments = [];
+  try {
+    if (template.attachments) {
+      attachments = JSON.parse(template.attachments);
+      if (typeof attachments === 'string') attachments = JSON.parse(attachments);
+      if (!Array.isArray(attachments)) attachments = [];
+    }
+  } catch (e) {
+    attachments = [];
+  }
+  
+  // Find the first image attachment to use as the main message's file
+  const firstImageAttIdx = attachments.findIndex((a: any) => /\.(jpe?g|png|webp|gif)$/i.test(a.name || a.url));
+  const mainAttachment = firstImageAttIdx !== -1 ? attachments[firstImageAttIdx] : null;
+  const remainingAttachments = firstImageAttIdx !== -1 
+    ? attachments.filter((_: any, idx: number) => idx !== firstImageAttIdx)
+    : attachments;
     
-    async function sendAttachments(roomId: number) {
-      if (attachments && attachments.length > 0) {
-        for (const att of attachments) {
-          await prisma.chatMessage.create({
-            data: {
-              roomId,
-              userId: adminUserId,
-              body: "Archivo adjunto: " + att.name,
-              fileUrl: att.url,
-              fileName: att.name,
-            }
-          });
-        }
+  async function sendRemainingAttachments(roomId: number) {
+    if (remainingAttachments && remainingAttachments.length > 0) {
+      for (const att of remainingAttachments) {
+        await prisma.chatMessage.create({
+          data: {
+            roomId,
+            userId: adminUserId,
+            body: "Archivo adjunto: " + att.name,
+            fileUrl: att.url,
+            fileName: att.name,
+          }
+        });
       }
     }
+  }
 
 
   // Helper: find or create ANNOUNCEMENTS room for a user
@@ -69,9 +85,11 @@ export async function POST(
         roomId: room.id,
         userId: adminUserId,
         body: messageBody,
+        fileUrl: mainAttachment?.url || null,
+        fileName: mainAttachment?.name || null,
         },
       });
-      await sendAttachments(room.id);
+      await sendRemainingAttachments(room.id);
       await prisma.notification.create({
       data: {
         userId,
@@ -145,9 +163,15 @@ export async function POST(
     }
 
     await prisma.chatMessage.create({
-      data: { roomId, userId: adminUserId, body: messageBody },
-      });
-      await sendAttachments(roomId);
+      data: { 
+        roomId, 
+        userId: adminUserId, 
+        body: messageBody,
+        fileUrl: mainAttachment?.url || null,
+        fileName: mainAttachment?.name || null,
+      },
+    });
+    await sendRemainingAttachments(roomId);
 
       return NextResponse.json({ success: true, roomId });
   } else if (targetType === "user") {
