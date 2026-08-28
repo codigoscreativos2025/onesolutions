@@ -20,7 +20,7 @@ export function BottomNav() {
     { href: "/metrics", label: t.nav.metrics, icon: BarChart3, roles: ["SETTER", "SETTER_JR", "CLOSER", "ADMIN"] },
     { href: "/dashboard", label: t.nav.pipeline, icon: LayoutDashboard, roles: ["SETTER", "SETTER_JR", "CLOSER", "ADMIN"] },
     { href: "/calendar", label: t.nav.calendar, icon: Calendar, roles: ["SETTER", "CLOSER", "ADMIN"] },
-    { href: "/chat", label: t.nav.chat, icon: MessageSquare, roles: ["SETTER", "CLOSER", "ADMIN", "PARTNER"] },
+    { href: "/chat", label: t.nav.chat, icon: MessageSquare, roles: ["SETTER", "SETTER_JR", "CLOSER", "ADMIN", "PARTNER"] },
     { href: "/dashboard", label: t.nav.projects, icon: Briefcase, roles: ["PARTNER"] },
     { href: "/admin", label: t.nav.admin, icon: Shield, roles: ["ADMIN"] },
   ];

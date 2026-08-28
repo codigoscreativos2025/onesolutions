@@ -145,49 +145,56 @@ export async function GET() {
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   } else {
-    rooms = await prisma.chatRoom.findMany({
-      where: {
-        type: "GENERAL",
-        visit: {
-          OR: [{ setterId: userId }, { closerId: userId }],
-        },
-      },
-      orderBy: { createdAt: "desc" },
-      include: {
-        visit: {
-          include: {
-            parcel: { select: { address: true, ownerName: true, parcelTags: true } },
-            setter: { select: { id: true, name: true } },
-            closer: { select: { id: true, name: true } },
-            bill: true,
-            projectDetails: true,
+    if (role === "SETTER" || role === "SETTER_JR") {
+      rooms = [];
+    } else {
+      rooms = await prisma.chatRoom.findMany({
+        where: {
+          type: "GENERAL",
+          visit: {
+            OR: [{ setterId: userId }, { closerId: userId }],
           },
         },
-        messages: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          include: {
-            user: { select: { name: true } },
+        orderBy: { createdAt: "desc" },
+        include: {
+          visit: {
+            include: {
+              parcel: { select: { address: true, ownerName: true, parcelTags: true } },
+              setter: { select: { id: true, name: true } },
+              closer: { select: { id: true, name: true } },
+              bill: true,
+              projectDetails: true,
+            },
+          },
+          messages: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            include: {
+              user: { select: { name: true } },
+            },
           },
         },
-      },
-    });
+      });
+    }
 
-    const personalRooms = await prisma.chatRoom.findMany({
-      where: {
-        type: "PERSONAL",
-        personalUserId: userId,
-      },
-      orderBy: { createdAt: "desc" },
-      include: {
-        personalUser: { select: { id: true, name: true, role: true, email: true, phone: true, profile: { select: { address: true, profilePhoto: true } } } },
-        messages: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          include: { user: { select: { name: true } } },
+    let personalRooms: any[] = [];
+    if (role !== "SETTER" && role !== "SETTER_JR") {
+      personalRooms = await prisma.chatRoom.findMany({
+        where: {
+          type: "PERSONAL",
+          personalUserId: userId,
         },
-      },
-    });
+        orderBy: { createdAt: "desc" },
+        include: {
+          personalUser: { select: { id: true, name: true, role: true, email: true, phone: true, profile: { select: { address: true, profilePhoto: true } } } },
+          messages: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            include: { user: { select: { name: true } } },
+          },
+        },
+      });
+    }
 
     const announcementsRooms = await prisma.chatRoom.findMany({
       where: {

@@ -61,18 +61,27 @@ export async function GET() {
     // Admin can see everything (except cancelled)
   } else if (role === "PARTNER") {
     roomCondition = {
-      ...roomCondition,
-      type: "PARTNER",
-      partnerId: userId
+      OR: [
+        { type: "PARTNER", partnerId: userId, visit: { stage: { not: "CANCELLED" } } },
+        { type: "PERSONAL", personalUserId: userId },
+        { type: "ANNOUNCEMENTS", personalUserId: userId }
+      ]
+    };
+  } else if (role === "CLOSER") {
+    roomCondition = {
+      OR: [
+        { type: "GENERAL", visit: { stage: { not: "CANCELLED" }, OR: [{ setterId: userId }, { closerId: userId }] } },
+        { type: "PERSONAL", personalUserId: userId },
+        { type: "ANNOUNCEMENTS", personalUserId: userId }
+      ]
     };
   } else {
+    // SETTER and SETTER_JR only get personal and announcements
     roomCondition = {
-      ...roomCondition,
-      type: "GENERAL",
-      visit: {
-        stage: { not: "CANCELLED" },
-        OR: [{ setterId: userId }, { closerId: userId }]
-      }
+      OR: [
+        { type: "ANNOUNCEMENTS", personalUserId: userId },
+        { type: "PERSONAL", personalUserId: userId }
+      ]
     };
   }
 
