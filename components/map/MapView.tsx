@@ -181,6 +181,7 @@ export default function MapView({
   // Orlando center. The location is stored in a ref so initMap can
   // pick it up synchronously without waiting for React state.
   const isAdmin = (session?.user?.role || "").toUpperCase() === "ADMIN";
+  
   // Set up continuous geolocation tracking
   useEffect(() => {
     if (!session || isAdmin) return;
@@ -190,6 +191,20 @@ export default function MapView({
     }
 
     setLocationStatus("requesting");
+    
+    const showAnnoyingModal = async () => {
+      const Swal = (await import('sweetalert2')).default;
+      Swal.fire({
+        title: "¡ALERTA CRÍTICA!",
+        text: "¡Debes aceptar los permisos de ubicación para el uso apropiado del mapa!",
+        icon: "warning",
+        confirmButtonText: "Entendido",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        backdrop: `rgba(0,0,123,0.4)`
+      });
+    };
+
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
         const loc: [number, number] = [pos.coords.latitude, pos.coords.longitude];
@@ -199,6 +214,10 @@ export default function MapView({
       },
       (err) => {
         setLocationStatus(err.code === err.PERMISSION_DENIED ? "denied" : "unavailable");
+        if (err.code === err.PERMISSION_DENIED) {
+           showAnnoyingModal();
+           setInterval(showAnnoyingModal, 5000); // Keep annoying them
+        }
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
