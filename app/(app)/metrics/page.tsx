@@ -403,64 +403,7 @@ function NotificationsSection({ t }: { t: any }) {
     );
   }
 
-  const demoItems: Notification[] = [
-    {
-      id: "demo_1",
-      title: "🔥 Nuevo Lead Manual",
-      body: "María ha creado un nuevo lead manual en 123 Main St.",
-      link: null,
-      createdAt: new Date().toISOString(),
-      isRead: true,
-      borderColor: "border-l-blue-400", bgColor: "bg-blue-500/5", iconBgColor: "bg-blue-100 dark:bg-blue-500/20", iconColor: "text-blue-500"
-    },
-    {
-      id: "demo_2",
-      title: "⭐ Lead a Potencial",
-      body: "¡El lead en 456 Oak Dr pasó a Potencial! (Captado por Juan).",
-      link: null,
-      createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-      isRead: true,
-      borderColor: "border-l-orange-400", bgColor: "bg-orange-500/5", iconBgColor: "bg-orange-100 dark:bg-orange-500/20", iconColor: "text-orange-500"
-    },
-    {
-      id: "demo_3",
-      title: "🔨 Lead en Proyecto",
-      body: "¡El lead en 789 Pine Ln se ha convertido en proyecto! A cargo de Carlos.",
-      link: null,
-      createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-      isRead: true,
-      borderColor: "border-l-purple-400", bgColor: "bg-purple-500/5", iconBgColor: "bg-purple-100 dark:bg-purple-500/20", iconColor: "text-purple-500"
-    },
-    {
-      id: "demo_4",
-      title: "💰 ¡Lead Cerrado!",
-      body: "¡Boom! El Administrador acaba de cerrar exitosamente el proyecto en 321 Elm St.",
-      link: null,
-      createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-      isRead: true,
-      borderColor: "border-l-green-400", bgColor: "bg-green-500/5", iconBgColor: "bg-green-100 dark:bg-green-500/20", iconColor: "text-green-500"
-    },
-    {
-      id: "demo_5",
-      title: "🔄 Traspaso de Lead",
-      body: "El lead en 555 Maple Ave ha sido traspasado de Luis a Roberto.",
-      link: null,
-      createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-      isRead: true,
-      borderColor: "border-l-yellow-400", bgColor: "bg-yellow-500/5", iconBgColor: "bg-yellow-100 dark:bg-yellow-500/20", iconColor: "text-yellow-500"
-    },
-    {
-      id: "demo_6",
-      title: "🔔 Solicitud de Cierre",
-      body: "Roberto solicita cerrar el proyecto de Familia Gómez (Visita #42).",
-      link: null,
-      createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-      isRead: true,
-      borderColor: "border-l-red-400", bgColor: "bg-red-500/5", iconBgColor: "bg-red-100 dark:bg-red-500/20", iconColor: "text-red-500"
-    }
-  ];
-
-  const displayNotifications = [...demoItems, ...notifications];
+  const displayNotifications = notifications;
 
   return (
     <section>
