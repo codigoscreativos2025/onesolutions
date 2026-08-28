@@ -12,7 +12,7 @@ export async function GET() {
   const userId = parseInt(session.user.id);
   const role = session.user.role;
 
-  let rooms;
+  let rooms: any[] = [];
 
   if (role === "ADMIN") {
       rooms = await prisma.chatRoom.findMany({
