@@ -1488,7 +1488,9 @@ export function ChatInterface({
                   onSubmit={handleSend}
                   className="p-4 border-t border-outline-variant/30 flex gap-2 relative"
                 >
-                  <button type="button" onClick={openTemplatesModal} className="w-11 h-11 flex items-center justify-center rounded-xl bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest transition-colors cursor-pointer flex-shrink-0" title="Enviar Plantilla"><FileText className="w-5 h-5" /></button>
+                  {role === "ADMIN" && (
+                    <button type="button" onClick={openTemplatesModal} className="w-11 h-11 flex items-center justify-center rounded-xl bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest transition-colors cursor-pointer flex-shrink-0" title="Enviar Plantilla"><FileText className="w-5 h-5" /></button>
+                  )}
                     <label className="w-11 h-11 flex items-center justify-center rounded-xl bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest transition-colors cursor-pointer flex-shrink-0">
                     <Paperclip className="w-5 h-5" />
                     <input

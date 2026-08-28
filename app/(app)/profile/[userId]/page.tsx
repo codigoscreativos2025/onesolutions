@@ -41,6 +41,14 @@ interface UserProfile {
     month: string;
     count: number;
   } | null;
+  availableBadges?: {
+    id: number;
+    name: string;
+    icon: string;
+    color: string;
+    description: string;
+    count: number;
+  }[];
   profile?: {
     address?: string;
     ssn?: string;
@@ -194,53 +202,90 @@ export default function PublicProfilePage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <div className="flex items-start gap-6">
-          <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary text-3xl font-bold overflow-hidden relative">
-            {profile.profile?.profilePhoto ? (
-              <Image
-                src={profile.profile.profilePhoto}
-                alt={profile.name}
-                fill
-                className="object-cover"
-              />
-            ) : profile.avatarUrl ? (
-              <Image src={profile.avatarUrl} alt={profile.name} fill className="object-cover" />
-            ) : (
-              profile.name.charAt(0).toUpperCase()
-            )}
-          </div>
-
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-2xl font-bold">{profile.name}</h1>
-              <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium uppercase tracking-wider">
-                {profile.role === 'SETTER' ? 'Trainee' : profile.role}
-              </span>
-              {isOwnProfile && (
-                <Button size="sm" variant="outline" onClick={openEditModal}>
-                  <Pencil className="w-4 h-4" />
-                  Editar Perfil
-                </Button>
+        <div className="flex flex-col md:flex-row items-start gap-6">
+          <div className="flex items-start gap-6 flex-1">
+            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary text-3xl font-bold overflow-hidden relative shrink-0">
+              {profile.profile?.profilePhoto ? (
+                <Image
+                  src={profile.profile.profilePhoto}
+                  alt={profile.name}
+                  fill
+                  className="object-cover"
+                />
+              ) : profile.avatarUrl ? (
+                <Image src={profile.avatarUrl} alt={profile.name} fill className="object-cover" />
+              ) : (
+                profile.name.charAt(0).toUpperCase()
               )}
             </div>
 
-            <div className="space-y-2 text-gray-600 dark:text-gray-400">
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                <span>{profile.email}</span>
+            <div className="flex-1">
+              <div className="flex flex-wrap items-center gap-3 mb-2">
+                <h1 className="text-2xl font-bold">{profile.name}</h1>
+                <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium uppercase tracking-wider">
+                  {profile.role === 'SETTER' ? 'Trainee' : profile.role}
+                </span>
+                {isOwnProfile && (
+                  <Button size="sm" variant="outline" onClick={openEditModal}>
+                    <Pencil className="w-4 h-4" />
+                    Editar Perfil
+                  </Button>
+                )}
               </div>
-              {profile.phone && (
+
+              <div className="space-y-2 text-gray-600 dark:text-gray-400">
                 <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4" />
-                  <span>{profile.phone}</span>
+                  <Mail className="w-4 h-4" />
+                  <span>{profile.email}</span>
                 </div>
-              )}
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                <span>Miembro desde {new Date(profile.createdAt).toLocaleDateString()}</span>
+                {profile.phone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4" />
+                    <span>{profile.phone}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  <span>Miembro desde {new Date(profile.createdAt).toLocaleDateString()}</span>
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Medals on the right */}
+          {profile.availableBadges && profile.availableBadges.length > 0 && (
+            <div className="w-full md:w-auto md:min-w-[200px] flex flex-row md:flex-col gap-2 p-4 md:p-0 bg-gray-50 md:bg-transparent rounded-lg md:border-l md:border-gray-200 md:dark:border-gray-700 md:pl-6 overflow-x-auto">
+              <h3 className="hidden md:block text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Medallas</h3>
+              {profile.availableBadges.map((badge) => {
+                const hasBadge = badge.count > 0;
+                return (
+                  <div
+                    key={badge.id}
+                    className={`flex items-center gap-3 p-2 rounded-lg border min-w-[140px] md:min-w-0 transition-all ${
+                      hasBadge
+                        ? 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+                        : 'border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 opacity-60 grayscale'
+                    }`}
+                  >
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0 relative"
+                      style={{ backgroundColor: hasBadge ? badge.color + '20' : '#cccccc20' }}
+                    >
+                      {badge.icon}
+                      {hasBadge && (
+                        <div className="absolute -top-1 -right-1 bg-[#f48221] text-white text-[9px] font-bold px-1 py-0.5 rounded-full border border-white dark:border-gray-800 shadow-sm leading-none">
+                          +{badge.count}
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className={`font-semibold text-xs truncate ${hasBadge ? '' : 'text-gray-500'}`}>{badge.name}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -384,36 +429,7 @@ export default function PublicProfilePage() {
         </div>
       )}
 
-      {profile.userBadges.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <Award className="w-5 h-5" />
-            Medallas
-          </h2>
 
-          <div className="flex gap-4 overflow-x-auto pb-2">
-            {profile.userBadges.map(({ badge, earnedAt }) => (
-              <div
-                key={badge.id}
-                className="flex-shrink-0 flex items-center gap-3 p-4 rounded-lg border border-gray-200 dark:border-gray-700 min-w-[180px]"
-              >
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center text-2xl"
-                  style={{ backgroundColor: badge.color + '20' }}
-                >
-                  {badge.icon}
-                </div>
-                <div>
-                  <p className="font-semibold text-sm">{badge.name}</p>
-                  <p className="text-xs text-gray-500">
-                    {new Date(earnedAt).toLocaleDateString("es", { year: "numeric", month: "short", day: "numeric" })}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       <Modal
         isOpen={isEditModalOpen}

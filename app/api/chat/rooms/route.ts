@@ -108,6 +108,42 @@ export async function GET() {
         },
       },
     });
+
+    const personalRooms = await prisma.chatRoom.findMany({
+      where: {
+        type: "PERSONAL",
+        personalUserId: userId,
+      },
+      orderBy: { createdAt: "desc" },
+      include: {
+        personalUser: { select: { id: true, name: true, role: true, email: true, phone: true, profile: { select: { address: true, profilePhoto: true } } } },
+        messages: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          include: { user: { select: { name: true } } },
+        },
+      },
+    });
+
+    const announcementsRooms = await prisma.chatRoom.findMany({
+      where: {
+        type: "ANNOUNCEMENTS",
+        personalUserId: userId,
+      },
+      orderBy: { createdAt: "desc" },
+      include: {
+        personalUser: { select: { id: true, name: true, role: true, email: true, phone: true, profile: { select: { address: true, profilePhoto: true } } } },
+        messages: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          include: { user: { select: { name: true } } },
+        },
+      },
+    });
+
+    rooms = [...rooms, ...personalRooms, ...announcementsRooms].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   } else {
     rooms = await prisma.chatRoom.findMany({
       where: {

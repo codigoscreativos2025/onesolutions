@@ -62,7 +62,7 @@ export async function GET(
 
   const hasAccess =
     role === "ADMIN" ||
-    (room.type === "PERSONAL" && room.personalUserId === userId) ||
+    ((room.type === "PERSONAL" || room.type === "ANNOUNCEMENTS") && room.personalUserId === userId) ||
     (room.type === "GENERAL" && room.visit && (room.visit.setterId === userId || room.visit.closerId === userId)) ||
     (role === "PARTNER" && room.type === "PARTNER" && room.partnerId === userId);
 

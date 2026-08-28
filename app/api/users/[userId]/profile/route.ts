@@ -120,6 +120,26 @@ export async function GET(
       ? { month: visitsByMonth[0].month, count: Number(visitsByMonth[0].count) }
       : null;
 
+    const allBadges = await prisma.badge.findMany();
+
+    const availableBadges = allBadges.map((badge) => {
+      let doorsCount = badge.doorsThreshold && badge.doorsThreshold > 0 ? Math.floor(doorsKnocked / badge.doorsThreshold) : Infinity;
+      let prospectsCount = badge.prospectsThreshold && badge.prospectsThreshold > 0 ? Math.floor(leadsGenerated / badge.prospectsThreshold) : Infinity;
+      let projectsCount = badge.projectsThreshold && badge.projectsThreshold > 0 ? Math.floor(projectsClosed / badge.projectsThreshold) : Infinity;
+      
+      let counts = [doorsCount, prospectsCount, projectsCount].filter(c => c !== Infinity);
+      let count = counts.length > 0 ? Math.min(...counts) : 0;
+
+      return {
+        id: badge.id,
+        name: badge.name,
+        icon: badge.icon,
+        color: badge.color,
+        description: badge.description,
+        count: count
+      };
+    });
+
     const result: Record<string, unknown> = {
       ...user,
       stats: {
@@ -129,6 +149,7 @@ export async function GET(
         projectsClosed,
       },
       bestMonth,
+      availableBadges,
     };
 
     if (result.profile && (isOwnProfile || isAdmin)) {
