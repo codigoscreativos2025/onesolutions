@@ -21,6 +21,16 @@ export async function GET() {
   const cancelledVisitIds = new Set(cancelledVisits.map(v => v.id));
   const cancelledRoomIds = new Set(cancelledVisits.flatMap(v => v.chatRooms.map(r => r.id)));
 
+  // Auto-delete notifications older than 7 days
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  await prisma.notification.deleteMany({
+    where: {
+      userId: parseInt(session.user.id),
+      createdAt: { lt: sevenDaysAgo },
+    },
+  });
+
   const allNotifications = await prisma.notification.findMany({
     where: { userId: parseInt(session.user.id) },
     orderBy: { createdAt: "desc" },
