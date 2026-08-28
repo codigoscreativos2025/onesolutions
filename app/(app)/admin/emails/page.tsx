@@ -27,14 +27,12 @@ interface AttachedFile {
   type: string;
 }
 
-const EMAIL_HEADER = `<table width="100%" cellpadding="0" cellspacing="0" style="border-bottom:2px solid #e0e0e0;padding-bottom:20px;margin-bottom:20px;">
+const getEmailHeader = () => {
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="border-bottom:2px solid #e0e0e0;padding-bottom:20px;margin-bottom:20px;">
   <tr>
-    <td style="vertical-align:middle;width:90px;">
-      <div style="text-align:center;line-height:1;">
-        <div style="display:inline-block;width:50px;height:50px;border-radius:50%;border:4px solid #1d1d1b;text-align:center;line-height:46px;font-size:32px;font-weight:900;font-family:Arial,sans-serif;color:#1d1d1b;">S</div>
-        <div style="font-size:24px;font-weight:900;color:#f48221;font-family:Arial,sans-serif;letter-spacing:1px;margin-top:5px;">ONE</div>
-        <div style="font-size:9px;font-weight:900;color:#1d1d1b;font-family:Arial,sans-serif;letter-spacing:2px;margin-top:2px;">SOLUTIONS</div>
-      </div>
+    <td style="vertical-align:middle;width:150px;">
+      <img src="${baseUrl}/logo-company.png" alt="One Solutions Logo" style="max-height:80px;max-width:140px;object-fit:contain;display:block;" />
     </td>
     <td style="vertical-align:middle;text-align:right;font-size:13px;color:#555;">
       <strong style="color:#1d1d1b;font-size:15px;display:block;margin-bottom:5px;">ONE SOLUTIONS COMPANIES LLC</strong>
@@ -44,6 +42,7 @@ const EMAIL_HEADER = `<table width="100%" cellpadding="0" cellspacing="0" style=
     </td>
   </tr>
 </table><br><br>`;
+};
 
 export default function AdminEmailsPage() {
   const editorRef = useRef<HTMLDivElement>(null);
@@ -66,7 +65,7 @@ export default function AdminEmailsPage() {
 
   useEffect(() => {
     if (editorRef.current && !editorRef.current.innerHTML.trim()) {
-      editorRef.current.innerHTML = EMAIL_HEADER;
+      editorRef.current.innerHTML = getEmailHeader();
     }
   }, []);
 
@@ -190,7 +189,7 @@ export default function AdminEmailsPage() {
       toast.success(`Correo enviado a ${sent} destinatario(s)`);
       setTo("");
       setSubject("");
-      if (editorRef.current) editorRef.current.innerHTML = EMAIL_HEADER;
+      if (editorRef.current) editorRef.current.innerHTML = getEmailHeader();
       setFiles([]);
     } else {
       toast.error(`${sent} enviado(s), ${failed} fallido(s)`);
