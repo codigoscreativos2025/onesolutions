@@ -369,12 +369,16 @@ function PeriodStat({
 }
 
 interface Notification {
-  id: number;
+  id: string | number;
   title: string;
   body: string;
   link: string | null;
   createdAt: string;
   isRead: boolean;
+  borderColor?: string;
+  bgColor?: string;
+  iconBgColor?: string;
+  iconColor?: string;
 }
 
 function NotificationsSection({ t }: { t: any }) {
@@ -416,22 +420,19 @@ function NotificationsSection({ t }: { t: any }) {
         {displayNotifications.map((n) => {
           const isTemplate = n.title.startsWith("[TEMPLATE]");
           const displayTitle = isTemplate ? n.title.replace("[TEMPLATE]", "").trim() : n.title;
+          
+          const borderColor = n.borderColor || (isTemplate ? "border-l-yellow-400" : "border-l-gray-300");
+          const bgColor = n.bgColor || (isTemplate ? "bg-yellow-500/5" : "bg-transparent");
+          const iconBgColor = n.iconBgColor || (isTemplate ? "bg-yellow-100 dark:bg-yellow-500/20" : "bg-gray-100 dark:bg-gray-800");
+          const iconColor = n.iconColor || (isTemplate ? "text-yellow-500" : "text-gray-500");
 
           return (
             <div 
               key={n.id} 
-              className={`p-4 flex items-start gap-3 transition-colors ${
-                isTemplate ? "border-l-4 border-l-yellow-400 bg-yellow-500/5" : ""
-              }`}
+              className={`p-4 flex items-start gap-3 transition-colors border-l-4 ${borderColor} ${bgColor}`}
             >
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                  isTemplate ? "bg-yellow-100 dark:bg-yellow-500/20" : n.link ? "bg-primary/10" : "bg-orange-100 dark:bg-orange-500/20"
-                }`}
-              >
-                <Bell
-                  className={`w-4 h-4 ${isTemplate ? "text-yellow-500" : n.link ? "text-primary" : "text-orange-500"}`}
-                />
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${iconBgColor}`}>
+                <Bell className={`w-4 h-4 ${iconColor}`} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-on-surface">{displayTitle}</p>
