@@ -22,7 +22,7 @@ export async function GET() {
       setter: { select: { name: true } },
       closer: { select: { name: true, role: true } },
     },
-    orderBy: { updatedAt: 'desc' },
+    orderBy: { createdAt: 'desc' },
     take: 20
   });
 
@@ -84,7 +84,7 @@ export async function GET() {
       title,
       body,
       link: `/lead/${v.id}`,
-      createdAt: v.updatedAt,
+      createdAt: v.createdAt,
       isRead: true,
       borderColor, bgColor, iconBgColor, iconColor
     });
