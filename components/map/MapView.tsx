@@ -1384,52 +1384,6 @@ const loadViewportParcels = async () => {
         userRole={session?.user?.role || ""}
         userId={session?.user?.id || ""}
       />
-
-      {/* GIANT LOCATION PROMPT OVERLAY */}
-      {locationStatus === "requesting" && (
-        <div className="absolute inset-0 z-[9999] bg-black/80 flex flex-col items-center justify-start pt-12 px-6">
-          <div className="bg-white rounded-3xl p-8 max-w-2xl w-full text-center shadow-2xl border-4 border-primary animate-pulse">
-            <h1 className="text-4xl font-black text-red-600 mb-6 uppercase tracking-tight">
-              👆 ¡ATENCIÓN! MIRA ARRIBA 👆
-            </h1>
-            <p className="text-2xl font-bold text-gray-900 mb-4">
-              El navegador te está pidiendo permiso para acceder a tu ubicación.
-            </p>
-            <div className="text-8xl mb-6">👆👀</div>
-            <p className="text-xl font-bold text-primary bg-primary/10 p-4 rounded-xl border-2 border-primary/20 inline-block">
-              DEBES HACER CLIC EN "PERMITIR" PARA PODER USAR EL MAPA
-            </p>
-          </div>
-        </div>
-      )}
-
-      {locationStatus === "denied" && (
-        <div className="absolute inset-0 z-[9999] bg-black flex flex-col items-center justify-center p-6">
-          <div className="bg-red-600 rounded-3xl p-10 max-w-2xl w-full text-center shadow-2xl border-8 border-red-800">
-            <h1 className="text-5xl font-black text-white mb-6 uppercase">
-              ❌ UBICACIÓN BLOQUEADA ❌
-            </h1>
-            <p className="text-2xl font-bold text-white mb-8 leading-relaxed">
-              Has denegado el permiso de ubicación. El mapa NO funcionará hasta que lo actives.
-            </p>
-            <div className="bg-white/10 rounded-2xl p-6 text-left mb-8 border border-white/20">
-              <h2 className="text-xl font-bold text-white mb-4">Cómo solucionarlo:</h2>
-              <ol className="text-lg font-medium text-white/90 space-y-3 list-decimal list-inside">
-                <li>Haz clic en el icono del <strong className="text-white">CANDADO 🔒</strong> junto a la barra de direcciones de arriba.</li>
-                <li>Busca la opción de <strong>Ubicación</strong>.</li>
-                <li>Cambia a <strong>Permitir</strong>.</li>
-                <li>Recarga esta página.</li>
-              </ol>
-            </div>
-            <button 
-              onClick={() => window.location.reload()}
-              className="bg-white text-red-700 px-8 py-4 rounded-2xl text-2xl font-black hover:bg-gray-100 transition-all uppercase shadow-[0_6px_0_#991b1b] active:translate-y-[6px] active:shadow-none"
-            >
-              YA LO HABILITÉ (RECARGAR)
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
