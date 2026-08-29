@@ -249,6 +249,7 @@ function calculateProjectCompletion(
   projectDetails: Record<string, unknown> | null | undefined,
   fieldMetas: FieldMeta[],
   stage?: string,
+  hasPanelSolar: boolean = false
 ): number {
   if (!projectDetails) return 0;
 
@@ -290,14 +291,18 @@ function calculateProjectCompletion(
   }
 
   if (stage === "PROJECT" || stage === "CLOSED") {
-    totalFields += 2;
+    totalFields += 1;
     // ID del Cliente: a single uploaded file (front or back of the ID)
     // is enough to mark the field complete. The bill syncs its
     // additionalFileUrl into projectDetails.idDocumentUrl on save
     // (see saveProjectDetailsAction), so checking that mirror is
     // sufficient. A second file is optional.
     if (isValid(projectDetails["idDocumentUrl"])) completedFields++;
-    if (isValid(projectDetails["electricBillUrl"])) completedFields++;
+    
+    if (hasPanelSolar) {
+      totalFields += 1;
+      if (isValid(projectDetails["electricBillUrl"])) completedFields++;
+    }
   }
 
   return totalFields > 0
@@ -1485,13 +1490,18 @@ export default function LeadDetailPage() {
       (visit?.projectDetails as Record<string, unknown>)?.idDocumentUrl ||
       visit?.bill?.additionalFileUrl,
   };
+  const selectedProjectNames =
+    visit?.projects?.map((p) => p.projectType.name) || [];
+  const hasPanelSolar = selectedProjectNames.some((name) =>
+    name.toLowerCase().includes("panel solar")
+  );
+
   const progress = calculateProjectCompletion(
     mergedDetails as Record<string, unknown>,
     fieldMetas,
     visit?.stage,
+    hasPanelSolar
   );
-  const selectedProjectNames =
-    visit?.projects?.map((p) => p.projectType.name) || [];
   const isAdmin = role === "ADMIN";
 
   // Detectar si ya se solicitó el cierre
@@ -3027,6 +3037,9 @@ function DatosProjectPanel({
   onBillFileClear?: (slot: "first" | "second") => Promise<void>;
 }) {
   const pd = visit.projectDetails || {};
+  const hasPanelSolar = selectedProjectNames.some((name) =>
+    name.toLowerCase().includes("panel solar")
+  );
   
   let fallbackId1 = "";
   let fallbackId2 = "";
@@ -3215,7 +3228,7 @@ function DatosProjectPanel({
             value={getValue("electricBillUrl")}
             field="electricBillUrl"
             isFile
-            required={true}
+            required={hasPanelSolar}
             onFileUpload={onFileFieldUpload}
             fileUrl={
               pd["electricBillUrl"] ? String(pd["electricBillUrl"]) : undefined
