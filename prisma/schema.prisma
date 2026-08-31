@@ -363,14 +363,17 @@ model ChatMessage {
 }
 
 model Notification {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String
-  body      String
-  link      String?
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id               Int      @id @default(autoincrement())
+  userId           Int      // acts as recipientId
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title            String
+  body             String
+  link             String?
+  targetType       String?  // Ej: "LEAD_TRANSFER", "NEW_PROJECT"
+  assignedCloserId Int?
+  teamId           String?
+  isRead           Boolean  @default(false)
+  createdAt        DateTime @default(now())
 }
 
 // Medallas/Badges

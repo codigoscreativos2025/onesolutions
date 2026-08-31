@@ -57,6 +57,31 @@ export async function GET(
   });
 
   if (parcel) {
+    const role = session.user.role?.toUpperCase() || "";
+    const userIdNum = parseInt(session.user.id || "0");
+    const userCloserId = session.user.closerId;
+
+    if (role !== "ADMIN") {
+      // Filter out sensitive data from visits that don't belong to the user's team
+      parcel.visits = parcel.visits.map(visit => {
+        const isMyTeam = (role === "CLOSER" && (visit.closerId === userIdNum || visit.setterId === userIdNum)) ||
+                         ((role === "SETTER" || role === "TRAINEE" || role === "SETTER_JR") && 
+                          (visit.setterId === userIdNum || (userCloserId && visit.closerId === userCloserId)));
+        
+        if (!isMyTeam) {
+          return {
+            ...visit,
+            legacyNotes: null,
+            projects: [],
+            objections: [],
+            closerObjections: [],
+            // Keep setter and closer relations so the UI can show "Taken by X"
+          };
+        }
+        return visit;
+      });
+    }
+
     return NextResponse.json(parcel);
   }
 

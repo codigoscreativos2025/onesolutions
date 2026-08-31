@@ -10,6 +10,8 @@ import { NotesPanel } from "@/components/lead/NotesPanel";
 
 import { useLocale } from "@/lib/locale-context";
 import { getPropertyClassLabel } from "@/lib/utils";
+import { useMapPermissions } from "@/hooks/useMapPermissions";
+import type { MapUser, MapParcel } from "@/types/map";
 
 interface TagObject {
   name: string;
@@ -62,6 +64,7 @@ interface ParcelSheetProps {
   
   userRole: string;
   userId: string;
+  userCloserId?: number | null;
 }
 
 export function ParcelSheet({
@@ -74,6 +77,7 @@ export function ParcelSheet({
   onQuickTagApplied,
   userRole,
   userId,
+  userCloserId,
 }: ParcelSheetProps) {
   const { t } = useLocale();
   const router = useRouter();
@@ -93,6 +97,10 @@ export function ParcelSheet({
   const [showLeadModal, setShowLeadModal] = useState(false);
   const [showConfirmClaim, setShowConfirmClaim] = useState(false);
   const [visitNotAvailTags, setVisitNotAvailTags] = useState<NotAvailTag[]>([]);
+
+  const mapUser: MapUser = { id: userId, role: userRole, closerId: userCloserId };
+  const { canEditNotes, canChangeTags, canCreateLead, canViewDetails, blockedReason } = useMapPermissions(mapUser, parcel as any);
+
 
       const isSavingRef = useRef(false);
 
@@ -179,6 +187,7 @@ export function ParcelSheet({
   };
 
   const metadata = parcel.metadata ? JSON.parse(parcel.metadata) : {};
+
   const canVisit = userRole === "SETTER" || userRole === "SETTER_JR" || userRole === "CLOSER" || userRole === "TRAINEE";
   const isTakenByMe = parcel.setter?.id === parseInt(userId);
   const activeVisits = parcel.visits?.filter(v => v.stage !== "CANCELLED" && v.stage !== "CLOSED") || [];
@@ -333,7 +342,7 @@ export function ParcelSheet({
             />
           </div>
 
-          {canVisit && isAvailable && !hasPriorProjects && parcel.status !== "CUSTOMER" && (
+          {canChangeTags && (
             <>
               <div className="grid grid-cols-2 gap-2">
                 <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO ABRIO", "#ef4444")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#ef4444" }}><DoorClosed className="w-3.5 h-3.5 mr-1" />{t.map.tagNoAnswer}</Button>
@@ -342,7 +351,10 @@ export function ParcelSheet({
                 <Button variant="outline" size="sm" onClick={() => handleQuickTag("No esta el propietario", "#a855f7")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#a855f7" }}><UserX className="w-3.5 h-3.5 mr-1" />{t.map.tagOwnerNotPresent}</Button>
                 <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO VIVE EL PROPIETARIO", "#eab308")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#eab308" }}><Home className="w-3.5 h-3.5 mr-1" />{t.map.tagOwnerNotResident}</Button>
               </div>
+            </>
+          )}
 
+          {canEditNotes && (
               <NotesPanel 
                 parcelId={parcel.id} 
                 parcelData={{ 
@@ -351,7 +363,6 @@ export function ParcelSheet({
                   externalId: parcel.externalId 
                 }} 
               />
-            </>
           )}
 
           {parcel.status === "CUSTOMER" && (
@@ -390,7 +401,7 @@ export function ParcelSheet({
             </p>
           )}
 
-          {canVisit && (isAvailable || parcel.status === "CUSTOMER" || hasPriorProjects) && !hasActiveLead && (
+          {canCreateLead && (
             <div className="flex flex-col gap-3">
               {!showConfirmClaim ? (
                 <Button
@@ -471,50 +482,18 @@ export function ParcelSheet({
 
               {activeVisits[0]?.id && (() => {
                 const visit = activeVisits[0];
-                const visitStage = visit?.stage || "IN_PROGRESS";
-                const isLeadStage = visitStage === "IN_PROGRESS";
-                const hasPanelSolar = visit?.projects?.some((p) =>
-                  p.projectType.name.toLowerCase().includes("panel solar")
-                ) || false;
-                const visitSetterId = visit?.setter?.id;
-                const visitSetterRole = visit?.setter?.role;
-                let btnDisabled = false;
-                let disabledReason = "";
-
-                if (userRole === "SETTER_JR") {
-                  if (!isLeadStage) {
-                    btnDisabled = true;
-                    disabledReason = "Este lead ya fue transferido al closer";
-                  }
-                } else if (userRole === "SETTER" || userRole === "TRAINEE") {
-                  if (hasPanelSolar && !isLeadStage) {
-                    btnDisabled = true;
-                    disabledReason = "Este lead con Panel Solar fue transferido al closer";
-                  }
-                  if (!hasPanelSolar && !isTakenByMe && visitSetterId !== parseInt(userId)) {
-                    btnDisabled = true;
-                    disabledReason = t.map.onlyOwnLeads;
-                  }
-                } else if (userRole === "CLOSER") {
-                  const isFromTrainee = visitSetterRole === "SETTER" || visitSetterRole === "TRAINEE";
-                  if (isFromTrainee && !hasPanelSolar && visit?.closerId !== parseInt(userId)) {
-                    btnDisabled = true;
-                    disabledReason = t.map.onlySolarPanelLeads;
-                  }
-                }
-
                 return (
                   <>
                     <Button 
                       onClick={() => router.push(`/lead/${visit?.id}`)} 
-                      disabled={btnDisabled}
+                      disabled={!canViewDetails}
                       className="w-full mt-4 bg-brand-green hover:bg-brand-green/90 text-white shadow-md py-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Ver detalles
                     </Button>
-                    {btnDisabled && disabledReason && (
+                    {!canViewDetails && blockedReason && (
                       <p className="text-xs text-on-surface-variant text-center mt-1">
-                        {disabledReason}
+                        {blockedReason}
                       </p>
                     )}
                   </>

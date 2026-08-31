@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendEmail, emailTemplates } from "@/lib/email";
+import { sendNotification, notifyAdmins } from "@/lib/notificationService";
 import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
 
@@ -82,49 +83,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  let targetUserIds: number[] = [];
-
+  // Aislamiento: Si no viene un recipient (userId), solo se envía a Admins.
+  // Nunca hacer broadcast a closers genéricamente.
   if (userId) {
-    targetUserIds.push(parseInt(userId));
-  } else {
-    const admins = await prisma.user.findMany({
-      where: { role: "ADMIN" },
-      select: { id: true },
+    const notification = await sendNotification({
+      recipientId: parseInt(userId),
+      title,
+      body: notificationBody,
+      link: link || null,
     });
-    targetUserIds = admins.map((a) => a.id);
+    return NextResponse.json([notification]);
+  } else {
+    // Si no especifican a quién, se asume que es una alerta genérica para el ADMIN (Auditoría)
+    const notifications = await notifyAdmins({
+      title,
+      body: notificationBody,
+      link: link || null,
+    });
+    return NextResponse.json(notifications);
   }
-
-  const notifications = await Promise.all(
-    targetUserIds.map(async (id) => {
-      const notification = await prisma.notification.create({
-        data: {
-          userId: id,
-          title,
-          body: notificationBody,
-          link: link || null,
-        },
-      });
-
-      const user = await prisma.user.findUnique({
-        where: { id },
-        select: { email: true, name: true },
-      });
-
-      if (user && user.email && !user.email.endsWith("@onesolutions.com")) {
-        try {
-          await sendEmail({
-            to: user.email,
-            subject: "Nueva notificaci\u00f3n - One Solutions",
-            html: emailTemplates.notification(user.name || "", title, notificationBody),
-          });
-        } catch {
-          // email failure shouldn't break notification creation
-        }
-      }
-
-      return notification;
-    })
-  );
-
-  return NextResponse.json(notifications);
 }
