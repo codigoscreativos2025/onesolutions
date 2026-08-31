@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Modal } from "@/components/ui/Modal";
-import { Plus, Pencil, Trash2, Loader2, KeyRound } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, KeyRound, Power } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 import Link from "next/link";
@@ -67,13 +67,17 @@ export default function AdminUsersPage() {
   });
 
   const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
-  const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(
+    null,
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("all");
 
-  const [resetPasswordUserId, setResetPasswordUserId] = useState<number | null>(null);
+  const [resetPasswordUserId, setResetPasswordUserId] = useState<number | null>(
+    null,
+  );
   const [resetPasswordValue, setResetPasswordValue] = useState("");
   const [resetPasswordSubmitting, setResetPasswordSubmitting] = useState(false);
 
@@ -108,7 +112,7 @@ export default function AdminUsersPage() {
             return { ...u, profile: profileData };
           }
           return u;
-        })
+        }),
       );
 
       setUsers(withProfiles);
@@ -204,16 +208,56 @@ export default function AdminUsersPage() {
   const handleDelete = async (id: number) => {
     if (!confirm("¿Eliminar este usuario?")) return;
 
-    const res = await fetch(`/api/admin/users/${id}`, {
-      method: "DELETE",
-    });
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, {
+        method: "DELETE",
+      });
 
-    if (res.ok) {
-      fetchUsers();
+      if (res.ok) {
+        toast.success("Usuario eliminado correctamente");
+        fetchUsers();
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        toast.error(
+          errorData.error ||
+            "No se puede eliminar el usuario. Es posible que tenga registros asociados. Desactívalo en su lugar.",
+        );
+      }
+    } catch (e) {
+      toast.error("Error al intentar eliminar el usuario");
     }
   };
 
-  const handleToggleLocationValidation = async (userId: number, enabled: boolean) => {
+  const handleToggleActive = async (user: User) => {
+    if (
+      !confirm(`¿${user.isActive ? "Desactivar" : "Reactivar"} este usuario?`)
+    )
+      return;
+
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !user.isActive }),
+      });
+
+      if (res.ok) {
+        toast.success(
+          `Usuario ${user.isActive ? "desactivado" : "reactivado"} correctamente`,
+        );
+        fetchUsers();
+      } else {
+        toast.error("Error al cambiar estado del usuario");
+      }
+    } catch (e) {
+      toast.error("Error al intentar cambiar estado del usuario");
+    }
+  };
+
+  const handleToggleLocationValidation = async (
+    userId: number,
+    enabled: boolean,
+  ) => {
     const res = await fetch(`/api/admin/users/${userId}/location-validation`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -250,22 +294,33 @@ export default function AdminUsersPage() {
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case "SETTER": return "Trainee";
-      case "SETTER_JR": return "Setter";
-      case "CLOSER": return "Closer";
-      case "PARTNER": return "Partner";
-      case "ADMIN": return "Admin";
-      default: return role;
+      case "SETTER":
+        return "Trainee";
+      case "SETTER_JR":
+        return "Setter";
+      case "CLOSER":
+        return "Closer";
+      case "PARTNER":
+        return "Partner";
+      case "ADMIN":
+        return "Admin";
+      default:
+        return role;
     }
   };
 
   const getRoleBadgeStyle = (role: string) => {
     switch (role) {
-      case "ADMIN": return "bg-error/10 text-error";
-      case "CLOSER": return "bg-secondary/10 text-secondary";
-      case "PARTNER": return "bg-tertiary/10 text-tertiary";
-      case "SETTER_JR": return "bg-primary/10 text-primary";
-      default: return "bg-primary/10 text-primary";
+      case "ADMIN":
+        return "bg-error/10 text-error";
+      case "CLOSER":
+        return "bg-secondary/10 text-secondary";
+      case "PARTNER":
+        return "bg-tertiary/10 text-tertiary";
+      case "SETTER_JR":
+        return "bg-primary/10 text-primary";
+      default:
+        return "bg-primary/10 text-primary";
     }
   };
 
@@ -312,9 +367,7 @@ export default function AdminUsersPage() {
           <h1 className="font-headline text-2xl font-bold text-on-surface">
             {t.admin.users}
           </h1>
-          <p className="text-on-surface-variant">
-            {t.admin.usersDesc}
-          </p>
+          <p className="text-on-surface-variant">{t.admin.usersDesc}</p>
         </div>
         <Button onClick={openCreateModal}>
           <Plus className="w-5 h-5" />
@@ -379,13 +432,21 @@ export default function AdminUsersPage() {
                 >
                   <td className="p-4">
                     <div>
-                      <p className="font-semibold text-on-surface">{user.name}</p>
-                      <p className="text-sm text-on-surface-variant">{user.email}</p>
+                      <p className="font-semibold text-on-surface">
+                        {user.name}
+                      </p>
+                      <p className="text-sm text-on-surface-variant">
+                        {user.email}
+                      </p>
                       {user.plainPassword && (
-                        <p className="text-xs text-error font-mono font-medium mt-0.5">Clave: {user.plainPassword}</p>
+                        <p className="text-xs text-error font-mono font-medium mt-0.5">
+                          Clave: {user.plainPassword}
+                        </p>
                       )}
                       {user.phone && (
-                        <p className="text-xs text-on-surface-variant mt-0.5">Tel: {user.phone}</p>
+                        <p className="text-xs text-on-surface-variant mt-0.5">
+                          Tel: {user.phone}
+                        </p>
                       )}
                     </div>
                   </td>
@@ -397,13 +458,35 @@ export default function AdminUsersPage() {
                     </span>
                   </td>
                   <td className="p-4 text-on-surface-variant">
-                    {(user.role === "SETTER" || user.role === "SETTER_JR") && user.closer
-                      ? <span>Closer: <Link href={`/profile/${user.closer.id}`} className="hover:underline">{user.closer.name}</Link></span>
-                      : user.role === "CLOSER"
-                      ? user.setters && user.setters.length > 0
-                        ? <div className="flex flex-col gap-1">{user.setters.map(s => <span key={s.id} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full w-fit">{s.name}</span>)}</div>
-                        : "0 trainers"
-                      : "—"}
+                    {(user.role === "SETTER" || user.role === "SETTER_JR") &&
+                    user.closer ? (
+                      <span>
+                        Closer:{" "}
+                        <Link
+                          href={`/profile/${user.closer.id}`}
+                          className="hover:underline"
+                        >
+                          {user.closer.name}
+                        </Link>
+                      </span>
+                    ) : user.role === "CLOSER" ? (
+                      user.setters && user.setters.length > 0 ? (
+                        <div className="flex flex-col gap-1">
+                          {user.setters.map((s) => (
+                            <span
+                              key={s.id}
+                              className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full w-fit"
+                            >
+                              {s.name}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        "0 trainers"
+                      )
+                    ) : (
+                      "—"
+                    )}
                   </td>
                   <td className="p-4">
                     <span
@@ -415,14 +498,23 @@ export default function AdminUsersPage() {
                   </td>
                   <td className="p-4">
                     <button
-                      onClick={() => handleToggleLocationValidation(user.id, user.locationValidationEnabled)}
+                      onClick={() =>
+                        handleToggleLocationValidation(
+                          user.id,
+                          user.locationValidationEnabled,
+                        )
+                      }
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        user.locationValidationEnabled ? "bg-primary" : "bg-gray-300 dark:bg-gray-600"
+                        user.locationValidationEnabled
+                          ? "bg-primary"
+                          : "bg-gray-300 dark:bg-gray-600"
                       }`}
                     >
                       <span
                         className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          user.locationValidationEnabled ? "translate-x-6" : "translate-x-1"
+                          user.locationValidationEnabled
+                            ? "translate-x-6"
+                            : "translate-x-1"
                         }`}
                       />
                     </button>
@@ -442,15 +534,38 @@ export default function AdminUsersPage() {
                       <button
                         onClick={() => handleEdit(user)}
                         className="p-2 rounded-lg hover:bg-surface-container-high transition-colors"
+                        title="Editar usuario"
                       >
                         <Pencil className="w-4 h-4 text-on-surface-variant" />
                       </button>
-                      <button
-                        onClick={() => handleDelete(user.id)}
-                        className="p-2 rounded-lg hover:bg-error-container transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4 text-error" />
-                      </button>
+
+                      {session?.user?.email === "admin@onesolutions.com" && (
+                        <>
+                          <button
+                            onClick={() => handleToggleActive(user)}
+                            className={`p-2 rounded-lg transition-colors ${
+                              user.isActive
+                                ? "hover:bg-error-container text-error"
+                                : "hover:bg-primary/10 text-primary"
+                            }`}
+                            title={
+                              user.isActive
+                                ? "Desactivar usuario"
+                                : "Reactivar usuario"
+                            }
+                          >
+                            <Power className="w-4 h-4" />
+                          </button>
+
+                          <button
+                            onClick={() => handleDelete(user.id)}
+                            className="p-2 rounded-lg hover:bg-error-container transition-colors"
+                            title="Eliminar permanentemente"
+                          >
+                            <Trash2 className="w-4 h-4 text-error" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -465,7 +580,10 @@ export default function AdminUsersPage() {
         onClose={() => setIsModalOpen(false)}
         title={editingUser ? "Editar Usuario" : "Nuevo Usuario"}
       >
-        <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-4">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4 max-h-[70vh] overflow-y-auto pr-4"
+        >
           <div className="flex flex-col items-center gap-2">
             {profilePhotoPreview ? (
               <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-outline-variant">
@@ -523,14 +641,18 @@ export default function AdminUsersPage() {
             label="Email"
             type="email"
             value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, email: e.target.value })
+            }
             required
           />
           <Input
             label={editingUser ? "Nueva contraseña (opcional)" : "Contraseña"}
             type="password"
             value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, password: e.target.value })
+            }
             required={!editingUser}
             minLength={6}
           />
@@ -550,7 +672,9 @@ export default function AdminUsersPage() {
             <Select
               label="Closer asignado"
               value={formData.closerId}
-              onChange={(e) => setFormData({ ...formData, closerId: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, closerId: e.target.value })
+              }
               options={[
                 { value: "", label: "Sin closer" },
                 ...closers.map((c) => ({ value: String(c.id), label: c.name })),
@@ -559,59 +683,84 @@ export default function AdminUsersPage() {
           )}
 
           <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-            <h3 className="font-semibold text-sm text-on-surface mb-3">Información Adicional</h3>
+            <h3 className="font-semibold text-sm text-on-surface mb-3">
+              Información Adicional
+            </h3>
             <div className="space-y-3">
               <Input
                 label="Teléfono"
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
                 inputMode="tel"
                 pattern="[0-9\-\+\(\) ]*"
               />
               <Input
                 label="Dirección"
                 value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, address: e.target.value })
+                }
               />
               <Input
                 label="Fecha de Nacimiento"
                 type="date"
                 value={formData.dateOfBirth}
-                onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, dateOfBirth: e.target.value })
+                }
                 min="1900-01-01"
                 max="2100-12-31"
-                onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity("Fecha fuera de rango")}
-                onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")}
+                onInvalid={(e) =>
+                  (e.target as HTMLInputElement).setCustomValidity(
+                    "Fecha fuera de rango",
+                  )
+                }
+                onInput={(e) =>
+                  (e.target as HTMLInputElement).setCustomValidity("")
+                }
               />
               <Input
                 label="SSN (Social Security Number)"
                 value={formData.ssn}
-                onChange={(e) => setFormData({ ...formData, ssn: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, ssn: e.target.value })
+                }
                 placeholder="XXX-XX-XXXX"
               />
               <Input
                 label="Nombre del Banco"
                 value={formData.bankName}
-                onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, bankName: e.target.value })
+                }
               />
               <Input
                 label="Routing Number"
                 value={formData.routingNumber}
-                onChange={(e) => setFormData({ ...formData, routingNumber: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, routingNumber: e.target.value })
+                }
               />
               <Input
                 label="Zelle"
                 value={formData.zelle}
-                onChange={(e) => setFormData({ ...formData, zelle: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, zelle: e.target.value })
+                }
               />
               <Input
                 label="Número de Cuenta"
                 value={formData.accountNumber}
-                onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, accountNumber: e.target.value })
+                }
               />
             </div>
             <p className="text-xs text-on-surface-variant mt-2">
-              Estos datos son privados. Solo el usuario y el administrador pueden verlos desde el perfil.
+              Estos datos son privados. Solo el usuario y el administrador
+              pueden verlos desde el perfil.
             </p>
           </div>
 
@@ -620,7 +769,9 @@ export default function AdminUsersPage() {
               type="checkbox"
               id="isActive"
               checked={formData.isActive}
-              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+              onChange={(e) =>
+                setFormData({ ...formData, isActive: e.target.checked })
+              }
               className="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary"
             />
             <label htmlFor="isActive" className="text-on-surface">
@@ -634,7 +785,9 @@ export default function AdminUsersPage() {
                 type="checkbox"
                 id="sendOnboarding"
                 checked={formData.sendOnboarding}
-                onChange={(e) => setFormData({ ...formData, sendOnboarding: e.target.checked })}
+                onChange={(e) =>
+                  setFormData({ ...formData, sendOnboarding: e.target.checked })
+                }
                 className="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary"
               />
               <label htmlFor="sendOnboarding" className="text-on-surface">
@@ -667,7 +820,9 @@ export default function AdminUsersPage() {
         <div className="space-y-4">
           <p className="text-sm text-on-surface-variant">
             Ingrese la nueva contraseña para{" "}
-            <strong>{users.find((u) => u.id === resetPasswordUserId)?.name}</strong>
+            <strong>
+              {users.find((u) => u.id === resetPasswordUserId)?.name}
+            </strong>
           </p>
           <Input
             label="Nueva contraseña"

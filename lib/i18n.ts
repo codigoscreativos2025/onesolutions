@@ -195,10 +195,13 @@ export const translations = {
       totalProjectsClosed: "Total proyectos cerrados",
       notifications: {
         leadCreated: "Se creó el lead manual {leadName} por {userName}",
-        leadPotential: "El lead {leadName} pasó a estado POTENCIAL por {userName}",
-        leadReturned: "El lead {leadName} fue devuelto a la lista de espera por {userName}",
-        projectClosed: "¡Proyecto {projectName} CERRADO exitosamente por {userName}!"
-      }
+        leadPotential:
+          "El lead {leadName} pasó a estado POTENCIAL por {userName}",
+        leadReturned:
+          "El lead {leadName} fue devuelto a la lista de espera por {userName}",
+        projectClosed:
+          "¡Proyecto {projectName} CERRADO exitosamente por {userName}!",
+      },
     },
     visit: {
       notAvailable: "No Disponible",
@@ -236,11 +239,14 @@ export const translations = {
     notifier: {
       newMsgTitle: "Hola buenas, tienes un nuevo mensaje",
       unreadMsgTitle: "Hola buenas, tienes mensajes sin leer",
-      msgBody: "Verifica y deja leídos los mensajes pendientes, mantener el flujo de desarrollo es importante.",
+      msgBody:
+        "Verifica y deja leídos los mensajes pendientes, mantener el flujo de desarrollo es importante.",
       newNotifTitle: "Tienes una nueva notificación",
-      notifBody: "Revisa tus notificaciones recientes para estar al tanto del flujo del proyecto.",
+      notifBody:
+        "Revisa tus notificaciones recientes para estar al tanto del flujo del proyecto.",
       mapErrorTitle: "Dirección incorrecta",
-      mapErrorBody: "OneSolutions cuenta con un mapeado estricto por favor ingrese tal cual la dirección sin fallos, disculpe las molestias"
+      mapErrorBody:
+        "OneSolutions cuenta con un mapeado estricto por favor ingrese tal cual la dirección sin fallos, disculpe las molestias",
     },
     templates: {
       title: "Plantillas",
@@ -282,6 +288,68 @@ export const translations = {
       title: "Metas",
       subtitle: "Configura medallas y objetivos del equipo",
     },
+    pipeline: {
+      title: "Pipeline",
+      subtitle: "Vista general de proyectos y leads",
+      createLead: "Crear Lead",
+      postClosureTags: {
+        enPermisos: "En permisos",
+        permisosAprobados: "Permisos aprobados",
+        instalado: "Instalado",
+        pto: "PTO",
+        finalizado: "Finalizado",
+      },
+      tabs: {
+        datos: "Datos",
+        archivos: "Archivos",
+        contratos: "Contratos",
+        chat: "Chat",
+        historial: "Historial",
+        mapa: "Ver en mapa",
+      },
+      columns: {
+        leads: "Leads",
+        potentialLeads: "Leads Potenciales",
+        inProject: "En Proyecto",
+        closed: "Proyecto Cerrado",
+        cancelled: "Proyecto Cancelado",
+      },
+      filters: {
+        allProjects: "Todos los proyectos",
+        address: "Dirección...",
+        client: "Cliente...",
+        projectType: "Tipo de Proyecto",
+        status: "Estado",
+      },
+      noName: "Sin nombre",
+      noProjectsAssigned: "No tienes proyectos asignados.",
+      noAccess: "No tienes acceso a esta etapa",
+      noAccessCloser:
+        "No puedes acceder a este proyecto porque ya fue asignado a un Closer.",
+      noLeads: "Sin leads",
+    },
+    createLeadManual: {
+      title: "Crear Lead Manual",
+      subtitle: "Asigna una parcela directamente como lead activo",
+      selectParcel: "Selecciona Parcela",
+      clientName: "Nombre del Cliente",
+      clientNamePlaceholder: "Ej: Juan Pérez",
+      clientPhone: "Teléfono",
+      clientEmail: "Email (opcional)",
+      additionalInfo: "Información Adicional",
+      projectType: "Tipo de Proyecto",
+      visitDate: "Fecha de Visita",
+      submit: "Crear Lead y Agendar",
+      submitting: "Creando...",
+      error: "Error al crear lead",
+      success: "Lead creado exitosamente",
+    },
+    kanban: {
+      expiresIn: "Expira en {days} días",
+      closeRequested: "Cierre Solicitado",
+      projectReturned: "Proyecto Devuelto",
+      progress: "Progreso",
+    },
     placeholders: {
       searchInCity: "Buscar en calle de {city}...",
       searchZoomIn: "Acércate al mapa para buscar...",
@@ -298,8 +366,10 @@ export const translations = {
       to: "Hasta",
       commonFields: "Campos Comunes",
       noConfiguredFields: "No hay campos configurados para este proyecto.",
-      configureInAdmin: "Selecciona un tipo de proyecto en Admin > Campos de Proyectos.",
-      emailMustBeGmail: "Los campos de correo electrónico deben terminar obligatoriamente en @gmail.com para poder guardarse.",
+      configureInAdmin:
+        "Selecciona un tipo de proyecto en Admin > Campos de Proyectos.",
+      emailMustBeGmail:
+        "Los campos de correo electrónico deben terminar obligatoriamente en @gmail.com para poder guardarse.",
     },
   },
   en: {
@@ -497,10 +567,13 @@ export const translations = {
       totalProjectsClosed: "Total closed projects",
       notifications: {
         leadCreated: "Manual lead {leadName} was created by {userName}",
-        leadPotential: "Lead {leadName} changed to POTENTIAL status by {userName}",
-        leadReturned: "Lead {leadName} was returned to waiting list by {userName}",
-        projectClosed: "Project {projectName} successfully CLOSED by {userName}!"
-      }
+        leadPotential:
+          "Lead {leadName} changed to POTENTIAL status by {userName}",
+        leadReturned:
+          "Lead {leadName} was returned to waiting list by {userName}",
+        projectClosed:
+          "Project {projectName} successfully CLOSED by {userName}!",
+      },
     },
     visit: {
       notAvailable: "Not Available",
@@ -538,11 +611,14 @@ export const translations = {
     notifier: {
       newMsgTitle: "Hello, you have a new message",
       unreadMsgTitle: "Hello, you have unread messages",
-      msgBody: "Please check and mark your pending messages as read. Maintaining the development flow is important.",
+      msgBody:
+        "Please check and mark your pending messages as read. Maintaining the development flow is important.",
       newNotifTitle: "You have a new notification",
-      notifBody: "Check your recent notifications to stay updated on the project flow.",
+      notifBody:
+        "Check your recent notifications to stay updated on the project flow.",
       mapErrorTitle: "Incorrect address",
-      mapErrorBody: "OneSolutions has strict mapping, please enter the exact address without errors. Sorry for the inconvenience."
+      mapErrorBody:
+        "OneSolutions has strict mapping, please enter the exact address without errors. Sorry for the inconvenience.",
     },
     templates: {
       title: "Templates",
@@ -583,6 +659,69 @@ export const translations = {
     goals: {
       title: "Goals",
       subtitle: "Configure badges and team objectives",
+    },
+    pipeline: {
+      title: "Pipeline",
+      subtitle: "Overview of projects and leads",
+      createLead: "Create Lead",
+      postClosureTags: {
+        enPermisos: "In permits",
+        permisosAprobados: "Permits approved",
+        instalado: "Installed",
+        pto: "PTO",
+        finalizado: "Finalized",
+      },
+      tabs: {
+        datos: "Data",
+        archivos: "Files",
+        contratos: "Contracts",
+        chat: "Chat",
+        historial: "History",
+        mapa: "View on map",
+      },
+      columns: {
+        leads: "Leads",
+        potentialLeads: "Potential Leads",
+        inProject: "In Project",
+        closed: "Closed Project",
+        cancelled: "Cancelled Project",
+      },
+      filters: {
+        allProjects: "All projects",
+        address: "Address...",
+        client: "Client...",
+        projectType: "Project Type",
+        status: "Status",
+      },
+      noName: "No name",
+      noAddress: "No address",
+      noProjectsAssigned: "You have no projects assigned.",
+      noAccess: "You don't have access to this stage",
+      noAccessCloser:
+        "You cannot access this project because it is already assigned to a Closer.",
+      noLeads: "No leads",
+    },
+    createLeadManual: {
+      title: "Create Manual Lead",
+      subtitle: "Assign a parcel directly as an active lead",
+      selectParcel: "Select Parcel",
+      clientName: "Client Name",
+      clientNamePlaceholder: "Ex: John Doe",
+      clientPhone: "Phone",
+      clientEmail: "Email (optional)",
+      additionalInfo: "Additional Information",
+      projectType: "Project Type",
+      visitDate: "Visit Date",
+      submit: "Create Lead & Schedule",
+      submitting: "Creating...",
+      error: "Error creating lead",
+      success: "Lead created successfully",
+    },
+    kanban: {
+      expiresIn: "Expires in {days} days",
+      closeRequested: "Close Requested",
+      projectReturned: "Project Returned",
+      progress: "Progress",
     },
     placeholders: {
       searchInCity: "Search street in {city}...",

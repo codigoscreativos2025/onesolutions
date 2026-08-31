@@ -3,11 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { encrypt } from "@/lib/encryption";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const session = await auth();
   if (!session || session.user.role !== "ADMIN") {
@@ -16,7 +16,24 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await request.json();
-  const { name, email, role, closerId, phone, isActive, locationValidationEnabled, password, ssn, dateOfBirth, bankName, routingNumber, zelle, accountNumber, address, profilePhoto } = body;
+  const {
+    name,
+    email,
+    role,
+    closerId,
+    phone,
+    isActive,
+    locationValidationEnabled,
+    password,
+    ssn,
+    dateOfBirth,
+    bankName,
+    routingNumber,
+    zelle,
+    accountNumber,
+    address,
+    profilePhoto,
+  } = body;
 
   const data: Record<string, unknown> = {
     name,
@@ -47,14 +64,30 @@ export async function PATCH(
       data,
     });
 
-    if (ssn !== undefined || dateOfBirth !== undefined || bankName !== undefined || routingNumber !== undefined || zelle !== undefined || accountNumber !== undefined || address !== undefined || profilePhoto !== undefined) {
+    if (
+      ssn !== undefined ||
+      dateOfBirth !== undefined ||
+      bankName !== undefined ||
+      routingNumber !== undefined ||
+      zelle !== undefined ||
+      accountNumber !== undefined ||
+      address !== undefined ||
+      profilePhoto !== undefined
+    ) {
       const profileData: Record<string, unknown> = {};
       if (ssn !== undefined) profileData.ssn = ssn ? encrypt(ssn) : null;
-      if (dateOfBirth !== undefined) profileData.dateOfBirth = dateOfBirth ? new Date(dateOfBirth + "T12:00:00") : null;
+      if (dateOfBirth !== undefined)
+        profileData.dateOfBirth = dateOfBirth
+          ? new Date(dateOfBirth + "T12:00:00")
+          : null;
       if (bankName !== undefined) profileData.bankName = bankName;
-      if (routingNumber !== undefined) profileData.routingNumber = routingNumber ? encrypt(routingNumber) : null;
+      if (routingNumber !== undefined)
+        profileData.routingNumber = routingNumber
+          ? encrypt(routingNumber)
+          : null;
       if (zelle !== undefined) profileData.zelle = zelle;
-      if (accountNumber !== undefined) profileData.accountNumber = accountNumber;
+      if (accountNumber !== undefined)
+        profileData.accountNumber = accountNumber;
       if (address !== undefined) profileData.address = address;
       if (profilePhoto !== undefined) profileData.profilePhoto = profilePhoto;
 
@@ -73,7 +106,7 @@ export async function PATCH(
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const session = await auth();
   if (!session || session.user.role !== "ADMIN") {
@@ -87,7 +120,19 @@ export async function DELETE(
       where: { id: parseInt(id) },
     });
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  } catch (error: any) {
+    if (error?.code === "P2003") {
+      return NextResponse.json(
+        {
+          error:
+            "No se puede eliminar el usuario porque tiene registros asociados (leads, chats, etc). Desactívalo en lugar de eliminarlo.",
+        },
+        { status: 400 },
+      );
+    }
+    return NextResponse.json(
+      { error: "User not found or cannot be deleted" },
+      { status: 404 },
+    );
   }
 }

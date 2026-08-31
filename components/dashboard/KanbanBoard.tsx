@@ -28,40 +28,40 @@ import {
 } from "lucide-react";
 import { useLocale } from "@/lib/locale-context";
 
-const COLS = [
+const COLS_DEF = [
   {
     stage: "IN_PROGRESS",
-    title: "Leads",
+    translationKey: "leads",
     color: "bg-blue-500",
     colorBar: "bg-blue-500",
   },
   {
     stage: "PROPOSAL_ACCEPTED",
-    title: "Leads Potenciales",
+    translationKey: "potentialLeads",
     color: "bg-amber-500",
     colorBar: "bg-amber-500",
   },
   {
     stage: "PROJECT",
-    title: "En Proyecto",
+    translationKey: "inProject",
     color: "bg-purple-500",
     colorBar: "bg-purple-500",
   },
   {
     stage: "CLOSED",
-    title: "Proyecto Cerrado",
+    translationKey: "closed",
     color: "bg-green-500",
     colorBar: "bg-green-500",
   },
   {
     stage: "CANCELLED",
-    title: "Proyecto Cancelado",
+    translationKey: "cancelled",
     color: "bg-red-500",
     colorBar: "bg-red-500",
   },
 ] as const;
 
-const STAGE_SET = new Set<string>(COLS.map((c) => c.stage));
+const STAGE_SET = new Set<string>(COLS_DEF.map((c) => c.stage));
 
 interface KanbanVisit {
   id: number;
@@ -98,8 +98,17 @@ export function KanbanBoard({
   isSetter,
   isPartner,
 }: KanbanBoardProps) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const router = useRouter();
+
+  const COLS = COLS_DEF.map((c) => ({
+    ...c,
+    title:
+      t.pipeline?.columns?.[
+        c.translationKey as keyof typeof t.pipeline.columns
+      ] || c.translationKey,
+  }));
+
   const [data, setData] = useState<GroupedVisits>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -404,7 +413,7 @@ export function KanbanBoard({
                 className="w-full text-left glass-panel p-4 rounded-xl hover:border-primary/40 transition-all cursor-pointer"
               >
                 <p className="font-semibold text-sm text-on-surface">
-                  {visit.parcel.ownerName || "Sin nombre"}
+                  {visit.parcel.ownerName || t.pipeline?.noName || "Sin nombre"}
                 </p>
                 <div className="flex items-center gap-2 mt-1 text-xs text-on-surface-variant">
                   <MapPin className="w-3 h-3 flex-shrink-0" />
@@ -415,10 +424,13 @@ export function KanbanBoard({
                     <Clock className="w-3 h-3 flex-shrink-0" />
                     <span>
                       Asignado:{" "}
-                      {new Date(visit.assignedAt).toLocaleString("es-ES", {
-                        dateStyle: "short",
-                        timeStyle: "short",
-                      })}
+                      {new Date(visit.assignedAt).toLocaleString(
+                        locale === "en" ? "en-US" : "es-ES",
+                        {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        },
+                      )}
                     </span>
                   </div>
                 )}
@@ -438,7 +450,8 @@ export function KanbanBoard({
             ))}
             {filtered.length === 0 && (
               <p className="text-center py-8 text-sm text-on-surface-variant">
-                No tienes proyectos asignados.
+                {t.pipeline?.noProjectsAssigned ||
+                  "No tienes proyectos asignados."}
               </p>
             )}
           </div>
@@ -461,7 +474,7 @@ export function KanbanBoard({
       <div className="glass-panel rounded-2xl p-4">
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
-            Filtros
+            {t.common.filter}
           </span>
           {hasActiveFilters && (
             <button
@@ -502,7 +515,9 @@ export function KanbanBoard({
             onChange={(e) => setProjectTypeFilter(e.target.value)}
             className="h-9 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface flex-1 min-w-[160px]"
           >
-            <option value="">Todos los proyectos</option>
+            <option value="">
+              {t.pipeline?.filters?.allProjects || "Todos los proyectos"}
+            </option>
             {projectTypeOptions.map((name) => (
               <option key={name} value={name}>
                 {name}
@@ -511,7 +526,7 @@ export function KanbanBoard({
           </select>
           <input
             type="text"
-            placeholder="Dirección..."
+            placeholder={t.pipeline?.filters?.address || "Dirección..."}
             value={addressFilter}
             onChange={(e) => setAddressFilter(e.target.value)}
             className="h-9 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface flex-1 min-w-[160px]"
@@ -547,7 +562,7 @@ export function KanbanBoard({
               }}
               className="h-9 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface flex-1 min-w-[160px]"
             >
-              <option value="">Todos los usuarios</option>
+              <option value="">{t.common.all + " " + t.admin.users}</option>
               {allUsers.map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.name} ({u.role})
@@ -561,19 +576,27 @@ export function KanbanBoard({
             <span className="text-xs text-on-surface-variant self-center mr-1">
               Estado:
             </span>
-            {["En permisos", "Permisos aprobados", "Instalado", "PTO", "Finalizado"].map((tag) => {
-              const isActive = postCloseFilter === tag;
+            {[
+              { id: "En permisos", i18nKey: "enPermisos" },
+              { id: "Permisos aprobados", i18nKey: "permisosAprobados" },
+              { id: "Instalado", i18nKey: "instalado" },
+              { id: "PTO", i18nKey: "pto" },
+              { id: "Finalizado", i18nKey: "finalizado" },
+            ].map(({ id, i18nKey }) => {
+              const isActive = postCloseFilter === id;
               return (
                 <button
-                  key={tag}
-                  onClick={() => setPostCloseFilter(isActive ? "" : tag)}
+                  key={id}
+                  onClick={() => setPostCloseFilter(isActive ? "" : id)}
                   className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
                     isActive
                       ? "bg-primary/10 text-primary border-primary/30"
                       : "bg-transparent text-on-surface-variant border-outline-variant"
                   }`}
                 >
-                  {tag}
+                  {t.pipeline?.postClosureTags?.[
+                    i18nKey as keyof typeof t.pipeline.postClosureTags
+                  ] || id}
                 </button>
               );
             })}
@@ -644,7 +667,7 @@ function KanbanColumn({
   onTransfer,
   isTrainee,
 }: {
-  col: (typeof COLS)[number];
+  col: { stage: string; title: string; color: string; colorBar: string };
   visits: KanbanVisit[];
   isAdmin: boolean;
   idx: number;
@@ -656,6 +679,7 @@ function KanbanColumn({
   onTransfer: (visitId: number, newUserId: number) => void;
   isTrainee?: boolean;
 }) {
+  const { t } = useLocale();
   const { isOver, setNodeRef } = useDroppable({
     id: col.stage,
     disabled: !isAdmin,
@@ -687,14 +711,16 @@ function KanbanColumn({
         {restricted && (
           <div className="absolute inset-0 z-10 glass-panel rounded-xl flex items-center justify-center mx-2 mb-2">
             <p className="text-xs text-on-surface-variant text-center px-4 font-medium">
-              No tienes acceso a esta etapa
+              {t.pipeline?.noAccess || "No tienes acceso a esta etapa"}
             </p>
           </div>
         )}
 
         {!restricted && visits.length === 0 && (
           <div className="flex items-center justify-center h-20">
-            <p className="text-xs text-on-surface-variant">Sin leads</p>
+            <p className="text-xs text-on-surface-variant">
+              {t.pipeline?.noLeads || "Sin leads"}
+            </p>
           </div>
         )}
 
@@ -736,6 +762,7 @@ function KanbanCard({
   onTransfer: (visitId: number, newUserId: number) => void;
   isTrainee?: boolean;
 }) {
+  const { t } = useLocale();
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: visit.id,
@@ -771,7 +798,8 @@ function KanbanCard({
         if (isBlockedForTrainee) {
           e.preventDefault();
           toast.info(
-            "No puedes acceder a este proyecto porque ya fue asignado a un Closer.",
+            t.pipeline?.noAccessCloser ||
+              "No puedes acceder a este proyecto porque ya fue asignado a un Closer.",
           );
           return;
         }
@@ -867,7 +895,10 @@ function KanbanCard({
             <p
               className={`text-xs mt-1 font-medium ${daysLeft <= 5 ? "text-red-500" : "text-orange-500"}`}
             >
-              Expira en {daysLeft} días
+              {(t.kanban?.expiresIn || "Expira en {days} días").replace(
+                "{days}",
+                String(daysLeft),
+              )}
             </p>
           );
         })()}
@@ -902,7 +933,7 @@ function KanbanCard({
             return (
               <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-semibold mt-2">
                 <Clock className="w-3 h-3" />
-                <span>Cierre Solicitado</span>
+                <span>{t.kanban?.closeRequested || "Cierre Solicitado"}</span>
               </div>
             );
           }
@@ -910,7 +941,7 @@ function KanbanCard({
             return (
               <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/30 text-[10px] font-semibold mt-2">
                 <Undo2 className="w-3 h-3" />
-                <span>Proyecto devuelto</span>
+                <span>{t.kanban?.projectReturned || "Proyecto devuelto"}</span>
               </div>
             );
           }
@@ -925,7 +956,7 @@ function KanbanCard({
             <div className="mt-2">
               <div className="flex justify-between items-center mb-0.5">
                 <span className="text-[10px] text-on-surface-variant">
-                  Progreso
+                  {t.kanban?.progress || "Progreso"}
                 </span>
                 <span className="text-[10px] font-semibold text-on-surface">
                   {pct}%

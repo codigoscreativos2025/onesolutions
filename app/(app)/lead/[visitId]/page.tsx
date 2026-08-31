@@ -13,6 +13,7 @@ import { ChatInterface } from "@/components/chat/ChatInterface";
 import { SlotPicker } from "@/components/calendar/SlotPicker";
 import { NotesPanel } from "@/components/lead/NotesPanel";
 import { formatPhoneNumber } from "@/lib/utils";
+import { useLocale } from "@/lib/locale-context";
 import {
   ArrowLeft,
   Loader2,
@@ -150,7 +151,13 @@ const FIELD_GROUPS: Record<string, { label: string; prefix: string }> = {
   closing: { label: "Documentos", prefix: "closing" },
 };
 
-const POST_CLOSURE_TAGS = ["En permisos", "Permisos aprobados", "Instalado", "PTO", "Finalizado"];
+const POST_CLOSURE_TAGS = [
+  "En permisos",
+  "Permisos aprobados",
+  "Instalado",
+  "PTO",
+  "Finalizado",
+];
 
 function groupFieldsByType(
   fields: { fieldName: string; fieldLabel?: string; fieldType?: string }[],
@@ -249,7 +256,7 @@ function calculateProjectCompletion(
   projectDetails: Record<string, unknown> | null | undefined,
   fieldMetas: FieldMeta[],
   stage?: string,
-  hasPanelSolar: boolean = false
+  hasPanelSolar: boolean = false,
 ): number {
   if (!projectDetails) return 0;
 
@@ -298,7 +305,7 @@ function calculateProjectCompletion(
     // (see saveProjectDetailsAction), so checking that mirror is
     // sufficient. A second file is optional.
     if (isValid(projectDetails["idDocumentUrl"])) completedFields++;
-    
+
     if (hasPanelSolar) {
       totalFields += 1;
       if (isValid(projectDetails["electricBillUrl"])) completedFields++;
@@ -402,6 +409,7 @@ export default function LeadDetailPage() {
     );
   }
   const role = session?.user?.role ?? "";
+  const { t } = useLocale();
 
   const [visit, setVisit] = useState<VisitDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -502,7 +510,8 @@ export default function LeadDetailPage() {
         serverUpdatedAt !== lastFetchedUpdatedAtRef.current
       ) {
         toast.info("Otro usuario actualizó este proyecto", {
-          description: "Los datos visibles se han refrescado desde el servidor.",
+          description:
+            "Los datos visibles se han refrescado desde el servidor.",
         });
       }
       lastFetchedUpdatedAtRef.current = serverUpdatedAt;
@@ -548,7 +557,11 @@ export default function LeadDetailPage() {
     hasInitializedEditFields.current = true;
   }, [visit]);
 
-  const projectTypeKey = visit?.projects?.map((p) => p.projectType.id).sort().join(",") ?? "";
+  const projectTypeKey =
+    visit?.projects
+      ?.map((p) => p.projectType.id)
+      .sort()
+      .join(",") ?? "";
 
   const fetchFieldMetas = useCallback(async () => {
     if (!visit?.projects?.length) return;
@@ -838,8 +851,10 @@ export default function LeadDetailPage() {
       if (visit?.bill?.imageUrl) payload.electricBillUrl = visit.bill.imageUrl;
       if (visit?.bill?.additionalFileUrl || visit?.bill?.additionalFile2Url) {
         const arr = [];
-        if (visit.bill?.additionalFileUrl) arr.push(visit.bill.additionalFileUrl);
-        if (visit.bill?.additionalFile2Url) arr.push(visit.bill.additionalFile2Url);
+        if (visit.bill?.additionalFileUrl)
+          arr.push(visit.bill.additionalFileUrl);
+        if (visit.bill?.additionalFile2Url)
+          arr.push(visit.bill.additionalFile2Url);
         payload.idDocumentUrl = JSON.stringify(arr);
       }
       if (visit?.bill?.clientName) payload.clientName = visit.bill.clientName;
@@ -895,7 +910,7 @@ export default function LeadDetailPage() {
         additionalFileName: visit.bill?.additionalFileName || null,
       };
 
-// Save Bill data — was previously swallowed on error which left
+      // Save Bill data — was previously swallowed on error which left
       // the bill out of sync when the user reloaded. Now we validate
       // the response and surface a specific error if it fails.
       const billRes = await fetch(`/api/visits/${visit.id}`, {
@@ -907,7 +922,8 @@ export default function LeadDetailPage() {
       });
       if (!billRes.ok) {
         const errBody = await billRes.json().catch(() => ({}));
-        const message = (errBody as { error?: string }).error || "Error al guardar recibo";
+        const message =
+          (errBody as { error?: string }).error || "Error al guardar recibo";
         if (!silent) toast.error(`Recibo: ${message}`);
         return;
       }
@@ -932,7 +948,9 @@ export default function LeadDetailPage() {
           );
         } else {
           const errBody = await res.json().catch(() => ({}));
-          const message = (errBody as { error?: string }).error || "Error al guardar detalles del proyecto";
+          const message =
+            (errBody as { error?: string }).error ||
+            "Error al guardar detalles del proyecto";
           if (!silent) toast.error(`Detalles: ${message}`);
           return;
         }
@@ -975,10 +993,7 @@ export default function LeadDetailPage() {
 
   type BillFileField = "imageUrl" | "additionalFileUrl" | "additionalFile2Url";
 
-  const handleBillFileUpload = async (
-    type: BillFileField,
-    file: File,
-  ) => {
+  const handleBillFileUpload = async (type: BillFileField, file: File) => {
     try {
       const url = await handleUpload(file);
       // Persist the display name alongside the URL so the user can see
@@ -1010,8 +1025,10 @@ export default function LeadDetailPage() {
         // having to wait for the next saveProjectDetailsAction call.
         const projectDetailsMirror: Record<string, string> = {};
         if (type === "additionalFileUrl" || type === "additionalFile2Url") {
-          const first = type === "additionalFileUrl" ? url : prev.bill?.additionalFileUrl;
-          const second = type === "additionalFile2Url" ? url : prev.bill?.additionalFile2Url;
+          const first =
+            type === "additionalFileUrl" ? url : prev.bill?.additionalFileUrl;
+          const second =
+            type === "additionalFile2Url" ? url : prev.bill?.additionalFile2Url;
           const arr = [];
           if (first) arr.push(first);
           if (second) arr.push(second);
@@ -1025,7 +1042,10 @@ export default function LeadDetailPage() {
           fetch("/api/project-details", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ visitId: visit?.id, ...projectDetailsMirror }),
+            body: JSON.stringify({
+              visitId: visit?.id,
+              ...projectDetailsMirror,
+            }),
           }).catch(() => {});
         }
 
@@ -1048,9 +1068,7 @@ export default function LeadDetailPage() {
 
   // Clear one of the ID-del-Cliente slots (front or back). Calls the
   // same PATCH route with null values so the server clears the column.
-  const handleBillFileClear = async (
-    slot: "first" | "second",
-  ) => {
+  const handleBillFileClear = async (slot: "first" | "second") => {
     try {
       const billData: Record<string, string | null> =
         slot === "first"
@@ -1075,19 +1093,21 @@ export default function LeadDetailPage() {
         const arr = [];
         if (first) arr.push(first);
         if (second) arr.push(second);
-        projectDetailsMirror.idDocumentUrl = arr.length > 0 ? JSON.stringify(arr) : null;
-        
+        projectDetailsMirror.idDocumentUrl =
+          arr.length > 0 ? JSON.stringify(arr) : null;
+
         fetch("/api/project-details", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ visitId: visit?.id, idDocumentUrl: projectDetailsMirror.idDocumentUrl }),
+          body: JSON.stringify({
+            visitId: visit?.id,
+            idDocumentUrl: projectDetailsMirror.idDocumentUrl,
+          }),
         }).catch(() => {});
 
         return {
           ...prev,
-          bill: prev.bill
-            ? { ...prev.bill, ...billData }
-            : (prev.bill as any),
+          bill: prev.bill ? { ...prev.bill, ...billData } : (prev.bill as any),
           projectDetails: {
             ...(prev.projectDetails || {}),
             ...projectDetailsMirror,
@@ -1113,24 +1133,27 @@ export default function LeadDetailPage() {
     try {
       const url = await handleUpload(file);
       let finalVal: string = url;
-      
+
       if (fieldName === "propertyPhotosJson") {
-         const current = visit?.projectDetails?.[fieldName];
-         let arr: string[] = [];
-         if (current) {
-             try {
-                const parsed = JSON.parse(String(current));
-                if (Array.isArray(parsed)) arr = parsed;
-                else arr = [String(current)];
-             } catch {
-                arr = [String(current)];
-             }
-         }
-         arr.push(url);
-         finalVal = JSON.stringify(arr);
+        const current = visit?.projectDetails?.[fieldName];
+        let arr: string[] = [];
+        if (current) {
+          try {
+            const parsed = JSON.parse(String(current));
+            if (Array.isArray(parsed)) arr = parsed;
+            else arr = [String(current)];
+          } catch {
+            arr = [String(current)];
+          }
+        }
+        arr.push(url);
+        finalVal = JSON.stringify(arr);
       }
 
-      const updated = { ...(visit?.projectDetails || {}), [fieldName]: finalVal };
+      const updated = {
+        ...(visit?.projectDetails || {}),
+        [fieldName]: finalVal,
+      };
       setVisit((prev) => (prev ? { ...prev, projectDetails: updated } : prev));
 
       setEditFields((prev) => ({ ...prev, [fieldName]: finalVal }));
@@ -1493,14 +1516,14 @@ export default function LeadDetailPage() {
   const selectedProjectNames =
     visit?.projects?.map((p) => p.projectType.name) || [];
   const hasPanelSolar = selectedProjectNames.some((name) =>
-    name.toLowerCase().includes("panel solar")
+    name.toLowerCase().includes("panel solar"),
   );
 
   const progress = calculateProjectCompletion(
     mergedDetails as Record<string, unknown>,
     fieldMetas,
     visit?.stage,
-    hasPanelSolar
+    hasPanelSolar,
   );
   const isAdmin = role === "ADMIN";
 
@@ -1541,7 +1564,20 @@ export default function LeadDetailPage() {
     );
   }
 
-  const stageLabel = STAGE_LABELS[visit.stage] || visit.stage;
+  const STAGE_I18N_KEYS: Record<
+    string,
+    "leads" | "potentialLeads" | "inProject" | "closed" | "cancelled"
+  > = {
+    IN_PROGRESS: "leads",
+    PROPOSAL_ACCEPTED: "potentialLeads",
+    PROJECT: "inProject",
+    CLOSED: "closed",
+    CANCELLED: "cancelled",
+  };
+  const stageLabel =
+    t.pipeline?.columns?.[STAGE_I18N_KEYS[visit.stage]] ||
+    STAGE_LABELS[visit.stage] ||
+    visit.stage;
   const stageColor =
     STAGE_COLORS[visit.stage] || "bg-gray-100 text-gray-700 border-gray-300";
 
@@ -1580,11 +1616,31 @@ export default function LeadDetailPage() {
 
       <div className="flex border-b border-outline-variant/30 overflow-x-auto gap-0">
         {[
-          { key: "datos", label: "Datos", icon: Pencil },
-          { key: "archivos", label: "Archivos", icon: FileText },
-          { key: "contratos", label: "Contratos", icon: FileText },
-          { key: "chat", label: "Chat", icon: MessageSquare },
-          { key: "historial", label: "Historial", icon: Clock },
+          {
+            key: "datos",
+            label: t.pipeline?.tabs?.datos || "Datos",
+            icon: Pencil,
+          },
+          {
+            key: "archivos",
+            label: t.pipeline?.tabs?.archivos || "Archivos",
+            icon: FileText,
+          },
+          {
+            key: "contratos",
+            label: t.pipeline?.tabs?.contratos || "Contratos",
+            icon: FileText,
+          },
+          {
+            key: "chat",
+            label: t.pipeline?.tabs?.chat || "Chat",
+            icon: MessageSquare,
+          },
+          {
+            key: "historial",
+            label: t.pipeline?.tabs?.historial || "Historial",
+            icon: Clock,
+          },
         ]
           .filter((tab) => {
             if (
@@ -1599,23 +1655,29 @@ export default function LeadDetailPage() {
               tab.key !== "historial"
             )
               return false;
+            if (tab.key === "archivos") {
+              const fileFields = fieldMetas.filter((f) =>
+                isFileFieldKey(f.fieldName),
+              );
+              if (fileFields.length === 0) return false;
+            }
             return true;
           })
           .map((tab) => (
             <button
               key={tab.key}
-              onClick={() => handleTabChange(tab.key)}
+              onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-1.5 px-4 py-3 text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
                 activeTab === tab.key
-                  ? "border-primary text-primary"
-                  : "border-transparent text-on-surface-variant hover:text-on-surface"
+                  ? "border-primary text-primary bg-primary/5"
+                  : "border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low"
               }`}
             >
               <tab.icon className="w-4 h-4" />
               {tab.label}
             </button>
           ))}
-        {role !== "PARTNER" && (
+        {visit.parcel?.id && role !== "PARTNER" && (
           <button
             onClick={() => {
               const metadata = visit.parcel?.metadata
@@ -1636,7 +1698,7 @@ export default function LeadDetailPage() {
             className="flex items-center gap-1.5 px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-on-surface-variant hover:text-on-surface transition-all whitespace-nowrap"
           >
             <MapPin className="w-4 h-4" />
-            Ver en mapa
+            {t.pipeline?.tabs?.mapa || "Ubicación en mapa"}
           </button>
         )}
         {visit.stage === "PROPOSAL_ACCEPTED" &&
@@ -1679,7 +1741,10 @@ export default function LeadDetailPage() {
                     role={role}
                   />
                   <div className="mt-6">
-                    <NotesPanel visitId={visitId} parcelId={visit?.parcel?.id} visitCreatedAt={visit?.createdAt}
+                    <NotesPanel
+                      visitId={visitId}
+                      parcelId={visit?.parcel?.id}
+                      visitCreatedAt={visit?.createdAt}
                     />
                   </div>
                 </>
@@ -1766,7 +1831,10 @@ export default function LeadDetailPage() {
                   onBillFileUpload={handleBillFileUpload}
                 />
                 <div className="mt-6">
-                  <NotesPanel visitId={visitId} parcelId={visit?.parcel?.id} visitCreatedAt={visit?.createdAt}
+                  <NotesPanel
+                    visitId={visitId}
+                    parcelId={visit?.parcel?.id}
+                    visitCreatedAt={visit?.createdAt}
                   />
                 </div>
               </>
@@ -1795,7 +1863,10 @@ export default function LeadDetailPage() {
                   onBillFileClear={handleBillFileClear}
                 />
                 <div className="mt-6">
-                  <NotesPanel visitId={visitId} parcelId={visit?.parcel?.id} visitCreatedAt={visit?.createdAt}
+                  <NotesPanel
+                    visitId={visitId}
+                    parcelId={visit?.parcel?.id}
+                    visitCreatedAt={visit?.createdAt}
                     disabled={closeRequested}
                   />
                 </div>
@@ -1830,7 +1901,10 @@ export default function LeadDetailPage() {
                   onRefresh={fetchVisitDetails}
                 />
                 <div className="mt-6">
-                  <NotesPanel visitId={visitId} parcelId={visit?.parcel?.id} visitCreatedAt={visit?.createdAt}
+                  <NotesPanel
+                    visitId={visitId}
+                    parcelId={visit?.parcel?.id}
+                    visitCreatedAt={visit?.createdAt}
                     disabled={true}
                   />
                 </div>
@@ -2008,7 +2082,10 @@ export default function LeadDetailPage() {
                           });
                           if (!pRes.ok) {
                             const errBody = await pRes.json().catch(() => ({}));
-                            throw new Error(errBody.error || "Error al guardar detalles del proyecto");
+                            throw new Error(
+                              errBody.error ||
+                                "Error al guardar detalles del proyecto",
+                            );
                           }
                         }
                         const billData: Record<string, string | null> = {
@@ -2190,7 +2267,8 @@ function FieldRow({
               rel="noopener noreferrer"
               className="text-primary hover:underline text-sm flex items-center gap-1"
             >
-              <Eye className="w-4 h-4" /> {urls.length > 1 ? `Ver ${i + 1}` : "Ver"}
+              <Eye className="w-4 h-4" />{" "}
+              {urls.length > 1 ? `Ver ${i + 1}` : "Ver"}
             </a>
           ))}
           {canUploadMore && (
@@ -2420,7 +2498,9 @@ function ClientInfoPanel({
               value={editFields?._billPhone || ""}
               onChange={(e) =>
                 onFieldChange?.(
-                  "_billPhone", formatPhoneNumber((e.target as HTMLInputElement).value))
+                  "_billPhone",
+                  formatPhoneNumber((e.target as HTMLInputElement).value),
+                )
               }
               onBlur={onSave}
               placeholder="Número de teléfono"
@@ -2661,9 +2741,12 @@ function HoaPanel({
   onFileFieldUpload: (fieldName: string, file: File) => void;
   readOnly: boolean;
 }) {
-  const hoaInfoVal = editFields["hoaInfo"] !== undefined 
-    ? editFields["hoaInfo"] 
-    : (pd["hoaInfo"] ? String(pd["hoaInfo"]) : "");
+  const hoaInfoVal =
+    editFields["hoaInfo"] !== undefined
+      ? editFields["hoaInfo"]
+      : pd["hoaInfo"]
+        ? String(pd["hoaInfo"])
+        : "";
 
   return (
     <Panel title="Información HOA" icon={Home}>
@@ -2831,7 +2914,6 @@ function DatosProjectFieldsPanel({
     return meta?.fieldType === "DATE" ? "date" : "text";
   };
 
-
   const isFieldFile = (key: string): boolean => {
     const meta = fieldMetas.find((m) => m.fieldName === key);
     return (
@@ -2891,7 +2973,6 @@ function DatosProjectFieldsPanel({
                       ? true
                       : false
                 }
-
               />
             ))}
           </div>
@@ -3038,9 +3119,9 @@ function DatosProjectPanel({
 }) {
   const pd = visit.projectDetails || {};
   const hasPanelSolar = selectedProjectNames.some((name) =>
-    name.toLowerCase().includes("panel solar")
+    name.toLowerCase().includes("panel solar"),
   );
-  
+
   let fallbackId1 = "";
   let fallbackId2 = "";
   if (pd.idDocumentUrl) {
@@ -3086,7 +3167,6 @@ function DatosProjectPanel({
       return val.split("T")[0];
     return String(val);
   };
-
 
   const getType = (key: string): string => {
     if (FIELD_TYPES[key]) return FIELD_TYPES[key];
@@ -3260,7 +3340,6 @@ function DatosProjectPanel({
                     ? true
                     : false
               }
-
             />
           ))}
         </div>
@@ -3379,6 +3458,7 @@ function DatosClosedPanel({
   role?: string;
   onRefresh?: () => void;
 }) {
+  const { t } = useLocale();
   const pd = visit.projectDetails || {};
 
   const nonCommonFields = fieldMetas.filter(
@@ -3469,14 +3549,34 @@ function DatosClosedPanel({
               {postCloseTags === tag && (
                 <CheckCircle className="w-3 h-3 inline mr-1" />
               )}
-              {tag}
+              {(() => {
+                const key = {
+                  "En permisos": "enPermisos",
+                  "Permisos aprobados": "permisosAprobados",
+                  Instalado: "instalado",
+                  PTO: "pto",
+                  Finalizado: "finalizado",
+                }[tag] as keyof typeof t.pipeline.postClosureTags;
+                return t.pipeline?.postClosureTags?.[key] || tag;
+              })()}
             </button>
           ))}
         </div>
         {postCloseTags && (
           <div className="mt-3 flex flex-wrap gap-2">
             <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
-              {postCloseTags}
+              {(() => {
+                const key = {
+                  "En permisos": "enPermisos",
+                  "Permisos aprobados": "permisosAprobados",
+                  Instalado: "instalado",
+                  PTO: "pto",
+                  Finalizado: "finalizado",
+                }[postCloseTags] as keyof typeof t.pipeline.postClosureTags;
+                return key
+                  ? t.pipeline?.postClosureTags?.[key] || postCloseTags
+                  : postCloseTags;
+              })()}
             </span>
           </div>
         )}
@@ -3774,7 +3874,7 @@ function ArchivosPanel({
   } catch {
     if (pd.idDocumentUrl) parsedIds.push(String(pd.idDocumentUrl));
   }
-  
+
   const idFront = bill?.additionalFileUrl || parsedIds[0];
   const idBack = bill?.additionalFile2Url || parsedIds[1];
 
@@ -3842,7 +3942,11 @@ function ArchivosPanel({
       const photos = JSON.parse(String(pd.propertyPhotosJson));
       if (Array.isArray(photos)) {
         photos.forEach((url: string, i: number) => {
-          allFilesFlat.push({ name: `Foto de Propiedad ${i + 1}`, url, fieldKey: "propertyPhotosJson" });
+          allFilesFlat.push({
+            name: `Foto de Propiedad ${i + 1}`,
+            url,
+            fieldKey: "propertyPhotosJson",
+          });
         });
       }
     } catch {
@@ -3911,36 +4015,49 @@ function ArchivosPanel({
             body: JSON.stringify({
               bill: {
                 upsert: {
-                  create: { additionalFile2Url: null, additionalFile2Name: null },
-                  update: { additionalFile2Url: null, additionalFile2Name: null },
+                  create: {
+                    additionalFile2Url: null,
+                    additionalFile2Name: null,
+                  },
+                  update: {
+                    additionalFile2Url: null,
+                    additionalFile2Name: null,
+                  },
                 },
               },
             }),
           });
-        } else if (file.fieldKey === "propertyPhotosJson" || file.fieldKey === "idDocumentUrl") {
-           let updatedArr: string[] = [];
-           const currentVal = pd[file.fieldKey];
-           if (currentVal) {
-              try {
-                const parsed = JSON.parse(String(currentVal));
-                if (Array.isArray(parsed)) {
-                   updatedArr = parsed.filter(u => u !== file.url);
-                } else if (currentVal !== file.url) {
-                   updatedArr = [String(currentVal)];
-                }
-              } catch {
-                if (currentVal !== file.url) {
-                   updatedArr = [String(currentVal)];
-                }
+        } else if (
+          file.fieldKey === "propertyPhotosJson" ||
+          file.fieldKey === "idDocumentUrl"
+        ) {
+          let updatedArr: string[] = [];
+          const currentVal = pd[file.fieldKey];
+          if (currentVal) {
+            try {
+              const parsed = JSON.parse(String(currentVal));
+              if (Array.isArray(parsed)) {
+                updatedArr = parsed.filter((u) => u !== file.url);
+              } else if (currentVal !== file.url) {
+                updatedArr = [String(currentVal)];
               }
-           }
-           
-           const finalDbVal = updatedArr.length > 0 ? JSON.stringify(updatedArr) : null;
-           
-           await fetch("/api/project-details", {
+            } catch {
+              if (currentVal !== file.url) {
+                updatedArr = [String(currentVal)];
+              }
+            }
+          }
+
+          const finalDbVal =
+            updatedArr.length > 0 ? JSON.stringify(updatedArr) : null;
+
+          await fetch("/api/project-details", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ visitId: visit.id, [file.fieldKey]: finalDbVal }),
+            body: JSON.stringify({
+              visitId: visit.id,
+              [file.fieldKey]: finalDbVal,
+            }),
           });
         } else {
           await fetch("/api/project-details", {
@@ -3982,15 +4099,14 @@ function ArchivosPanel({
       const propertyPhotoCount = allFilesFlat.filter(
         (f) =>
           f.name === "Fotos de Propiedad" ||
-          f.name.startsWith("Foto de Propiedad")
+          f.name.startsWith("Foto de Propiedad"),
       ).length;
       return propertyPhotoCount >= 20;
     }
     if (opt === "ID del Cliente") {
       const idCount = allFilesFlat.filter(
         (f) =>
-          f.name === "ID del Cliente" ||
-          f.name.startsWith("ID del Cliente ")
+          f.name === "ID del Cliente" || f.name.startsWith("ID del Cliente "),
       ).length;
       return idCount >= 2;
     }
@@ -4019,7 +4135,7 @@ function ArchivosPanel({
         "Recibo de Luz": "electricBillUrl",
         "Seguro de Hogar": "homeInsuranceUrl",
         "Título de Propiedad": "homeTitleUrl",
-        "NOC": "nocUrl",
+        NOC: "nocUrl",
         "Exterior Scope": "exteriorScopeUrl",
         "Reporte de Techo": "roofReportUrl",
         "Fotos de Paneles": "panelsPhotoUrl",
@@ -4031,10 +4147,14 @@ function ArchivosPanel({
       };
 
       const dbField = fieldMap[finalName];
-      const isArrayField = finalName === "Fotos de Propiedad" || finalName === "ID del Cliente";
+      const isArrayField =
+        finalName === "Fotos de Propiedad" || finalName === "ID del Cliente";
 
       if (isArrayField) {
-        const targetDbField = finalName === "Fotos de Propiedad" ? "propertyPhotosJson" : "idDocumentUrl";
+        const targetDbField =
+          finalName === "Fotos de Propiedad"
+            ? "propertyPhotosJson"
+            : "idDocumentUrl";
         let arr: string[] = [];
         if (pd[targetDbField]) {
           try {
@@ -4049,7 +4169,10 @@ function ArchivosPanel({
         await fetch("/api/project-details", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ visitId: visit.id, [targetDbField]: JSON.stringify(arr) }),
+          body: JSON.stringify({
+            visitId: visit.id,
+            [targetDbField]: JSON.stringify(arr),
+          }),
         });
       } else if (dbField) {
         await fetch("/api/project-details", {
@@ -4518,7 +4641,7 @@ function IdUploadField({
   onClear: (slot: "first" | "second") => void;
   readOnly?: boolean;
 }) {
- const renderSlot = (
+  const renderSlot = (
     slot: IdSlot | undefined,
     slotKey: "first" | "second",
     position: "Frente" | "Reverso",
@@ -4580,12 +4703,12 @@ function IdUploadField({
     );
   };
 
- const first = files[0];
- const second = files[1];
- const slot1 = first ? { url: first.url, name: first.name } : undefined;
- const slot2 = second ? { url: second.url, name: second.name } : undefined;
+  const first = files[0];
+  const second = files[1];
+  const slot1 = first ? { url: first.url, name: first.name } : undefined;
+  const slot2 = second ? { url: second.url, name: second.name } : undefined;
 
- return (
+  return (
     <div className="space-y-2">
       <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
         {label}
@@ -4638,5 +4761,3 @@ function ReadOnlyField({
     </div>
   );
 }
-
-
