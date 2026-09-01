@@ -4,8 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Bell, CheckCheck } from "lucide-react";
-import { useLanguage } from "@/components/providers/LanguageProvider";
-import { translations } from "@/lib/i18n";
+import { useLocale } from "@/lib/locale-context";
 
 interface Notification {
   id: number;
@@ -19,8 +18,7 @@ interface Notification {
 export function NotificationsDropdown() {
   const { data: session } = useSession();
   const router = useRouter();
-  const { language } = useLanguage();
-  const t = translations[language];
+  const { t } = useLocale();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
