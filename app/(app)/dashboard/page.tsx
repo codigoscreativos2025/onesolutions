@@ -7,6 +7,8 @@ import { KanbanBoard } from "@/components/dashboard/KanbanBoard";
 import { CreateLeadModal } from "@/components/leads/CreateLeadModal";
 import { Button } from "@/components/ui/Button";
 
+import { useLocale } from "@/lib/locale-context";
+
 const roleLabels: Record<string, string> = {
   ADMIN: "Admin",
   CLOSER: "Closer",
@@ -17,6 +19,7 @@ const roleLabels: Record<string, string> = {
 
 export default function DashboardPage() {
   const { data: session } = useSession();
+  const { t, locale } = useLocale();
   const [showCreateLeadModal, setShowCreateLeadModal] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -26,6 +29,9 @@ export default function DashboardPage() {
   const isSetterJr = role === "SETTER_JR";
   const isPartner = role === "PARTNER";
   const canCreateLead = role === "SETTER" || role === "CLOSER" || role === "SETTER_JR";
+
+  // Also translate roles if possible, but keeping roleLabels logic for now
+  const displayRole = roleLabels[role] ? (t.roles ? t.roles[role as keyof typeof t.roles] || roleLabels[role] : roleLabels[role]) : role;
 
   if (!session) {
     return (
@@ -41,10 +47,10 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <div>
             <span className="inline-block px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-wider mb-2">
-              {roleLabels[role] || role}
+              {displayRole}
             </span>
             <h1 className="font-headline text-2xl font-bold text-on-surface">
-              Pipeline
+              {t.pipeline.title}
             </h1>
           </div>
           {canCreateLead && (
@@ -53,7 +59,7 @@ export default function DashboardPage() {
               variant="primary"
             >
               <Plus className="w-5 h-5 mr-2" />
-              Crear Lead
+              {t.pipeline.createLead}
             </Button>
           )}
         </div>

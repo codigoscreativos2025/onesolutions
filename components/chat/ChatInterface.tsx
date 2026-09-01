@@ -42,14 +42,14 @@ import {
 import { Modal } from "@/components/ui/Modal";
 import { ContractModal } from "@/components/quote/ContractModal";
 
-const getStageBadge = (stage?: string) => {
+const getStageBadge = (stage: string | undefined, t: any) => {
   const stageMap: Record<string, { label: string; color: string }> = {
-    IN_PROGRESS: { label: "Leads", color: "#3b82f6" },
-    POTENTIAL_LEAD: { label: "Lead Potencial", color: "#f59e0b" },
-    PROPOSAL_ACCEPTED: { label: "Leads Potenciales", color: "#f59e0b" },
-    PROJECT: { label: "En Proyecto", color: "#a855f7" },
-    CLOSED: { label: "Proyecto Finalizado", color: "#22c55e" },
-    CANCELLED: { label: "Proyecto Cancelado", color: "#ef4444" },
+    IN_PROGRESS: { label: t.pipeline?.columns?.IN_PROGRESS || "Leads", color: "#3b82f6" },
+    POTENTIAL_LEAD: { label: t.pipeline?.columns?.POTENTIAL_LEAD || "Lead Potencial", color: "#f59e0b" },
+    PROPOSAL_ACCEPTED: { label: t.pipeline?.columns?.PROPOSAL_ACCEPTED || "Leads Potenciales", color: "#f59e0b" },
+    PROJECT: { label: t.pipeline?.columns?.PROJECT || "En Proyecto", color: "#a855f7" },
+    CLOSED: { label: t.pipeline?.columns?.CLOSED || "Proyecto Finalizado", color: "#22c55e" },
+    CANCELLED: { label: t.pipeline?.columns?.CANCELLED || "Proyecto Cancelado", color: "#ef4444" },
   };
   const s = stageMap[stage || ""] || {
     label: stage || "Desconocido",
@@ -147,16 +147,24 @@ function parseParcelTags(raw?: string | null): ParcelTag[] {
 function getVisitSpecialTag(visit: {
   stage?: string;
   contractFields?: string | null;
-}): string {
+}, t: any): string {
   if (!visit?.contractFields) return "";
   try {
     const cf = JSON.parse(visit.contractFields);
     if (visit.stage === "CLOSED") {
-      return cf.postCloseTags || "";
+      const tag = cf.postCloseTags || "";
+      const tagMap: Record<string, string> = {
+        "En permisos": t.pipeline?.postClosureTags?.enPermisos || "En permisos",
+        "Permisos aprobados": t.pipeline?.postClosureTags?.permisosAprobados || "Permisos aprobados",
+        "Instalado": t.pipeline?.postClosureTags?.instalado || "Instalado",
+        "PTO": t.pipeline?.postClosureTags?.pto || "PTO",
+        "Finalizado": t.pipeline?.postClosureTags?.finalizado || "Finalizado"
+      };
+      return tagMap[tag] || tag;
     }
     if (visit.stage === "PROJECT") {
-      if (cf.closeRequestedAt) return "Cierre Solicitado";
-      if (cf.returnedAt) return "Proyecto devuelto";
+      if (cf.closeRequestedAt) return t.kanban?.closeRequested || "Cierre Solicitado";
+      if (cf.returnedAt) return t.kanban?.projectReturned || "Proyecto devuelto";
       return "";
     }
     return "";
@@ -636,7 +644,7 @@ export function ChatInterface({
     const matchesSearch = !q || address.includes(q) || clientName.includes(q);
     const matchesStage = !stageFilter || room.visit?.stage === stageFilter;
     const matchesTag =
-      !tagFilter || getVisitSpecialTag(room.visit) === tagFilter;
+      !tagFilter || getVisitSpecialTag(room.visit, t) === tagFilter;
     return matchesSearch && matchesStage && matchesTag;
   });
 
@@ -663,19 +671,19 @@ export function ChatInterface({
     if (!stageFilter) return [];
     if (stageFilter === "CLOSED") {
       return [
-        { name: "En permisos", color: "#f59e0b" },
-        { name: "Instalado", color: "#06b6d4" },
-        { name: "Finalizado", color: "#22c55e" },
+        { name: t.pipeline?.postClosureTags?.enPermisos || "En permisos", color: "#f59e0b" },
+        { name: t.pipeline?.postClosureTags?.instalado || "Instalado", color: "#06b6d4" },
+        { name: t.pipeline?.postClosureTags?.finalizado || "Finalizado", color: "#22c55e" },
       ];
     }
     if (stageFilter === "PROJECT") {
       return [
-        { name: "Cierre Solicitado", color: "#10b981" },
-        { name: "Proyecto devuelto", color: "#f97316" },
+        { name: t.kanban?.closeRequested || "Cierre Solicitado", color: "#10b981" },
+        { name: t.kanban?.projectReturned || "Proyecto devuelto", color: "#f97316" },
       ];
     }
     return [];
-  }, [stageFilter]);
+  }, [stageFilter, t]);
 
   const filteredAdminGroups = adminGroups.filter((g) => {
     const q = searchQuery.trim().toLowerCase();
@@ -683,7 +691,7 @@ export function ChatInterface({
     const clientName = (g.visit.bill?.clientName || "").toLowerCase();
     const matchesSearch = !q || address.includes(q) || clientName.includes(q);
     const matchesStage = !stageFilter || g.visit.stage === stageFilter;
-    const matchesTag = !tagFilter || getVisitSpecialTag(g.visit) === tagFilter;
+    const matchesTag = !tagFilter || getVisitSpecialTag(g.visit, t) === tagFilter;
     return matchesSearch && matchesStage && matchesTag;
   });
 
@@ -797,11 +805,11 @@ export function ChatInterface({
   const completionPercentage = calculateCompletion();
 
   const stageLabels: Record<string, string> = {
-    IN_PROGRESS: "En Progreso",
-    PROPOSAL_ACCEPTED: "Propuesta Aceptada",
-    PROJECT: "En Proyecto",
-    CLOSED: "Cerrado",
-    CANCELLED: "Cancelado",
+    IN_PROGRESS: t.pipeline?.columns?.IN_PROGRESS || "En Progreso",
+    PROPOSAL_ACCEPTED: t.pipeline?.columns?.PROPOSAL_ACCEPTED || "Propuesta Aceptada",
+    PROJECT: t.pipeline?.columns?.PROJECT || "En Proyecto",
+    CLOSED: t.pipeline?.columns?.CLOSED || "Cerrado",
+    CANCELLED: t.pipeline?.columns?.CANCELLED || "Cancelado",
   };
 
   return (
@@ -813,8 +821,8 @@ export function ChatInterface({
           </h1>
           <p className="text-on-surface-variant">
             {isAdmin
-              ? "Monitorea las conversaciones de proyectos aprobados"
-              : "Comunicación interna de proyectos"}
+              ? t.chat?.adminSubtitle || "Monitorea las conversaciones de proyectos aprobados"
+              : t.chat?.subtitle || "Comunicación interna de proyectos"}
           </p>
         </div>
         {/* Mobile nav buttons */}
@@ -885,9 +893,9 @@ export function ChatInterface({
                       }}
                       className="h-9 px-2 rounded-lg bg-surface-container-low border border-outline-variant text-xs text-on-surface flex-1 min-w-0"
                     >
-                      <option value="">Todas las etapas</option>
-                      <option value="PROJECT">En Proyecto</option>
-                      <option value="CLOSED">Proyecto finalizado</option>
+                      <option value="">{t.pipeline?.allStages || "Todas las etapas"}</option>
+                      <option value="PROJECT">{t.pipeline?.columns?.PROJECT || "En Proyecto"}</option>
+                      <option value="CLOSED">{t.pipeline?.columns?.CLOSED || "Proyecto finalizado"}</option>
                     </select>
                     <select
                       value={tagFilter}
@@ -895,10 +903,10 @@ export function ChatInterface({
                       className="h-9 px-2 rounded-lg bg-surface-container-low border border-outline-variant text-xs text-on-surface flex-1 min-w-0"
                       disabled={!stageFilter}
                     >
-                      <option value="">Todas las etiquetas</option>
-                      {availableTags.map((t) => (
-                        <option key={t.name} value={t.name}>
-                          {t.name}
+                      <option value="">{t.pipeline?.allTags || "Todas las etiquetas"}</option>
+                      {availableTags.map((tagObj) => (
+                        <option key={tagObj.name} value={tagObj.name}>
+                          {tagObj.name}
                         </option>
                       ))}
                     </select>
@@ -909,7 +917,7 @@ export function ChatInterface({
                           setTagFilter("");
                         }}
                         className="px-2 rounded-lg text-on-surface-variant hover:text-primary flex-shrink-0"
-                        title="Limpiar filtros"
+                        title={t.common?.clearFilters || "Limpiar filtros"}
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -941,9 +949,9 @@ export function ChatInterface({
                             <div className="flex justify-between items-start mb-1 gap-2">
                               <p className="font-semibold text-sm truncate">
                                 {room.type === "ANNOUNCEMENTS" ? (
-                                  <span className="flex items-center gap-1 text-orange-600 font-bold">📢 Chat Informativo • {room.personalUser?.name || "Usuario"}</span>
+                                  <span className="flex items-center gap-1 text-orange-600 font-bold">📢 {t.chat?.infoChat || "Chat Informativo"} • {room.personalUser?.name || "Usuario"}</span>
                                 ) : (
-                                  <span className="flex items-center gap-1"><User className="w-4 h-4 text-blue-500" /> {room.personalUser?.name || "Privado"}</span>
+                                  <span className="flex items-center gap-1"><User className="w-4 h-4 text-blue-500" /> {room.personalUser?.name || t.chat?.private || "Privado"}</span>
                                 )}
                               </p>
                             </div>
@@ -1018,7 +1026,7 @@ export function ChatInterface({
                             </span>
                           </p>
                           <div className="mt-2 flex items-center gap-2">
-                            {getStageBadge(g.visit.stage)}
+                            {getStageBadge(g.visit.stage, t)}
                           </div>
                           </button>
                         );
@@ -1044,9 +1052,9 @@ export function ChatInterface({
                         <div className="flex justify-between items-start mb-1 gap-2">
                           <p className="font-semibold text-sm truncate">
                             {room.type === "ANNOUNCEMENTS" ? (
-                              <span className="flex items-center gap-1 text-orange-600 font-bold">📢 Chat Informativo • {room.personalUser?.name || "Usuario"}</span>
+                              <span className="flex items-center gap-1 text-orange-600 font-bold">📢 {t.chat?.infoChat || "Chat Informativo"} • {room.personalUser?.name || "Usuario"}</span>
                             ) : room.type === "PERSONAL" ? (
-                              <span className="flex items-center gap-1"><User className="w-4 h-4 text-blue-500" /> {room.personalUser?.name || "Privado"}</span>
+                              <span className="flex items-center gap-1"><User className="w-4 h-4 text-blue-500" /> {room.personalUser?.name || t.chat?.private || "Privado"}</span>
                             ) : (
                               <>
                                 {room.type === "PARTNER" ? "🤝 " : ""}
@@ -1089,7 +1097,7 @@ export function ChatInterface({
                             title={t.chat.address}
                           >
                             <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                            <span>{room.visit?.parcel?.address || "Sin dirección"}</span>
+                            <span>{room.visit?.parcel?.address || t.common?.noAddress || "Sin dirección"}</span>
                           </p>
                         )}
                         
@@ -1099,11 +1107,11 @@ export function ChatInterface({
                             title="Status"
                           >
                             <Activity className="w-3.5 h-3.5 flex-shrink-0" />
-                            {getStageBadge(room.visit?.stage)}
+                            {getStageBadge(room.visit?.stage, t)}
                           </p>
                         ) : (
                           <p className="text-xs text-blue-400 font-semibold mt-1">
-                            {room.type === "PERSONAL" ? "Chat Personal • " : ""}{room.personalUser?.role || "Usuario"}
+                            {room.type === "PERSONAL" ? `${t.chat?.personalChat || "Chat Personal"} • ` : ""}{room.personalUser?.role || "Usuario"}
                           </p>
                         )}
                         {room.visit?.stage === "CLOSED" &&
@@ -1170,7 +1178,7 @@ export function ChatInterface({
                         >
                           <User className="w-3.5 h-3.5 flex-shrink-0" />
                           <span>
-                            {room.visit?.setter?.name || "Desconocido"}
+                            {room.visit?.setter?.name || t.common?.unknown || "Desconocido"}
                           </span>
                         </p>
                       </button>
@@ -1178,12 +1186,12 @@ export function ChatInterface({
                 {isAdminRole
                   ? filteredAdminGroups.length === 0 && filteredRooms.filter(r => !r.visit).length === 0 && (
                       <div className="p-4 text-center text-sm text-on-surface-variant">
-                        Sin resultados
+                        {t.common?.noResults || "Sin resultados"}
                       </div>
                     )
                   : filteredRooms.length === 0 && (
                       <div className="p-4 text-center text-sm text-on-surface-variant">
-                        Sin resultados
+                        {t.common?.noResults || "Sin resultados"}
                       </div>
                     )}
               </div>
@@ -1222,9 +1230,9 @@ export function ChatInterface({
                           <div className="flex items-center gap-2">
                             <p className="font-headline font-bold text-lg text-primary truncate">
                               {selectedRoom?.type === "ANNOUNCEMENTS" ? (
-                                  <span className="flex items-center gap-1.5 text-orange-600 font-bold"><MessageSquare className="w-5 h-5" /> Chat Informativo • {selectedRoom.personalUser?.name || "Usuario"}</span>
+                                  <span className="flex items-center gap-1.5 text-orange-600 font-bold"><MessageSquare className="w-5 h-5" /> 📢 {t.chat?.infoChat || "Chat Informativo"} • {selectedRoom.personalUser?.name || "Usuario"}</span>
                                 ) : selectedRoom?.type === "PERSONAL" ? (
-                                  <span className="flex items-center gap-1.5"><User className="w-5 h-5 text-blue-500" /> {selectedRoom.personalUser?.name || "Chat Privado"}</span>
+                                  <span className="flex items-center gap-1.5"><User className="w-5 h-5 text-blue-500" /> {selectedRoom.personalUser?.name || t.chat?.private || "Chat Privado"}</span>
                                 ) : (
                                 <>
                                   {selectedRoom?.visit?.bill?.clientName ||
@@ -1236,7 +1244,7 @@ export function ChatInterface({
                             </p>
                             {selectedRoom?.type !== "PERSONAL" && selectedRoom?.type !== "ANNOUNCEMENTS" && (
                               <span className="px-2 py-0.5 bg-brand-orange/10 text-brand-orange rounded-full text-[10px] font-bold">
-                                {selectedRoom?.visit?.parcel?.address || "Sin dirección"}
+                                {selectedRoom?.visit?.parcel?.address || t.common?.noAddress || "Sin dirección"}
                               </span>
                             )}
                           </div>
@@ -1399,7 +1407,7 @@ export function ChatInterface({
                           border: "1px solid #22c55e40",
                         }}
                       >
-                        CHAT INTERNO
+                        {t.chat?.internalChat || "CHAT INTERNO"}
                       </span>
                     )}
                   </div>
@@ -1461,7 +1469,7 @@ export function ChatInterface({
                               {msg.fileUrl && /\.(jpe?g|png|webp|gif)$/i.test(msg.fileName || msg.fileUrl) && (
                                 <img
                                   src={msg.fileUrl}
-                                  alt={msg.fileName || "Imagen adjunta"}
+                                  alt={msg.fileName || t.chat?.attachedImage || "Imagen adjunta"}
                                   className="w-full h-48 mb-3 rounded-lg object-cover bg-white/10"
                                 />
                               )}
@@ -1497,7 +1505,7 @@ export function ChatInterface({
                   className="p-4 border-t border-outline-variant/30 flex gap-2 relative"
                 >
                   {role === "ADMIN" && (
-                    <button type="button" onClick={openTemplatesModal} className="w-11 h-11 flex items-center justify-center rounded-xl bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest transition-colors cursor-pointer flex-shrink-0" title="Enviar Plantilla"><FileText className="w-5 h-5" /></button>
+                    <button type="button" onClick={openTemplatesModal} className="w-11 h-11 flex items-center justify-center rounded-xl bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest transition-colors cursor-pointer flex-shrink-0" title={t.chat?.sendTemplate || "Enviar Plantilla"}><FileText className="w-5 h-5" /></button>
                   )}
                     <label className="w-11 h-11 flex items-center justify-center rounded-xl bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest transition-colors cursor-pointer flex-shrink-0">
                     <Paperclip className="w-5 h-5" />
@@ -1515,7 +1523,7 @@ export function ChatInterface({
                         (selectedRoom as any)?.type === "PARTNER" ||
                         role === "PARTNER"
                           ? t.chat.writeMessage
-                          : `${t.chat.writeMessage} usa @ para mencionar`
+                          : `${t.chat.writeMessage} ${t.chat?.useAtToMention || "usa @ para mencionar"}`
                       }
                       className="w-full"
                     />
@@ -1576,16 +1584,16 @@ export function ChatInterface({
 
                     <div className="w-full space-y-4 text-left mt-4 border-t border-outline-variant/20 pt-4">
                       <div>
-                            <p className="text-xs text-on-surface-variant mb-1 flex items-center gap-1"><Mail className="w-3.5 h-3.5" /> Correo</p>
-                            <p className="text-sm">{selectedRoom.personalUser?.email || "No registrado"}</p>
+                            <p className="text-xs text-on-surface-variant mb-1 flex items-center gap-1"><Mail className="w-3.5 h-3.5" /> {t.common?.email || "Correo"}</p>
+                            <p className="text-sm">{selectedRoom.personalUser?.email || t.common?.notRegistered || "No registrado"}</p>
                           </div>
                       <div>
-                            <p className="text-xs text-on-surface-variant mb-1 flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> Teléfono</p>
-                            <p className="text-sm">{selectedRoom.personalUser?.phone || "No registrado"}</p>
+                            <p className="text-xs text-on-surface-variant mb-1 flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> {t.common?.phone || "Teléfono"}</p>
+                            <p className="text-sm">{selectedRoom.personalUser?.phone || t.common?.notRegistered || "No registrado"}</p>
                           </div>
                       <div>
-                            <p className="text-xs text-on-surface-variant mb-1 flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Vivienda</p>
-                            <p className="text-sm">{selectedRoom.personalUser?.profile?.address || "No registrada"}</p>
+                            <p className="text-xs text-on-surface-variant mb-1 flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {t.common?.housing || "Vivienda"}</p>
+                            <p className="text-sm">{selectedRoom.personalUser?.profile?.address || t.common?.notRegistered || "No registrada"}</p>
                           </div>
                     </div>
                     
@@ -1600,7 +1608,7 @@ export function ChatInterface({
                         }}
                         className="mt-6 lg:hidden w-full"
                       >
-                        Cerrar
+                        {t.common?.close || "Cerrar"}
                       </Button>
                     )}
                   </div>
@@ -1672,7 +1680,7 @@ export function ChatInterface({
           />
 
           <Input
-            label="Teléfono del Cliente"
+            label={t.chat?.clientPhone || "Teléfono del Cliente"}
             type="tel"
             value={(editForm.phone as string) || bill?.phone || ""}
             onChange={(e) =>
@@ -2066,7 +2074,7 @@ function InfoPanelContent({
           {!isPartner && (
             <div className="flex justify-between items-start gap-4">
               <span className="text-on-surface-variant font-medium flex-shrink-0">
-                Teléfono:
+                {t.chat?.phone || "Teléfono"}:
               </span>
               <span className="text-on-surface text-right break-words">
                 {bill?.phone || projectDetails?.phone || "N/A"}
@@ -2103,13 +2111,13 @@ function InfoPanelContent({
                 ? new Date(
                     String(projectDetails.closingDate),
                   ).toLocaleDateString()
-                : "En proceso"}
+                : t.chat?.inProgress || "En proceso"}
             </span>
           </div>
 
           <div className="flex justify-between items-start gap-4">
             <span className="text-on-surface-variant font-medium flex-shrink-0">
-              Creación del lead:
+              {t.chat?.leadCreation || "Creación del lead"}:
             </span>
             <span className="text-on-surface text-right break-words">
               {visit.createdAt
@@ -2120,7 +2128,7 @@ function InfoPanelContent({
 
           <div className="flex justify-between items-start gap-4">
             <span className="text-on-surface-variant font-medium flex-shrink-0">
-              Rep. principal:
+              {t.chat?.primaryRep || "Rep. principal"}:
             </span>
             <span className="text-on-surface text-right break-words">
               {projectDetails?.primaryRep || "N/A"}
@@ -2183,9 +2191,9 @@ function AdminRoomSelector({
       >
         <MessageSquare className="w-6 h-6 text-green-600" />
         <div>
-          <p className="font-semibold text-green-700">Interno</p>
+          <p className="font-semibold text-green-700">{t.chat?.internal || "Interno"}</p>
           <p className="text-xs text-on-surface-variant">
-            Chat con setter/closer/trainee
+            {t.chat?.internalDesc || "Chat con setter/closer/trainee"}
           </p>
         </div>
       </button>
@@ -2209,7 +2217,7 @@ function AdminRoomSelector({
             <div>
               <p className="font-semibold text-orange-700">🤝 {partnerName}</p>
               <p className="text-xs text-on-surface-variant">
-                {coveredContracts ? `Cubre: ${coveredContracts}` : "Partner"}
+                {coveredContracts ? `${t.chat?.covers || "Cubre"}: ${coveredContracts}` : "Partner"}
               </p>
             </div>
           </button>
@@ -2217,7 +2225,7 @@ function AdminRoomSelector({
       })}
 
       {group.partners.length === 0 && (
-        <p className="text-sm text-on-surface-variant">En espera del partner</p>
+        <p className="text-sm text-on-surface-variant">{t.chat?.waitingForPartner || "En espera del partner"}</p>
       )}
     </div>
   );

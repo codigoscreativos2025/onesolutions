@@ -85,7 +85,10 @@ export default function MapView({
     if (autoOpenId && !autoOpenedRef.current) {
       autoOpenedRef.current = true;
       fetch(`/api/parcels/${encodeURIComponent(autoOpenId)}`)
-        .then((r) => r.json())
+        .then(async (r) => {
+          if (!r.ok) throw new Error("Not ok");
+          return r.json();
+        })
         .then((data) => {
           if (data && data.id) {
             const parcel: Parcel = {

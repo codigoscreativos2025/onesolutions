@@ -25,8 +25,8 @@ export default function AdminPage() {
     { title: t.admin.metrics, description: t.admin.metricsDesc, href: "/admin/metrics", icon: BarChart3, color: "bg-tertiary/10 text-tertiary" },
     { title: t.admin.goals, description: t.admin.goalsDesc, href: "/admin/badges", icon: Target, color: "bg-orange-500/10 text-orange-500" },
     { title: t.admin.templates, description: t.admin.templatesDesc, href: "/admin/templates", icon: FileText, color: "bg-yellow-500/10 text-yellow-500" },
-    { title: "Facturas", description: "Genera facturas personalizadas y descarga PDFs", href: "/admin/invoices", icon: ReceiptText, color: "bg-green-500/10 text-green-500" },
-    { title: "Correos", description: "Envia correos con plantillas predeterminadas a usuarios y clientes", href: "/admin/emails", icon: Mail, color: "bg-secondary/10 text-secondary" },
+    { title: t.admin.invoices, description: t.admin.invoicesDesc, href: "/admin/invoices", icon: ReceiptText, color: "bg-green-500/10 text-green-500" },
+    { title: t.admin.emails, description: t.admin.emailsDesc, href: "/admin/emails", icon: Mail, color: "bg-secondary/10 text-secondary" },
   ];
 
   return (

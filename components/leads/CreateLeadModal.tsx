@@ -187,7 +187,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-2xl font-bold">Crear Lead Manual</h2>
+          <h2 className="text-2xl font-bold">{t.createLeadManual?.title || "Crear Lead Manual"}</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
@@ -215,12 +215,12 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
           <div>
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               <User className="w-4 h-4" />
-              Nombre del Dueño
+              {t.createLeadManual?.clientName || "Nombre del Cliente"}
             </label>
             <Input
               value={formData.ownerName}
               onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
-              placeholder="John Doe"
+              placeholder={t.createLeadManual?.clientNamePlaceholder || "Ej: John Doe"}
               minLength={2}
               maxLength={100}
             />
@@ -229,7 +229,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
           <div>
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               <Phone className="w-4 h-4" />
-              {t.visit.phone}
+              {t.createLeadManual?.clientPhone || t.visit.phone}
             </label>
             <Input
               value={formData.phone}
@@ -245,7 +245,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
           <div>
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               <Mail className="w-4 h-4" />
-              {t.chat.email}
+              {t.createLeadManual?.clientEmail || t.chat.email}
             </label>
             <Input
               value={formData.clientEmail}
@@ -254,16 +254,15 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
               type="email"
             />
           </div>
-
           <div>
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               <FileText className="w-4 h-4" />
-              Notas
+              {t.createLeadManual?.additionalInfo || "Información Adicional"}
             </label>
             <textarea
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Información adicional sobre el lead..."
+              placeholder={t.placeholders.writeNote}
               className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               maxLength={500}
             />
@@ -271,24 +270,29 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
 
           <div>
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-              {t.chat.projects}
+              {t.createLeadManual?.projectType || "Tipo de Proyecto"} *
             </label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {projectTypes.map((project) => (
+            <div className="grid grid-cols-2 gap-2">
+              {projectTypes.map((pt) => (
                 <button
-                  key={project.id}
+                  key={pt.id}
                   type="button"
-                  onClick={() => toggleProject(project.id)}
-                  className={`p-3 rounded-lg border-2 transition-colors ${
-                    selectedProjects.includes(project.id)
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                  onClick={() => toggleProject(pt.id)}
+                  className={`p-2 text-sm rounded-lg border text-left transition-colors ${
+                    selectedProjects.includes(pt.id)
+                      ? 'bg-primary/10 border-primary text-primary'
+                      : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-primary/50'
                   }`}
                 >
-                  {project.name}
+                  {pt.name}
                 </button>
               ))}
             </div>
+            {selectedProjects.length === 0 && (
+              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3" /> Selecciona al menos uno
+              </p>
+            )}
           </div>
 
           {role === "SETTER" && hasPanelSolar && (
@@ -328,7 +332,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
           {effectiveCloserId && (
             <div>
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                Fecha de Visita *
+                {t.createLeadManual?.visitDate || "Fecha de Visita"} *
               </label>
               <SlotPicker
                 userId={Number(effectiveCloserId)}
@@ -357,7 +361,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
               disabled={loading || !formData.address || !selectedScheduleDate || !selectedScheduleTime}
               className="flex-1"
             >
-              {loading ? 'Creando...' : 'Crear Lead y Agendar'}
+              {loading ? (t.createLeadManual?.submitting || 'Creando...') : (t.createLeadManual?.submit || 'Crear Lead y Agendar')}
             </Button>
           </div>
         </form>
