@@ -18,7 +18,9 @@ import {
   Users,
   Search,
   MapPin,
-  User, Paperclip, Loader2,
+  User,
+  Paperclip,
+  Loader2,
 } from "lucide-react";
 
 interface Template {
@@ -47,7 +49,7 @@ interface ActiveUser {
 const ROLE_OPTIONS = [
   { value: "SETTER", label: "Trainee", color: "bg-blue-500" },
   { value: "CLOSER", label: "Closer", color: "bg-green-500" },
-    { value: "PARTNER", label: "Partner", color: "bg-purple-500" },
+  { value: "PARTNER", label: "Partner", color: "bg-purple-500" },
 ];
 
 export default function TemplatesPage() {
@@ -59,27 +61,37 @@ export default function TemplatesPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
-  
+
   // Send Modal State
   const [showSendModal, setShowSendModal] = useState(false);
   const [templateToSend, setTemplateToSend] = useState<Template | null>(null);
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
-  const [dispatchMode, setDispatchMode] = useState<"project" | "user" | "broadcast">("project");
+  const [dispatchMode, setDispatchMode] = useState<
+    "project" | "user" | "broadcast"
+  >("project");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTarget, setSelectedTarget] = useState<{ type: "project" | "user"; id: number } | null>(null);
+  const [selectedTarget, setSelectedTarget] = useState<{
+    type: "project" | "user";
+    id: number;
+  } | null>(null);
   const [broadcastTarget, setBroadcastTarget] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
 
   // Form state
   const [formTitle, setFormTitle] = useState("");
   const [formContent, setFormContent] = useState("");
-  const [attachments, setAttachments] = useState<{name: string, url: string}[]>([]);
+  const [attachments, setAttachments] = useState<
+    { name: string; url: string }[]
+  >([]);
   const [isUploading, setIsUploading] = useState(false);
   const [formRoles, setFormRoles] = useState<string[]>([]);
   const [formColor, setFormColor] = useState("yellow");
 
   useEffect(() => {
-    if (status === "unauthenticated" || (status === "authenticated" && session?.user?.role !== "ADMIN")) {
+    if (
+      status === "unauthenticated" ||
+      (status === "authenticated" && session?.user?.role !== "ADMIN")
+    ) {
       router.push("/dashboard");
     }
   }, [status, session, router]);
@@ -136,7 +148,6 @@ export default function TemplatesPage() {
     setShowModal(true);
   };
 
-  
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -150,28 +161,31 @@ export default function TemplatesPage() {
         body: formData,
       });
       const uploadData = await uploadRes.json();
-      setAttachments(prev => [...prev, { name: file.name, url: uploadData.url }]);
+      setAttachments((prev) => [
+        ...prev,
+        { name: file.name, url: uploadData.url },
+      ]);
     } catch (err) {
       console.error(err);
-      alert("Error al subir archivo");
+      alert(t.common?.error || "Error al subir archivo");
     } finally {
       setIsUploading(false);
     }
   };
 
   const removeAttachment = (index: number) => {
-    setAttachments(prev => prev.filter((_, i) => i !== index));
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSave = async () => {
     if (!formTitle.trim() || !formContent.trim()) return;
 
-    const body = { 
-      title: formTitle, 
-      content: formContent, 
-      roles: formRoles, 
+    const body = {
+      title: formTitle,
+      content: formContent,
+      roles: formRoles,
       color: formColor,
-      attachments
+      attachments,
     };
 
     if (editingTemplate) {
@@ -209,22 +223,30 @@ export default function TemplatesPage() {
 
   const handleConfirmSend = async () => {
     if (!templateToSend) return;
-    
+
     // Broadcast mode
     if (dispatchMode === "broadcast" && broadcastTarget) {
       setSending(true);
       try {
-        const res = await fetch(`/api/admin/templates/${templateToSend.id}/send`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ broadcastRole: broadcastTarget })
-        });
+        const res = await fetch(
+          `/api/admin/templates/${templateToSend.id}/send`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ broadcastRole: broadcastTarget }),
+          },
+        );
         const data = await res.json();
         if (data.success) {
-          alert(t.templates.broadcastSuccess?.replace("{count}", data.sentTo?.toString() || "0") || `Plantilla enviada a ${data.sentTo} usuarios`);
+          alert(
+            t.templates.broadcastSuccess?.replace(
+              "{count}",
+              data.sentTo?.toString() || "0",
+            ) || `Plantilla enviada a ${data.sentTo} usuarios`,
+          );
           setShowSendModal(false);
         } else {
-          alert("Error: " + data.error);
+          alert((t.common?.error || "Error: ") + data.error);
         }
       } finally {
         setSending(false);
@@ -232,24 +254,27 @@ export default function TemplatesPage() {
       return;
     }
 
-    // Single target mode  
+    // Single target mode
     if (!selectedTarget) return;
     setSending(true);
     try {
-      const res = await fetch(`/api/admin/templates/${templateToSend.id}/send`, { 
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          targetType: selectedTarget.type,
-          targetId: selectedTarget.id
-        })
-      });
+      const res = await fetch(
+        `/api/admin/templates/${templateToSend.id}/send`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            targetType: selectedTarget.type,
+            targetId: selectedTarget.id,
+          }),
+        },
+      );
       const data = await res.json();
       if (data.success) {
         alert(t.templates.templateSent);
         setShowSendModal(false);
       } else {
-        alert("Error: " + data.error);
+        alert((t.common?.error || "Error: ") + data.error);
       }
     } finally {
       setSending(false);
@@ -258,7 +283,7 @@ export default function TemplatesPage() {
 
   const toggleRole = (role: string) => {
     setFormRoles((prev) =>
-      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
+      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role],
     );
   };
 
@@ -270,13 +295,14 @@ export default function TemplatesPage() {
     if (templateToSend && templateToSend.roles) {
       try {
         const allowedRoles: string[] = JSON.parse(templateToSend.roles);
-        if (allowedRoles.length > 0 && !allowedRoles.includes(u.role)) return false;
+        if (allowedRoles.length > 0 && !allowedRoles.includes(u.role))
+          return false;
       } catch (e) {}
     }
 
     if (dispatchMode === "project" && !u.activeProject) return false;
     if (!searchQuery) return true;
-    
+
     const q = searchQuery.toLowerCase();
     const nameMatch = u.name?.toLowerCase().includes(q);
     const roleMatch = u.role?.toLowerCase().includes(q);
@@ -293,7 +319,9 @@ export default function TemplatesPage() {
             <FileText className="w-6 h-6 text-yellow-500" />
             {t.templates.title}
           </h1>
-          <p className="text-sm text-on-surface-variant mt-1">{t.templates.subtitle}</p>
+          <p className="text-sm text-on-surface-variant mt-1">
+            {t.templates.subtitle}
+          </p>
         </div>
         <button
           onClick={openCreateModal}
@@ -318,19 +346,29 @@ export default function TemplatesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {templates.map((tmpl) => {
             const roles: string[] = (() => {
-              try { return JSON.parse(tmpl.roles); } catch { return []; }
+              try {
+                return JSON.parse(tmpl.roles);
+              } catch {
+                return [];
+              }
             })();
 
-            const attachments: {name: string, url: string}[] = (() => {
-              try { 
+            const attachments: { name: string; url: string }[] = (() => {
+              try {
                 if (!tmpl.attachments) return [];
                 let parsed = JSON.parse(tmpl.attachments);
-                if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+                if (typeof parsed === "string") parsed = JSON.parse(parsed);
                 return Array.isArray(parsed) ? parsed : [];
-              } catch { return []; }
+              } catch {
+                return [];
+              }
             })();
-            const imageAttachments = attachments.filter(a => /\.(jpe?g|png|webp|gif)$/i.test(a.name || a.url));
-            const docAttachments = attachments.filter(a => !/\.(jpe?g|png|webp|gif)$/i.test(a.name || a.url));
+            const imageAttachments = attachments.filter((a) =>
+              /\.(jpe?g|png|webp|gif)$/i.test(a.name || a.url),
+            );
+            const docAttachments = attachments.filter(
+              (a) => !/\.(jpe?g|png|webp|gif)$/i.test(a.name || a.url),
+            );
 
             const borderMap: Record<string, string> = {
               yellow: "border-l-yellow-400 hover:border-l-yellow-500",
@@ -341,8 +379,9 @@ export default function TemplatesPage() {
               orange: "border-l-orange-400 hover:border-l-orange-500",
             };
 
-            const colorClass = tmpl.color && borderMap[tmpl.color] 
-                ? borderMap[tmpl.color] 
+            const colorClass =
+              tmpl.color && borderMap[tmpl.color]
+                ? borderMap[tmpl.color]
                 : borderMap.yellow;
 
             return (
@@ -353,8 +392,8 @@ export default function TemplatesPage() {
                 {/* Image Header */}
                 {imageAttachments.length > 0 && (
                   <div className="w-full relative bg-surface-variant/20 border-b border-glass-border">
-                    <img 
-                      src={imageAttachments[0].url} 
+                    <img
+                      src={imageAttachments[0].url}
                       alt={imageAttachments[0].name}
                       className="w-full h-48 object-cover"
                     />
@@ -370,7 +409,9 @@ export default function TemplatesPage() {
                   {/* Title & Status */}
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1 min-w-0 pr-2">
-                      <h3 className="font-bold text-on-surface text-lg truncate">{tmpl.title}</h3>
+                      <h3 className="font-bold text-on-surface text-lg truncate">
+                        {tmpl.title}
+                      </h3>
                       <p className="text-xs text-on-surface-variant mt-0.5">
                         {new Date(tmpl.createdAt).toLocaleDateString()}
                       </p>
@@ -382,13 +423,15 @@ export default function TemplatesPage() {
                           : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
                       }`}
                     >
-                      {tmpl.isActive ? t.templates.active : t.templates.inactive}
+                      {tmpl.isActive
+                        ? t.templates.active
+                        : t.templates.inactive}
                     </span>
                   </div>
 
                   {/* Content preview */}
                   <div className="bg-surface-variant/30 rounded-xl p-3 mb-3 max-h-28 overflow-y-auto">
-                    <div 
+                    <div
                       className="text-sm text-on-surface prose dark:prose-invert max-w-none prose-sm leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: tmpl.content }}
                     />
@@ -398,7 +441,7 @@ export default function TemplatesPage() {
                   {docAttachments.length > 0 && (
                     <div className="flex flex-col gap-2 mb-3">
                       {docAttachments.map((doc, idx) => (
-                        <a 
+                        <a
                           key={idx}
                           href={doc.url}
                           target="_blank"
@@ -412,7 +455,9 @@ export default function TemplatesPage() {
                             <p className="text-xs font-semibold text-on-surface truncate group-hover:text-primary transition">
                               {doc.name}
                             </p>
-                            <p className="text-[10px] text-on-surface-variant">Documento adjunto</p>
+                            <p className="text-[10px] text-on-surface-variant">
+                              Documento adjunto
+                            </p>
                           </div>
                         </a>
                       ))}
@@ -465,7 +510,10 @@ export default function TemplatesPage() {
                   {templateToSend.title}
                 </p>
               </div>
-              <button onClick={() => setShowSendModal(false)} className="p-1.5 hover:bg-surface-variant/50 rounded-lg">
+              <button
+                onClick={() => setShowSendModal(false)}
+                className="p-1.5 hover:bg-surface-variant/50 rounded-lg"
+              >
                 <X className="w-5 h-5 text-on-surface-variant" />
               </button>
             </div>
@@ -476,30 +524,42 @@ export default function TemplatesPage() {
               </label>
               <div className="flex gap-2 mb-6">
                 <button
-                  onClick={() => { setDispatchMode("project"); setSelectedTarget(null); setBroadcastTarget(null); }}
+                  onClick={() => {
+                    setDispatchMode("project");
+                    setSelectedTarget(null);
+                    setBroadcastTarget(null);
+                  }}
                   className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all border ${
-                    dispatchMode === "project" 
-                      ? "bg-primary text-on-primary border-primary" 
+                    dispatchMode === "project"
+                      ? "bg-primary text-on-primary border-primary"
                       : "bg-surface-variant/30 text-on-surface border-outline-variant/30 hover:bg-surface-variant/50"
                   }`}
                 >
                   {t.templates.sendToProject}
                 </button>
                 <button
-                  onClick={() => { setDispatchMode("user"); setSelectedTarget(null); setBroadcastTarget(null); }}
+                  onClick={() => {
+                    setDispatchMode("user");
+                    setSelectedTarget(null);
+                    setBroadcastTarget(null);
+                  }}
                   className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all border ${
-                    dispatchMode === "user" 
-                      ? "bg-primary text-on-primary border-primary" 
+                    dispatchMode === "user"
+                      ? "bg-primary text-on-primary border-primary"
                       : "bg-surface-variant/30 text-on-surface border-outline-variant/30 hover:bg-surface-variant/50"
                   }`}
                 >
                   {t.templates.sendToUser}
                 </button>
                 <button
-                  onClick={() => { setDispatchMode("broadcast"); setSelectedTarget(null); setBroadcastTarget(null); }}
+                  onClick={() => {
+                    setDispatchMode("broadcast");
+                    setSelectedTarget(null);
+                    setBroadcastTarget(null);
+                  }}
                   className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all border ${
-                    dispatchMode === "broadcast" 
-                      ? "bg-orange-500 text-white border-orange-500" 
+                    dispatchMode === "broadcast"
+                      ? "bg-orange-500 text-white border-orange-500"
                       : "bg-surface-variant/30 text-on-surface border-outline-variant/30 hover:bg-surface-variant/50"
                   }`}
                 >
@@ -513,18 +573,43 @@ export default function TemplatesPage() {
                     📢 {t.templates.broadcastMode || "Seleccionar Audiencia"}
                   </label>
                   {[
-                    { key: "ALL", label: t.templates.broadcastAll || "Enviar a Todos", icon: "📢", color: "border-primary bg-primary/5" },
-                    { key: "SETTER", label: t.templates.broadcastTrainees || "Enviar a Todos los Trainees", icon: "👥", color: "border-blue-500 bg-blue-500/5" },
-                    { key: "CLOSER", label: t.templates.broadcastClosers || "Enviar a Todos los Closers", icon: "🎯", color: "border-green-500 bg-green-500/5" },
-                    { key: "PARTNER", label: t.templates.broadcastPartners || "Enviar a Todos los Partners", icon: "🤝", color: "border-purple-500 bg-purple-500/5" },
-                    
+                    {
+                      key: "ALL",
+                      label: t.templates.broadcastAll || "Enviar a Todos",
+                      icon: "📢",
+                      color: "border-primary bg-primary/5",
+                    },
+                    {
+                      key: "SETTER",
+                      label:
+                        t.templates.broadcastTrainees ||
+                        "Enviar a Todos los Trainees",
+                      icon: "👥",
+                      color: "border-blue-500 bg-blue-500/5",
+                    },
+                    {
+                      key: "CLOSER",
+                      label:
+                        t.templates.broadcastClosers ||
+                        "Enviar a Todos los Closers",
+                      icon: "🎯",
+                      color: "border-green-500 bg-green-500/5",
+                    },
+                    {
+                      key: "PARTNER",
+                      label:
+                        t.templates.broadcastPartners ||
+                        "Enviar a Todos los Partners",
+                      icon: "🤝",
+                      color: "border-purple-500 bg-purple-500/5",
+                    },
                   ].map((opt) => (
                     <button
                       key={opt.key}
                       onClick={() => setBroadcastTarget(opt.key)}
                       className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
-                        broadcastTarget === opt.key 
-                          ? `${opt.color} border-2 shadow-sm` 
+                        broadcastTarget === opt.key
+                          ? `${opt.color} border-2 shadow-sm`
                           : "border-outline-variant/20 hover:border-primary/40 bg-surface-variant/10"
                       }`}
                     >
@@ -541,9 +626,11 @@ export default function TemplatesPage() {
               ) : (
                 <>
                   <label className="block text-sm font-semibold text-on-surface mb-2">
-                    {dispatchMode === "project" ? t.templates.selectProject : t.templates.selectUser}
+                    {dispatchMode === "project"
+                      ? t.templates.selectProject
+                      : t.templates.selectUser}
                   </label>
-                  
+
                   <div className="relative mb-4">
                     <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
                     <input
@@ -558,45 +645,62 @@ export default function TemplatesPage() {
                   <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1">
                     {filteredOptions.length === 0 ? (
                       <div className="text-center py-6 text-sm text-on-surface-variant">
-                        {dispatchMode === "project" ? "No se encontraron proyectos activos." : "No se encontraron usuarios."}
+                        {dispatchMode === "project"
+                          ? "No se encontraron proyectos activos."
+                          : "No se encontraron usuarios."}
                       </div>
                     ) : (
                       filteredOptions.map((u) => {
-                        const isSelected = dispatchMode === "project" 
-                          ? (selectedTarget?.type === "project" && selectedTarget?.id === u.activeProject?.visitId)
-                          : (selectedTarget?.type === "user" && selectedTarget?.id === u.id);
+                        const isSelected =
+                          dispatchMode === "project"
+                            ? selectedTarget?.type === "project" &&
+                              selectedTarget?.id === u.activeProject?.visitId
+                            : selectedTarget?.type === "user" &&
+                              selectedTarget?.id === u.id;
 
                         return (
                           <button
                             key={`${dispatchMode}-${u.id}`}
-                            onClick={() => setSelectedTarget({
-                              type: dispatchMode as "project" | "user",
-                              id: dispatchMode === "project" ? u.activeProject!.visitId : u.id
-                            })}
+                            onClick={() =>
+                              setSelectedTarget({
+                                type: dispatchMode as "project" | "user",
+                                id:
+                                  dispatchMode === "project"
+                                    ? u.activeProject!.visitId
+                                    : u.id,
+                              })
+                            }
                             className={`flex items-center p-3 rounded-xl border text-left transition-all ${
-                              isSelected 
-                                ? "border-primary bg-primary/5" 
+                              isSelected
+                                ? "border-primary bg-primary/5"
                                 : "border-outline-variant/20 hover:border-primary/40 bg-surface-variant/10"
                             }`}
                           >
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="font-semibold text-sm truncate">{u.name}</span>
+                                <span className="font-semibold text-sm truncate">
+                                  {u.name}
+                                </span>
                                 <span className="text-[10px] bg-surface-variant px-2 py-0.5 rounded-full font-medium">
                                   {u.role}
                                 </span>
                               </div>
-                              
+
                               {dispatchMode === "project" ? (
                                 <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
                                   <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-brand-orange" />
-                                  <span className="truncate">{u.activeProject?.address}</span>
+                                  <span className="truncate">
+                                    {u.activeProject?.address}
+                                  </span>
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
                                   <User className="w-3.5 h-3.5 flex-shrink-0 text-blue-500" />
                                   <span className="truncate">
-                                    {u.activeProject?.address ? `Proyecto actual: ${u.activeProject.address}` : (t.templates.noActiveProject || "Sin proyecto activo")}
+                                    {u.activeProject?.address
+                                      ? `Proyecto actual: ${u.activeProject.address}`
+                                      : t.templates.noActiveProject ||
+                                        "Sin proyecto activo"}
                                   </span>
                                 </div>
                               )}
@@ -624,7 +728,12 @@ export default function TemplatesPage() {
               </button>
               <button
                 onClick={handleConfirmSend}
-                disabled={sending || (dispatchMode === "broadcast" ? !broadcastTarget : !selectedTarget)}
+                disabled={
+                  sending ||
+                  (dispatchMode === "broadcast"
+                    ? !broadcastTarget
+                    : !selectedTarget)
+                }
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-yellow-500 text-white rounded-xl font-semibold text-sm hover:bg-yellow-600 transition disabled:opacity-50"
               >
                 {sending ? (
@@ -647,9 +756,14 @@ export default function TemplatesPage() {
           <div className="glass-panel rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="font-headline text-xl font-bold text-on-surface">
-                {editingTemplate ? t.templates.editTemplate : t.templates.createNew}
+                {editingTemplate
+                  ? t.templates.editTemplate
+                  : t.templates.createNew}
               </h2>
-              <button onClick={() => setShowModal(false)} className="p-1.5 hover:bg-surface-variant/50 rounded-lg">
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-1.5 hover:bg-surface-variant/50 rounded-lg"
+              >
                 <X className="w-5 h-5 text-on-surface-variant" />
               </button>
             </div>
@@ -673,50 +787,92 @@ export default function TemplatesPage() {
               <label className="block text-sm font-semibold text-on-surface mb-1.5">
                 {t.templates.contentLabel}
               </label>
-              <div className="bg-surface-variant/30 text-on-surface rounded-xl overflow-hidden"><ReactQuill theme="snow" value={formContent} onChange={setFormContent} className="quill-editor" /></div>
-
+              <div className="bg-surface-variant/30 text-on-surface rounded-xl overflow-hidden">
+                <ReactQuill
+                  theme="snow"
+                  value={formContent}
+                  onChange={setFormContent}
+                  className="quill-editor"
+                />
               </div>
+            </div>
 
-              
-              {/* Emojis Rápidos */}
-              <div className="mb-4 bg-surface-variant/20 p-2 rounded-xl flex flex-wrap gap-1 border border-outline-variant/30">
-                <span className="text-xs text-on-surface-variant w-full mb-1 ml-1">Emojis rápidos (se añaden al final):</span>
-                {['😊', '👍', '✅', '❌', '🚨', '📌', '📅', '🤝', '💵', '🏢', '🎉', '🔥', '👀', '👇', '👉', '💡', '⚠️', '🚩', '🏁'].map(emoji => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    onClick={() => setFormContent(prev => prev + emoji)}
-                    className="w-8 h-8 flex items-center justify-center hover:bg-surface-variant/50 rounded-lg text-lg transition-colors"
+            {/* Emojis Rápidos */}
+            <div className="mb-4 bg-surface-variant/20 p-2 rounded-xl flex flex-wrap gap-1 border border-outline-variant/30">
+              <span className="text-xs text-on-surface-variant w-full mb-1 ml-1">
+                Emojis rápidos (se añaden al final):
+              </span>
+              {[
+                "😊",
+                "👍",
+                "✅",
+                "❌",
+                "🚨",
+                "📌",
+                "📅",
+                "🤝",
+                "💵",
+                "🏢",
+                "🎉",
+                "🔥",
+                "👀",
+                "👇",
+                "👉",
+                "💡",
+                "⚠️",
+                "🚩",
+                "🏁",
+              ].map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => setFormContent((prev) => prev + emoji)}
+                  className="w-8 h-8 flex items-center justify-center hover:bg-surface-variant/50 rounded-lg text-lg transition-colors"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+
+            {/* Attachments */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-on-surface mb-2">
+                Archivos Adjuntos
+              </label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {attachments.map((att, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 bg-surface-container-high px-3 py-1.5 rounded-lg text-sm text-on-surface"
                   >
-                    {emoji}
-                  </button>
+                    <span className="truncate max-w-[200px]">{att.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(i)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 ))}
               </div>
-
-              {/* Attachments */}
-              <div className="mb-6">
-                <label className="block text-sm font-semibold text-on-surface mb-2">
-                  Archivos Adjuntos
+              <div>
+                <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-surface-variant/50 hover:bg-surface-variant text-on-surface-variant rounded-xl transition-colors text-sm font-medium">
+                  {isUploading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Paperclip className="w-4 h-4" />
+                  )}
+                  {isUploading ? "Subiendo..." : "Adjuntar archivo"}
+                  <input
+                    type="file"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                    disabled={isUploading}
+                  />
                 </label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {attachments.map((att, i) => (
-                    <div key={i} className="flex items-center gap-2 bg-surface-container-high px-3 py-1.5 rounded-lg text-sm text-on-surface">
-                      <span className="truncate max-w-[200px]">{att.name}</span>
-                      <button type="button" onClick={() => removeAttachment(i)} className="text-red-500 hover:text-red-700">
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-surface-variant/50 hover:bg-surface-variant text-on-surface-variant rounded-xl transition-colors text-sm font-medium">
-                    {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
-                    {isUploading ? "Subiendo..." : "Adjuntar archivo"}
-                    <input type="file" className="hidden" onChange={handleFileUpload} disabled={isUploading} />
-                  </label>
-                </div>
               </div>
-
+            </div>
 
             {/* Role selector (For UI labels context, not strictly used for direct dispatch anymore) */}
             <div className="mb-6">
@@ -767,14 +923,3 @@ export default function TemplatesPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-

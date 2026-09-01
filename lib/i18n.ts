@@ -276,6 +276,15 @@ export const translations = {
       mapErrorBody:
         "OneSolutions cuenta con un mapeado estricto por favor ingrese tal cual la dirección sin fallos, disculpe las molestias",
     },
+    notifications: {
+      now: "Ahora",
+      minsAgo: "Hace {m}m",
+      hoursAgo: "Hace {h}h",
+      daysAgo: "Hace {d}d",
+      title: "Notificaciones",
+      markAllRead: "Marcar todas",
+      noNotifications: "No hay notificaciones",
+    },
     templates: {
       title: "Plantillas",
       subtitle: "Crea y gestiona plantillas para tu equipo",
@@ -691,9 +700,18 @@ export const translations = {
       newNotifTitle: "You have a new notification",
       notifBody:
         "Check your recent notifications to stay updated on the project flow.",
-      mapErrorTitle: "Incorrect address",
+      mapErrorTitle: "Incorrect Address",
       mapErrorBody:
-        "OneSolutions has strict mapping, please enter the exact address without errors. Sorry for the inconvenience.",
+        "OneSolutions has strict mapping, please enter the exact address without errors, sorry for the inconvenience",
+    },
+    notifications: {
+      now: "Now",
+      minsAgo: "{m}m ago",
+      hoursAgo: "{h}h ago",
+      daysAgo: "{d}d ago",
+      title: "Notifications",
+      markAllRead: "Mark all as read",
+      noNotifications: "No notifications",
     },
     templates: {
       title: "Templates",
