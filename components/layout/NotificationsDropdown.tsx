@@ -156,10 +156,21 @@ export function NotificationsDropdown() {
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-on-surface text-sm truncate">
-                        {notification.title}
+                        {t.dbNotifications?.titles?.[notification.title as keyof typeof t.dbNotifications.titles] || notification.title}
                       </p>
                       <p className="text-xs text-on-surface-variant line-clamp-2 mt-0.5">
-                        {notification.body}
+                        {(() => {
+                          let translatedBody = notification.body;
+                          if (t.dbNotifications?.bodies) {
+                            for (const [esPrefix, enPrefix] of Object.entries(t.dbNotifications.bodies)) {
+                              if (translatedBody.startsWith(esPrefix)) {
+                                translatedBody = translatedBody.replace(esPrefix, enPrefix);
+                                break;
+                              }
+                            }
+                          }
+                          return translatedBody;
+                        })()}
                       </p>
                       <p className="text-[10px] text-on-surface-variant mt-1">
                         {formatTimeAgo(notification.createdAt)}

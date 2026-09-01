@@ -466,6 +466,31 @@ export const translations = {
       emailMustBeGmail:
         "Los campos de correo electrónico deben terminar obligatoriamente en @gmail.com para poder guardarse.",
     },
+    dbNotifications: {
+      titles: {
+        "Nuevo proyecto iniciado": "Nuevo proyecto iniciado",
+        "Chat Creado": "Chat Creado",
+        "¡Nueva medalla obtenida!": "¡Nueva medalla obtenida!",
+        "Te mencionaron en un chat": "Te mencionaron en un chat",
+        "Nuevo Lead Asignado": "Nuevo Lead Asignado",
+        "Lead Expirado": "Lead Expirado",
+        "Cita reasignada": "Cita reasignada",
+        "Nueva cita asignada": "Nueva cita asignada",
+        "Solicitud de reasignación": "Solicitud de reasignación",
+        "Proyecto Cerrado": "Proyecto Cerrado",
+        "Propuesta aceptada": "Propuesta aceptada",
+        "Solicitud de Cierre": "Solicitud de Cierre",
+        "Proyecto devuelto": "Proyecto devuelto",
+        "Nuevo proyecto asignado": "Nuevo proyecto asignado",
+        "Lead Transferido": "Lead Transferido",
+        "Asignado a Panel Solar": "Asignado a Panel Solar",
+        "Cita rechazada": "Cita rechazada"
+      },
+      bodies: {
+        "El closer ha iniciado un nuevo proyecto en ": "El closer ha iniciado un nuevo proyecto en ",
+        "Se ha creado el chat para el proyecto en ": "Se ha creado el chat para el proyecto en "
+      }
+    }
   },
   en: {
     roles: {
@@ -932,6 +957,31 @@ export const translations = {
       configureInAdmin: "Select a project type in Admin > Project Fields.",
       emailMustBeGmail: "Email fields must end in @gmail.com to be saved.",
     },
+    dbNotifications: {
+      titles: {
+        "Nuevo proyecto iniciado": "New project started",
+        "Chat Creado": "Chat Created",
+        "¡Nueva medalla obtenida!": "New badge earned!",
+        "Te mencionaron en un chat": "You were mentioned in a chat",
+        "Nuevo Lead Asignado": "New Lead Assigned",
+        "Lead Expirado": "Lead Expired",
+        "Cita reasignada": "Appointment reassigned",
+        "Nueva cita asignada": "New appointment assigned",
+        "Solicitud de reasignación": "Reassignment request",
+        "Proyecto Cerrado": "Project Closed",
+        "Propuesta aceptada": "Proposal accepted",
+        "Solicitud de Cierre": "Closing Request",
+        "Proyecto devuelto": "Project returned",
+        "Nuevo proyecto asignado": "New project assigned",
+        "Lead Transferido": "Lead Transferred",
+        "Asignado a Panel Solar": "Assigned to Solar Panel",
+        "Cita rechazada": "Appointment rejected"
+      },
+      bodies: {
+        "El closer ha iniciado un nuevo proyecto en ": "The closer has started a new project at ",
+        "Se ha creado el chat para el proyecto en ": "The chat has been created for the project at "
+      }
+    }
   },
 };
 
