@@ -206,7 +206,12 @@ export default function AdminUsersPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("¿Eliminar este usuario?")) return;
+    if (
+      !confirm(
+        "¿Eliminar este usuario y TODOS sus registros asociados (leads, visitas, chats)? Esta acción es irreversible.",
+      )
+    )
+      return;
 
     try {
       const res = await fetch(`/api/admin/users/${id}`, {
@@ -214,14 +219,11 @@ export default function AdminUsersPage() {
       });
 
       if (res.ok) {
-        toast.success("Usuario eliminado correctamente");
+        toast.success("Usuario y registros eliminados correctamente");
         fetchUsers();
       } else {
         const errorData = await res.json().catch(() => ({}));
-        toast.error(
-          errorData.error ||
-            "No se puede eliminar el usuario. Es posible que tenga registros asociados. Desactívalo en su lugar.",
-        );
+        toast.error(errorData.error || "No se pudo eliminar el usuario.");
       }
     } catch (e) {
       toast.error("Error al intentar eliminar el usuario");
