@@ -109,6 +109,12 @@ export const translations = {
       confirmCreateLead: "¿Estás seguro de que deseas crear el lead?",
       leadNotes: "Notas del Lead:",
       unknownDate: "Fecha desconocida",
+      addNote: "Agregar Nota",
+      confirmAddNote: "¿Quieres agregar esta nota?",
+      editNote: "Editar Nota",
+      deleteNote: "Eliminar Nota",
+      confirmDeleteNote:
+        "¿Estás seguro de eliminar esta nota? Esta acción no se puede deshacer.",
     },
     calendar: {
       title: "Calendario",
@@ -312,6 +318,9 @@ export const translations = {
       proposalAccepted: "Propuesta Aceptada",
       billUploaded: "Recibo Subido",
       appointmentScheduled: "Cita Agendada",
+      waitingForAdmin: "En espera del administrador",
+      noNotes: "Sin notas",
+      noNotesOnDate: "Sin notas en esta fecha",
       noObjections: "Sin objeciones registradas",
     },
     contracts: {
@@ -630,6 +639,12 @@ export const translations = {
       confirmCreateLead: "Are you sure you want to create the lead?",
       leadNotes: "Lead Notes:",
       unknownDate: "Unknown date",
+      addNote: "Add Note",
+      confirmAddNote: "Do you want to add this note?",
+      editNote: "Edit Note",
+      deleteNote: "Delete Note",
+      confirmDeleteNote:
+        "Are you sure you want to delete this note? This action cannot be undone.",
     },
     calendar: {
       title: "Calendar",
@@ -833,7 +848,10 @@ export const translations = {
       proposalAccepted: "Proposal Accepted",
       billUploaded: "Bill Uploaded",
       appointmentScheduled: "Appointment Scheduled",
-      noObjections: "No objections registered",
+      waitingForAdmin: "Waiting for admin",
+      noNotes: "No notes",
+      noNotesOnDate: "No notes on this date",
+      noObjections: "No objections recorded",
     },
     contracts: {
       title: "Contracts",

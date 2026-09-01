@@ -341,8 +341,11 @@ export function ParcelSheet({
               >
                 {(() => {
                   const tagMap: Record<string, string> = {
+                    "NO ABRIO": t.map.tagNoAnswer,
                     "No abrió": t.map.tagNoAnswer,
+                    "NO LE INTERESA": t.map.tagNotInterested,
                     "No le interesa": t.map.tagNotInterested,
+                    "PASAR LUEGO": t.map.tagPassLater,
                     "Pasar luego": t.map.tagPassLater,
                     "No esta el propietario": t.map.tagOwnerNotPresent,
                     "NO VIVE EL PROPIETARIO": t.map.tagOwnerNotResident,
@@ -553,8 +556,11 @@ export function ParcelSheet({
                   >
                     {(() => {
                       const tagMap: Record<string, string> = {
+                        "NO ABRIO": t.map.tagNoAnswer,
                         "No abrió": t.map.tagNoAnswer,
+                        "NO LE INTERESA": t.map.tagNotInterested,
                         "No le interesa": t.map.tagNotInterested,
+                        "PASAR LUEGO": t.map.tagPassLater,
                         "Pasar luego": t.map.tagPassLater,
                         "No esta el propietario": t.map.tagOwnerNotPresent,
                         "NO VIVE EL PROPIETARIO": t.map.tagOwnerNotResident,

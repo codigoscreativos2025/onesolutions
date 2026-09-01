@@ -251,7 +251,7 @@ export function NotesPanel({
               }}
               className="text-xs text-primary hover:underline"
             >
-              Limpiar
+              {t.common.clear || "Limpiar"}
             </button>
           )}
         </div>
@@ -265,8 +265,10 @@ export function NotesPanel({
           ) : notes.length === 0 ? (
             <p className="text-sm text-on-surface-variant text-center py-8">
               {disabled
-                ? "En espera del administrador"
-                : `Sin notas${filterDate ? " en esta fecha" : ""}`}
+                ? t.pipeline?.waitingForAdmin || "En espera del administrador"
+                : filterDate
+                  ? t.pipeline?.noNotesOnDate || "Sin notas en esta fecha"
+                  : t.pipeline?.noNotes || "Sin notas"}
             </p>
           ) : (
             notes.map((note) => (
@@ -339,11 +341,11 @@ export function NotesPanel({
       <Modal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        title="Agregar Nota"
+        title={t.map?.addNote || "Agregar Nota"}
       >
         <div className="space-y-4">
           <p className="text-sm text-on-surface-variant">
-            ¿Quieres agregar esta nota?
+            {t.map?.confirmAddNote || "¿Quieres agregar esta nota?"}
           </p>
           <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/50">
             <p className="text-sm text-on-surface whitespace-pre-wrap">
@@ -364,7 +366,7 @@ export function NotesPanel({
               ) : (
                 <Plus className="w-4 h-4" />
               )}
-              Agregar
+              {t.common.add || "Agregar"}
             </Button>
           </div>
         </div>
@@ -373,7 +375,7 @@ export function NotesPanel({
       <Modal
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
-        title="Editar Nota"
+        title={t.map?.editNote || "Editar Nota"}
       >
         <div className="space-y-4">
           <textarea
@@ -409,12 +411,12 @@ export function NotesPanel({
       <Modal
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
-        title="Eliminar Nota"
+        title={t.map?.deleteNote || "Eliminar Nota"}
       >
         <div className="space-y-4">
           <p className="text-sm text-on-surface-variant">
-            ¿Estás seguro de eliminar esta nota? Esta acción no se puede
-            deshacer.
+            {t.map?.confirmDeleteNote ||
+              "¿Estás seguro de eliminar esta nota? Esta acción no se puede deshacer."}
           </p>
           {selectedNote && (
             <div className="p-3 rounded-xl bg-error/5 border border-error/20">
