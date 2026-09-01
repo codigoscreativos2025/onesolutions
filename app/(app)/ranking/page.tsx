@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { CheckCircle, UserPlus, DoorOpen } from "lucide-react";
+import { useLocale } from "@/lib/locale-context";
 
 interface RankingItem {
   id: number;
@@ -36,8 +37,11 @@ function splitName(fullName: string): [string, string] {
 export default function RankingPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { t } = useLocale();
   const [data, setData] = useState<RankingItem[] | null>(null);
-  const [activeTab, setActiveTab] = useState<"trainers" | "setters">("trainers");
+  const [activeTab, setActiveTab] = useState<"trainers" | "setters">(
+    "trainers",
+  );
   const [loading, setLoading] = useState(true);
   const [defaultTabSet, setDefaultTabSet] = useState(false);
   const [period, setPeriod] = useState<"day" | "week" | "month" | "all">("all");
@@ -55,33 +59,39 @@ export default function RankingPage() {
     if (!defaultTabSet && session?.user?.role) {
       if (session.user.role === "SETTER_JR") {
         setActiveTab("setters");
-      } else if (session.user.role === "SETTER" || session.user.role === "CLOSER") {
+      } else if (
+        session.user.role === "SETTER" ||
+        session.user.role === "CLOSER"
+      ) {
         setActiveTab("trainers");
       }
       setDefaultTabSet(true);
     }
   }, [session, defaultTabSet]);
 
-  const fetchData = useCallback(async (type: "trainers" | "setters") => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/ranking?type=${type}&period=${period}`);
-      const json = await res.json();
-      
-      // Sort real data
-      const mergedData = json.sort((a: RankingItem, b: RankingItem) => {
-        if (type === "trainers") {
-          return (b.projectsClosed || 0) - (a.projectsClosed || 0);
-        } else {
-          return (b.leadsGenerated || 0) - (a.leadsGenerated || 0);
-        }
-      });
-      
-      setData(mergedData);
-    } finally {
-      setLoading(false);
-    }
-  }, [period]);
+  const fetchData = useCallback(
+    async (type: "trainers" | "setters") => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/ranking?type=${type}&period=${period}`);
+        const json = await res.json();
+
+        // Sort real data
+        const mergedData = json.sort((a: RankingItem, b: RankingItem) => {
+          if (type === "trainers") {
+            return (b.projectsClosed || 0) - (a.projectsClosed || 0);
+          } else {
+            return (b.leadsGenerated || 0) - (a.leadsGenerated || 0);
+          }
+        });
+
+        setData(mergedData);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [period],
+  );
 
   useEffect(() => {
     if (role === "PARTNER") return;
@@ -130,81 +140,154 @@ export default function RankingPage() {
       </button>
 
       <div className="bg-[#1d1d1b] border-2 border-[#f48221] rounded-lg shadow-[0_10px_30px_rgba(244,130,33,0.15)] relative overflow-y-auto overflow-x-hidden max-h-[calc(100vh-140px)] custom-scrollbar">
-        <div className="absolute top-[120px] left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none select-none z-0" style={{ opacity: 0.12 }}>
-          <div style={{ background: "radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)", width: "50vw", height: "50vw", maxWidth: "500px", maxHeight: "500px", position: "absolute" }} />
-          <svg viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg" style={{ width: "35vw", maxWidth: "400px" }}>
-            <polygon points="30,100 150,30 270,100 270,120 150,50 30,120" fill="#f48221"/>
-            <polygon points="210,115 235,95 255,115 230,135" fill="#1d1d1b"/>
-            <circle cx="150" cy="180" r="65" fill="none" stroke="#ddd" strokeWidth="18"/>
-            <text x="150" y="228" fontFamily="Arial,sans-serif" fontWeight="900" fontSize="130" textAnchor="middle" fill="#ddd">S</text>
+        <div
+          className="absolute top-[120px] left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none select-none z-0"
+          style={{ opacity: 0.12 }}
+        >
+          <div
+            style={{
+              background:
+                "radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)",
+              width: "50vw",
+              height: "50vw",
+              maxWidth: "500px",
+              maxHeight: "500px",
+              position: "absolute",
+            }}
+          />
+          <svg
+            viewBox="0 0 300 400"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{ width: "35vw", maxWidth: "400px" }}
+          >
+            <polygon
+              points="30,100 150,30 270,100 270,120 150,50 30,120"
+              fill="#f48221"
+            />
+            <polygon points="210,115 235,95 255,115 230,135" fill="#1d1d1b" />
+            <circle
+              cx="150"
+              cy="180"
+              r="65"
+              fill="none"
+              stroke="#ddd"
+              strokeWidth="18"
+            />
+            <text
+              x="150"
+              y="228"
+              fontFamily="Arial,sans-serif"
+              fontWeight="900"
+              fontSize="130"
+              textAnchor="middle"
+              fill="#ddd"
+            >
+              S
+            </text>
             <g fill="#f48221">
-              <text x="150" y="325" fontFamily="Arial Black,Impact,sans-serif" fontWeight="900" fontSize="95" textAnchor="middle" letterSpacing="1">ONE</text>
-              <rect x="73" y="240" width="6" height="90" fill="#1d1d1b"/>
-              <rect x="135" y="240" width="6" height="90" fill="#1d1d1b" transform="skewX(-25)"/>
-              <rect x="228" y="240" width="8" height="90" fill="#1d1d1b"/>
+              <text
+                x="150"
+                y="325"
+                fontFamily="Arial Black,Impact,sans-serif"
+                fontWeight="900"
+                fontSize="95"
+                textAnchor="middle"
+                letterSpacing="1"
+              >
+                ONE
+              </text>
+              <rect x="73" y="240" width="6" height="90" fill="#1d1d1b" />
+              <rect
+                x="135"
+                y="240"
+                width="6"
+                height="90"
+                fill="#1d1d1b"
+                transform="skewX(-25)"
+              />
+              <rect x="228" y="240" width="8" height="90" fill="#1d1d1b" />
             </g>
-            <text x="150" y="375" fontFamily="Arial,sans-serif" fontWeight="900" fontSize="36" textAnchor="middle" fill="#ddd" letterSpacing="2">SOLUTIONS</text>
+            <text
+              x="150"
+              y="375"
+              fontFamily="Arial,sans-serif"
+              fontWeight="900"
+              fontSize="36"
+              textAnchor="middle"
+              fill="#ddd"
+              letterSpacing="2"
+            >
+              SOLUTIONS
+            </text>
           </svg>
         </div>
 
         <div className="relative z-20">
           <div className="sticky top-0 z-40 bg-[#1d1d1b]">
             <div className="flex items-center gap-3 px-4 py-3 border-b border-[#333]">
-            <div className="w-8 h-8 rounded-full bg-[#f48221] flex items-center justify-center flex-shrink-0">
-              <span className="text-[#1d1d1b] font-black text-sm">S</span>
-            </div>
+              <div className="w-8 h-8 rounded-full bg-[#f48221] flex items-center justify-center flex-shrink-0">
+                <span className="text-[#1d1d1b] font-black text-sm">S</span>
+              </div>
 
-            <div className="flex gap-1">
-              {showTabSwitcher && (
-                <>
-                  <button
-                    onClick={() => setActiveTab("trainers")}
-                    className={cn(
-                      "px-3 py-1.5 rounded-full text-xs font-semibold transition-colors",
-                      isTrainers
-                        ? "bg-[#f48221] text-[#1d1d1b]"
-                        : "text-[#aaaaaa] hover:text-white"
-                    )}
-                  >
-                    Trainees &amp; Closers
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("setters")}
-                    className={cn(
-                      "px-3 py-1.5 rounded-full text-xs font-semibold transition-colors",
-                      !isTrainers
-                        ? "bg-[#f48221] text-[#1d1d1b]"
-                        : "text-[#aaaaaa] hover:text-white"
-                    )}
-                  >
-                    Setters
-                  </button>
-                </>
-              )}
-              {!showTabSwitcher && (
-                <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[#f48221] text-[#1d1d1b]">
-                  {activeTab === "trainers" ? "Trainees & Closers" : "Setters"}
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="flex gap-1.5 px-4 py-2 border-b border-[#333]">
-            {(["day", "week", "month", "all"] as const).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={cn(
-                  "px-3 py-1 rounded-full text-xs font-medium transition-colors",
-                  period === p
-                    ? "bg-[#f48221] text-[#1d1d1b]"
-                    : "text-[#aaaaaa] hover:text-white border border-[#444]"
+              <div className="flex gap-1">
+                {showTabSwitcher && (
+                  <>
+                    <button
+                      onClick={() => setActiveTab("trainers")}
+                      className={cn(
+                        "px-3 py-1.5 rounded-full text-xs font-semibold transition-colors",
+                        isTrainers
+                          ? "bg-[#f48221] text-[#1d1d1b]"
+                          : "text-[#aaaaaa] hover:text-white",
+                      )}
+                    >
+                      {t.ranking.traineesAndClosers}
+                    </button>
+                    <button
+                      onClick={() => setActiveTab("setters")}
+                      className={cn(
+                        "px-3 py-1.5 rounded-full text-xs font-semibold transition-colors",
+                        !isTrainers
+                          ? "bg-[#f48221] text-[#1d1d1b]"
+                          : "text-[#aaaaaa] hover:text-white",
+                      )}
+                    >
+                      {t.ranking.setters}
+                    </button>
+                  </>
                 )}
-              >
-                {p === "day" ? "Hoy" : p === "week" ? "Esta Semana" : p === "month" ? "Este Mes" : "Global"}
-              </button>
-            ))}
-          </div>
+                {!showTabSwitcher && (
+                  <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[#f48221] text-[#1d1d1b]">
+                    {activeTab === "trainers"
+                      ? t.ranking.traineesAndClosers
+                      : t.ranking.setters}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-1.5 px-4 py-2 border-b border-[#333]">
+              {(["day", "week", "month", "all"] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className={cn(
+                    "px-3 py-1 rounded-full text-xs font-medium transition-colors",
+                    period === p
+                      ? "bg-[#f48221] text-[#1d1d1b]"
+                      : "text-[#aaaaaa] hover:text-white border border-[#444]",
+                  )}
+                >
+                  {p === "day"
+                    ? t.ranking.today
+                    : p === "week"
+                      ? t.ranking.thisWeek
+                      : p === "month"
+                        ? t.ranking.thisMonth
+                        : t.ranking.global}
+                </button>
+              ))}
+            </div>
           </div>
 
           {loading && (
@@ -215,7 +298,7 @@ export default function RankingPage() {
 
           {!loading && data !== null && data.length === 0 && (
             <div className="flex items-center justify-center h-32 text-[#aaaaaa] text-sm">
-              No hay datos disponibles
+              {t.ranking.noData}
             </div>
           )}
 
@@ -231,17 +314,29 @@ export default function RankingPage() {
               const col1 = isTrainers
                 ? (item.projectsClosed ?? 0)
                 : (item.leadsGenerated ?? 0);
-              const col2 = isTrainers
-                ? (item.leads ?? 0)
-                : item.doors;
+              const col2 = isTrainers ? (item.leads ?? 0) : item.doors;
               const col3 = item.doors;
 
               let rankBg = "";
               if (rank === 1) rankBg = "border-l-4";
               else if (rank === 2) rankBg = "border-l-4";
               else if (rank === 3) rankBg = "border-l-4";
-              const rankBorder = rank === 1 ? "#EFBF04" : rank === 2 ? "#C4C4C4" : rank === 3 ? "#CE8946" : undefined;
-              const rankBgInline = rank === 1 ? "#EFBF04" : rank === 2 ? "#C4C4C4" : rank === 3 ? "#CE8946" : undefined;
+              const rankBorder =
+                rank === 1
+                  ? "#EFBF04"
+                  : rank === 2
+                    ? "#C4C4C4"
+                    : rank === 3
+                      ? "#CE8946"
+                      : undefined;
+              const rankBgInline =
+                rank === 1
+                  ? "#EFBF04"
+                  : rank === 2
+                    ? "#C4C4C4"
+                    : rank === 3
+                      ? "#CE8946"
+                      : undefined;
 
               return (
                 <Link
@@ -251,9 +346,18 @@ export default function RankingPage() {
                     "flex items-stretch border-b border-[#333] last:border-b-0 transition-colors",
                     "hover:bg-[#2a2a28]",
                     isTop3 ? rankBg : "bg-transparent",
-                    isCurrentUser && !isTop3 && "bg-[#2a2a28] border-l-2 border-l-[#f48221]"
+                    isCurrentUser &&
+                      !isTop3 &&
+                      "bg-[#2a2a28] border-l-2 border-l-[#f48221]",
                   )}
-                  style={isTop3 ? { background: `linear-gradient(to right, ${rankBgInline || '#EFBF04'} 0%, transparent 85%)`, borderLeftColor: rankBorder } : undefined}
+                  style={
+                    isTop3
+                      ? {
+                          background: `linear-gradient(to right, ${rankBgInline || "#EFBF04"} 0%, transparent 85%)`,
+                          borderLeftColor: rankBorder,
+                        }
+                      : undefined
+                  }
                 >
                   <div className="w-[60px] flex items-center justify-center flex-shrink-0">
                     {isTop3 ? (
@@ -288,7 +392,10 @@ export default function RankingPage() {
                       </span>
                       {item.badgeCount != null && item.badgeCount > 0 && (
                         <span className="text-xs bg-[#f48221]/20 text-[#f48221] px-1.5 py-0.5 rounded-full font-semibold">
-                          {item.badgeCount} {item.badgeCount === 1 ? "medalla" : "medallas"}
+                          {item.badgeCount}{" "}
+                          {item.badgeCount === 1
+                            ? t.ranking.badge
+                            : t.ranking.badges}
                         </span>
                       )}
                     </div>
@@ -297,15 +404,21 @@ export default function RankingPage() {
                   <div className="flex items-stretch flex-shrink-0 ml-auto">
                     <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
                       <CheckCircle className="w-4 h-4 text-green-400 mb-1" />
-                      <span className="text-sm font-bold text-white">{col1}</span>
+                      <span className="text-sm font-bold text-white">
+                        {col1}
+                      </span>
                     </div>
                     <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
                       <UserPlus className="w-4 h-4 text-blue-400 mb-1" />
-                      <span className="text-sm font-bold text-white">{col2}</span>
+                      <span className="text-sm font-bold text-white">
+                        {col2}
+                      </span>
                     </div>
                     <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
                       <DoorOpen className="w-4 h-4 text-orange-400 mb-1" />
-                      <span className="text-sm font-bold text-white">{col3}</span>
+                      <span className="text-sm font-bold text-white">
+                        {col3}
+                      </span>
                     </div>
                   </div>
                 </Link>
