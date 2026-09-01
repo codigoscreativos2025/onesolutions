@@ -1126,6 +1126,14 @@ export function ChatInterface({
                                           : tag === "Finalizado"
                                             ? "#22c55e"
                                             : "#6b7280";
+                                const tagMap: Record<string, string> = {
+                                  "En permisos": t.pipeline?.postClosureTags?.enPermisos || "En permisos",
+                                  "Permisos aprobados": t.pipeline?.postClosureTags?.permisosAprobados || "Permisos aprobados",
+                                  "Instalado": t.pipeline?.postClosureTags?.instalado || "Instalado",
+                                  "PTO": t.pipeline?.postClosureTags?.pto || "PTO",
+                                  "Finalizado": t.pipeline?.postClosureTags?.finalizado || "Finalizado"
+                                };
+                                const translatedTag = tagMap[tag] || tag;
                                 return (
                                   <p
                                     className="text-[10px] font-semibold mt-1 px-1.5 py-0.5 rounded-full inline-flex w-fit items-center gap-1"
@@ -1136,7 +1144,7 @@ export function ChatInterface({
                                     }}
                                   >
                                     <CheckCircle className="w-3 h-3 flex-shrink-0" />
-                                    <span>{tag}</span>
+                                    <span>{translatedTag}</span>
                                   </p>
                                 );
                               }
@@ -1985,6 +1993,14 @@ function InfoPanelContent({
                                 : tag === "Finalizado"
                                   ? "#22c55e"
                                   : "#6b7280";
+                      const tagMap: Record<string, string> = {
+                        "En permisos": t.pipeline?.postClosureTags?.enPermisos || "En permisos",
+                        "Permisos aprobados": t.pipeline?.postClosureTags?.permisosAprobados || "Permisos aprobados",
+                        "Instalado": t.pipeline?.postClosureTags?.instalado || "Instalado",
+                        "PTO": t.pipeline?.postClosureTags?.pto || "PTO",
+                        "Finalizado": t.pipeline?.postClosureTags?.finalizado || "Finalizado"
+                      };
+                      const translatedTag = tagMap[tag] || tag;
                       return (
                         <span
                           className="px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1"
@@ -1995,7 +2011,7 @@ function InfoPanelContent({
                           }}
                         >
                           <CheckCircle className="w-3 h-3 flex-shrink-0" />
-                          {tag}
+                          {translatedTag}
                         </span>
                       );
                     }

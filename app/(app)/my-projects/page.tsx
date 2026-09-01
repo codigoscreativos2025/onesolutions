@@ -48,7 +48,10 @@ interface Visit {
   } | null;
 }
 
+import { useLocale } from '@/lib/locale-context';
+
 export default function MyProjectsPage() {
+  const { t } = useLocale();
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -157,13 +160,13 @@ export default function MyProjectsPage() {
 
   const getStageBadge = (visit: Visit) => {
     if (visit.stage === 'CLOSED' && visit.finalizedAt) {
-      return <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-medium">Finalizado</span>;
+      return <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-medium">{t.pipeline?.postClosureTags?.finalizado || "Finalizado"}</span>;
     }
     switch (visit.stage) {
-      case 'PROPOSAL_ACCEPTED': return <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">Leads Potenciales</span>;
-      case 'PROJECT': return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">En Proyecto</span>;
-      case 'CLOSED': return <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">Cerrado</span>;
-      case 'CANCELLED': return <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">Cancelado</span>;
+      case 'PROPOSAL_ACCEPTED': return <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">{t.pipeline?.columns?.potentialLeads || "Leads Potenciales"}</span>;
+      case 'PROJECT': return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">{t.pipeline?.columns?.inProject || "En Proyecto"}</span>;
+      case 'CLOSED': return <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">{t.pipeline?.columns?.closed || "Cerrado"}</span>;
+      case 'CANCELLED': return <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">{t.common?.cancel || "Cancelado"}</span>;
       default: return <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">{visit.stage}</span>;
     }
   };

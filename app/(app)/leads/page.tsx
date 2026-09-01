@@ -41,7 +41,10 @@ interface Parcel {
   stage: string;
 }
 
+import { useLocale } from '@/lib/locale-context';
+
 export default function LeadsPage() {
+  const { t } = useLocale();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { data: session } = useSession();
@@ -198,32 +201,32 @@ export default function LeadsPage() {
         }
       `}</style>
       <div>
-        <h1 className="text-3xl font-bold mb-2">Leads</h1>
+        <h1 className="text-3xl font-bold mb-2">{t.leads?.title || "Leads"}</h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Leads en seguimiento activo. Los leads con propuesta aceptada o cerrados se mueven a Leads Potenciales.
+          {t.leads?.subtitle || "Leads en seguimiento activo. Los leads con propuesta aceptada o cerrados se mueven a Leads Potenciales."}
         </p>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 flex flex-wrap gap-4 items-end">
         <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
           <Filter className="w-4 h-4" />
-          <span className="text-sm font-medium">Filtros</span>
+          <span className="text-sm font-medium">{t.leads?.filters || "Filtros"}</span>
         </div>
         <div>
-          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Tipo de Proyecto</label>
+          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">{t.leads?.projectType || "Tipo de Proyecto"}</label>
           <select
             value={projectTypeFilter}
             onChange={(e) => setProjectTypeFilter(e.target.value)}
             className="h-10 px-3 rounded-lg bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface text-sm"
           >
-            <option value="all">Todos</option>
+            <option value="all">{t.leads?.all || "Todos"}</option>
             {projectTypes.map((pt) => (
               <option key={pt.id} value={pt.id}>{pt.name}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Fecha Desde</label>
+          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">{t.leads?.dateFrom || "Fecha Desde"}</label>
           <input
             type="date"
             value={dateFrom}
@@ -232,7 +235,7 @@ export default function LeadsPage() {
           />
         </div>
         <div>
-          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Fecha Hasta</label>
+          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">{t.leads?.dateTo || "Fecha Hasta"}</label>
           <input
             type="date"
             value={dateTo}
@@ -241,22 +244,22 @@ export default function LeadsPage() {
           />
         </div>
         <div>
-          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Propietario</label>
+          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">{t.leads?.owner || "Propietario"}</label>
           <input
             type="text"
             value={ownerNameFilter}
             onChange={(e) => setOwnerNameFilter(e.target.value)}
-            placeholder="Buscar..."
+            placeholder={t.leads?.search || "Buscar..."}
             className="h-10 px-3 rounded-lg bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface text-sm w-44"
           />
         </div>
         <div>
-          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Dirección</label>
+          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">{t.leads?.address || "Dirección"}</label>
           <input
             type="text"
             value={addressFilter}
             onChange={(e) => setAddressFilter(e.target.value)}
-            placeholder="Buscar..."
+            placeholder={t.leads?.search || "Buscar..."}
             className="h-10 px-3 rounded-lg bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface text-sm w-44"
           />
         </div>
@@ -271,7 +274,7 @@ export default function LeadsPage() {
               : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
           }`}
         >
-          Todos ({getFilterCount('all')})
+          {t.leads?.all || "Todos"} ({getFilterCount('all')})
         </button>
         <button
           onClick={() => setFilter('objections')}
@@ -282,7 +285,7 @@ export default function LeadsPage() {
           }`}
         >
           <XCircle className="w-4 h-4" />
-          Objeciones ({getFilterCount('objections')})
+          {t.leads?.objections || "Objeciones"} ({getFilterCount('objections')})
         </button>
         <button
           onClick={() => setFilter('expiring')}
@@ -293,7 +296,7 @@ export default function LeadsPage() {
           }`}
         >
           <AlertCircle className="w-4 h-4" />
-          Expirando ({getFilterCount('expiring')})
+          {t.leads?.expiring || "Expirando"} ({getFilterCount('expiring')})
         </button>
         <button
           onClick={() => setFilter('expired')}
@@ -304,7 +307,7 @@ export default function LeadsPage() {
           }`}
         >
           <Clock className="w-4 h-4" />
-          Expirados ({getFilterCount('expired')})
+          {t.leads?.expired || "Expirados"} ({getFilterCount('expired')})
         </button>
       </div>
 
@@ -312,7 +315,7 @@ export default function LeadsPage() {
         <div className="text-center py-12">
           <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-500 dark:text-gray-400">
-            No tienes leads activos
+            {t.leads?.noActiveLeads || "No tienes leads activos"}
           </p>
         </div>
       ) : (
@@ -342,20 +345,20 @@ export default function LeadsPage() {
                       <h3 className="text-lg font-semibold">{parcel.address}</h3>
                       {parcel.hasObjections && (
                         <span className="px-2 py-0.5 bg-secondary/10 text-secondary rounded-full text-xs font-medium">
-                          Objeción
+                          {t.leads?.objection || "Objeción"}
                         </span>
                       )}
                     </div>
                     {parcel.ownerName && (
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Propietario: {parcel.ownerName}
+                        {t.leads?.owner || "Propietario"}: {parcel.ownerName}
                       </p>
                     )}
                     <div className="flex items-center gap-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
                         <span>
-                          Reclamada:{' '}
+                          {t.leads?.claimed || "Reclamada:"}{' '}
                           {parcel.claimedAt
                             ? new Date(parcel.claimedAt).toLocaleDateString()
                             : 'N/A'}
@@ -364,7 +367,7 @@ export default function LeadsPage() {
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
                         <span>
-                          Última actividad: {parcel.daysSinceActivity} días atrás
+                          {t.leads?.lastActivity || "Última actividad:"} {parcel.daysSinceActivity} {t.leads?.daysAgo || "días atrás"}
                         </span>
                       </div>
                     </div>
@@ -384,7 +387,7 @@ export default function LeadsPage() {
                         {daysRemaining}
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        días restantes
+                        {t.leads?.daysLeft || "días restantes"}
                       </div>
                     </div>
                   )}
@@ -393,7 +396,7 @@ export default function LeadsPage() {
                 {parcel.stage === 'IN_PROGRESS' && (
                   <div className="mb-4">
                     <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
-                      <span>Tiempo restante</span>
+                      <span>{t.leads?.timeLeft || "Tiempo restante"}</span>
                       <span>{Math.round(percentage)}%</span>
                     </div>
                     <div className="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -410,7 +413,7 @@ export default function LeadsPage() {
                     <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
                       <AlertCircle className="w-5 h-5" />
                       <span className="font-medium">
-                        ¡Atención! Este lead expirará en {parcel.daysLeft} días. Realiza una visita para mantenerlo.
+                        {t.leads?.attentionExpiring?.replace("{days}", String(parcel.daysLeft)) || `¡Atención! Este lead expirará en ${parcel.daysLeft} días. Realiza una visita para mantenerlo.`}
                       </span>
                     </div>
                   </div>
@@ -421,7 +424,7 @@ export default function LeadsPage() {
                     <div className="flex items-center gap-2 text-red-800 dark:text-red-200">
                       <AlertCircle className="w-5 h-5" />
                       <span className="font-medium">
-                        Este lead ha expirado y será liberado automáticamente.
+                        {t.leads?.expiredNotice || "Este lead ha expirado y será liberado automáticamente."}
                       </span>
                     </div>
                   </div>
@@ -430,7 +433,7 @@ export default function LeadsPage() {
                 <div className="flex gap-3">
                   {isPartner ? (
                     <div className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg text-center text-sm">
-                      Lead asignado — solo visualización
+                      {t.leads?.assignedLeadViewOnly || "Lead asignado — solo visualización"}
                     </div>
                   ) : (
                     <>
@@ -438,13 +441,13 @@ export default function LeadsPage() {
                         href={`/visit/${parcel.id}`}
                         className="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary/90 transition-colors text-center"
                       >
-                        Visitar
+                        {t.leads?.visit || "Visitar"}
                       </Link>
                       <Link
                         href={`/map?parcelId=${parcel.id}`}
                         className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-center"
                       >
-                        Ver en Mapa
+                        {t.leads?.viewOnMap || "Ver en Mapa"}
                       </Link>
                     </>
                   )}
@@ -454,7 +457,7 @@ export default function LeadsPage() {
                       className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-center text-sm"
                     >
                       <FileText className="w-4 h-4" />
-                      Documentos
+                      {t.leads?.documents || "Documentos"}
                     </button>
                   )}
                 </div>
