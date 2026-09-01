@@ -385,12 +385,38 @@ export default function AdminBadgesPage() {
               setFormData({ ...formData, description: e.target.value })
             }
           />
-          <Input
-            label="Icono (emoji)"
-            value={formData.icon}
-            onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-            placeholder="🥇 🥈 🥉 💎"
-          />
+          <div>
+            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+              Icono (emoji)
+            </label>
+            <select
+              value={formData.icon}
+              onChange={(e) =>
+                setFormData({ ...formData, icon: e.target.value })
+              }
+              className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface mt-1"
+            >
+              <option value="">Seleccionar un ícono...</option>
+              <option value="🥇">🥇 Oro</option>
+              <option value="🥈">🥈 Plata</option>
+              <option value="🥉">🥉 Bronce</option>
+              <option value="🏅">🏅 Medalla deportiva</option>
+              <option value="🎖">🎖 Medalla militar</option>
+              <option value="🏆">🏆 Trofeo</option>
+              <option value="💎">💎 Diamante</option>
+              <option value="👑">👑 Corona</option>
+              <option value="⭐">⭐ Estrella</option>
+              <option value="🌟">🌟 Estrella brillante</option>
+              <option value="✨">✨ Destellos</option>
+              <option value="🚀">🚀 Cohete</option>
+              <option value="🔥">🔥 Fuego</option>
+              <option value="⚡">⚡ Rayo</option>
+              <option value="🎯">🎯 Diana (Objetivo)</option>
+              <option value="💯">💯 100 Puntos</option>
+              <option value="🎓">🎓 Graduación</option>
+              <option value="🛡️">🛡️ Escudo</option>
+            </select>
+          </div>
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
               Color
