@@ -220,9 +220,13 @@ export default function LeadsPage() {
             className="h-10 px-3 rounded-lg bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface text-sm"
           >
             <option value="all">{t.leads?.all || "Todos"}</option>
-            {projectTypes.map((pt) => (
-              <option key={pt.id} value={pt.id}>{pt.name}</option>
-            ))}
+            {projectTypes.map((pt) => {
+              const ptName = pt.name;
+              const translatedName = t.pipeline?.projectTypes?.[ptName as keyof typeof t.pipeline.projectTypes] || ptName;
+              return (
+                <option key={pt.id} value={pt.id}>{translatedName}</option>
+              );
+            })}
           </select>
         </div>
         <div>

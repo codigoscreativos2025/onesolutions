@@ -905,14 +905,18 @@ function KanbanCard({
 
       {visit.projects.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
-          {visit.projects.map((p) => (
-            <span
-              key={p.projectType.id}
-              className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium"
-            >
-              {p.projectType.name}
-            </span>
-          ))}
+          {visit.projects.map((p) => {
+            const ptName = p.projectType.name;
+            const translatedName = t.pipeline?.projectTypes?.[ptName as keyof typeof t.pipeline.projectTypes] || ptName;
+            return (
+              <span
+                key={p.projectType.id}
+                className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium"
+              >
+                {translatedName}
+              </span>
+            );
+          })}
         </div>
       )}
 

@@ -56,7 +56,10 @@ function formatDateSpanish(date: Date | string): string {
   return format(d, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es });
 }
 
+import { useLocale } from '@/lib/locale-context';
+
 export default function CalendarPage() {
+  const { t } = useLocale();
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -649,15 +652,19 @@ export default function CalendarPage() {
                       </span>
                       {apt.projects && apt.projects.length > 0 && (
                         <div className="grid grid-cols-2 gap-1">
-                          {apt.projects.map((p) => (
-                            <span
-                              key={p.projectType.id}
-                              className="px-2 py-1 bg-surface-container-high border border-outline-variant rounded-lg text-xs text-on-surface inline-flex items-center gap-1"
-                            >
-                              <Package className="w-3 h-3 text-primary shrink-0" />
-                              {p.projectType.name}
-                            </span>
-                          ))}
+                          {apt.projects.map((p) => {
+                            const ptName = p.projectType.name;
+                            const translatedName = t.pipeline?.projectTypes?.[ptName as keyof typeof t.pipeline.projectTypes] || ptName;
+                            return (
+                              <span
+                                key={p.projectType.id}
+                                className="px-2 py-1 bg-surface-container-high border border-outline-variant rounded-lg text-xs text-on-surface inline-flex items-center gap-1"
+                              >
+                                <Package className="w-3 h-3 text-primary shrink-0" />
+                                {translatedName}
+                              </span>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -754,15 +761,19 @@ export default function CalendarPage() {
                           </span>
                           {visit.projects && visit.projects.length > 0 && (
                             <div className="grid grid-cols-2 gap-1">
-                              {visit.projects.map((p) => (
-                                <span
-                                  key={p.projectType.id}
-                                  className="px-2 py-1 bg-surface-container-high border border-outline-variant rounded-lg text-xs text-on-surface inline-flex items-center gap-1"
-                                >
-                                  <Package className="w-3 h-3 text-primary shrink-0" />
-                                  {p.projectType.name}
-                                </span>
-                              ))}
+                              {visit.projects.map((p) => {
+                                const ptName = p.projectType.name;
+                                const translatedName = t.pipeline?.projectTypes?.[ptName as keyof typeof t.pipeline.projectTypes] || ptName;
+                                return (
+                                  <span
+                                    key={p.projectType.id}
+                                    className="px-2 py-1 bg-surface-container-high border border-outline-variant rounded-lg text-xs text-on-surface inline-flex items-center gap-1"
+                                  >
+                                    <Package className="w-3 h-3 text-primary shrink-0" />
+                                    {translatedName}
+                                  </span>
+                                );
+                              })}
                             </div>
                           )}
                         </div>
