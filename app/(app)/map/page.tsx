@@ -31,7 +31,7 @@ interface SearchResult {
 }
 
 export default function MapPage() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const searchParams = useSearchParams();
   const highlightId =
     searchParams.get("highlight") || searchParams.get("parcelId");
@@ -106,7 +106,7 @@ export default function MapPage() {
         fetch(
           `https://nominatim.openstreetmap.org/reverse?lat=${center[0]}&lon=${center[1]}&format=json&zoom=10`,
           {
-            headers: { "Accept-Language": "es" },
+            headers: { "Accept-Language": locale },
           },
         )
           .then(async (r) => {
@@ -125,7 +125,7 @@ export default function MapPage() {
           .catch(() => {});
       }
     },
-    [],
+    [locale],
   );
 
   const handleSearch = async (e: React.FormEvent) => {
