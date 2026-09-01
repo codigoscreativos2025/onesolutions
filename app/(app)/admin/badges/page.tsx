@@ -170,11 +170,11 @@ export default function AdminBadgesPage() {
             ) : (
               <RefreshCw className="w-5 h-5" />
             )}
-            <span className="ml-2">Verificar</span>
+            <span className="ml-2">{t.adminBadges.verify}</span>
           </Button>
           <Button onClick={openCreateModal}>
             <Plus className="w-5 h-5" />
-            Nueva Medalla
+            {t.adminBadges.newBadge}
           </Button>
         </div>
       </div>
@@ -183,7 +183,7 @@ export default function AdminBadgesPage() {
       <div>
         <h2 className="font-headline text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
           <Award className="w-5 h-5 text-tertiary" />
-          Medallas para Trainees
+          {t.adminBadges.badgesForTrainees}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {traineeBadges.map((badge) => (
@@ -204,11 +204,11 @@ export default function AdminBadgesPage() {
                     {badge.description}
                   </p>
                   <p className="text-xs text-on-surface-variant mt-1">
-                    {badge.doorsThreshold} puertas + {badge.prospectsThreshold}{" "}
-                    prospectos
+                    {badge.doorsThreshold} {t.adminBadges.doors} +{" "}
+                    {badge.prospectsThreshold} {t.adminBadges.prospects}
                   </p>
                   <p className="text-xs text-primary mt-1">
-                    {badge._count?.userBadges || 0} usuarios la tienen
+                    {badge._count?.userBadges || 0} {t.adminBadges.usersHaveIt}
                   </p>
                 </div>
               </div>
@@ -231,7 +231,7 @@ export default function AdminBadgesPage() {
         </div>
         {traineeBadges.length === 0 && (
           <p className="text-on-surface-variant text-center py-4">
-            No hay medallas configuradas para trainees
+            {t.adminBadges.noTraineeBadges}
           </p>
         )}
       </div>
@@ -240,7 +240,7 @@ export default function AdminBadgesPage() {
       <div>
         <h2 className="font-headline text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
           <Award className="w-5 h-5 text-primary" />
-          Medallas para Setters
+          {t.adminBadges.badgesForSetters}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {setterBadges.map((badge) => (
@@ -261,11 +261,11 @@ export default function AdminBadgesPage() {
                     {badge.description}
                   </p>
                   <p className="text-xs text-on-surface-variant mt-1">
-                    {badge.doorsThreshold} puertas + {badge.prospectsThreshold}{" "}
-                    prospectos
+                    {badge.doorsThreshold} {t.adminBadges.doors} +{" "}
+                    {badge.prospectsThreshold} {t.adminBadges.prospects}
                   </p>
                   <p className="text-xs text-primary mt-1">
-                    {badge._count?.userBadges || 0} usuarios la tienen
+                    {badge._count?.userBadges || 0} {t.adminBadges.usersHaveIt}
                   </p>
                 </div>
               </div>
@@ -288,7 +288,7 @@ export default function AdminBadgesPage() {
         </div>
         {setterBadges.length === 0 && (
           <p className="text-on-surface-variant text-center py-4">
-            No hay medallas configuradas para setters
+            {t.adminBadges.noSetterBadges}
           </p>
         )}
       </div>
@@ -297,7 +297,7 @@ export default function AdminBadgesPage() {
       <div>
         <h2 className="font-headline text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
           <Award className="w-5 h-5 text-secondary" />
-          Medallas para Closers
+          {t.adminBadges.badgesForClosers}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {closerBadges.map((badge) => (
@@ -318,10 +318,10 @@ export default function AdminBadgesPage() {
                     {badge.description}
                   </p>
                   <p className="text-xs text-on-surface-variant mt-1">
-                    {badge.projectsThreshold} proyectos cerrados
+                    {badge.projectsThreshold} {t.adminBadges.projects}
                   </p>
                   <p className="text-xs text-primary mt-1">
-                    {badge._count?.userBadges || 0} usuarios la tienen
+                    {badge._count?.userBadges || 0} {t.adminBadges.usersHaveIt}
                   </p>
                 </div>
               </div>
@@ -344,7 +344,7 @@ export default function AdminBadgesPage() {
         </div>
         {closerBadges.length === 0 && (
           <p className="text-on-surface-variant text-center py-4">
-            No hay medallas configuradas para closers
+            {t.adminBadges.noCloserBadges}
           </p>
         )}
       </div>
@@ -353,12 +353,12 @@ export default function AdminBadgesPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingBadge ? "Editar Medalla" : "Nueva Medalla"}
+        title={editingBadge ? t.adminBadges.editBadge : t.adminBadges.newBadge}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-              Rol
+              {t.adminBadges.role}
             </label>
             <select
               value={formData.role}
@@ -373,13 +373,13 @@ export default function AdminBadgesPage() {
             </select>
           </div>
           <Input
-            label="Nombre"
+            label={t.adminBadges.name}
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             required
           />
           <Input
-            label="Descripción"
+            label={t.adminBadges.description}
             value={formData.description}
             onChange={(e) =>
               setFormData({ ...formData, description: e.target.value })
@@ -387,7 +387,7 @@ export default function AdminBadgesPage() {
           />
           <div>
             <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-              Icono (emoji)
+              {t.adminBadges.iconEmoji}
             </label>
             <select
               value={formData.icon}
@@ -396,7 +396,7 @@ export default function AdminBadgesPage() {
               }
               className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface mt-1"
             >
-              <option value="">Seleccionar un ícono...</option>
+              <option value="">{t.adminBadges.selectIcon}</option>
               <option value="🥇">🥇 Oro</option>
               <option value="🥈">🥈 Plata</option>
               <option value="🥉">🥉 Bronce</option>
@@ -419,7 +419,7 @@ export default function AdminBadgesPage() {
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-              Color
+              {t.adminBadges.color}
             </label>
             <div className="flex items-center gap-3">
               <input
@@ -443,7 +443,7 @@ export default function AdminBadgesPage() {
           {formData.role === "SETTER" || formData.role === "SETTER_JR" ? (
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="Meta de Puertas"
+                label={t.adminBadges.doorsThreshold}
                 type="number"
                 value={formData.doorsThreshold}
                 onChange={(e) =>
@@ -454,7 +454,7 @@ export default function AdminBadgesPage() {
                 }
               />
               <Input
-                label="Meta de Prospectos"
+                label={t.adminBadges.prospectsThreshold}
                 type="number"
                 value={formData.prospectsThreshold}
                 onChange={(e) =>
@@ -467,7 +467,7 @@ export default function AdminBadgesPage() {
             </div>
           ) : (
             <Input
-              label="Meta de Proyectos Cerrados"
+              label={t.adminBadges.projectsThreshold}
               type="number"
               value={formData.projectsThreshold}
               onChange={(e) =>
@@ -489,7 +489,7 @@ export default function AdminBadgesPage() {
               {t.common.cancel}
             </Button>
             <Button type="submit" className="flex-1">
-              {editingBadge ? t.common.save : "Crear"}
+              {editingBadge ? t.common.save : t.adminBadges.create}
             </Button>
           </div>
         </form>
