@@ -2174,17 +2174,18 @@ function TabContent({ children }: { children: React.ReactNode }) {
 }
 
 function RequiredBadge({ required }: { required?: boolean }) {
+  const { t } = useLocale();
   if (required === undefined) return null;
   if (required) {
     return (
       <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
-        Obligatorio
+        {t.common?.required || "Obligatorio"}
       </span>
     );
   }
   return (
     <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-surface-container-high text-on-surface-variant border border-outline-variant/50">
-      Opcional
+      {t.common?.optional || "Opcional"}
     </span>
   );
 }
@@ -2214,6 +2215,7 @@ function FieldRow({
   fileUrl?: string;
   required?: boolean;
 }) {
+  const { t } = useLocale();
   if (readOnly && !isFile) {
     return <ReadOnlyField label={label} value={value || "-"} />;
   }
@@ -2247,7 +2249,9 @@ function FieldRow({
             {label}
             <RequiredBadge required={required} />
           </label>
-          <p className="text-sm text-on-surface-variant italic">No subido</p>
+          <p className="text-sm text-on-surface-variant italic">
+            {t.common?.notUploaded || "No subido"}
+          </p>
         </div>
       );
     }
@@ -2268,13 +2272,15 @@ function FieldRow({
               className="text-primary hover:underline text-sm flex items-center gap-1"
             >
               <Eye className="w-4 h-4" />{" "}
-              {urls.length > 1 ? `Ver ${i + 1}` : "Ver"}
+              {urls.length > 1
+                ? `${t.common?.view || "Ver"} ${i + 1}`
+                : t.common?.view || "Ver"}
             </a>
           ))}
           {canUploadMore && (
             <label className="cursor-pointer text-xs text-on-surface-variant hover:text-primary flex items-center gap-1">
               <Upload className="w-3 h-3" />
-              Subir
+              {t.common?.upload || "Subir"}
               <input
                 type="file"
                 accept="image/*,.pdf"
@@ -2741,6 +2747,7 @@ function HoaPanel({
   onFileFieldUpload: (fieldName: string, file: File) => void;
   readOnly: boolean;
 }) {
+  const { t } = useLocale();
   const hoaInfoVal =
     editFields["hoaInfo"] !== undefined
       ? editFields["hoaInfo"]
@@ -2749,10 +2756,10 @@ function HoaPanel({
         : "";
 
   return (
-    <Panel title="Información HOA" icon={Home}>
+    <Panel title={t.pipeline?.hoaInfo || "Información HOA"} icon={Home}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <FieldRow
-          label="Información HOA"
+          label={t.pipeline?.hoaInfo || "Información HOA"}
           value={hoaInfoVal}
           field="hoaInfo"
           type="text"
@@ -2768,7 +2775,7 @@ function HoaPanel({
           return (
             <FieldRow
               key={key}
-              label={`Imagen HOA ${num}`}
+              label={`${t.pipeline?.hoaImage || "Imagen HOA"} ${num}`}
               value=""
               field={key}
               type="file"
@@ -3612,20 +3619,23 @@ function DatosClosedPanel({
         readOnly={true}
       />
 
-      <Panel title="Resumen del Proyecto" icon={User}>
+      <Panel
+        title={t.pipeline?.projectSummary || "Resumen del Proyecto"}
+        icon={User}
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ReadOnlyField
-            label="Nombre"
+            label={t.pipeline?.fields?.name || "Nombre"}
             value={String(pd.clientName || visit.bill?.clientName || "-")}
           />
           {role !== "PARTNER" && (
             <ReadOnlyField
-              label="Email"
+              label={t.pipeline?.fields?.email || "Email"}
               value={String(pd.clientEmail || visit.bill?.clientEmail || "-")}
             />
           )}
           <ReadOnlyField
-            label="Dirección"
+            label={t.pipeline?.fields?.address || "Dirección"}
             value={String(pd.address || visit.parcel.address)}
           />
         </div>
@@ -3656,7 +3666,9 @@ function DatosClosedPanel({
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <h3 className="font-semibold text-lg flex items-center gap-2 text-on-surface">
                     <Package className="w-5 h-5 text-primary shrink-0" />
-                    {project.projectTypeName}
+                    {t.pipeline?.projectTypes?.[
+                      project.projectTypeName as keyof typeof t.pipeline.projectTypes
+                    ] || project.projectTypeName}
                   </h3>
                   {isAdmin && (
                     <select

@@ -23,19 +23,31 @@ interface NotesPanelProps {
   disabled?: boolean;
 }
 
-function Panel({ children }: { children: React.ReactNode }) {
+function Panel({
+  children,
+  title,
+}: {
+  children: React.ReactNode;
+  title?: string;
+}) {
   return (
     <div className="glass-panel rounded-xl p-6">
       <h3 className="font-semibold text-lg flex items-center gap-2 text-on-surface mb-4">
         <Pencil className="w-5 h-5 text-primary" />
-        Notas
+        {title || "Notas"}
       </h3>
       {children}
     </div>
   );
 }
 
-export function NotesPanel({ visitId, parcelId, parcelData, visitCreatedAt, disabled }: NotesPanelProps) {
+export function NotesPanel({
+  visitId,
+  parcelId,
+  parcelData,
+  visitCreatedAt,
+  disabled,
+}: NotesPanelProps) {
   const { data: session } = useSession();
   const { t } = useLocale();
   const userId = session?.user?.id ? parseInt(session.user.id) : null;
@@ -60,10 +72,10 @@ export function NotesPanel({ visitId, parcelId, parcelData, visitCreatedAt, disa
 
   const fetchNotes = useCallback(async () => {
     try {
-      const endpoint = parcelId ? `/api/parcels/${encodeURIComponent(parcelId)}/notes` : `/api/visits/${visitId}/notes`;
-      const url = filterDate
-        ? `${endpoint}?date=${filterDate}`
-        : endpoint;
+      const endpoint = parcelId
+        ? `/api/parcels/${encodeURIComponent(parcelId)}/notes`
+        : `/api/visits/${visitId}/notes`;
+      const url = filterDate ? `${endpoint}?date=${filterDate}` : endpoint;
       const res = await fetch(url);
       if (res.ok) {
         setNotes(await res.json());
@@ -87,7 +99,14 @@ export function NotesPanel({ visitId, parcelId, parcelData, visitCreatedAt, disa
 
     const selectedDate = new Date(dateStr + "T00:00:00");
     const now = new Date();
-    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    const todayEnd = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      23,
+      59,
+      59,
+    );
 
     if (selectedDate > todayEnd) {
       setFilterError("Fecha inválida a la desarrollada en el proyecto");
@@ -96,7 +115,14 @@ export function NotesPanel({ visitId, parcelId, parcelData, visitCreatedAt, disa
 
     if (visitCreatedAt) {
       const visitStart = new Date(visitCreatedAt);
-      if (selectedDate < new Date(visitStart.getFullYear(), visitStart.getMonth(), visitStart.getDate())) {
+      if (
+        selectedDate <
+        new Date(
+          visitStart.getFullYear(),
+          visitStart.getMonth(),
+          visitStart.getDate(),
+        )
+      ) {
         setFilterError("Fecha inválida a la desarrollada en el proyecto");
         return false;
       }
@@ -117,11 +143,17 @@ export function NotesPanel({ visitId, parcelId, parcelData, visitCreatedAt, disa
     if (!newContent.trim()) return;
     setSaving(true);
     try {
-      const endpoint = parcelId ? `/api/parcels/${encodeURIComponent(parcelId)}/notes` : `/api/visits/${visitId}/notes`;
+      const endpoint = parcelId
+        ? `/api/parcels/${encodeURIComponent(parcelId)}/notes`
+        : `/api/visits/${visitId}/notes`;
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: newContent.trim(), visitId, parcelData }),
+        body: JSON.stringify({
+          content: newContent.trim(),
+          visitId,
+          parcelData,
+        }),
       });
       if (res.ok) {
         toast.success("Nota agregada");
@@ -142,8 +174,8 @@ export function NotesPanel({ visitId, parcelId, parcelData, visitCreatedAt, disa
     if (!selectedNote || !editContent.trim()) return;
     setSaving(true);
     try {
-      const endpoint = parcelId 
-        ? `/api/parcels/${encodeURIComponent(parcelId)}/notes/${selectedNote.id}` 
+      const endpoint = parcelId
+        ? `/api/parcels/${encodeURIComponent(parcelId)}/notes/${selectedNote.id}`
         : `/api/visits/${visitId}/notes/${selectedNote.id}`;
       const res = await fetch(endpoint, {
         method: "PATCH",
@@ -168,8 +200,8 @@ export function NotesPanel({ visitId, parcelId, parcelData, visitCreatedAt, disa
     if (!selectedNote) return;
     setSaving(true);
     try {
-      const endpoint = parcelId 
-        ? `/api/parcels/${encodeURIComponent(parcelId)}/notes/${selectedNote.id}` 
+      const endpoint = parcelId
+        ? `/api/parcels/${encodeURIComponent(parcelId)}/notes/${selectedNote.id}`
         : `/api/visits/${visitId}/notes/${selectedNote.id}`;
       const res = await fetch(endpoint, { method: "DELETE" });
       if (res.ok) {
@@ -201,7 +233,7 @@ export function NotesPanel({ visitId, parcelId, parcelData, visitCreatedAt, disa
   };
 
   return (
-    <Panel>
+    <Panel title={t.pipeline?.notes || "Notas"}>
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-on-surface-variant shrink-0" />
@@ -213,16 +245,17 @@ export function NotesPanel({ visitId, parcelId, parcelData, visitCreatedAt, disa
           />
           {filterDate && (
             <button
-              onClick={() => { setFilterDate(""); setFilterError(""); }}
+              onClick={() => {
+                setFilterDate("");
+                setFilterError("");
+              }}
               className="text-xs text-primary hover:underline"
             >
               Limpiar
             </button>
           )}
         </div>
-        {filterError && (
-          <p className="text-xs text-error">{filterError}</p>
-        )}
+        {filterError && <p className="text-xs text-error">{filterError}</p>}
 
         <div className="max-h-[400px] overflow-y-auto space-y-3 pr-1">
           {loading ? (
@@ -231,7 +264,9 @@ export function NotesPanel({ visitId, parcelId, parcelData, visitCreatedAt, disa
             </div>
           ) : notes.length === 0 ? (
             <p className="text-sm text-on-surface-variant text-center py-8">
-              {disabled ? "En espera del administrador" : `Sin notas${filterDate ? " en esta fecha" : ""}`}
+              {disabled
+                ? "En espera del administrador"
+                : `Sin notas${filterDate ? " en esta fecha" : ""}`}
             </p>
           ) : (
             notes.map((note) => (
@@ -324,7 +359,11 @@ export function NotesPanel({ visitId, parcelId, parcelData, visitCreatedAt, disa
               {t.common.cancel}
             </Button>
             <Button onClick={handleAdd} disabled={saving} className="flex-1">
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4" />
+              )}
               Agregar
             </Button>
           </div>
@@ -356,7 +395,11 @@ export function NotesPanel({ visitId, parcelId, parcelData, visitCreatedAt, disa
               disabled={saving || !editContent.trim()}
               className="flex-1"
             >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Pencil className="w-4 h-4" />}
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Pencil className="w-4 h-4" />
+              )}
               {t.common.save}
             </Button>
           </div>
@@ -370,7 +413,8 @@ export function NotesPanel({ visitId, parcelId, parcelData, visitCreatedAt, disa
       >
         <div className="space-y-4">
           <p className="text-sm text-on-surface-variant">
-            ¿Estás seguro de eliminar esta nota? Esta acción no se puede deshacer.
+            ¿Estás seguro de eliminar esta nota? Esta acción no se puede
+            deshacer.
           </p>
           {selectedNote && (
             <div className="p-3 rounded-xl bg-error/5 border border-error/20">
@@ -396,7 +440,11 @@ export function NotesPanel({ visitId, parcelId, parcelData, visitCreatedAt, disa
               variant="danger"
               className="flex-1"
             >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
               {t.common.delete}
             </Button>
           </div>
@@ -405,6 +453,3 @@ export function NotesPanel({ visitId, parcelId, parcelData, visitCreatedAt, disa
     </Panel>
   );
 }
-
-
-
