@@ -22,7 +22,7 @@ import { VisualCalendar } from "@/components/calendar/VisualCalendar";
 import { ViewProjectModal } from "@/components/calendar/ViewProjectModal";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { es, enUS } from "date-fns/locale";
 
 interface CalendarVisit {
   id: number;
@@ -51,15 +51,17 @@ function formatTimeAMPM(dateStr: string): string {
   return `${hours}:${minutes} ${ampm}`;
 }
 
-function formatDateSpanish(date: Date | string): string {
+function formatDateLocale(date: Date | string, localeCode: string): string {
   const d = typeof date === "string" ? new Date(date + "T12:00:00") : date;
-  return format(d, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es });
+  const dfnsLocale = localeCode === "en" ? enUS : es;
+  const formatStr = localeCode === "en" ? "EEEE, MMMM d, yyyy" : "EEEE, d 'de' MMMM 'de' yyyy";
+  return format(d, formatStr, { locale: dfnsLocale });
 }
 
 import { useLocale } from '@/lib/locale-context';
 
 export default function CalendarPage() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -485,11 +487,11 @@ export default function CalendarPage() {
 
   const grouped = groupVisitsByDate();
   const stageLabels: Record<string, string> = {
-    IN_PROGRESS: "Puerta",
-    PROPOSAL_ACCEPTED: "Lead",
-    PROJECT: "Proyecto",
-    CLOSED: "Cerrado",
-    CANCELLED: "Cancelado",
+    IN_PROGRESS: t.pipeline?.columns?.IN_PROGRESS || "Puerta",
+    PROPOSAL_ACCEPTED: t.pipeline?.columns?.PROPOSAL_ACCEPTED || "Lead",
+    PROJECT: t.pipeline?.columns?.PROJECT || "Proyecto",
+    CLOSED: t.pipeline?.columns?.CLOSED || "Cerrado",
+    CANCELLED: t.pipeline?.columns?.CANCELLED || "Cancelado",
   };
 
   return (
@@ -509,10 +511,10 @@ export default function CalendarPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="font-headline text-2xl font-bold text-on-surface">
-            Calendario
+            {t.calendar?.title || "Calendario"}
           </h1>
           <p className="text-on-surface-variant">
-            Gestiona tus citas agendadas
+            {t.calendar?.subtitleScheduled || "Gestiona tus citas agendadas"}
           </p>
         </div>
         <div className="flex gap-2">
@@ -522,7 +524,7 @@ export default function CalendarPage() {
               onChange={(e) => setSelectedUserId(e.target.value)}
               className="h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-sm text-on-surface"
             >
-              <option value="">Mis citas</option>
+              <option value="">{t.calendar?.myAppointments || "Mis citas"}</option>
               {users
                 .filter((u) => {
                   if (roleFilter === "trainee") return u.role === "SETTER" || u.role === "SETTER_JR";
@@ -535,7 +537,7 @@ export default function CalendarPage() {
                 })
                 .map((user) => (
                   <option key={user.id} value={user.id}>
-                    {user.name} ({user.role === "CLOSER" ? "Closer" : "Trainee"})
+                    {user.name} ({user.role === "CLOSER" ? t.roles?.CLOSER || "Closer" : t.roles?.SETTER || "Trainee"})
                   </option>
                 ))
               }
@@ -566,7 +568,7 @@ export default function CalendarPage() {
           {isAdmin && (
             <Button onClick={openAppointmentModal} size="sm" className="gap-1">
               <Plus className="w-4 h-4" />
-              Agendar Cita
+              {t.calendar?.scheduleAppointment || "Agendar Cita"}
             </Button>
           )}
         </div>
@@ -575,7 +577,7 @@ export default function CalendarPage() {
       {isAdmin && (
         <div className="glass-panel rounded-2xl p-4 flex flex-wrap gap-3 items-end">
           <div>
-            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider block mb-1">Tipo de usuario</label>
+            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider block mb-1">{t.calendar?.userType || "Tipo de usuario"}</label>
             <select
               value={roleFilter}
               onChange={(e) => {
@@ -584,18 +586,18 @@ export default function CalendarPage() {
               }}
               className="h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-sm text-on-surface"
             >
-              <option value="all">Todos</option>
-              <option value="trainee">Trainee</option>
-              <option value="closer">Closer</option>
+              <option value="all">{t.calendar?.allAppointments || "Todas las citas"}</option>
+              <option value="closer">{t.roles?.CLOSER || "Closer"}</option>
+              <option value="trainee">{t.roles?.SETTER || "Trainee"}</option>
             </select>
           </div>
           <div>
-            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider block mb-1">Nombre</label>
+            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider block mb-1">{t.calendar?.name || "Nombre"}</label>
             <input
               type="text"
               value={nameFilter}
               onChange={(e) => setNameFilter(e.target.value)}
-              placeholder="Buscar..."
+              placeholder={t.calendar?.search || "Buscar..."}
               className="h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-sm text-on-surface w-48"
             />
           </div>
@@ -642,13 +644,13 @@ export default function CalendarPage() {
                       </p>
                       {apt.bill?.clientName && (
                         <p className="text-xs text-on-surface-variant mt-1">
-                          Cliente: {apt.bill.clientName}
+                          {t.calendar?.client || "Cliente"}: {apt.bill.clientName}
                         </p>
                       )}
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <span className="text-xs font-semibold text-on-surface-variant">
-                        Contratos en proceso:
+                        {t.calendar?.contractsInProcess || "Contratos en proceso:"}
                       </span>
                       {apt.projects && apt.projects.length > 0 && (
                         <div className="grid grid-cols-2 gap-1">
@@ -681,7 +683,7 @@ export default function CalendarPage() {
                       }}
                     >
                       <RefreshCw className="w-4 h-4 mr-1" />
-                      Reasignar Cita
+                      {t.calendar?.reassignAppointment || "Reasignar Cita"}
                     </Button>
                   </div>
                 </div>
@@ -705,7 +707,7 @@ export default function CalendarPage() {
           {Object.keys(grouped).length === 0 && (
             <div className="text-center py-12 text-on-surface-variant">
               <CalendarIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No tienes visitas agendadas</p>
+              <p>{t.calendar?.noAppointments || "No tienes visitas agendadas"}</p>
             </div>
           )}
 
@@ -751,13 +753,13 @@ export default function CalendarPage() {
                           </p>
                           {visit.bill?.clientName && (
                             <p className="text-xs text-on-surface-variant mt-1">
-                              Cliente: {visit.bill.clientName}
+                              {t.calendar?.client || "Cliente"}: {visit.bill.clientName}
                             </p>
                           )}
                         </div>
                         <div className="flex flex-col items-end gap-2">
                           <span className="text-xs font-semibold text-on-surface-variant">
-                            Contratos en proceso:
+                            {t.calendar?.contractsInProcess || "Contratos en proceso:"}
                           </span>
                           {visit.projects && visit.projects.length > 0 && (
                             <div className="grid grid-cols-2 gap-1">
@@ -803,7 +805,7 @@ export default function CalendarPage() {
                           }}
                         >
                           <RefreshCw className="w-4 h-4 mr-1" />
-                          Reasignar Cita
+                          {t.calendar?.reassignAppointment || "Reasignar Cita"}
                         </Button>
                       </div>
                     </div>
@@ -818,21 +820,21 @@ export default function CalendarPage() {
       <Modal
       isOpen={isReassignModalOpen}
         onClose={() => setIsReassignModalOpen(false)}
-        title="Reasignar Cita"
+        title={t.calendar?.reassignAppointment || "Reasignar Cita"}
       >
         <div className="space-y-4">
           <p className="text-sm text-on-surface-variant">
-            Al reasignar, se notificará al administrador para que evalúe la situación y asigne la cita a otro closer.
+            {t.calendar?.reassignWarning || "Al reasignar, se notificará al administrador para que evalúe la situación y asigne la cita a otro closer."}
           </p>
           <div>
             <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-              Justificación
+              {t.calendar?.justification || "Justificación"}
             </label>
             <textarea
               value={reassignReason}
               onChange={(e) => setReassignReason(e.target.value)}
               className="w-full min-h-[120px] bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none rounded-xl p-4 resize-none text-on-surface mt-1"
-              placeholder="Explica por qué no puedes asistir a esta cita..."
+              placeholder={t.calendar?.reassignPlaceholder || "Explica por qué no puedes asistir a esta cita..."}
             />
           </div>
           <div className="flex gap-3">
@@ -841,7 +843,7 @@ export default function CalendarPage() {
               className="flex-1"
               onClick={() => setIsReassignModalOpen(false)}
             >
-              Cancelar
+              {t.calendar?.cancel || "Cancelar"}
             </Button>
             <Button
               onClick={handleReassign}
@@ -849,7 +851,7 @@ export default function CalendarPage() {
               className="flex-1"
               isLoading={saving}
             >
-              Confirmar
+              {t.calendar?.confirm || "Confirmar"}
             </Button>
           </div>
         </div>
@@ -858,7 +860,7 @@ export default function CalendarPage() {
       <Modal
         isOpen={isDayModalOpen}
         onClose={() => setIsDayModalOpen(false)}
-        title={selectedDay ? formatDateSpanish(selectedDay) : "Día"}
+        title={selectedDay ? formatDateLocale(selectedDay, locale) : "Día"}
       >
         <div className="space-y-4 max-h-[70vh] overflow-y-auto">
           {canSetSchedule && selectedDay && (
@@ -1020,29 +1022,29 @@ export default function CalendarPage() {
       <Modal
         isOpen={isAppointmentModalOpen}
         onClose={() => setIsAppointmentModalOpen(false)}
-        title="Agendar Cita"
+        title={t.calendar?.newAppointmentTitle || "Agendar Cita"}
       >
         <div className="space-y-4">
           <div>
             <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-              Usuario
+              {t.calendar?.userType || "Usuario"}
             </label>
             <select
               value={appointmentUserId}
               onChange={(e) => setAppointmentUserId(e.target.value)}
               className="w-full h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-sm text-on-surface mt-1"
             >
-              <option value="">Seleccionar usuario...</option>
+              <option value="">{t.calendar?.selectUser || "Seleccionar usuario..."}</option>
               {allUsers.map((u) => (
                 <option key={u.id} value={u.id}>
-                  {u.name} ({u.role === "CLOSER" ? "Closer" : "Trainee"})
+                  {u.name} ({u.role === "CLOSER" ? t.roles?.CLOSER || "Closer" : t.roles?.SETTER || "Trainee"})
                 </option>
               ))}
             </select>
           </div>
           <div>
             <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-              Fecha
+              {t.calendar?.date || "Fecha"}
             </label>
             <input
               type="date"
@@ -1053,7 +1055,7 @@ export default function CalendarPage() {
           </div>
           <div>
             <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-              Hora
+              {t.calendar?.time || "Hora"}
             </label>
             <input
               type="time"
@@ -1064,13 +1066,13 @@ export default function CalendarPage() {
           </div>
           <div>
             <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-              Dirección / Notas
+              {t.calendar?.address || "Dirección"}
             </label>
             <input
               type="text"
               value={appointmentAddress}
               onChange={(e) => setAppointmentAddress(e.target.value)}
-              placeholder="Dirección o notas de la cita..."
+              placeholder={t.calendar?.address || "Dirección..."}
               className="w-full h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-sm text-on-surface mt-1"
             />
           </div>
@@ -1080,14 +1082,14 @@ export default function CalendarPage() {
               className="flex-1"
               onClick={() => setIsAppointmentModalOpen(false)}
             >
-              Cancelar
+              {t.calendar?.cancel || "Cancelar"}
             </Button>
             <Button
               onClick={handleCreateAppointment}
               disabled={appointmentSaving || !appointmentDate || !appointmentTime || !appointmentUserId}
               className="flex-1"
             >
-              {appointmentSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar"}
+              {appointmentSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : t.calendar?.save || "Guardar"}
             </Button>
           </div>
         </div>
@@ -1100,21 +1102,21 @@ export default function CalendarPage() {
           setRejectReason("");
           setRejectVisitId(null);
         }}
-        title="Rechazar Cita"
+        title={t.calendar?.rejectAppointment || "Rechazar Cita"}
       >
         <div className="space-y-4">
           <p className="text-sm text-on-surface-variant">
-            Al rechazar esta cita, se eliminará del calendario y se notificará al administrador.
+            {t.calendar?.rejectWarning || "Al rechazar esta cita, se eliminará del calendario y se notificará al administrador."}
           </p>
           <div>
             <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-              Motivo del rechazo
+              {t.calendar?.rejectReasonLabel || "Motivo del rechazo"}
             </label>
             <textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               className="w-full min-h-[100px] bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none rounded-xl p-4 resize-none text-on-surface mt-1"
-              placeholder="Explica por qué rechazas esta cita..."
+              placeholder={t.calendar?.rejectPlaceholder || "Explica por qué rechazas esta cita..."}
             />
           </div>
           <div className="flex gap-3">
@@ -1127,7 +1129,7 @@ export default function CalendarPage() {
                 setRejectVisitId(null);
               }}
             >
-              Cancelar
+              {t.calendar?.cancel || "Cancelar"}
             </Button>
             <Button
               onClick={handleRejectAppointment}
@@ -1135,7 +1137,7 @@ export default function CalendarPage() {
               className="flex-1"
               isLoading={rejectSaving}
             >
-              Confirmar Rechazo
+              {t.calendar?.confirmReject || "Confirmar Rechazo"}
             </Button>
           </div>
         </div>
@@ -1147,32 +1149,32 @@ export default function CalendarPage() {
           setIsAdminReassignModalOpen(false);
           setAdminReassignVisit(null);
         }}
-        title="Reasignar Cita"
+        title={t.calendar?.adminReassign || "Reasignar Cita (Admin)"}
       >
         <div className="space-y-4">
           <p className="text-sm text-on-surface-variant">
-            Reasigna esta cita a otro usuario con una nueva fecha y hora.
+            {t.calendar?.adminReassignDesc || "Reasigna esta cita a otro usuario con una nueva fecha y hora."}
           </p>
           <div>
             <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-              Usuario
+              {t.calendar?.userType || "Usuario"}
             </label>
             <select
               value={adminReassignUserId}
               onChange={(e) => setAdminReassignUserId(e.target.value)}
               className="w-full h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-sm text-on-surface mt-1"
             >
-              <option value="">Seleccionar usuario...</option>
+              <option value="">{t.calendar?.selectUser || "Seleccionar usuario..."}</option>
               {adminReassignUsers.map((u) => (
                 <option key={u.id} value={u.id}>
-                  {u.name} ({u.role === "CLOSER" ? "Closer" : "Trainee"})
+                  {u.name} ({u.role === "CLOSER" ? t.roles?.CLOSER || "Closer" : t.roles?.SETTER || "Trainee"})
                 </option>
               ))}
             </select>
           </div>
           <div>
             <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-              Fecha
+              {t.calendar?.date || "Fecha"}
             </label>
             <input
               type="date"
@@ -1183,7 +1185,7 @@ export default function CalendarPage() {
           </div>
           <div>
             <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-              Hora
+              {t.calendar?.time || "Hora"}
             </label>
             <input
               type="time"
@@ -1201,15 +1203,14 @@ export default function CalendarPage() {
                 setAdminReassignVisit(null);
               }}
             >
-              Cancelar
+              {t.calendar?.cancel || "Cancelar"}
             </Button>
             <Button
               onClick={handleAdminReassign}
               disabled={adminReassignSaving || !adminReassignUserId || !adminReassignDate || !adminReassignTime}
               className="flex-1"
-              isLoading={adminReassignSaving}
             >
-              Reasignar
+              {adminReassignSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : t.calendar?.reassign || "Reasignar"}
             </Button>
           </div>
         </div>

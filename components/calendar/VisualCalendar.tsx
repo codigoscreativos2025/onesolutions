@@ -13,7 +13,7 @@ import {
   startOfWeek,
   endOfWeek,
 } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { es, enUS } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLocale } from "@/lib/locale-context";
 
@@ -45,14 +45,15 @@ function formatTimeAMPM(dateStr: string): string {
 }
 
 export function VisualCalendar({ visits, onDayClick, dayAvailability, onMonthChange }: VisualCalendarProps) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+  const dateFnsLocale = locale === "en" ? enUS : es;
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
-  const calendarStart = startOfWeek(monthStart);
-  const calendarEnd = endOfWeek(monthEnd);
+  const calendarStart = startOfWeek(monthStart, { locale: dateFnsLocale });
+  const calendarEnd = endOfWeek(monthEnd, { locale: dateFnsLocale });
 
   const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
@@ -92,6 +93,10 @@ export function VisualCalendar({ visits, onDayClick, dayAvailability, onMonthCha
     onMonthChange?.(newMonth);
   };
 
+  const weekDays = locale === "en" 
+    ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    : ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
       <div className="flex items-center justify-between mb-6">
@@ -102,7 +107,7 @@ export function VisualCalendar({ visits, onDayClick, dayAvailability, onMonthCha
           <ChevronLeft className="w-5 h-5" />
         </button>
         <h2 className="text-xl font-bold capitalize">
-          {format(currentMonth, 'MMMM yyyy', { locale: es })}
+          {format(currentMonth, 'MMMM yyyy', { locale: dateFnsLocale })}
         </h2>
         <button
           onClick={() => handleMonthChange(addMonths(currentMonth, 1))}
@@ -113,7 +118,7 @@ export function VisualCalendar({ visits, onDayClick, dayAvailability, onMonthCha
       </div>
 
       <div className="grid grid-cols-7 gap-2 mb-2">
-        {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map((day) => (
+        {weekDays.map((day) => (
           <div
             key={day}
             className="text-center text-sm font-semibold text-gray-600 dark:text-gray-400 py-2"
