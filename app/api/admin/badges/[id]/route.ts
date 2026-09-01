@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const session = await auth();
   if (!session || session.user.role !== "ADMIN") {
@@ -14,23 +14,44 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, description, icon, color, doorsThreshold, prospectsThreshold, projectsThreshold } = body;
+    const {
+      name,
+      description,
+      icon,
+      color,
+      role,
+      doorsThreshold,
+      prospectsThreshold,
+      projectsThreshold,
+    } = body;
 
     const badge = await prisma.badge.update({
       where: { id: parseInt(id) },
-      data: { name, description, icon, color, doorsThreshold, prospectsThreshold, projectsThreshold },
+      data: {
+        name,
+        description,
+        icon,
+        color,
+        role,
+        doorsThreshold,
+        prospectsThreshold,
+        projectsThreshold,
+      },
     });
 
     return NextResponse.json(badge);
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Error updating badge" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Error updating badge" },
+      { status: 500 },
+    );
   }
 }
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const session = await auth();
   if (!session || session.user.role !== "ADMIN") {
@@ -47,6 +68,9 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Error deleting badge" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Error deleting badge" },
+      { status: 500 },
+    );
   }
 }

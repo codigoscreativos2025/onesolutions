@@ -138,7 +138,8 @@ export default function AdminBadgesPage() {
     setIsModalOpen(true);
   };
 
-  const setterBadges = badges.filter((b) => b.role === "SETTER");
+  const traineeBadges = badges.filter((b) => b.role === "SETTER");
+  const setterBadges = badges.filter((b) => b.role === "SETTER_JR");
   const closerBadges = badges.filter((b) => b.role === "CLOSER");
 
   if (loading) {
@@ -156,13 +157,19 @@ export default function AdminBadgesPage() {
           <h1 className="font-headline text-2xl font-bold text-on-surface">
             {t.admin.badges}
           </h1>
-          <p className="text-on-surface-variant">
-            {t.admin.badgesDesc}
-          </p>
+          <p className="text-on-surface-variant">{t.admin.badgesDesc}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleCheckBadges} disabled={checking}>
-            {checking ? <Loader2 className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
+          <Button
+            variant="outline"
+            onClick={handleCheckBadges}
+            disabled={checking}
+          >
+            {checking ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <RefreshCw className="w-5 h-5" />
+            )}
             <span className="ml-2">Verificar</span>
           </Button>
           <Button onClick={openCreateModal}>
@@ -170,6 +177,63 @@ export default function AdminBadgesPage() {
             Nueva Medalla
           </Button>
         </div>
+      </div>
+
+      {/* Trainee Badges */}
+      <div>
+        <h2 className="font-headline text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
+          <Award className="w-5 h-5 text-tertiary" />
+          Medallas para Trainees
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {traineeBadges.map((badge) => (
+            <div
+              key={badge.id}
+              className="glass-panel p-5 rounded-2xl flex items-center justify-between"
+            >
+              <div className="flex items-center gap-4">
+                <div
+                  className="w-14 h-14 rounded-full flex items-center justify-center text-2xl"
+                  style={{ backgroundColor: `${badge.color}20` }}
+                >
+                  {badge.icon}
+                </div>
+                <div>
+                  <p className="font-semibold text-on-surface">{badge.name}</p>
+                  <p className="text-sm text-on-surface-variant">
+                    {badge.description}
+                  </p>
+                  <p className="text-xs text-on-surface-variant mt-1">
+                    {badge.doorsThreshold} puertas + {badge.prospectsThreshold}{" "}
+                    prospectos
+                  </p>
+                  <p className="text-xs text-primary mt-1">
+                    {badge._count?.userBadges || 0} usuarios la tienen
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleEdit(badge)}
+                  className="p-2 rounded-lg hover:bg-surface-container-high transition-colors"
+                >
+                  <Pencil className="w-4 h-4 text-on-surface-variant" />
+                </button>
+                <button
+                  onClick={() => handleDelete(badge.id)}
+                  className="p-2 rounded-lg hover:bg-error-container transition-colors"
+                >
+                  <Trash2 className="w-4 h-4 text-error" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        {traineeBadges.length === 0 && (
+          <p className="text-on-surface-variant text-center py-4">
+            No hay medallas configuradas para trainees
+          </p>
+        )}
       </div>
 
       {/* Setter Badges */}
@@ -197,7 +261,8 @@ export default function AdminBadgesPage() {
                     {badge.description}
                   </p>
                   <p className="text-xs text-on-surface-variant mt-1">
-                    {badge.doorsThreshold} puertas + {badge.prospectsThreshold} prospectos
+                    {badge.doorsThreshold} puertas + {badge.prospectsThreshold}{" "}
+                    prospectos
                   </p>
                   <p className="text-xs text-primary mt-1">
                     {badge._count?.userBadges || 0} usuarios la tienen
@@ -297,10 +362,13 @@ export default function AdminBadgesPage() {
             </label>
             <select
               value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, role: e.target.value })
+              }
               className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface mt-1"
             >
-              <option value="SETTER">Setter</option>
+              <option value="SETTER">Trainee</option>
+              <option value="SETTER_JR">Setter</option>
               <option value="CLOSER">Closer</option>
             </select>
           </div>
@@ -313,7 +381,9 @@ export default function AdminBadgesPage() {
           <Input
             label="Descripción"
             value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, description: e.target.value })
+            }
           />
           <Input
             label="Icono (emoji)"
@@ -329,30 +399,44 @@ export default function AdminBadgesPage() {
               <input
                 type="color"
                 value={formData.color}
-                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, color: e.target.value })
+                }
                 className="w-12 h-12 rounded-xl border border-outline-variant bg-transparent"
               />
               <Input
                 value={formData.color}
-                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, color: e.target.value })
+                }
                 className="flex-1"
               />
             </div>
           </div>
 
-          {formData.role === "SETTER" ? (
+          {formData.role === "SETTER" || formData.role === "SETTER_JR" ? (
             <div className="grid grid-cols-2 gap-4">
               <Input
                 label="Meta de Puertas"
                 type="number"
                 value={formData.doorsThreshold}
-                onChange={(e) => setFormData({ ...formData, doorsThreshold: parseInt(e.target.value) || 0 })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    doorsThreshold: parseInt(e.target.value) || 0,
+                  })
+                }
               />
               <Input
                 label="Meta de Prospectos"
                 type="number"
                 value={formData.prospectsThreshold}
-                onChange={(e) => setFormData({ ...formData, prospectsThreshold: parseInt(e.target.value) || 0 })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    prospectsThreshold: parseInt(e.target.value) || 0,
+                  })
+                }
               />
             </div>
           ) : (
@@ -360,7 +444,12 @@ export default function AdminBadgesPage() {
               label="Meta de Proyectos Cerrados"
               type="number"
               value={formData.projectsThreshold}
-              onChange={(e) => setFormData({ ...formData, projectsThreshold: parseInt(e.target.value) || 0 })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  projectsThreshold: parseInt(e.target.value) || 0,
+                })
+              }
             />
           )}
 

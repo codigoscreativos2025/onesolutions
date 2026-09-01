@@ -30,16 +30,24 @@ export async function GET() {
         where: { setterId: setter.id, stage: "PROPOSAL_ACCEPTED" },
       });
 
-      const setterBadges = badges.filter((b) => b.role === "SETTER");
-      for (const badge of setterBadges) {
-        const hasBadge = setter.userBadges.some((ub) => ub.badgeId === badge.id);
+      const applicableBadges = badges.filter((b) => b.role === setter.role);
+      for (const badge of applicableBadges) {
+        const hasBadge = setter.userBadges.some(
+          (ub) => ub.badgeId === badge.id,
+        );
         if (!hasBadge) {
-          const doorsMet = badge.doorsThreshold ? doorsKnocked >= badge.doorsThreshold : true;
-          const prospectsMet = badge.prospectsThreshold ? prospectsGenerated >= badge.prospectsThreshold : true;
+          const doorsMet = badge.doorsThreshold
+            ? doorsKnocked >= badge.doorsThreshold
+            : true;
+          const prospectsMet = badge.prospectsThreshold
+            ? prospectsGenerated >= badge.prospectsThreshold
+            : true;
 
           if (doorsMet && prospectsMet) {
             await prisma.userBadge.upsert({
-              where: { userId_badgeId: { userId: setter.id, badgeId: badge.id } },
+              where: {
+                userId_badgeId: { userId: setter.id, badgeId: badge.id },
+              },
               create: { userId: setter.id, badgeId: badge.id },
               update: {},
             });
@@ -66,13 +74,19 @@ export async function GET() {
 
       const closerBadges = badges.filter((b) => b.role === "CLOSER");
       for (const badge of closerBadges) {
-        const hasBadge = closer.userBadges.some((ub) => ub.badgeId === badge.id);
+        const hasBadge = closer.userBadges.some(
+          (ub) => ub.badgeId === badge.id,
+        );
         if (!hasBadge) {
-          const projectsMet = badge.projectsThreshold ? projectsClosed >= badge.projectsThreshold : true;
+          const projectsMet = badge.projectsThreshold
+            ? projectsClosed >= badge.projectsThreshold
+            : true;
 
           if (projectsMet) {
             await prisma.userBadge.upsert({
-              where: { userId_badgeId: { userId: closer.id, badgeId: badge.id } },
+              where: {
+                userId_badgeId: { userId: closer.id, badgeId: badge.id },
+              },
               create: { userId: closer.id, badgeId: badge.id },
               update: {},
             });
@@ -93,6 +107,9 @@ export async function GET() {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Error checking badges" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Error checking badges" },
+      { status: 500 },
+    );
   }
 }
