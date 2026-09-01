@@ -5,7 +5,17 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { CreateLeadModal } from "@/components/leads/CreateLeadModal";
-import { DoorOpen, X, User, DoorClosed, ThumbsDown, Clock, UserX, Home, Loader2 } from "lucide-react";
+import {
+  DoorOpen,
+  X,
+  User,
+  DoorClosed,
+  ThumbsDown,
+  Clock,
+  UserX,
+  Home,
+  Loader2,
+} from "lucide-react";
 import { NotesPanel } from "@/components/lead/NotesPanel";
 
 import { useLocale } from "@/lib/locale-context";
@@ -61,7 +71,7 @@ interface ParcelSheetProps {
   onVisitStarted: () => void;
   onParcelUpdated?: (updated: Parcel) => void;
   onQuickTagApplied?: () => void;
-  
+
   userRole: string;
   userId: string;
   userCloserId?: number | null;
@@ -84,67 +94,77 @@ export function ParcelSheet({
   const [claiming, setClaiming] = useState(false);
   const [claimError, setClaimError] = useState("");
 
-
-
-
-
-
-
-
-
-
-
   const [showLeadModal, setShowLeadModal] = useState(false);
   const [showConfirmClaim, setShowConfirmClaim] = useState(false);
   const [visitNotAvailTags, setVisitNotAvailTags] = useState<NotAvailTag[]>([]);
 
-  const mapUser: MapUser = { id: userId, role: userRole, closerId: userCloserId };
-  const { canEditNotes, canChangeTags, canCreateLead, canViewDetails, blockedReason } = useMapPermissions(mapUser, parcel as any);
+  const mapUser: MapUser = {
+    id: userId,
+    role: userRole,
+    closerId: userCloserId,
+  };
+  const {
+    canEditNotes,
+    canChangeTags,
+    canCreateLead,
+    canViewDetails,
+    blockedReason,
+  } = useMapPermissions(mapUser, parcel as any);
 
+  const isSavingRef = useRef(false);
 
-      const isSavingRef = useRef(false);
+  const saveTagsAuto = useCallback(
+    async (newTags: TagObject[]) => {
+      if (!parcel || isSavingRef.current) return;
 
-  const saveTagsAuto = useCallback(async (newTags: TagObject[]) => {
-    if (!parcel || isSavingRef.current) return;
-    
-    // Optimistic update
-    const prevParcel = { ...parcel };
-    const updatedParcel = { ...parcel, parcelTags: JSON.stringify(newTags) };
-    if (onParcelUpdated) onParcelUpdated(updatedParcel);
-    
-    isSavingRef.current = true;
-    try {
-      const res = await fetch(`/api/parcels/${encodeURIComponent(parcel.id)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ parcelTags: JSON.stringify(newTags), address: parcel.address, geometry: parcel.geometry, externalId: parcel.externalId }),
-      });
-      if (res.ok) {
-        // We know newTags is correct. Keep the tags!
-        if (onParcelUpdated) onParcelUpdated({ ...parcel, parcelTags: JSON.stringify(newTags) });
-        if (onQuickTagApplied) onQuickTagApplied();
-      } else {
-        console.error("Failed to save parcel tags:", res.status);
+      // Optimistic update
+      const prevParcel = { ...parcel };
+      const updatedParcel = { ...parcel, parcelTags: JSON.stringify(newTags) };
+      if (onParcelUpdated) onParcelUpdated(updatedParcel);
+
+      isSavingRef.current = true;
+      try {
+        const res = await fetch(
+          `/api/parcels/${encodeURIComponent(parcel.id)}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              parcelTags: JSON.stringify(newTags),
+              address: parcel.address,
+              geometry: parcel.geometry,
+              externalId: parcel.externalId,
+            }),
+          },
+        );
+        if (res.ok) {
+          // We know newTags is correct. Keep the tags!
+          if (onParcelUpdated)
+            onParcelUpdated({ ...parcel, parcelTags: JSON.stringify(newTags) });
+          if (onQuickTagApplied) onQuickTagApplied();
+        } else {
+          console.error("Failed to save parcel tags:", res.status);
+          if (onParcelUpdated) onParcelUpdated(prevParcel);
+        }
+      } catch {
         if (onParcelUpdated) onParcelUpdated(prevParcel);
+      } finally {
+        isSavingRef.current = false;
       }
-    } catch {
-      if (onParcelUpdated) onParcelUpdated(prevParcel);
-    } finally {
-      isSavingRef.current = false;
-    }
-  }, [parcel, onParcelUpdated]);
+    },
+    [parcel, onParcelUpdated],
+  );
 
   const handleQuickTag = async (name: string, color: string) => {
     const newTags = [{ name, color, date: new Date().toISOString() }];
     await saveTagsAuto(newTags);
-  };  useEffect(() => {
+  };
+  useEffect(() => {
     setShowConfirmClaim(false);
     if (!parcel) {
       setVisitNotAvailTags([]);
       return;
     }
-
-
 
     const pId = parcel.id;
     if (!pId) return;
@@ -152,15 +172,16 @@ export function ParcelSheet({
     const latestVisit = parcel.visits?.[0];
     if (latestVisit?.notAvailableTags) {
       setVisitNotAvailTags(
-        latestVisit.notAvailableTags.map((vt: { tag: NotAvailTag; notes?: string }) => ({
-          ...vt.tag,
-        }))
+        latestVisit.notAvailableTags.map(
+          (vt: { tag: NotAvailTag; notes?: string }) => ({
+            ...vt.tag,
+          }),
+        ),
       );
     } else {
       setVisitNotAvailTags([]);
     }
   }, [parcel?.id]);
-
 
   if (!parcel) return null;
 
@@ -168,7 +189,9 @@ export function ParcelSheet({
     return (
       <div className="fixed inset-y-0 right-0 z-[1000] w-full sm:w-96 glass-panel border-l border-glass-border shadow-[-10px_0_40px_rgba(0,0,0,0.1)] flex flex-col justify-center items-center h-full animate-slide-in-right">
         <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
-        <p className="text-on-surface-variant font-medium text-sm">{t.common.loading}</p>
+        <p className="text-on-surface-variant font-medium text-sm">
+          {t.common.loading}
+        </p>
       </div>
     );
   }
@@ -183,17 +206,31 @@ export function ParcelSheet({
 
   const getStageLabel = (p: Parcel): string => {
     const latestVisit = p.visits?.[0];
-    return latestVisit?.stage ? (STAGE_MAP[latestVisit.stage] || "Lead") : "Lead";
+    return latestVisit?.stage ? STAGE_MAP[latestVisit.stage] || "Lead" : "Lead";
   };
 
-  const metadata = parcel.metadata ? JSON.parse(parcel.metadata) : {};
+  const metadata = (() => {
+    if (!parcel.metadata) return {};
+    try {
+      return JSON.parse(parcel.metadata);
+    } catch {
+      return {};
+    }
+  })();
 
-  const canVisit = userRole === "SETTER" || userRole === "SETTER_JR" || userRole === "CLOSER" || userRole === "TRAINEE";
+  const canVisit =
+    userRole === "SETTER" ||
+    userRole === "SETTER_JR" ||
+    userRole === "CLOSER" ||
+    userRole === "TRAINEE";
   const isTakenByMe = parcel.setter?.id === parseInt(userId);
-  const activeVisits = parcel.visits?.filter(v => v.stage !== "CANCELLED" && v.stage !== "CLOSED") || [];
+  const activeVisits =
+    parcel.visits?.filter(
+      (v) => v.stage !== "CANCELLED" && v.stage !== "CLOSED",
+    ) || [];
   const hasActiveLead = activeVisits.length > 0;
   const isAvailable = parcel.status === "AVAILABLE" && !hasActiveLead;
-  const closedVisits = parcel.visits?.filter(v => v.stage === "CLOSED") || [];
+  const closedVisits = parcel.visits?.filter((v) => v.stage === "CLOSED") || [];
   const hasPriorProjects = closedVisits.length > 0;
 
   const tags: TagObject[] = (() => {
@@ -204,12 +241,13 @@ export function ParcelSheet({
     }
   })();
 
-  const fullAddress = [parcel.city || metadata.city, parcel.state || metadata.state, parcel.zipCode || metadata.zipCode]
+  const fullAddress = [
+    parcel.city || metadata.city,
+    parcel.state || metadata.state,
+    parcel.zipCode || metadata.zipCode,
+  ]
     .filter(Boolean)
     .join(", ");
-
-
-
 
   const handleKnockDoor = async () => {
     if (claiming) return;
@@ -226,7 +264,9 @@ export function ParcelSheet({
       onVisitStarted();
       router.push(`/visit/${navigateId}`);
     } catch (e) {
-      setClaimError(e instanceof Error ? e.message : "Error al reclamar parcela");
+      setClaimError(
+        e instanceof Error ? e.message : "Error al reclamar parcela",
+      );
     } finally {
       setClaiming(false);
       setShowConfirmClaim(false);
@@ -238,11 +278,19 @@ export function ParcelSheet({
       <div className="fixed inset-y-0 right-0 z-[1000] w-full sm:w-96 glass-panel border-l border-glass-border shadow-[-10px_0_40px_rgba(0,0,0,0.1)] flex flex-col max-h-screen sm:max-h-none animate-slide-in-right pb-16">
         <div className="flex justify-between items-center p-4 border-b border-glass-border">
           <div className="flex items-center gap-2">
-            <StatusBadge status={parcel.status} stageLabel={parcel.status === "LEAD" ? getStageLabel(parcel) : undefined} />
+            <StatusBadge
+              status={parcel.status}
+              stageLabel={
+                parcel.status === "LEAD" ? getStageLabel(parcel) : undefined
+              }
+            />
             {parcel.setter && (
               <span className="text-on-surface-variant text-xs">
                 {" "}
-                <Link href={`/profile/${parcel.setter.id}`} className="hover:underline">
+                <Link
+                  href={`/profile/${parcel.setter.id}`}
+                  className="hover:underline"
+                >
                   {parcel.setter.name}
                 </Link>
               </span>
@@ -259,7 +307,10 @@ export function ParcelSheet({
         <div className="flex-1 overflow-y-auto p-5 space-y-6">
           <div>
             <h2 className="font-headline text-xl font-bold text-on-surface mb-1">
-              {parcel.address}
+              {parcel.address === "Sin dirección" ||
+              parcel.address === "Sin direccion"
+                ? t.map.noAddress
+                : parcel.address}
             </h2>
             {fullAddress && (
               <p className="text-on-surface-variant text-sm">{fullAddress}</p>
@@ -270,20 +321,34 @@ export function ParcelSheet({
                 {parcel.ownerName}
               </p>
             )}
-
           </div>
 
           {tags.length > 0 && (
             <div
               className="rounded-xl p-3 flex items-center gap-2"
-              style={{ backgroundColor: `${tags[0].color}15`, borderLeft: `4px solid ${tags[0].color}` }}
+              style={{
+                backgroundColor: `${tags[0].color}15`,
+                borderLeft: `4px solid ${tags[0].color}`,
+              }}
             >
               <span
                 className="w-3 h-3 rounded-full shrink-0"
                 style={{ backgroundColor: tags[0].color }}
               />
-              <span className="text-sm font-bold" style={{ color: tags[0].color }}>
-                {tags[0].name}
+              <span
+                className="text-sm font-bold"
+                style={{ color: tags[0].color }}
+              >
+                {(() => {
+                  const tagMap: Record<string, string> = {
+                    "No abrió": t.map.tagNoAnswer,
+                    "No le interesa": t.map.tagNotInterested,
+                    "Pasar luego": t.map.tagPassLater,
+                    "No esta el propietario": t.map.tagOwnerNotPresent,
+                    "NO VIVE EL PROPIETARIO": t.map.tagOwnerNotResident,
+                  };
+                  return tagMap[tags[0].name] || tags[0].name;
+                })()}
               </span>
             </div>
           )}
@@ -291,16 +356,21 @@ export function ParcelSheet({
           {hasPriorProjects && (
             <div className="space-y-2">
               <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                Historial de Proyectos
+                {t.map.projectHistory}
               </h3>
               {closedVisits.map((v) => (
-                <div key={v.id} className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/15 flex justify-between items-start">
+                <div
+                  key={v.id}
+                  className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/15 flex justify-between items-start"
+                >
                   <div className="text-sm">
                     <p className="font-medium text-on-surface">
-                      Cerrado por {v.setter?.name || "Desconocido"}
+                      {t.map.closedBy} {v.setter?.name || "Desconocido"}
                     </p>
                     <p className="text-xs text-on-surface-variant mt-0.5">
-                      Proyectos: {v.projects?.map(p => p.projectType.name).join(", ") || "N/A"}
+                      {t.map.projects}:{" "}
+                      {v.projects?.map((p) => p.projectType.name).join(", ") ||
+                        "N/A"}
                     </p>
                     {v.createdAt && (
                       <p className="text-xs text-on-surface-variant mt-0.5">
@@ -308,36 +378,79 @@ export function ParcelSheet({
                       </p>
                     )}
                   </div>
-                  {userRole !== "SETTER_JR" && (userRole !== "SETTER" || v.setter?.id === parseInt(userId)) && (
-                    <Link href={`/lead/${v.id}`} target="_blank" className="text-primary text-xs hover:underline shrink-0 ml-2">
-                      Ver
-                    </Link>
-                  )}
+                  {userRole !== "SETTER_JR" &&
+                    (userRole !== "SETTER" ||
+                      v.setter?.id === parseInt(userId)) && (
+                      <Link
+                        href={`/lead/${v.id}`}
+                        target="_blank"
+                        className="text-primary text-xs hover:underline shrink-0 ml-2"
+                      >
+                        {t.common.view}
+                      </Link>
+                    )}
                 </div>
               ))}
             </div>
           )}
 
-
-
           <div className="grid grid-cols-2 gap-3">
-            {metadata.owner != null && metadata.owner !== "" && <InfoCard label="Propietario" value={metadata.owner} />}
-            {metadata.property_class != null && metadata.property_class !== "" && <InfoCard label="Clase" value={getPropertyClassLabel(metadata.property_class)} />}
-            {metadata.acreage != null && metadata.acreage !== "" && <InfoCard label="Acres" value={metadata.acreage} />}
-            {metadata.land_value != null && metadata.land_value !== "" && <InfoCard label="Valor terreno" value={`$${Number(metadata.land_value).toLocaleString()}`} />}
-            {metadata.building_value != null && metadata.building_value !== "" && <InfoCard label="Valor constr." value={`$${Number(metadata.building_value).toLocaleString()}`} />}
-            {metadata.roofAge != null && <InfoCard label="Edad del techo" value={metadata.roofAge} />}
-            {metadata.utility != null && <InfoCard label="Est. Luz" value={metadata.utility} />}
-            {metadata.solarPotential != null && <InfoCard label="Potencial solar" value={metadata.solarPotential} />}
+            {metadata.owner != null && metadata.owner !== "" && (
+              <InfoCard label={t.map.owner} value={metadata.owner} />
+            )}
+            {metadata.property_class != null &&
+              metadata.property_class !== "" && (
+                <InfoCard
+                  label={t.map.propertyClass}
+                  value={getPropertyClassLabel(metadata.property_class)}
+                />
+              )}
+            {metadata.acreage != null && metadata.acreage !== "" && (
+              <InfoCard label={t.map.acres} value={metadata.acreage} />
+            )}
+            {metadata.land_value != null && metadata.land_value !== "" && (
+              <InfoCard
+                label={t.map.landValue}
+                value={`$${Number(metadata.land_value).toLocaleString()}`}
+              />
+            )}
+            {metadata.building_value != null &&
+              metadata.building_value !== "" && (
+                <InfoCard
+                  label={t.map.buildingValue}
+                  value={`$${Number(metadata.building_value).toLocaleString()}`}
+                />
+              )}
+            {metadata.roofAge != null && (
+              <InfoCard label={t.map.roofAge} value={metadata.roofAge} />
+            )}
+            {metadata.utility != null && (
+              <InfoCard label={t.map.utility} value={metadata.utility} />
+            )}
+            {metadata.solarPotential != null && (
+              <InfoCard
+                label={t.map.solarPotential}
+                value={metadata.solarPotential}
+              />
+            )}
             {parcel.ownerOccupied !== undefined && (
-              <InfoCard label="Tipo" value={parcel.ownerOccupied ? "Dueño" : "Rentado"} />
+              <InfoCard
+                label={t.map.type}
+                value={
+                  parcel.ownerOccupied ? t.map.ownerOccupied : t.map.rented
+                }
+              />
             )}
             <InfoCard
-              label="Estado"
+              label={t.map.status}
               value={
-                parcel.status === "LEAD" ? getStageLabel(parcel) :
-                parcel.status === "CUSTOMER" ? t.map.customer :
-                t.map.available
+                parcel.status === "LEAD"
+                  ? getStageLabel(parcel)
+                  : parcel.status === "AVAILABLE"
+                    ? t.map.available
+                    : parcel.status === "CUSTOMER"
+                      ? t.map.customer
+                      : t.map.available
               }
             />
           </div>
@@ -345,24 +458,73 @@ export function ParcelSheet({
           {canChangeTags && (
             <>
               <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO ABRIO", "#ef4444")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#ef4444" }}><DoorClosed className="w-3.5 h-3.5 mr-1" />{t.map.tagNoAnswer}</Button>
-                <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO LE INTERESA", "#f97316")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#f97316" }}><ThumbsDown className="w-3.5 h-3.5 mr-1" />{t.map.tagNotInterested}</Button>
-                <Button variant="outline" size="sm" onClick={() => handleQuickTag("PASAR LUEGO", "#3b82f6")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#3b82f6" }}><Clock className="w-3.5 h-3.5 mr-1" />{t.map.tagPassLater}</Button>
-                <Button variant="outline" size="sm" onClick={() => handleQuickTag("No esta el propietario", "#a855f7")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#a855f7" }}><UserX className="w-3.5 h-3.5 mr-1" />{t.map.tagOwnerNotPresent}</Button>
-                <Button variant="outline" size="sm" onClick={() => handleQuickTag("NO VIVE EL PROPIETARIO", "#eab308")} className="text-white text-xs hover:opacity-90 border-transparent" style={{ backgroundColor: "#eab308" }}><Home className="w-3.5 h-3.5 mr-1" />{t.map.tagOwnerNotResident}</Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickTag("NO ABRIO", "#ef4444")}
+                  className="text-white text-xs hover:opacity-90 border-transparent"
+                  style={{ backgroundColor: "#ef4444" }}
+                >
+                  <DoorClosed className="w-3.5 h-3.5 mr-1" />
+                  {t.map.tagNoAnswer}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickTag("NO LE INTERESA", "#f97316")}
+                  className="text-white text-xs hover:opacity-90 border-transparent"
+                  style={{ backgroundColor: "#f97316" }}
+                >
+                  <ThumbsDown className="w-3.5 h-3.5 mr-1" />
+                  {t.map.tagNotInterested}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickTag("PASAR LUEGO", "#3b82f6")}
+                  className="text-white text-xs hover:opacity-90 border-transparent"
+                  style={{ backgroundColor: "#3b82f6" }}
+                >
+                  <Clock className="w-3.5 h-3.5 mr-1" />
+                  {t.map.tagPassLater}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    handleQuickTag("No esta el propietario", "#a855f7")
+                  }
+                  className="text-white text-xs hover:opacity-90 border-transparent"
+                  style={{ backgroundColor: "#a855f7" }}
+                >
+                  <UserX className="w-3.5 h-3.5 mr-1" />
+                  {t.map.tagOwnerNotPresent}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    handleQuickTag("NO VIVE EL PROPIETARIO", "#eab308")
+                  }
+                  className="text-white text-xs hover:opacity-90 border-transparent"
+                  style={{ backgroundColor: "#eab308" }}
+                >
+                  <Home className="w-3.5 h-3.5 mr-1" />
+                  {t.map.tagOwnerNotResident}
+                </Button>
               </div>
             </>
           )}
 
           {canEditNotes && (
-              <NotesPanel 
-                parcelId={parcel.id} 
-                parcelData={{ 
-                  address: parcel.address, 
-                  geometry: parcel.geometry, 
-                  externalId: parcel.externalId 
-                }} 
-              />
+            <NotesPanel
+              parcelId={parcel.id}
+              parcelData={{
+                address: parcel.address,
+                geometry: parcel.geometry,
+                externalId: parcel.externalId,
+              }}
+            />
           )}
 
           {parcel.status === "CUSTOMER" && (
@@ -376,16 +538,29 @@ export function ParcelSheet({
           {visitNotAvailTags.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                Historial de Visita
+                {t.map.visitHistory}
               </h3>
               <div className="flex flex-wrap gap-1.5">
                 {visitNotAvailTags.map((vt, i) => (
                   <span
                     key={i}
                     className="px-2 py-0.5 rounded-full text-[10px] font-medium"
-                    style={{ backgroundColor: vt.color + "20", color: vt.color, border: `1px solid ${vt.color}40` }}
+                    style={{
+                      backgroundColor: vt.color + "20",
+                      color: vt.color,
+                      border: `1px solid ${vt.color}40`,
+                    }}
                   >
-                    {vt.name}
+                    {(() => {
+                      const tagMap: Record<string, string> = {
+                        "No abrió": t.map.tagNoAnswer,
+                        "No le interesa": t.map.tagNotInterested,
+                        "Pasar luego": t.map.tagPassLater,
+                        "No esta el propietario": t.map.tagOwnerNotPresent,
+                        "NO VIVE EL PROPIETARIO": t.map.tagOwnerNotResident,
+                      };
+                      return tagMap[vt.name] || vt.name;
+                    })()}
                   </span>
                 ))}
               </div>
@@ -415,7 +590,7 @@ export function ParcelSheet({
               ) : (
                 <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/30 space-y-3">
                   <p className="text-sm font-medium text-on-surface text-center">
-                    ¿Estás seguro de que deseas crear el lead?
+                    {t.map.confirmCreateLead}
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -424,14 +599,18 @@ export function ParcelSheet({
                       onClick={() => setShowConfirmClaim(false)}
                       disabled={claiming}
                     >
-                      Cancelar
+                      {t.common.cancel}
                     </Button>
                     <Button
                       className="flex-1 bg-brand-green hover:bg-brand-green/90 text-white"
                       onClick={handleKnockDoor}
                       disabled={claiming}
                     >
-                      {claiming ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirmar"}
+                      {claiming ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        t.common.confirm
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -447,25 +626,35 @@ export function ParcelSheet({
             <>
               <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-surface-container-low border border-outline-variant/30">
                 <span className="w-3 h-3 rounded-full bg-green-500 inline-block shrink-0" />
-                <span className="text-sm text-on-surface-variant">{t.map.takenBy}</span>
+                <span className="text-sm text-on-surface-variant">
+                  {t.map.takenBy}
+                </span>
               </div>
-              
+
               {activeVisits.map((v, i) => (
-                <div key={v.id || i} className="bg-surface-container-low border border-outline-variant/30 rounded-xl p-4 my-2">
+                <div
+                  key={v.id || i}
+                  className="bg-surface-container-low border border-outline-variant/30 rounded-xl p-4 my-2"
+                >
                   <div className="flex items-center gap-2 text-sm text-on-surface">
                     <User className="w-4 h-4 text-primary shrink-0" />
-                    <span className="font-medium">{v.setter?.name || "Desconocido"}</span>
+                    <span className="font-medium">
+                      {v.setter?.name || "Desconocido"}
+                    </span>
                     <span className="text-on-surface-variant">|</span>
                     <span className="text-on-surface-variant">
                       {v.createdAt
-                        ? new Date(v.createdAt).toLocaleDateString("es-MX", { year: "numeric", month: "numeric", day: "numeric" })
-                        : "Fecha desconocida"}
+                        ? new Date(v.createdAt).toLocaleDateString()
+                        : t.map.unknownDate}
                     </span>
                   </div>
                   {v.projects && v.projects.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-3">
                       {v.projects.map((p, idx) => (
-                        <span key={idx} className="text-xs font-semibold text-green-700 bg-green-100 dark:bg-green-500/10 dark:text-green-400 px-2.5 py-1 rounded-md">
+                        <span
+                          key={idx}
+                          className="text-xs font-semibold text-green-700 bg-green-100 dark:bg-green-500/10 dark:text-green-400 px-2.5 py-1 rounded-md"
+                        >
                           {p.projectType.name}
                         </span>
                       ))}
@@ -473,34 +662,41 @@ export function ParcelSheet({
                   )}
                   {v.legacyNotes && (
                     <div className="mt-3 p-3 bg-white/50 dark:bg-black/20 rounded-lg border border-outline-variant/30 text-sm text-on-surface">
-                      <span className="font-semibold block mb-1 text-primary">Notas del Lead:</span>
+                      <span className="font-semibold block mb-1 text-primary">
+                        {t.map.leadNotes}
+                      </span>
                       <p className="whitespace-pre-wrap">{v.legacyNotes}</p>
                     </div>
                   )}
                 </div>
               ))}
 
-              {activeVisits[0]?.id && (() => {
-                const visit = activeVisits[0];
-                return (
-                  <>
-                    <Button 
-                      onClick={() => router.push(`/lead/${visit?.id}`)} 
-                      disabled={!canViewDetails}
-                      className="w-full mt-4 bg-brand-green hover:bg-brand-green/90 text-white shadow-md py-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Ver detalles
-                    </Button>
-                    {!canViewDetails && blockedReason && (
-                      <p className="text-xs text-on-surface-variant text-center mt-1">
-                        {blockedReason}
-                      </p>
-                    )}
-                  </>
-                );
-              })()}
+              {activeVisits[0]?.id &&
+                (() => {
+                  const visit = activeVisits[0];
+                  return (
+                    <>
+                      <Button
+                        onClick={() => router.push(`/lead/${visit?.id}`)}
+                        disabled={!canViewDetails}
+                        className="w-full mt-4 bg-brand-green hover:bg-brand-green/90 text-white shadow-md py-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {t.map.viewDetails}
+                      </Button>
+                      {!canViewDetails && blockedReason && (
+                        <p className="text-xs text-on-surface-variant text-center mt-1">
+                          {blockedReason}
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
 
-              <Button variant="outline" onClick={onClose} className="w-full mt-3">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="w-full mt-3"
+              >
                 {t.common.close}
               </Button>
             </>
@@ -528,7 +724,13 @@ export function ParcelSheet({
   );
 }
 
-function StatusBadge({ status, stageLabel }: { status: string; stageLabel?: string }) {
+function StatusBadge({
+  status,
+  stageLabel,
+}: {
+  status: string;
+  stageLabel?: string;
+}) {
   const { t } = useLocale();
   const colors = {
     AVAILABLE: "bg-error/10 text-error",
@@ -563,6 +765,3 @@ function InfoCard({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-
-
-
