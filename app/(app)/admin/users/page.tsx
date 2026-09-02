@@ -373,7 +373,7 @@ export default function AdminUsersPage() {
         </div>
         <Button onClick={openCreateModal}>
           <Plus className="w-5 h-5" />
-          Nuevo Usuario
+          {t.adminUsers?.newUser || "Nuevo Usuario"}
         </Button>
       </div>
 
@@ -407,22 +407,22 @@ export default function AdminUsersPage() {
             <thead>
               <tr className="border-b border-outline-variant/30">
                 <th className="text-left p-4 text-sm font-semibold text-on-surface-variant uppercase">
-                  Nombre
+                  {t.adminUsers?.name || "Nombre"}
                 </th>
                 <th className="text-left p-4 text-sm font-semibold text-on-surface-variant uppercase">
-                  Rol
+                  {t.adminUsers?.role || "Rol"}
                 </th>
                 <th className="text-left p-4 text-sm font-semibold text-on-surface-variant uppercase">
-                  Equipo
+                  {t.adminUsers?.team || "Equipo"}
                 </th>
                 <th className="text-left p-4 text-sm font-semibold text-on-surface-variant uppercase">
-                  Estado
+                  {t.adminUsers?.status || "Estado"}
                 </th>
                 <th className="text-left p-4 text-sm font-semibold text-on-surface-variant uppercase">
-                  Validaci&oacute;n GPS
+                  {t.adminUsers?.gpsValidation || "Validación GPS"}
                 </th>
                 <th className="text-right p-4 text-sm font-semibold text-on-surface-variant uppercase">
-                  Acciones
+                  {t.adminUsers?.actions || "Acciones"}
                 </th>
               </tr>
             </thead>
@@ -496,7 +496,9 @@ export default function AdminUsersPage() {
                         user.isActive ? "bg-primary" : "bg-error"
                       }`}
                     />
-                    {user.isActive ? "Activo" : "Inactivo"}
+                    {user.isActive 
+                      ? t.adminUsers?.active || "Activo" 
+                      : t.adminUsers?.inactive || "Inactivo"}
                   </td>
                   <td className="p-4">
                     <button
@@ -580,7 +582,7 @@ export default function AdminUsersPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingUser ? "Editar Usuario" : "Nuevo Usuario"}
+        title={editingUser ? t.adminUsers?.editUser || "Editar Usuario" : t.adminUsers?.newUser || "Nuevo Usuario"}
       >
         <form
           onSubmit={handleSubmit}
@@ -598,7 +600,7 @@ export default function AdminUsersPage() {
               </div>
             ) : (
               <div className="w-24 h-24 rounded-full bg-surface-container-low border-2 border-outline-variant flex items-center justify-center text-on-surface-variant text-sm">
-                Sin foto
+                {t.adminUsers?.noPhoto || "Sin foto"}
               </div>
             )}
             <button
@@ -606,7 +608,7 @@ export default function AdminUsersPage() {
               className="text-xs text-primary hover:underline"
               onClick={() => fileInputRef.current?.click()}
             >
-              {profilePhotoPreview ? "Cambiar foto" : "Subir foto"}
+              {profilePhotoPreview ? t.adminUsers?.changePhoto || "Cambiar foto" : t.adminUsers?.uploadPhoto || "Subir foto"}
             </button>
             {profilePhotoPreview && (
               <button
@@ -618,7 +620,7 @@ export default function AdminUsersPage() {
                   if (fileInputRef.current) fileInputRef.current.value = "";
                 }}
               >
-                Eliminar foto
+                {t.adminUsers?.deletePhoto || "Eliminar foto"}
               </button>
             )}
             <input
@@ -631,7 +633,7 @@ export default function AdminUsersPage() {
           </div>
 
           <Input
-            label="Nombre"
+            label={t.adminUsers?.nameLabel || "Nombre"}
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             required
@@ -640,7 +642,7 @@ export default function AdminUsersPage() {
             pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+"
           />
           <Input
-            label="Email"
+            label={t.adminUsers?.emailLabel || "Email"}
             type="email"
             value={formData.email}
             onChange={(e) =>
@@ -649,7 +651,7 @@ export default function AdminUsersPage() {
             required
           />
           <Input
-            label={editingUser ? "Nueva contraseña (opcional)" : "Contraseña"}
+            label={editingUser ? t.adminUsers?.passwordOptional || "Nueva contraseña (opcional)" : t.adminUsers?.passwordLabel || "Contraseña"}
             type="password"
             value={formData.password}
             onChange={(e) =>
@@ -659,7 +661,7 @@ export default function AdminUsersPage() {
             minLength={6}
           />
           <Select
-            label="Rol"
+            label={t.adminUsers?.roleLabel || "Rol"}
             value={formData.role}
             onChange={(e) => setFormData({ ...formData, role: e.target.value })}
             options={[
@@ -672,13 +674,13 @@ export default function AdminUsersPage() {
           />
           {(formData.role === "SETTER" || formData.role === "SETTER_JR") && (
             <Select
-              label="Closer asignado"
+              label={t.adminUsers?.closerLabel || "Closer asignado"}
               value={formData.closerId}
               onChange={(e) =>
                 setFormData({ ...formData, closerId: e.target.value })
               }
               options={[
-                { value: "", label: "Sin closer" },
+                { value: "", label: t.adminUsers?.noCloser || "Sin closer" },
                 ...closers.map((c) => ({ value: String(c.id), label: c.name })),
               ]}
             />
@@ -686,11 +688,11 @@ export default function AdminUsersPage() {
 
           <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
             <h3 className="font-semibold text-sm text-on-surface mb-3">
-              Información Adicional
+              {t.adminUsers?.additionalInfo || "Información Adicional"}
             </h3>
             <div className="space-y-3">
               <Input
-                label="Teléfono"
+                label={t.adminUsers?.phoneLabel || "Teléfono"}
                 value={formData.phone}
                 onChange={(e) =>
                   setFormData({ ...formData, phone: e.target.value })
@@ -699,14 +701,14 @@ export default function AdminUsersPage() {
                 pattern="[0-9\-\+\(\) ]*"
               />
               <Input
-                label="Dirección"
+                label={t.adminUsers?.addressLabel || "Dirección"}
                 value={formData.address}
                 onChange={(e) =>
                   setFormData({ ...formData, address: e.target.value })
                 }
               />
               <Input
-                label="Fecha de Nacimiento"
+                label={t.adminUsers?.dobLabel || "Fecha de Nacimiento"}
                 type="date"
                 value={formData.dateOfBirth}
                 onChange={(e) =>
@@ -724,7 +726,7 @@ export default function AdminUsersPage() {
                 }
               />
               <Input
-                label="SSN (Social Security Number)"
+                label={t.adminUsers?.ssnLabel || "SSN (Social Security Number)"}
                 value={formData.ssn}
                 onChange={(e) =>
                   setFormData({ ...formData, ssn: e.target.value })
@@ -732,28 +734,28 @@ export default function AdminUsersPage() {
                 placeholder="XXX-XX-XXXX"
               />
               <Input
-                label="Nombre del Banco"
+                label={t.adminUsers?.bankName || "Nombre del Banco"}
                 value={formData.bankName}
                 onChange={(e) =>
                   setFormData({ ...formData, bankName: e.target.value })
                 }
               />
               <Input
-                label="Routing Number"
+                label={t.adminUsers?.routingNumber || "Routing Number"}
                 value={formData.routingNumber}
                 onChange={(e) =>
                   setFormData({ ...formData, routingNumber: e.target.value })
                 }
               />
               <Input
-                label="Zelle"
+                label={t.adminUsers?.zelle || "Zelle"}
                 value={formData.zelle}
                 onChange={(e) =>
                   setFormData({ ...formData, zelle: e.target.value })
                 }
               />
               <Input
-                label="Número de Cuenta"
+                label={t.adminUsers?.accountNumber || "Número de Cuenta"}
                 value={formData.accountNumber}
                 onChange={(e) =>
                   setFormData({ ...formData, accountNumber: e.target.value })
@@ -777,7 +779,7 @@ export default function AdminUsersPage() {
               className="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary"
             />
             <label htmlFor="isActive" className="text-on-surface">
-              Usuario activo
+              {t.adminUsers?.isActiveUser || "Usuario activo"}
             </label>
           </div>
 
@@ -793,7 +795,7 @@ export default function AdminUsersPage() {
                 className="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary"
               />
               <label htmlFor="sendOnboarding" className="text-on-surface">
-                Enviar email de configuración de cuenta
+                {t.adminUsers?.sendOnboarding || "Enviar email de configuración de cuenta"}
               </label>
             </div>
           )}
