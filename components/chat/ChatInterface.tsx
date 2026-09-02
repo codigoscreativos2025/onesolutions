@@ -1882,12 +1882,12 @@ export function ChatInterface({
       {selectedRoom && (
         
 
-        <Modal isOpen={showTemplatesModal} onClose={() => setShowTemplatesModal(false)} title="Plantillas Disponibles">
+        <Modal isOpen={showTemplatesModal} onClose={() => setShowTemplatesModal(false)} title={t.adminTemplates?.templatesAvailable || "Plantillas Disponibles"}>
           <div className="space-y-4 max-h-[60vh] overflow-y-auto p-4">
             {loadingTemplates ? (
               <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
             ) : templates.length === 0 ? (
-              <div className="text-center p-8 text-on-surface-variant">No hay plantillas disponibles</div>
+              <div className="text-center p-8 text-on-surface-variant">{t.adminTemplates?.noTemplates || "No hay plantillas disponibles"}</div>
             ) : (
               <div className="grid grid-cols-1 gap-3">
                 {templates.map(tmpl => (

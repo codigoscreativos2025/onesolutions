@@ -863,7 +863,7 @@ export default function TemplatesPage() {
                   ) : (
                     <Paperclip className="w-4 h-4" />
                   )}
-                  {isUploading ? "Subiendo..." : "Adjuntar archivo"}
+                  {isUploading ? (t.adminTemplates?.uploading || "Subiendo...") : (t.adminTemplates?.attachFile || "Adjuntar archivo")}
                   <input
                     type="file"
                     className="hidden"
