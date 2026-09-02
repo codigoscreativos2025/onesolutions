@@ -528,7 +528,7 @@ export default function AdminInvoicesPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="font-headline text-2xl font-bold text-on-surface"> {t.adminInvoices?.invoices || "Facturas / Invoices"} </h1>
-          <p className="text-on-surface-variant">Genera facturas personalizadas y descargalas en PDF</p>
+          <p className="text-on-surface-variant">{t.adminInvoices?.invoicesSubtitle || "Genera facturas personalizadas y descargalas en PDF"}</p>
         </div>
         <div className="flex items-center gap-3">
           <Button onClick={handleGenerarFactura} className="gap-2 bg-primary text-on-primary">
@@ -566,7 +566,7 @@ export default function AdminInvoicesPage() {
 
           <div className="border-t border-outline-variant pt-4">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold">Facturar A (Bill To)</h3>
+              <h3 className="text-sm font-semibold">{t.adminInvoices?.billTo || "Facturar A (Bill To)"}</h3>
               <button
                 onClick={() => setShowContactsManager(!showContactsManager)}
                 className="text-xs text-primary hover:underline flex items-center gap-1"
@@ -580,19 +580,19 @@ export default function AdminInvoicesPage() {
               <div className="space-y-3 border border-outline-variant rounded-xl p-4 mb-3">
                 {contacts.length > 0 && (
                   <div className="space-y-2">
-                    <h4 className="text-xs font-semibold text-on-surface-variant">Seleccionar o editar</h4>
+                    <h4 className="text-xs font-semibold text-on-surface-variant">{t.adminInvoices?.contactSelectEdit || "Seleccionar o editar"}</h4>
                     <div className="space-y-1.5 max-h-48 overflow-y-auto">
                       {contacts.map((c) =>
                         editingContactId === c.id ? (
                           <div key={c.id} className="space-y-1.5 p-2 rounded-lg bg-surface-container-low border border-outline-variant">
-                            <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Nombre" className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low" />
-                            <input value={editCompany} onChange={(e) => setEditCompany(e.target.value)} placeholder="Empresa" className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low" />
+                            <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder={t.adminInvoices?.name || "Nombre"} className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low" />
+                            <input value={editCompany} onChange={(e) => setEditCompany(e.target.value)} placeholder={t.adminInvoices?.company || "Empresa"} className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low" />
                             <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder={t.adminInvoices?.phone || "Telefono"} className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low" />
                             <input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder={t.adminInvoices?.email || "Email"} className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low" />
                             <input value={editAddress} onChange={(e) => setEditAddress(e.target.value)} placeholder={t.adminInvoices?.address || "Direccion"} className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low" />
                             <div className="flex gap-2">
-                              <Button size="sm" onClick={() => handleUpdateContact(c.id)}>Guardar</Button>
-                              <Button size="sm" variant="outline" onClick={() => setEditingContactId(null)}>Cancelar</Button>
+                              <Button size="sm" onClick={() => handleUpdateContact(c.id)}>{t.adminInvoices?.save || "Guardar"}</Button>
+                              <Button size="sm" variant="outline" onClick={() => setEditingContactId(null)}>{t.adminInvoices?.cancel || "Cancelar"}</Button>
                             </div>
                           </div>
                         ) : (
@@ -626,14 +626,14 @@ export default function AdminInvoicesPage() {
                 )}
 
                 <div className="border-t border-outline-variant pt-3 space-y-2">
-                  <h4 className="text-xs font-semibold text-on-surface-variant">Nuevo Contacto</h4>
-                  <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nombre *" className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low" />
-                  <input value={newCompany} onChange={(e) => setNewCompany(e.target.value)} placeholder="Empresa" className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low" />
+                  <h4 className="text-xs font-semibold text-on-surface-variant">{t.adminInvoices?.contactNew || "Nuevo Contacto"}</h4>
+                  <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={(t.adminInvoices?.name || "Nombre") + " *"} className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low" />
+                  <input value={newCompany} onChange={(e) => setNewCompany(e.target.value)} placeholder={t.adminInvoices?.company || "Empresa"} className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low" />
                   <input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder={t.adminInvoices?.phone || "Telefono"} className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low" />
                   <input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder={t.adminInvoices?.email || "Email"} className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low" />
                   <input value={newAddress} onChange={(e) => setNewAddress(e.target.value)} placeholder={t.adminInvoices?.address || "Direccion"} className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low" />
                   <Button onClick={handleCreateContact} size="sm" className="w-full" disabled={!newName.trim()}>
-                    Guardar Contacto
+                    {t.adminInvoices?.saveContact || "Guardar Contacto"}
                   </Button>
                 </div>
               </div>
@@ -650,7 +650,7 @@ export default function AdminInvoicesPage() {
           <div className="border-t border-outline-variant pt-4">
             <h3 className="text-sm font-semibold mb-2">Desde (Invoice From)</h3>
             <div className="space-y-2">
-              <Input value={fromName} onChange={(e) => setFromName(e.target.value)} placeholder="Nombre" />
+              <Input value={fromName} onChange={(e) => setFromName(e.target.value)} placeholder={t.adminInvoices?.name || "Nombre"} />
               <Input value={fromPhone} onChange={(e) => setFromPhone(e.target.value)} placeholder={t.adminInvoices?.phone || "Telefono"} inputMode="tel" pattern="[0-9\-\+\(\) ]*" />
               <Input value={fromEmail} onChange={(e) => setFromEmail(e.target.value)} placeholder={t.adminInvoices?.email || "Email"} type="email" />
               <Input value={fromAddress} onChange={(e) => setFromAddress(e.target.value)} placeholder={t.adminInvoices?.address || "Direccion"} />
@@ -666,14 +666,14 @@ export default function AdminInvoicesPage() {
                     <Input
                       value={item.description}
                       onChange={(e) => updateItem(item.id, "description", e.target.value)}
-                      placeholder="Descripcion del item"
+                      placeholder={t.adminInvoices?.itemDesc || "Descripcion del item"}
                       className="flex-1 h-9 text-sm"
                       maxLength={200}
                     />
                     <Input
                       value={item.detail}
                       onChange={(e) => updateItem(item.id, "detail", e.target.value)}
-                      placeholder="Detalle extra"
+                      placeholder={t.adminInvoices?.itemDetail || "Detalle extra"}
                       className="flex-1 h-9 text-sm"
                       maxLength={200}
                     />
@@ -691,7 +691,7 @@ export default function AdminInvoicesPage() {
                       onClick={() => updateItem(item.id, "isDiscount", !item.isDiscount)}
                       className={`px-2 py-1 rounded text-xs font-medium ${item.isDiscount ? "bg-error/20 text-error" : "bg-surface-container-highest text-on-surface-variant"}`}
                     >
-                      {item.isDiscount ? "Descuento" : "Normal"}
+                      {item.isDiscount ? (t.adminInvoices?.discount || "Descuento") : (t.adminInvoices?.normal || "Normal")}
                     </button>
                   </div>
                 </div>
@@ -824,14 +824,14 @@ export default function AdminInvoicesPage() {
           <div className="flex-1 flex gap-2">
             <Input 
               type="date"
-              placeholder="Desde..." 
+              placeholder={t.adminInvoices?.dateFrom || "Desde..."} 
               value={filterDateFrom}
               onChange={(e) => setFilterDateFrom(e.target.value)}
               className="w-full text-sm"
             />
             <Input 
               type="date"
-              placeholder="Hasta..." 
+              placeholder={t.adminInvoices?.dateTo || "Hasta..."} 
               value={filterDateTo}
               onChange={(e) => setFilterDateTo(e.target.value)}
               className="w-full text-sm"
@@ -852,10 +852,10 @@ export default function AdminInvoicesPage() {
         </div>
 
         {loadingInvoices ? (
-          <p className="text-center py-8 text-on-surface-variant">Cargando...</p>
+          <p className="text-center py-8 text-on-surface-variant">{t.adminInvoices?.loading || "Cargando..."}</p>
         ) : invoices.length === 0 ? (
           <p className="text-center py-8 text-on-surface-variant">
-            No hay facturas generadas. Descarga una factura para verla aqui.
+            {t.adminInvoices?.noInvoices || "No hay facturas generadas. Descarga una factura para verla aqui."}
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -868,7 +868,7 @@ export default function AdminInvoicesPage() {
                   <th className="text-right py-2 px-3 font-semibold"> {t.adminInvoices?.total || "Total"} </th>
                   <th className="text-right py-2 px-3 font-semibold">Pagado</th>
                   <th className="text-right py-2 px-3 font-semibold"> {t.adminInvoices?.balance || "Balance"} </th>
-                  <th className="text-center py-2 px-3 font-semibold">Acciones</th>
+                  <th className="text-center py-2 px-3 font-semibold">{t.adminInvoices?.actionsTitle || "Acciones"}</th>
                 </tr>
               </thead>
               <tbody>
@@ -926,7 +926,7 @@ export default function AdminInvoicesPage() {
                 {filteredInvoices.length === 0 && (
                   <tr>
                     <td colSpan={7} className="text-center py-6 text-on-surface-variant">
-                      No hay resultados para los filtros actuales.
+                      {t.adminInvoices?.noResults || "No hay resultados para los filtros actuales."}
                     </td>
                   </tr>
                 )}
@@ -943,7 +943,7 @@ export default function AdminInvoicesPage() {
           className="w-full p-6 flex items-center justify-between"
         >
           <h2 className="font-headline text-lg font-bold text-on-surface">
-            Estadísticas
+            {t.adminInvoices?.statistics || "Estadísticas"}
           </h2>
           {showStats ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
         </button>
@@ -952,27 +952,27 @@ export default function AdminInvoicesPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-surface-container-low rounded-xl p-4 text-center">
                 <p className="text-3xl font-bold text-primary">{stats.totalInvoices}</p>
-                <p className="text-sm text-on-surface-variant">Facturas generadas</p>
+                <p className="text-sm text-on-surface-variant">{t.adminInvoices?.invoicesGenerated || "Facturas generadas"}</p>
               </div>
               <div className="bg-surface-container-low rounded-xl p-4 text-center">
                 <p className="text-3xl font-bold text-primary">${stats.totalBilled.toFixed(2)}</p>
-                <p className="text-sm text-on-surface-variant">Total facturado</p>
+                <p className="text-sm text-on-surface-variant">{t.adminInvoices?.totalBilled || "Total facturado"}</p>
               </div>
               <div className="bg-surface-container-low rounded-xl p-4 text-center">
                 <p className="text-3xl font-bold text-primary">${stats.totalPaid.toFixed(2)}</p>
-                <p className="text-sm text-on-surface-variant">Total pagado</p>
+                <p className="text-sm text-on-surface-variant">{t.adminInvoices?.totalPaidLabel || "Total pagado"}</p>
               </div>
             </div>
 
             {stats.topClients.length > 0 && (
               <div>
-                <h3 className="font-semibold text-on-surface mb-2">Top Clientes</h3>
+                <h3 className="font-semibold text-on-surface mb-2">{t.adminInvoices?.topClients || "Top Clientes"}</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-outline-variant">
-                        <th className="text-left py-2 font-semibold">Cliente</th>
-                        <th className="text-right py-2 font-semibold">Facturas</th>
+                        <th className="text-left py-2 font-semibold">{t.adminInvoices?.client || "Cliente"}</th>
+                        <th className="text-right py-2 font-semibold">{t.adminInvoices?.invoiceCount || "Facturas"}</th>
                         <th className="text-right py-2 font-semibold"> {t.adminInvoices?.total || "Total"} </th>
                       </tr>
                     </thead>
@@ -993,11 +993,11 @@ export default function AdminInvoicesPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {stats.weeklyGroups.size > 0 && (
                 <div>
-                  <h3 className="font-semibold text-on-surface mb-2">Totales semanales</h3>
+                  <h3 className="font-semibold text-on-surface mb-2">{t.adminInvoices?.weeklyTotals || "Totales semanales"}</h3>
                   <div className="space-y-1">
                     {Array.from(stats.weeklyGroups.entries()).sort().map(([week, amount]) => (
                       <div key={week} className="flex justify-between text-sm py-1 px-2 rounded bg-surface-container-low">
-                        <span>Semana {week}</span>
+                        <span>{t.adminInvoices?.week || "Semana"} {week}</span>
                         <span className="font-medium">${amount.toFixed(2)}</span>
                       </div>
                     ))}
@@ -1006,7 +1006,7 @@ export default function AdminInvoicesPage() {
               )}
               {stats.monthlyGroups.size > 0 && (
                 <div>
-                  <h3 className="font-semibold text-on-surface mb-2">Totales mensuales</h3>
+                  <h3 className="font-semibold text-on-surface mb-2">{t.adminInvoices?.monthlyTotals || "Totales mensuales"}</h3>
                   <div className="space-y-1">
                     {Array.from(stats.monthlyGroups.entries()).sort().map(([month, amount]) => (
                       <div key={month} className="flex justify-between text-sm py-1 px-2 rounded bg-surface-container-low">
@@ -1027,7 +1027,7 @@ export default function AdminInvoicesPage() {
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowViewModal(false)}>
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="font-bold">Vista de Factura</h3>
+              <h3 className="font-bold">{t.adminInvoices?.invoiceView || "Vista de Factura"}</h3>
               <button onClick={() => setShowViewModal(false)} className="p-1 rounded-lg hover:bg-gray-100">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
