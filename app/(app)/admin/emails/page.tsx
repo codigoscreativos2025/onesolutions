@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/lib/locale-context";
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import {
@@ -45,6 +46,8 @@ const getEmailHeader = () => {
 };
 
 export default function AdminEmailsPage() {
+  const { t } = useLocale();
+
   const editorRef = useRef<HTMLDivElement>(null);
 
   const [to, setTo] = useState("");
@@ -198,18 +201,18 @@ export default function AdminEmailsPage() {
 
   return (
     <div className="min-h-screen p-4 md:p-8 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-on-surface mb-6">Redactar Correo</h1>
+      <h1 className="text-2xl font-bold text-on-surface mb-6"> {t.adminEmails?.compose || "Redactar Correo"} </h1>
 
       <div className="glass-panel rounded-2xl overflow-hidden">
         {/* From */}
         <div className="flex items-center gap-3 px-4 py-2 border-b border-outline-variant/30">
-          <span className="text-sm font-medium text-on-surface-variant w-16 shrink-0">De</span>
+          <span className="text-sm font-medium text-on-surface-variant w-16 shrink-0"> {t.adminEmails?.from || "De"} </span>
           <span className="text-sm text-on-surface">service@onesolutions.com</span>
         </div>
 
         {/* To */}
         <div className="flex items-center gap-3 px-4 py-2 border-b border-outline-variant/30">
-          <span className="text-sm font-medium text-on-surface-variant w-16 shrink-0">Para</span>
+          <span className="text-sm font-medium text-on-surface-variant w-16 shrink-0"> {t.adminEmails?.to || "Para"} </span>
           <input
             value={to}
             onChange={(e) => setTo(e.target.value)}
@@ -264,11 +267,11 @@ export default function AdminEmailsPage() {
 
         {/* Subject */}
         <div className="flex items-center gap-3 px-4 py-2 border-b border-outline-variant/30">
-          <span className="text-sm font-medium text-on-surface-variant w-16 shrink-0">Asunto</span>
+          <span className="text-sm font-medium text-on-surface-variant w-16 shrink-0"> {t.adminEmails?.subject || "Asunto"} </span>
           <input
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
-            placeholder="Asunto del correo"
+            placeholder={t.adminEmails?.subjectPlaceholder || "Asunto del correo"}
             className="flex-1 outline-none text-sm bg-transparent text-on-surface placeholder:text-on-surface-variant/50"
           />
         </div>

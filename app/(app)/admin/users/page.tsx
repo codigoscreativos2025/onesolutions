@@ -380,7 +380,7 @@ export default function AdminUsersPage() {
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
           <Input
-            placeholder="Buscar por nombre o email..."
+            placeholder={t.adminUsers.search || "Buscar por nombre o email..."}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -391,7 +391,7 @@ export default function AdminUsersPage() {
             onChange={(e) => setFilterRole(e.target.value)}
             className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-on-surface"
           >
-            <option value="all">Todos los roles</option>
+            <option value="all">{t.adminUsers.allRoles || "Todos los roles"}</option>
             <option value="SETTER">Trainee</option>
             <option value="SETTER_JR">Setter</option>
             <option value="CLOSER">Closer</option>
@@ -808,7 +808,7 @@ export default function AdminUsersPage() {
               {t.common.cancel}
             </Button>
             <Button type="submit" className="flex-1" isLoading={submitting}>
-              {editingUser ? t.common.save : "Crear"}
+              {editingUser ? t.common.save : (t.adminUsers.createUser || "Crear")}
             </Button>
           </div>
         </form>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/lib/locale-context";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
@@ -39,6 +40,8 @@ interface GeneratedInvoice {
 }
 
 export default function AdminInvoicesPage() {
+  const { t } = useLocale();
+
   const { data: session } = useSession();
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -524,16 +527,12 @@ export default function AdminInvoicesPage() {
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="font-headline text-2xl font-bold text-on-surface">
-            Facturas / Invoices
-          </h1>
+          <h1 className="font-headline text-2xl font-bold text-on-surface"> {t.adminInvoices?.invoices || "Facturas / Invoices"} </h1>
           <p className="text-on-surface-variant">Genera facturas personalizadas y descargalas en PDF</p>
         </div>
         <div className="flex items-center gap-3">
           <Button onClick={handleGenerarFactura} className="gap-2 bg-primary text-on-primary">
-            <Plus className="w-4 h-4" />
-            Generar Factura
-          </Button>
+            <Plus className="w-4 h-4" /> {t.adminInvoices?.generateInvoice || "Generar Factura"} </Button>
         </div>
       </div>
 
@@ -541,27 +540,26 @@ export default function AdminInvoicesPage() {
         {/* FORM */}
         <div className="space-y-4 glass-panel rounded-xl p-6 lg:w-[45%] lg:shrink-0">
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Eye className="w-5 h-5" /> Datos de la Factura
-          </h2>
+            <Eye className="w-5 h-5" /> {t.adminInvoices?.invoiceData || "Datos de la Factura"} </h2>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-on-surface-variant">Nro Factura</label>
+              <label className="text-xs font-medium text-on-surface-variant"> {t.adminInvoices?.invoiceNumber || "Nro Factura"} </label>
               <Input value={invoiceNum} onChange={(e) => setInvoiceNum(e.target.value)} className="h-10" />
             </div>
             <div>
-              <label className="text-xs font-medium text-on-surface-variant">Fecha</label>
+              <label className="text-xs font-medium text-on-surface-variant"> {t.adminInvoices?.date || "Fecha"} </label>
               <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-10" min="1900-01-01" max="2100-12-31" onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity("Fecha fuera de rango")} onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-on-surface-variant">Vencimiento</label>
+              <label className="text-xs font-medium text-on-surface-variant"> {t.adminInvoices?.dueDate || "Vencimiento"} </label>
               <Input value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="h-10" placeholder="On receipt" />
             </div>
             <div>
-              <label className="text-xs font-medium text-on-surface-variant">Pagado ($)</label>
+              <label className="text-xs font-medium text-on-surface-variant"> {t.adminInvoices?.paid || "Pagado ($)"} </label>
               <Input type="number" value={paid} onChange={(e) => setPaid(Number(e.target.value))} className="h-10" inputMode="decimal" step="0.01" min="0" />
             </div>
           </div>
@@ -589,9 +587,9 @@ export default function AdminInvoicesPage() {
                           <div key={c.id} className="space-y-1.5 p-2 rounded-lg bg-surface-container-low border border-outline-variant">
                             <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Nombre" className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low" />
                             <input value={editCompany} onChange={(e) => setEditCompany(e.target.value)} placeholder="Empresa" className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low" />
-                            <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="Telefono" className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low" />
-                            <input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="Email" className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low" />
-                            <input value={editAddress} onChange={(e) => setEditAddress(e.target.value)} placeholder="Direccion" className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low" />
+                            <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder={t.adminInvoices?.phone || "Telefono"} className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low" />
+                            <input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder={t.adminInvoices?.email || "Email"} className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low" />
+                            <input value={editAddress} onChange={(e) => setEditAddress(e.target.value)} placeholder={t.adminInvoices?.address || "Direccion"} className="w-full h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container-low" />
                             <div className="flex gap-2">
                               <Button size="sm" onClick={() => handleUpdateContact(c.id)}>Guardar</Button>
                               <Button size="sm" variant="outline" onClick={() => setEditingContactId(null)}>Cancelar</Button>
@@ -631,9 +629,9 @@ export default function AdminInvoicesPage() {
                   <h4 className="text-xs font-semibold text-on-surface-variant">Nuevo Contacto</h4>
                   <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nombre *" className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low" />
                   <input value={newCompany} onChange={(e) => setNewCompany(e.target.value)} placeholder="Empresa" className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low" />
-                  <input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="Telefono" className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low" />
-                  <input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="Email" className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low" />
-                  <input value={newAddress} onChange={(e) => setNewAddress(e.target.value)} placeholder="Direccion" className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low" />
+                  <input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder={t.adminInvoices?.phone || "Telefono"} className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low" />
+                  <input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder={t.adminInvoices?.email || "Email"} className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low" />
+                  <input value={newAddress} onChange={(e) => setNewAddress(e.target.value)} placeholder={t.adminInvoices?.address || "Direccion"} className="w-full h-9 px-3 text-sm rounded-lg border border-outline-variant bg-surface-container-low" />
                   <Button onClick={handleCreateContact} size="sm" className="w-full" disabled={!newName.trim()}>
                     Guardar Contacto
                   </Button>
@@ -642,10 +640,10 @@ export default function AdminInvoicesPage() {
             )}
 
             <div className="space-y-2">
-              <Input value={billToName} onChange={(e) => setBillToName(e.target.value)} placeholder="Nombre / Empresa" />
-              <Input value={billToPhone} onChange={(e) => setBillToPhone(e.target.value)} placeholder="Telefono" inputMode="tel" pattern="[0-9\-\+\(\) ]*" />
-              <Input value={billToEmail} onChange={(e) => setBillToEmail(e.target.value)} placeholder="Email" type="email" />
-              <Input value={billToAddress} onChange={(e) => setBillToAddress(e.target.value)} placeholder="Direccion" />
+              <Input value={billToName} onChange={(e) => setBillToName(e.target.value)} placeholder={t.adminInvoices?.nameCompany || "Nombre / Empresa"} />
+              <Input value={billToPhone} onChange={(e) => setBillToPhone(e.target.value)} placeholder={t.adminInvoices?.phone || "Telefono"} inputMode="tel" pattern="[0-9\-\+\(\) ]*" />
+              <Input value={billToEmail} onChange={(e) => setBillToEmail(e.target.value)} placeholder={t.adminInvoices?.email || "Email"} type="email" />
+              <Input value={billToAddress} onChange={(e) => setBillToAddress(e.target.value)} placeholder={t.adminInvoices?.address || "Direccion"} />
             </div>
           </div>
 
@@ -653,9 +651,9 @@ export default function AdminInvoicesPage() {
             <h3 className="text-sm font-semibold mb-2">Desde (Invoice From)</h3>
             <div className="space-y-2">
               <Input value={fromName} onChange={(e) => setFromName(e.target.value)} placeholder="Nombre" />
-              <Input value={fromPhone} onChange={(e) => setFromPhone(e.target.value)} placeholder="Telefono" inputMode="tel" pattern="[0-9\-\+\(\) ]*" />
-              <Input value={fromEmail} onChange={(e) => setFromEmail(e.target.value)} placeholder="Email" type="email" />
-              <Input value={fromAddress} onChange={(e) => setFromAddress(e.target.value)} placeholder="Direccion" />
+              <Input value={fromPhone} onChange={(e) => setFromPhone(e.target.value)} placeholder={t.adminInvoices?.phone || "Telefono"} inputMode="tel" pattern="[0-9\-\+\(\) ]*" />
+              <Input value={fromEmail} onChange={(e) => setFromEmail(e.target.value)} placeholder={t.adminInvoices?.email || "Email"} type="email" />
+              <Input value={fromAddress} onChange={(e) => setFromAddress(e.target.value)} placeholder={t.adminInvoices?.address || "Direccion"} />
             </div>
           </div>
 
@@ -699,9 +697,7 @@ export default function AdminInvoicesPage() {
                 </div>
               ))}
               <Button variant="outline" onClick={addItem} className="w-full gap-2">
-                <Plus className="w-4 h-4" />
-                Agregar Item
-              </Button>
+                <Plus className="w-4 h-4" /> {t.adminInvoices?.addBtn || "Agregar Item"} </Button>
             </div>
           </div>
         </div>
@@ -819,13 +815,9 @@ export default function AdminInvoicesPage() {
       {/* Invoice History */}
       <div className="glass-panel rounded-2xl p-6 border-outline-variant">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-          <h2 className="font-headline text-lg font-bold text-on-surface">
-            Historial de Facturas
-          </h2>
+          <h2 className="font-headline text-lg font-bold text-on-surface"> {t.adminInvoices?.history || "Historial de Facturas"} </h2>
           <Button onClick={handleExportExcel} variant="outline" className="flex items-center gap-2 bg-surface-container-high border-outline-variant hover:bg-surface-variant">
-            <FileDown className="w-4 h-4" />
-            Exportar Excel
-          </Button>
+            <FileDown className="w-4 h-4" /> {t.adminInvoices?.exportExcel || "Exportar Excel"} </Button>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -846,13 +838,13 @@ export default function AdminInvoicesPage() {
             />
           </div>
           <Input 
-            placeholder="Filtrar por Nro Factura..." 
+            placeholder={t.adminInvoices?.filterNumber || "Filtrar por Nro Factura..."} 
             value={filterNum}
             onChange={(e) => setFilterNum(e.target.value)}
             className="flex-1"
           />
           <Input 
-            placeholder="Filtrar por Facturar A..." 
+            placeholder={t.adminInvoices?.filterBillTo || "Filtrar por Facturar A..."} 
             value={filterBillTo}
             onChange={(e) => setFilterBillTo(e.target.value)}
             className="flex-1"
@@ -873,9 +865,9 @@ export default function AdminInvoicesPage() {
                   <th className="text-left py-2 px-3 font-semibold">Nro Factura</th>
                   <th className="text-left py-2 px-3 font-semibold">Fecha</th>
                   <th className="text-left py-2 px-3 font-semibold">Facturar A</th>
-                  <th className="text-right py-2 px-3 font-semibold">Total</th>
+                  <th className="text-right py-2 px-3 font-semibold"> {t.adminInvoices?.total || "Total"} </th>
                   <th className="text-right py-2 px-3 font-semibold">Pagado</th>
-                  <th className="text-right py-2 px-3 font-semibold">Balance</th>
+                  <th className="text-right py-2 px-3 font-semibold"> {t.adminInvoices?.balance || "Balance"} </th>
                   <th className="text-center py-2 px-3 font-semibold">Acciones</th>
                 </tr>
               </thead>
@@ -981,7 +973,7 @@ export default function AdminInvoicesPage() {
                       <tr className="border-b border-outline-variant">
                         <th className="text-left py-2 font-semibold">Cliente</th>
                         <th className="text-right py-2 font-semibold">Facturas</th>
-                        <th className="text-right py-2 font-semibold">Total</th>
+                        <th className="text-right py-2 font-semibold"> {t.adminInvoices?.total || "Total"} </th>
                       </tr>
                     </thead>
                     <tbody>

@@ -176,26 +176,24 @@ export default function AdminMetricsPage() {
             </h2>
           </div>
           {monthlyGoal && (
-            <span className="text-xs text-on-surface-variant bg-surface-container px-3 py-1 rounded-full">
-              Meta Mensual
-            </span>
+            <span className="text-xs text-on-surface-variant bg-surface-container px-3 py-1 rounded-full"> {t.metrics?.monthlyGoalLabel || "Meta Mensual"} </span>
           )}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <GoalProgress
-            label="Puertas Tocadas"
+            label={t.metrics?.doorsKnocked || "Puertas Tocadas"}
             current={metrics?.doorsKnocked || 0}
             goal={monthlyGoal?.doorsGoal || 0}
             color="primary"
           />
           <GoalProgress
-            label="Prospectos Generados"
+            label={t.metrics?.prospectsGenerated || "Prospectos Generados"}
             current={metrics?.prospectsGenerated || 0}
             goal={monthlyGoal?.prospectsGoal || 0}
             color="secondary"
           />
           <GoalProgress
-            label="Proyectos Cerrados"
+            label={t.metrics?.projectsClosed || "Proyectos Cerrados"}
             current={metrics?.projectsClosed || 0}
             goal={monthlyGoal?.projectsGoal || 0}
             color="primary"
@@ -206,28 +204,28 @@ export default function AdminMetricsPage() {
       {/* Métricas principales */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          title="Puertas Tocadas"
+          title={t.metrics?.doorsKnocked || "Puertas Tocadas"}
           value={metrics?.doorsKnocked || 0}
           icon={DoorOpen}
           onClick={() => setActiveDetail("doors")}
           clickable
         />
         <MetricCard
-          title="Prospectos Generados"
+          title={t.metrics?.prospectsGenerated || "Prospectos Generados"}
           value={metrics?.prospectsGenerated || 0}
           icon={PersonStanding}
           onClick={() => setActiveDetail("prospects")}
           clickable
         />
         <MetricCard
-          title="Proyectos Cerrados"
+          title={t.metrics?.projectsClosed || "Proyectos Cerrados"}
           value={metrics?.projectsClosed || 0}
           icon={Handshake}
           onClick={() => setActiveDetail("projects")}
           clickable
         />
         <MetricCard
-          title="Objeciones Trainee"
+          title={t.metrics?.setterObjections || "Objeciones Trainee"}
           value={metrics?.topSetterObjections.reduce((sum, o) => sum + o.count, 0) || 0}
           icon={MessageSquareWarning}
           onClick={() => setActiveDetail("setterObjections")}
@@ -254,7 +252,7 @@ export default function AdminMetricsPage() {
             </p>
             {metrics?.topConversionBySetter && metrics.topConversionBySetter.length > 0 && (
               <div className="mt-3 pt-3 border-t border-outline-variant/20">
-                <p className="text-xs text-on-surface-variant mb-1">Mejor Trainee:</p>
+                <p className="text-xs text-on-surface-variant mb-1"> {t.metrics?.bestSetter || "Mejor Trainee"}: </p>
                 <p className="text-sm font-semibold text-on-surface">
                   {metrics.topConversionBySetter[0].name} - {metrics.topConversionBySetter[0].rate.toFixed(1)}%
                 </p>
@@ -271,7 +269,7 @@ export default function AdminMetricsPage() {
             </p>
             {metrics?.topConversionByCloser && metrics.topConversionByCloser.length > 0 && (
               <div className="mt-3 pt-3 border-t border-outline-variant/20">
-                <p className="text-xs text-on-surface-variant mb-1">Mejor Closer:</p>
+                <p className="text-xs text-on-surface-variant mb-1"> {t.metrics?.bestCloser || "Mejor Closer"}: </p>
                 <p className="text-sm font-semibold text-on-surface">
                   {metrics.topConversionByCloser[0].name} - {metrics.topConversionByCloser[0].rate.toFixed(1)}%
                 </p>
@@ -306,9 +304,7 @@ export default function AdminMetricsPage() {
             </div>
           ))}
           {(!metrics?.topCloserObjections || metrics.topCloserObjections.length === 0) && (
-            <p className="text-on-surface-variant text-sm col-span-4 text-center py-2">
-              Sin objeciones registradas
-            </p>
+            <p className="text-on-surface-variant text-sm col-span-4 text-center py-2"> {t.metrics?.noObjections || "Sin objeciones registradas"} </p>
           )}
         </div>
       </div>
@@ -350,7 +346,7 @@ export default function AdminMetricsPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <GoalProgress
-              label="Puertas Tocadas"
+              label={t.metrics?.doorsKnocked || "Puertas Tocadas"}
               current={metrics?.doorsKnocked || 0}
               goal={weeklyGoal.doorsGoal}
               color="secondary"
@@ -435,7 +431,7 @@ export default function AdminMetricsPage() {
                   </div>
                 ))}
                 {(!metrics?.topSetterObjections || metrics.topSetterObjections.length === 0) && (
-                  <p className="text-center text-on-surface-variant py-4">Sin objeciones registradas</p>
+                  <p className="text-center text-on-surface-variant py-4"> {t.metrics?.noObjections || "Sin objeciones registradas"} </p>
                 )}
               </div>
               <div>
@@ -464,7 +460,7 @@ export default function AdminMetricsPage() {
                   </div>
                 ))}
                 {(!metrics?.topCloserObjections || metrics.topCloserObjections.length === 0) && (
-                  <p className="text-center text-on-surface-variant py-4">Sin objeciones registradas</p>
+                  <p className="text-center text-on-surface-variant py-4"> {t.metrics?.noObjections || "Sin objeciones registradas"} </p>
                 )}
               </div>
               <div>
