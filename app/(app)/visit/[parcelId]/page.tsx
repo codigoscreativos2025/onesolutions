@@ -12,6 +12,7 @@ import { ContractModal } from "@/components/quote/ContractModal";
 import { NotesPanel } from "@/components/lead/NotesPanel";
 import { SlotPicker } from "@/components/calendar/SlotPicker";
 import { formatPhoneNumber } from "@/lib/utils";
+import { useLocale } from "@/lib/locale-context";
 
 interface Closer { id: number; name: string; email: string }
 interface ProjectType { id: number; name: string; description?: string }
@@ -68,6 +69,7 @@ export default function VisitPage() {
   const params = useParams();
   const router = useRouter();
   const { data: session } = useSession();
+  const { t } = useLocale();
   const parcelId = params.parcelId as string;
   const role = session?.user?.role ?? "";
 
@@ -308,28 +310,28 @@ export default function VisitPage() {
 
       <motion.div className="glass-panel rounded-xl p-6 space-y-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
         <div className="space-y-2">
-          <label className={labelClass}>Nombre</label>
+          <label className={labelClass}>{t.pipeline?.leadDetails?.labels?.name || "Nombre"}</label>
           <div className="relative">
             <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
-            <input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Nombre del cliente" className={inputClass} />
+            <input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder={t.pipeline?.leadDetails?.placeholders?.clientName || "Nombre del cliente"} className={inputClass} />
           </div>
         </div>
 
         <div className="space-y-2">
-          <label className={labelClass}>Correo (opcional)</label>
+          <label className={labelClass}>{t.pipeline?.leadDetails?.labels?.emailOptional || "Correo (opcional)"}</label>
           <div className="relative">
             <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
-            <input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} placeholder="Correo electrónico" className={inputClass} />
+            <input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} placeholder={t.pipeline?.leadDetails?.placeholders?.email || "Correo electrónico"} className={inputClass} />
           </div>
         </div>
 
         <div className="space-y-2">
-          <label className={labelClass}>Teléfono *</label>
+          <label className={labelClass}>{t.pipeline?.leadDetails?.labels?.phoneRequired || "Teléfono *"}</label>
           <div className="relative">
             <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
-            <input type="tel" value={phone} onChange={(e) => setPhone(formatPhoneNumber(e.target.value))} placeholder="Número de teléfono" required className={inputClass} />
+            <input type="tel" value={phone} onChange={(e) => setPhone(formatPhoneNumber(e.target.value))} placeholder={t.pipeline?.leadDetails?.placeholders?.phone || "Número de teléfono"} required className={inputClass} />
           </div>
         </div>
 
@@ -390,7 +392,7 @@ export default function VisitPage() {
       </motion.div>
 
       <Button onClick={() => handleSave('potential')} disabled={saving || !phone.trim() || !scheduleSelected || (showCloserDropdown && !selectedCloserId) || selectedProjectTypes.length === 0} className="w-full h-14">
-        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Crear Lead Potencial"}
+        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : t.pipeline?.leadDetails?.labels?.createPotentialLead || "Crear Lead Potencial"}
       </Button>
     </div>
 

@@ -103,9 +103,9 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
       console.error('Error fetching closers:', error);
       setClosers([]);
       if (error instanceof DOMException && error.name === 'AbortError') {
-        toast.error('Tiempo de espera agotado al cargar closers');
+        toast.error(t.createLeadManual?.timeoutClosers || 'Tiempo de espera agotado al cargar closers');
       } else {
-        toast.error('No se pudieron cargar los closers');
+        toast.error(t.createLeadManual?.loadClosersError || 'No se pudieron cargar los closers');
       }
     } finally {
       setLoadingClosers(false);
@@ -117,22 +117,22 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
     setLoading(true);
 
     if (!formData.address.trim()) {
-      toast.error("La dirección es requerida");
+      toast.error(t.createLeadManual?.addressRequired || "La dirección es requerida");
       setLoading(false);
       return;
     }
     if (showCloserDropdown && !selectedCloserId) {
-      toast.error("Selecciona un Closer");
+      toast.error(t.pipeline?.leadDetails?.toasts?.selectCloser || "Selecciona un Closer");
       setLoading(false);
       return;
     }
     if (!selectedScheduleDate || !selectedScheduleTime) {
-      toast.error("Selecciona fecha y hora para agendar");
+      toast.error(t.createLeadManual?.selectDateTimeToSchedule || "Selecciona fecha y hora para agendar");
       setLoading(false);
       return;
     }
     if (selectedProjects.length === 0) {
-      toast.error("Selecciona al menos un tipo de proyecto");
+      toast.error(t.pipeline?.leadDetails?.toasts?.selectProjectType || "Selecciona al menos un tipo de proyecto");
       setLoading(false);
       return;
     }
@@ -152,7 +152,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
       });
 
       if (res.ok) {
-        toast.success('Lead creado correctamente');
+        toast.success(t.createLeadManual?.success || 'Lead creado exitosamente');
         onSuccess();
         onClose();
         setFormData({ address: '', ownerName: '', phone: '', clientEmail: '', notes: '' });
@@ -162,11 +162,11 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
         setSelectedScheduleTime('');
       } else {
         const err = await res.json().catch(() => ({}));
-        toast.error(err.error || 'Error al crear lead');
+        toast.error(err.error || t.createLeadManual?.error || 'Error al crear lead');
       }
     } catch (error) {
       console.error('Error creating lead:', error);
-      toast.error('Error al crear lead');
+      toast.error(t.createLeadManual?.error || 'Error al crear lead');
     } finally {
       setLoading(false);
     }
@@ -290,7 +290,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
             </div>
             {selectedProjects.length === 0 && (
               <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3" /> Selecciona al menos uno
+                <AlertTriangle className="w-3 h-3" /> {t.createLeadManual?.selectAtLeastOne || "Selecciona al menos uno"}
               </p>
             )}
           </div>
@@ -299,7 +299,7 @@ export function CreateLeadModal({ isOpen, onClose, onSuccess, initialAddress, in
             <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400">
               <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
               <p className="text-sm font-medium">
-                Este lead será asignado al closer con capacidades de panel solar.
+                {t.createLeadManual?.solarCloserHint || "Este lead será asignado al closer con capacidades de panel solar."}
               </p>
             </div>
           )}

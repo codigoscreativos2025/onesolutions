@@ -81,7 +81,7 @@ export function NotesPanel({
         setNotes(await res.json());
       }
     } catch {
-      toast.error("Error al cargar notas");
+      toast.error(t.pipeline?.leadDetails?.toasts?.notesLoadError || "Error al cargar notas");
     } finally {
       setLoading(false);
     }
@@ -109,7 +109,7 @@ export function NotesPanel({
     );
 
     if (selectedDate > todayEnd) {
-      setFilterError("Fecha inválida a la desarrollada en el proyecto");
+      setFilterError(t.pipeline?.leadDetails?.toasts?.invalidNoteDate || "Fecha inválida a la desarrollada en el proyecto");
       return false;
     }
 
@@ -123,7 +123,7 @@ export function NotesPanel({
           visitStart.getDate(),
         )
       ) {
-        setFilterError("Fecha inválida a la desarrollada en el proyecto");
+        setFilterError(t.pipeline?.leadDetails?.toasts?.invalidNoteDate || "Fecha inválida a la desarrollada en el proyecto");
         return false;
       }
     }
@@ -156,15 +156,15 @@ export function NotesPanel({
         }),
       });
       if (res.ok) {
-        toast.success("Nota agregada");
+        toast.success(t.pipeline?.leadDetails?.toasts?.noteAdded || "Nota agregada");
         setNewContent("");
         setShowAddModal(false);
         fetchNotes();
       } else {
-        toast.error("Error al agregar nota");
+        toast.error(t.pipeline?.leadDetails?.toasts?.noteAddError || "Error al agregar nota");
       }
     } catch {
-      toast.error("Error al agregar nota");
+      toast.error(t.pipeline?.leadDetails?.toasts?.noteAddError || "Error al agregar nota");
     } finally {
       setSaving(false);
     }
@@ -183,14 +183,14 @@ export function NotesPanel({
         body: JSON.stringify({ content: editContent.trim() }),
       });
       if (res.ok) {
-        toast.success("Nota editada");
+        toast.success(t.pipeline?.leadDetails?.toasts?.noteEdited || "Nota editada");
         setShowEditModal(false);
         fetchNotes();
       } else {
-        toast.error("Error al editar nota");
+        toast.error(t.pipeline?.leadDetails?.toasts?.noteEditError || "Error al editar nota");
       }
     } catch {
-      toast.error("Error al editar nota");
+      toast.error(t.pipeline?.leadDetails?.toasts?.noteEditError || "Error al editar nota");
     } finally {
       setSaving(false);
     }
@@ -205,14 +205,14 @@ export function NotesPanel({
         : `/api/visits/${visitId}/notes/${selectedNote.id}`;
       const res = await fetch(endpoint, { method: "DELETE" });
       if (res.ok) {
-        toast.success("Nota eliminada");
+        toast.success(t.pipeline?.leadDetails?.toasts?.noteDeleted || "Nota eliminada");
         setShowDeleteModal(false);
         fetchNotes();
       } else {
-        toast.error("Error al eliminar nota");
+        toast.error(t.pipeline?.leadDetails?.toasts?.noteDeleteError || "Error al eliminar nota");
       }
     } catch {
-      toast.error("Error al eliminar nota");
+      toast.error(t.pipeline?.leadDetails?.toasts?.noteDeleteError || "Error al eliminar nota");
     } finally {
       setSaving(false);
     }

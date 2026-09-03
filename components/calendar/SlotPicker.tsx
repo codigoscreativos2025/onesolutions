@@ -16,8 +16,10 @@ import {
   startOfDay,
 } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Clock, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLocale } from '@/lib/locale-context';
 
 interface DayData {
   available: boolean;
@@ -54,6 +56,8 @@ function generateSlotsFromRanges(ranges: { start: string; end: string }[]): { di
 }
 
 export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: SlotPickerProps) {
+  const { t, locale } = useLocale();
+  const dfLocale = locale === 'en' ? enUS : es;
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [dayAvailability, setDayAvailability] = useState<Record<string, DayData>>({});
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
@@ -113,7 +117,7 @@ export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: Slo
     if (!isSameMonth(day, currentMonth)) return;
     
     if (isBefore(day, today)) {
-      toast.error("No se pueden agendar visitas en fechas pasadas.");
+      toast.error(t.pipeline?.leadDetails?.labels?.noPastDates || "No se pueden agendar visitas en fechas pasadas.");
       return;
     }
 
@@ -158,7 +162,7 @@ export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: Slo
           <ChevronLeft className="w-5 h-5" />
         </button>
         <h3 className="text-lg font-bold capitalize">
-          {format(currentMonth, 'MMMM yyyy', { locale: es })}
+          {format(currentMonth, 'MMMM yyyy', { locale: dfLocale })}
         </h3>
         <button
           onClick={() => handleMonthChange(addMonths(currentMonth, 1))}
@@ -175,7 +179,7 @@ export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: Slo
       )}
 
       <div className="grid grid-cols-7 gap-1 mb-2">
-        {['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'].map((day) => (
+        {Array.from({ length: 7 }, (_, i) => format(new Date(2024, 8, 1 + i), 'EEE', { locale: dfLocale })).map((day) => (
           <div key={day} className="text-center text-xs font-semibold text-on-surface-variant py-1">
             {day}
           </div>
@@ -215,12 +219,13 @@ export function SlotPicker({ userId, selectedDate, selectedTime, onSelect }: Slo
       {internalSelectedDate && (
         <div className="pt-4 border-t border-outline-variant/30">
           <h4 className="text-sm font-bold mb-3">
-            Horarios disponibles para el {format(internalSelectedDate, "d 'de' MMMM", { locale: es })}
+            {t.pipeline?.leadDetails?.labels?.availableSlotsFor || "Horarios disponibles para el"}{' '}
+            {format(internalSelectedDate, locale === 'en' ? 'MMMM d' : "d 'de' MMMM", { locale: dfLocale })}
           </h4>
           <div className="grid grid-cols-3 gap-2">
             {slots.length === 0 ? (
               <p className="text-on-surface-variant col-span-full text-center py-4 text-sm">
-                No hay horarios disponibles para este dia
+                {t.pipeline?.leadDetails?.labels?.noSlotsAvailable || "No hay horarios disponibles para este día"}
               </p>
             ) : (
               slots.map((time) => {

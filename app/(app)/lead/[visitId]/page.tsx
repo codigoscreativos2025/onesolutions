@@ -182,8 +182,9 @@ function groupFieldsByType(
   return { groups, other };
 }
 
-function fieldLabel(key: string): string {
+function fieldLabel(key: string, i18nLabels?: Record<string, string>): string {
   return (
+    i18nLabels?.[key] ||
     FIELD_LABEL_MAP[key] ||
     key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase())
   );
@@ -400,16 +401,16 @@ export default function LeadDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { data: session } = useSession();
+  const { t } = useLocale();
   const visitId = Number(params.visitId);
   if (isNaN(visitId)) {
     return (
       <div className="text-center py-12">
-        <p className="text-on-surface-variant">ID de proyecto inválido</p>
+        <p className="text-on-surface-variant">{t.pipeline?.leadDetails?.labels?.invalidProjectId || "ID de proyecto inválido"}</p>
       </div>
     );
   }
   const role = session?.user?.role ?? "";
-  const { t } = useLocale();
 
   const [visit, setVisit] = useState<VisitDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -492,7 +493,7 @@ export default function LeadDetailPage() {
     try {
       const res = await fetch(`/api/visits/${visitId}/details`);
       if (res.status === 403) {
-        toast.error("No tienes permiso para ver este proyecto");
+        toast.error(t.pipeline?.leadDetails?.toasts?.noPermission || "No tienes permiso para ver este proyecto");
         router.push("/dashboard");
         return;
       }
@@ -509,16 +510,16 @@ export default function LeadDetailPage() {
         serverUpdatedAt &&
         serverUpdatedAt !== lastFetchedUpdatedAtRef.current
       ) {
-        toast.info("Otro usuario actualizó este proyecto", {
+        toast.info(t.pipeline?.leadDetails?.toasts?.updatedByOther || "Otro usuario actualizó este proyecto", {
           description:
-            "Los datos visibles se han refrescado desde el servidor.",
+            t.pipeline?.leadDetails?.toasts?.updatedByOtherDesc || "Los datos visibles se han refrescado desde el servidor.",
         });
       }
       lastFetchedUpdatedAtRef.current = serverUpdatedAt;
 
       setVisit(data);
     } catch {
-      if (!silent) toast.error("Error al cargar los detalles del proyecto");
+      if (!silent) toast.error(t.pipeline?.leadDetails?.toasts?.loadError || "Error al cargar los detalles del proyecto");
     } finally {
       if (!silent) setLoading(false);
     }
@@ -794,15 +795,15 @@ export default function LeadDetailPage() {
 
   const handleScheduleVisit = async () => {
     if (!visit || !scheduleDate || !scheduleTime) {
-      toast.error("Selecciona fecha y hora");
+      toast.error(t.pipeline?.leadDetails?.toasts?.selectDateTime || "Selecciona fecha y hora");
       return;
     }
     if (showScheduleCloserDropdown && !scheduleCloserId) {
-      toast.error("Selecciona un Closer");
+      toast.error(t.pipeline?.leadDetails?.toasts?.selectCloser || "Selecciona un Closer");
       return;
     }
     if (!visit.projects || visit.projects.length === 0) {
-      toast.error("Debes seleccionar al menos un tipo de proyecto");
+      toast.error(t.pipeline?.leadDetails?.toasts?.selectProjectType || "Debes seleccionar al menos un tipo de proyecto");
       return;
     }
     setScheduleSaving(true);
@@ -827,7 +828,7 @@ export default function LeadDetailPage() {
         throw new Error(errorData.error || "Error al agendar cita");
       }
 
-      toast.success("Lead Potencial creado");
+      toast.success(t.pipeline?.leadDetails?.toasts?.potentialLeadCreated || "Lead Potencial creado");
       router.push(`/dashboard?highlight=${visit.id}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Error al agendar");
@@ -967,7 +968,7 @@ export default function LeadDetailPage() {
       }
 
       hasChangesRef.current = false;
-      if (!silent) toast.success("Datos guardados");
+      if (!silent) toast.success(t.pipeline?.leadDetails?.toasts?.dataSaved || "Datos guardados");
 
       // Sync the server's updatedAt right after a save so the polling
       // loop's stale-detection compares against a fresh fingerprint
@@ -976,7 +977,7 @@ export default function LeadDetailPage() {
       // proyecto" because our own save changed updatedAt.
       await fetchVisitDetails(true);
     } catch {
-      if (!silent) toast.error("Error al guardar");
+      if (!silent) toast.error(t.pipeline?.leadDetails?.toasts?.saveError || "Error al guardar");
     } finally {
       setSaving(false);
     }
@@ -1015,7 +1016,7 @@ export default function LeadDetailPage() {
         }),
       });
       if (!res.ok) {
-        toast.error("Error al guardar el archivo");
+        toast.error(t.pipeline?.leadDetails?.toasts?.saveFileError || "Error al guardar el archivo");
         return;
       }
       setVisit((prev) => {
@@ -1060,9 +1061,9 @@ export default function LeadDetailPage() {
           },
         };
       });
-      toast.success("Archivo subido");
+      toast.success(t.pipeline?.leadDetails?.toasts?.fileUploaded || "Archivo subido");
     } catch {
-      toast.error("Error al subir archivo");
+      toast.error(t.pipeline?.leadDetails?.toasts?.fileUploadError || "Error al subir archivo");
     }
   };
 
@@ -1082,7 +1083,7 @@ export default function LeadDetailPage() {
         }),
       });
       if (!res.ok) {
-        toast.error("Error al eliminar el archivo");
+        toast.error(t.pipeline?.leadDetails?.toasts?.fileDeleteError || "Error al eliminar el archivo");
         return;
       }
       setVisit((prev) => {
@@ -1115,7 +1116,7 @@ export default function LeadDetailPage() {
         };
       });
     } catch {
-      toast.error("Error al eliminar el archivo");
+      toast.error(t.pipeline?.leadDetails?.toasts?.fileDeleteError || "Error al eliminar el archivo");
     }
   };
 
@@ -1166,9 +1167,9 @@ export default function LeadDetailPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ visitId, [fieldName]: finalVal }),
       });
-      toast.success("Archivo subido");
+      toast.success(t.pipeline?.leadDetails?.toasts?.fileUploaded || "Archivo subido");
     } catch {
-      toast.error("Error al subir archivo");
+      toast.error(t.pipeline?.leadDetails?.toasts?.fileUploadError || "Error al subir archivo");
     }
   };
 
@@ -1193,13 +1194,13 @@ export default function LeadDetailPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ contractFields: JSON.stringify(existing) }),
         });
-        toast.success("Solicitud de cierre enviada a los administradores");
+        toast.success(t.pipeline?.leadDetails?.toasts?.closeRequested || "Solicitud de cierre enviada a los administradores");
         fetchVisitDetails();
       } else {
-        toast.error("Error al solicitar cierre");
+        toast.error(t.pipeline?.leadDetails?.toasts?.closeRequestError || "Error al solicitar cierre");
       }
     } catch {
-      toast.error("Error al solicitar cierre");
+      toast.error(t.pipeline?.leadDetails?.toasts?.closeRequestError || "Error al solicitar cierre");
     }
   };
 
@@ -1211,13 +1212,13 @@ export default function LeadDetailPage() {
         body: JSON.stringify({}),
       });
       if (res.ok) {
-        toast.success("Proyecto cerrado exitosamente");
+        toast.success(t.pipeline?.leadDetails?.toasts?.projectClosed || "Proyecto cerrado exitosamente");
         fetchVisitDetails();
       } else {
-        toast.error("Error al cerrar proyecto");
+        toast.error(t.pipeline?.leadDetails?.toasts?.closeProjectError || "Error al cerrar proyecto");
       }
     } catch {
-      toast.error("Error al cerrar proyecto");
+      toast.error(t.pipeline?.leadDetails?.toasts?.closeProjectError || "Error al cerrar proyecto");
     }
   };
 
@@ -1227,18 +1228,18 @@ export default function LeadDetailPage() {
         method: "POST",
       });
       if (res.ok) {
-        toast.success("Proyecto devuelto para edición exitosamente");
+        toast.success(t.pipeline?.leadDetails?.toasts?.projectReturned || "Proyecto devuelto para edición exitosamente");
         fetchVisitDetails(true);
       } else {
-        toast.error("Error al devolver proyecto");
+        toast.error(t.pipeline?.leadDetails?.toasts?.returnProjectError || "Error al devolver proyecto");
       }
     } catch {
-      toast.error("Error al devolver proyecto");
+      toast.error(t.pipeline?.leadDetails?.toasts?.returnProjectError || "Error al devolver proyecto");
     }
   };
 
   const handleCancelProjectAction = async () => {
-    const reason = prompt("Motivo de cancelación:");
+    const reason = prompt(t.pipeline?.leadDetails?.dialogs?.cancelReasonPrompt || "Motivo de cancelación:");
     if (!reason) return;
     try {
       const res = await fetch(`/api/visits/${visitId}/cancel`, {
@@ -1247,13 +1248,13 @@ export default function LeadDetailPage() {
         body: JSON.stringify({ reason }),
       });
       if (res.ok) {
-        toast.success("Proyecto cancelado");
+        toast.success(t.pipeline?.leadDetails?.toasts?.projectCancelled || "Proyecto cancelado");
         fetchVisitDetails();
       } else {
-        toast.error("Error al cancelar proyecto");
+        toast.error(t.pipeline?.leadDetails?.toasts?.cancelProjectError || "Error al cancelar proyecto");
       }
     } catch {
-      toast.error("Error al cancelar proyecto");
+      toast.error(t.pipeline?.leadDetails?.toasts?.cancelProjectError || "Error al cancelar proyecto");
     }
   };
 
@@ -1269,33 +1270,33 @@ export default function LeadDetailPage() {
         }),
       });
       if (res.ok) {
-        toast.success("Proyecto descancelado");
+        toast.success(t.pipeline?.leadDetails?.toasts?.projectUncancelled || "Proyecto descancelado");
         fetchVisitDetails();
       } else {
-        toast.error("Error al descancelar");
+        toast.error(t.pipeline?.leadDetails?.toasts?.uncancelError || "Error al descancelar");
       }
     } catch {
-      toast.error("Error al descancelar");
+      toast.error(t.pipeline?.leadDetails?.toasts?.uncancelError || "Error al descancelar");
     }
   };
 
   const handleDeleteProject = async () => {
     if (
       !confirm(
-        "¿Estás seguro de eliminar este proyecto? Esta acción no se puede deshacer.",
+        t.pipeline?.leadDetails?.dialogs?.deleteProjectConfirm || "¿Estás seguro de eliminar este proyecto? Esta acción no se puede deshacer.",
       )
     )
       return;
     try {
       const res = await fetch(`/api/visits/${visitId}`, { method: "DELETE" });
       if (res.ok) {
-        toast.success("Proyecto eliminado");
+        toast.success(t.pipeline?.leadDetails?.toasts?.projectDeleted || "Proyecto eliminado");
         router.push("/dashboard");
       } else {
-        toast.error("Error al eliminar");
+        toast.error(t.pipeline?.leadDetails?.toasts?.deleteError || "Error al eliminar");
       }
     } catch {
-      toast.error("Error al eliminar");
+      toast.error(t.pipeline?.leadDetails?.toasts?.deleteError || "Error al eliminar");
     }
   };
 
@@ -1329,7 +1330,7 @@ export default function LeadDetailPage() {
         body: JSON.stringify({ stage: "PROJECT", scheduledAt: null }),
       });
       if (res.ok) {
-        toast.success("Proyecto iniciado");
+        toast.success(t.pipeline?.leadDetails?.toasts?.projectStarted || "Proyecto iniciado");
         fetchVisitDetails();
 
         const chatRes = await fetch(`/api/visits/${visit.id}/create-chat`, {
@@ -1391,10 +1392,10 @@ export default function LeadDetailPage() {
           }
         }
       } else {
-        toast.error("Error al iniciar proyecto");
+        toast.error(t.pipeline?.leadDetails?.toasts?.startProjectError || "Error al iniciar proyecto");
       }
     } catch {
-      toast.error("Error al iniciar proyecto");
+      toast.error(t.pipeline?.leadDetails?.toasts?.startProjectError || "Error al iniciar proyecto");
     }
   };
 
@@ -1410,7 +1411,7 @@ export default function LeadDetailPage() {
         body: JSON.stringify({ parcelTags: JSON.stringify(newTags) }),
       });
     } catch {
-      toast.error("Error al guardar etiqueta");
+      toast.error(t.pipeline?.leadDetails?.toasts?.saveTagError || "Error al guardar etiqueta");
       setLeadTags(leadTags);
     }
   };
@@ -1426,7 +1427,7 @@ export default function LeadDetailPage() {
         body: JSON.stringify({ parcelTags: JSON.stringify(newTags) }),
       });
     } catch {
-      toast.error("Error al eliminar etiqueta");
+      toast.error(t.pipeline?.leadDetails?.toasts?.deleteTagError || "Error al eliminar etiqueta");
       setLeadTags(leadTags);
     }
   };
@@ -1436,7 +1437,7 @@ export default function LeadDetailPage() {
     const newTag = postCloseTags === tag ? "" : tag;
 
     if (newTag === "Finalizado") {
-      if (!window.confirm("¿Quiere finalizar este proyecto?")) {
+      if (!window.confirm(t.pipeline?.leadDetails?.dialogs?.finalizeProjectConfirm || "¿Quiere finalizar este proyecto?")) {
         return;
       }
     }
@@ -1459,9 +1460,9 @@ export default function LeadDetailPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contractFields: JSON.stringify(existing) }),
       });
-      toast.success("Tags actualizados");
+      toast.success(t.pipeline?.leadDetails?.toasts?.tagsUpdated || "Tags actualizados");
     } catch {
-      toast.error("Error al actualizar tags");
+      toast.error(t.pipeline?.leadDetails?.toasts?.updateTagsError || "Error al actualizar tags");
       setPostCloseTags(prevTags);
     } finally {
       setTagSaving(false);
@@ -1481,7 +1482,7 @@ export default function LeadDetailPage() {
         setVisit((prev) =>
           prev ? { ...prev, chatRoom: { id: chatRoom.id } } : prev,
         );
-        toast.success("Chat creado");
+        toast.success(t.pipeline?.leadDetails?.toasts?.chatCreated || "Chat creado");
       }
     } catch {
       /* skip */
@@ -1552,13 +1553,13 @@ export default function LeadDetailPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <p className="text-on-surface-variant">No se encontró el proyecto</p>
+        <p className="text-on-surface-variant">{t.pipeline?.leadDetails?.labels?.projectNotFound || "No se encontró el proyecto"}</p>
         <Button
           variant="outline"
           className="mt-4"
           onClick={() => router.push("/dashboard")}
         >
-          Volver
+          {t.common?.back || "Volver"}
         </Button>
       </motion.div>
     );
@@ -1690,7 +1691,7 @@ export default function LeadDetailPage() {
                   })()
                 : null;
               if (metadata?.isManual) {
-                toast.info("Lead creado manualmente, no tiene parcela");
+                toast.info(t.pipeline?.leadDetails?.toasts?.manualLeadNoParcel || "Lead creado manualmente, no tiene parcela");
               } else if (visit.parcel?.id) {
                 router.push(`/map?highlight=${visit.parcel.id}&autoOpen=true`);
               }
@@ -1714,7 +1715,9 @@ export default function LeadDetailPage() {
               ) : (
                 <Play className="w-4 h-4" />
               )}
-              {startingProject ? "Iniciando..." : "Comenzar Proyecto"}
+              {startingProject
+                ? t.pipeline?.leadDetails?.labels?.starting || "Iniciando..."
+                : t.pipeline?.leadDetails?.labels?.startProject || "Comenzar Proyecto"}
             </button>
           )}
       </div>
@@ -1754,7 +1757,7 @@ export default function LeadDetailPage() {
               <div className="mt-6 glass-panel rounded-xl p-6 space-y-4">
                 <h3 className="font-semibold text-lg flex items-center gap-2 text-on-surface">
                   <Calendar className="w-5 h-5 text-primary" />
-                  Agendar Cita
+                  {t.pipeline?.leadDetails?.panels?.scheduleAppointment || "Agendar Cita"}
                 </h3>
 
                 {showScheduleCloserDropdown && (
@@ -1767,7 +1770,7 @@ export default function LeadDetailPage() {
                     }}
                     className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface"
                   >
-                    <option value="">-- Selecciona un Closer --</option>
+                    <option value="">-- {t.pipeline?.leadDetails?.labels?.selectCloser || "Selecciona un Closer"} --</option>
                     {scheduleClosers.map((c: any) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -1803,7 +1806,7 @@ export default function LeadDetailPage() {
                   ) : (
                     <Calendar className="w-5 h-5" />
                   )}
-                  Crear Lead Potencial
+                  {t.pipeline?.leadDetails?.labels?.createPotentialLead || "Crear Lead Potencial"}
                 </Button>
               </div>
             )}
@@ -1879,7 +1882,7 @@ export default function LeadDetailPage() {
                       className="flex-1"
                     >
                       <X className="w-4 h-4" />
-                      Cancelar Proyecto
+                      {t.pipeline?.leadDetails?.labels?.cancelProject || "Cancelar Proyecto"}
                     </Button>
                   </div>
                 )}
@@ -1957,7 +1960,7 @@ export default function LeadDetailPage() {
               <div className="flex flex-col items-center justify-center py-12 glass-panel rounded-xl">
                 <MessageSquare className="w-16 h-16 mb-4 opacity-30" />
                 <p className="text-lg font-medium text-on-surface">
-                  Chat solo disponible en la etapa En Proyecto
+                  {t.pipeline?.leadDetails?.labels?.chatOnlyInProject || "Chat solo disponible en la etapa En Proyecto"}
                 </p>
               </div>
             ) : (
@@ -1987,17 +1990,17 @@ export default function LeadDetailPage() {
                 className="shadow-xl rounded-full px-6 py-3 gap-2"
               >
                 <Save className="w-5 h-5" />
-                Guardar Cambios
+                {t.pipeline?.leadDetails?.labels?.saveChanges || "Guardar Cambios"}
               </Button>
             </div>
             <Modal
               isOpen={showSaveConfirm}
               onClose={() => setShowSaveConfirm(false)}
-              title="Guardar Cambios"
+              title={t.pipeline?.leadDetails?.labels?.saveChanges || "Guardar Cambios"}
             >
               <div className="space-y-4">
                 <p className="text-on-surface">
-                  Quieres guardar los cambios realizados?
+                  {t.pipeline?.leadDetails?.labels?.wantToSave || "¿Quieres guardar los cambios realizados?"}
                 </p>
                 <div className="flex gap-3">
                   <Button
@@ -2005,7 +2008,7 @@ export default function LeadDetailPage() {
                     onClick={() => setShowSaveConfirm(false)}
                     className="flex-1"
                   >
-                    Cancelar
+                    {t.common?.cancel || "Cancelar"}
                   </Button>
                   <Button
                     onClick={async () => {
@@ -2133,7 +2136,7 @@ export default function LeadDetailPage() {
                             ),
                           }),
                         });
-                        toast.success("Cambios guardados");
+                        toast.success(t.pipeline?.leadDetails?.toasts?.changesSaved || "Cambios guardados");
                         fetchVisitDetails(true);
                       } catch (error: any) {
                         toast.error(error.message || "Error al guardar");
@@ -2149,7 +2152,7 @@ export default function LeadDetailPage() {
                     ) : (
                       <Save className="w-4 h-4" />
                     )}
-                    Si, guardar
+                    {t.pipeline?.leadDetails?.labels?.confirmSaveButton || "Sí, guardar"}
                   </Button>
                 </div>
               </div>
@@ -2330,17 +2333,17 @@ function FieldRow({
           disabled={readOnly}
           className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface transition-colors"
         >
-          <option value="">Seleccionar...</option>
+          <option value="">{t.common?.selectOption || "Seleccionar..."}</option>
           <option value="Cash">Cash</option>
-          <option value="Transferencia">Transferencia</option>
-          <option value="Cheques">Cheques</option>
+          <option value="Transferencia">{t.pipeline?.leadDetails?.paymentOptions?.transfer || "Transferencia"}</option>
+          <option value="Cheques">{t.pipeline?.leadDetails?.paymentOptions?.checks || "Cheques"}</option>
           <option value="LightReach">LightReach</option>
           <option value="SkyLight">SkyLight</option>
           <option value="SunGage">SunGage</option>
           <option value="Sunrise Capital">Sunrise Capital</option>
           <option value="Foundations Finance">Foundations Finance</option>
-          <option value="Tarjeta de Crédito TDC">Tarjeta de Crédito TDC</option>
-          <option value="Otro">Otro</option>
+          <option value="Tarjeta de Crédito TDC">{t.pipeline?.leadDetails?.paymentOptions?.creditCard || "Tarjeta de Crédito TDC"}</option>
+          <option value="Otro">{t.pipeline?.leadDetails?.paymentOptions?.other || "Otro"}</option>
         </select>
       </div>
     );
@@ -2360,11 +2363,11 @@ function FieldRow({
           disabled={readOnly}
           className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface transition-colors"
         >
-          <option value="">Seleccionar...</option>
-          <option value="Sistema completo">Sistema completo</option>
+          <option value="">{t.common?.selectOption || "Seleccionar..."}</option>
+          <option value="Sistema completo">{t.pipeline?.leadDetails?.waterOptions?.fullSystem || "Sistema completo"}</option>
           <option value="Softener">Softener</option>
           <option value="R.O">R.O</option>
-          <option value="Sistema de pozo">Sistema de pozo</option>
+          <option value="Sistema de pozo">{t.pipeline?.leadDetails?.waterOptions?.wellSystem || "Sistema de pozo"}</option>
         </select>
       </div>
     );
@@ -2434,31 +2437,32 @@ function ClientInfoPanel({
   visit?: VisitDetails;
   role?: string;
 }) {
+  const { t } = useLocale();
   const isPartner = role === "PARTNER";
   if (isReadOnly && visit) {
     return (
-      <Panel title="Información del Cliente" icon={User}>
+      <Panel title={t.pipeline?.leadDetails?.panels?.clientInfo || "Información del Cliente"} icon={User}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ReadOnlyField label="Nombre" value={visit.bill?.clientName || "-"} />
+          <ReadOnlyField label={t.pipeline?.leadDetails?.labels?.clientName || "Nombre"} value={visit.bill?.clientName || "-"} />
           {!isPartner && (
             <ReadOnlyField
-              label="Correo"
+              label={t.pipeline?.leadDetails?.labels?.email || "Correo"}
               value={visit.bill?.clientEmail || "-"}
             />
           )}
           {!isPartner && (
-            <ReadOnlyField label="Teléfono" value={visit.bill?.phone || "-"} />
+            <ReadOnlyField label={t.pipeline?.leadDetails?.labels?.phone || "Teléfono"} value={visit.bill?.phone || "-"} />
           )}
         </div>
       </Panel>
     );
   }
   return (
-    <Panel title="Información del Cliente" icon={User}>
+    <Panel title={t.pipeline?.leadDetails?.panels?.clientInfo || "Información del Cliente"} icon={User}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">
-            Nombre
+            {t.pipeline?.leadDetails?.labels?.name || "Nombre"}
             <RequiredBadge required={true} />
           </label>
           <Input
@@ -2470,13 +2474,13 @@ function ClientInfoPanel({
               )
             }
             onBlur={onSave}
-            placeholder="Nombre del cliente"
+            placeholder={t.pipeline?.leadDetails?.placeholders?.clientName || "Nombre del cliente"}
           />
         </div>
         {!isPartner && (
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">
-              Correo
+              {t.pipeline?.leadDetails?.labels?.email || "Correo"}
               <RequiredBadge required={true} />
             </label>
             <Input
@@ -2489,14 +2493,14 @@ function ClientInfoPanel({
                 )
               }
               onBlur={onSave}
-              placeholder="Correo electrónico"
+              placeholder={t.pipeline?.leadDetails?.placeholders?.email || "Correo electrónico"}
             />
           </div>
         )}
         {!isPartner && (
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">
-              Teléfono
+              {t.pipeline?.leadDetails?.labels?.phone || "Teléfono"}
               <RequiredBadge required={true} />
             </label>
             <Input
@@ -2509,7 +2513,7 @@ function ClientInfoPanel({
                 )
               }
               onBlur={onSave}
-              placeholder="Número de teléfono"
+              placeholder={t.pipeline?.leadDetails?.placeholders?.phone || "Número de teléfono"}
             />
           </div>
         )}
@@ -2548,6 +2552,7 @@ function DatosLeadPanel({
   onBillFileClear?: (slot: "first" | "second") => Promise<void>;
   role?: string;
 }) {
+  const { t } = useLocale();
   const [saving, setSaving] = useState(false);
   const [editProjectTypes, setEditProjectTypes] = useState<
     { id: number; name: string }[]
@@ -2644,9 +2649,9 @@ function DatosLeadPanel({
         if (!fetchRes.ok) throw new Error("Error al guardar notas");
       }
 
-      toast.success("Datos guardados");
+      toast.success(t.pipeline?.leadDetails?.toasts?.dataSaved || "Datos guardados");
     } catch {
-      toast.error("Error al guardar");
+      toast.error(t.pipeline?.leadDetails?.toasts?.saveError || "Error al guardar");
     } finally {
       setSaving(false);
     }
@@ -2662,10 +2667,10 @@ function DatosLeadPanel({
         role={role}
       />
 
-      <Panel title="Documentos" icon={FileText}>
+      <Panel title={t.pipeline?.leadDetails?.panels?.documents || "Documentos"} icon={FileText}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <IdUploadField
-            label="ID del Cliente"
+            label={t.pipeline?.leadDetails?.labels?.clientId || "ID del Cliente"}
             files={[
               {
                 url: visit.bill?.additionalFileUrl || fallbackId1,
@@ -2692,7 +2697,7 @@ function DatosLeadPanel({
             readOnly={isReadOnly}
           />
           <UploadField
-            label="Recibo de Luz"
+            label={t.pipeline?.leadDetails?.labels?.powerBill || "Recibo de Luz"}
             preview={visit.bill?.imageUrl || ""}
             onChange={async (e) => {
               if (isReadOnly) return;
@@ -2705,7 +2710,7 @@ function DatosLeadPanel({
         </div>
       </Panel>
 
-      <Panel title="Tipos de Proyecto" icon={Package}>
+      <Panel title={t.pipeline?.leadDetails?.panels?.projectTypes || "Tipos de Proyecto"} icon={Package}>
         <div className="flex flex-wrap gap-2">
           {editProjectTypes.map((pt) => {
             const isSelected = selectedPTIds.includes(pt.id);
@@ -2840,6 +2845,8 @@ function DatosProjectFieldsPanel({
   onBillFileClear?: (slot: "first" | "second") => Promise<void>;
   role?: string;
 }) {
+  const { t } = useLocale();
+  const i18nFieldLabels = t.pipeline?.leadDetails?.fieldLabels as Record<string, string> | undefined;
   const pd = visit.projectDetails || {};
   const nonCommonFields = fieldMetas.filter(
     (m) => !COMMON_FIELDS.includes(m.fieldName),
@@ -2887,7 +2894,7 @@ function DatosProjectFieldsPanel({
       });
       if (res.ok) onRefresh();
     } catch {
-      toast.error("Error al actualizar tipos de proyecto");
+      toast.error(t.pipeline?.leadDetails?.toasts?.updateProjectTypesError || "Error al actualizar tipos de proyecto");
       setSelectedProjectTypeIds(visit.projects.map((p) => p.projectType.id));
     } finally {
       setProjectTypesSaving(false);
@@ -2933,7 +2940,7 @@ function DatosProjectFieldsPanel({
   const isPartner = role === "PARTNER";
   const commonFieldsFiltered = COMMON_FIELDS.filter((key) => {
     if (!isPartner) return true;
-    return !isFieldHiddenForPartner(key, fieldLabel(key));
+    return !isFieldHiddenForPartner(key, fieldLabel(key, i18nFieldLabels));
   });
 
   const isTraineeLeadGeneral = visit.setter?.role === "SETTER";
@@ -2958,12 +2965,12 @@ function DatosProjectFieldsPanel({
       )}
 
       {commonFieldsFiltered.length > 0 && (
-        <Panel title="Campos Generales" icon={Pencil}>
+        <Panel title={t.pipeline?.leadDetails?.panels?.generalFields || "Campos Generales"} icon={Pencil}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {commonFieldsFiltered.map((key) => (
               <FieldRow
                 key={key}
-                label={fieldLabel(key)}
+                label={fieldLabel(key, i18nFieldLabels)}
                 value={getValue(key)}
                 field={key}
                 type={getType(key)}
@@ -3064,7 +3071,7 @@ function DatosProjectFieldsPanel({
                     </div>
                   ) : (
                     <p className="text-sm text-on-surface-variant">
-                      Sin campos específicos para este proyecto
+                      {t.pipeline?.leadDetails?.labels?.noFieldsForProject || "Sin campos específicos para este proyecto"}
                     </p>
                   )}
                 </div>
@@ -3124,6 +3131,8 @@ function DatosProjectPanel({
   ) => Promise<void>;
   onBillFileClear?: (slot: "first" | "second") => Promise<void>;
 }) {
+  const { t } = useLocale();
+  const i18nFieldLabels = t.pipeline?.leadDetails?.fieldLabels as Record<string, string> | undefined;
   const pd = visit.projectDetails || {};
   const hasPanelSolar = selectedProjectNames.some((name) =>
     name.toLowerCase().includes("panel solar"),
@@ -3215,13 +3224,13 @@ function DatosProjectPanel({
   return (
     <div className="space-y-6">
       <Panel
-        title="Progreso del Proyecto"
+        title={t.pipeline?.leadDetails?.panels?.projectProgress || "Progreso del Proyecto"}
         icon={BadgeCheck}
         className="sticky top-4 z-10 shadow-lg border-2 border-primary/20 backdrop-blur-xl bg-surface/80"
       >
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-on-surface-variant">Completitud</span>
+            <span className="text-on-surface-variant">{t.pipeline?.leadDetails?.labels?.completeness || "Completitud"}</span>
             <span className="font-bold text-on-surface">{progress}%</span>
           </div>
           <div className="w-full h-3 bg-surface-container-highest rounded-full overflow-hidden">
@@ -3244,27 +3253,27 @@ function DatosProjectPanel({
                 <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
                   <Clock className="w-4 h-4 shrink-0" />
                   <span className="text-sm font-semibold">
-                    Cierre Solicitado
+                    {t.pipeline?.leadDetails?.labels?.closeRequested || "Cierre Solicitado"}
                   </span>
                 </div>
               ) : (
                 <Button onClick={onRequestClose} variant="outline">
                   <BadgeCheck className="w-4 h-4" />
-                  Solicitar Cierre
+                  {t.pipeline?.leadDetails?.labels?.requestClose || "Solicitar Cierre"}
                 </Button>
               ))}
             {isAdmin && closeRequested && (
               <>
                 <Button onClick={onCloseProject}>
                   <CheckCircle className="w-4 h-4" />
-                  Cerrar Proyecto
+                  {t.pipeline?.leadDetails?.labels?.closeProject || "Cerrar Proyecto"}
                 </Button>
                 <Button
                   onClick={onReturnLead}
                   className="bg-orange-500 hover:bg-orange-600 text-white"
                 >
                   <RotateCcw className="w-4 h-4" />
-                  Devolver Proyecto
+                  {t.pipeline?.leadDetails?.labels?.returnProject || "Devolver Proyecto"}
                 </Button>
               </>
             )}
@@ -3281,10 +3290,10 @@ function DatosProjectPanel({
         role={role}
       />
 
-      <Panel title="Documentos" icon={FileText}>
+      <Panel title={t.pipeline?.leadDetails?.panels?.documents || "Documentos"} icon={FileText}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <IdUploadField
-            label="ID del Cliente"
+            label={t.pipeline?.leadDetails?.labels?.clientId || "ID del Cliente"}
             files={[
               {
                 url: visit.bill?.additionalFileUrl || fallbackId1,
@@ -3311,7 +3320,7 @@ function DatosProjectPanel({
             readOnly={closeRequested || role === "ADMIN"}
           />
           <FieldRow
-            label="Recibo de Luz"
+            label={t.pipeline?.leadDetails?.labels?.powerBill || "Recibo de Luz"}
             value={getValue("electricBillUrl")}
             field="electricBillUrl"
             isFile
@@ -3325,12 +3334,12 @@ function DatosProjectPanel({
         </div>
       </Panel>
 
-      <Panel title="Campos Generales" icon={Pencil}>
+      <Panel title={t.pipeline?.leadDetails?.panels?.generalFields || "Campos Generales"} icon={Pencil}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {COMMON_FIELDS.map((key) => (
             <FieldRow
               key={key}
-              label={fieldLabel(key)}
+              label={fieldLabel(key, i18nFieldLabels)}
               value={getValue(key)}
               field={key}
               type={getType(key)}
@@ -3426,7 +3435,7 @@ function DatosProjectPanel({
                     </div>
                   ) : (
                     <p className="text-sm text-on-surface-variant">
-                      Sin campos específicos para este proyecto
+                      {t.pipeline?.leadDetails?.labels?.noFieldsForProject || "Sin campos específicos para este proyecto"}
                     </p>
                   )}
                 </div>
@@ -3466,6 +3475,7 @@ function DatosClosedPanel({
   onRefresh?: () => void;
 }) {
   const { t } = useLocale();
+  const i18nFieldLabels = t.pipeline?.leadDetails?.fieldLabels as Record<string, string> | undefined;
   const pd = visit.projectDetails || {};
 
   const nonCommonFields = fieldMetas.filter(
@@ -3508,7 +3518,7 @@ function DatosClosedPanel({
       });
       onRefresh?.();
     } catch {
-      toast.error("Error al asignar partner");
+      toast.error(t.pipeline?.leadDetails?.toasts?.assignPartnerError || "Error al asignar partner");
     } finally {
       setPartnerSaving(null);
     }
@@ -3540,7 +3550,7 @@ function DatosClosedPanel({
   return (
     <div className="space-y-6">
       <ClientInfoPanel isReadOnly visit={visit} role={role} />
-      <Panel title="Estado Post-Cierre" icon={BadgeCheck}>
+      <Panel title={t.pipeline?.leadDetails?.panels?.postClosureState || "Estado Post-Cierre"} icon={BadgeCheck}>
         <div className="flex flex-wrap gap-2">
           {POST_CLOSURE_TAGS.map((tag) => (
             <button
@@ -3589,16 +3599,16 @@ function DatosClosedPanel({
         )}
       </Panel>
 
-      <Panel title="Campos Generales" icon={Pencil}>
+      <Panel title={t.pipeline?.leadDetails?.panels?.generalFields || "Campos Generales"} icon={Pencil}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {COMMON_FIELDS.filter(
             (key) =>
               role !== "PARTNER" ||
-              !isFieldHiddenForPartner(key, fieldLabel(key)),
+              !isFieldHiddenForPartner(key, fieldLabel(key, i18nFieldLabels)),
           ).map((key) => (
             <ReadOnlyField
               key={key}
-              label={fieldLabel(key)}
+              label={fieldLabel(key, i18nFieldLabels)}
               value={
                 pd[key] !== undefined && pd[key] !== null && pd[key] !== ""
                   ? key === "closingDate"
@@ -3696,7 +3706,7 @@ function DatosClosedPanel({
                         value=""
                         className="text-on-surface bg-surface-container-high"
                       >
-                        Sin partner
+                        {t.pipeline?.leadDetails?.labels?.noPartner || "Sin partner"}
                       </option>
                       {partners.map((p) => (
                         <option
@@ -3739,7 +3749,7 @@ function DatosClosedPanel({
                     </div>
                   ) : (
                     <p className="text-sm text-on-surface-variant">
-                      Sin campos específicos para este proyecto
+                      {t.pipeline?.leadDetails?.labels?.noFieldsForProject || "Sin campos específicos para este proyecto"}
                     </p>
                   )}
                 </div>
@@ -3749,7 +3759,7 @@ function DatosClosedPanel({
         })}
 
       {role !== "PARTNER" && visit.bill?.notes && (
-        <Panel title="Notas" icon={Pencil}>
+        <Panel title={t.pipeline?.leadDetails?.panels?.notes || "Notas"} icon={Pencil}>
           <p className="text-sm text-on-surface whitespace-pre-wrap">
             {visit.bill.notes}
           </p>
@@ -3770,27 +3780,28 @@ function DatosCancelledPanel({
   onUncancel: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useLocale();
   return (
     <div className="space-y-6">
       <ClientInfoPanel isReadOnly visit={visit} />
       <div className="glass-panel rounded-xl p-6 border border-error/30 bg-error/5">
         <div className="flex items-center gap-3 mb-4">
           <ShieldAlert className="w-6 h-6 text-error" />
-          <h3 className="text-lg font-bold text-error">Proyecto Cancelado</h3>
+          <h3 className="text-lg font-bold text-error">{t.pipeline?.leadDetails?.labels?.projectCancelledTitle || "Proyecto Cancelado"}</h3>
         </div>
         <div className="space-y-3">
           <ReadOnlyField
-            label="Motivo de Cancelación"
-            value={visit.cancellationReason || "No especificado"}
+            label={t.pipeline?.leadDetails?.labels?.cancelReason || "Motivo de Cancelación"}
+            value={visit.cancellationReason || (t.pipeline?.leadDetails?.labels?.notSpecified || "No especificado")}
           />
           {visit.cancelledAt && (
             <ReadOnlyField
-              label="Fecha de Cancelación"
+              label={t.pipeline?.leadDetails?.labels?.cancelDate || "Fecha de Cancelación"}
               value={new Date(visit.cancelledAt).toLocaleDateString()}
             />
           )}
           {visit.legacyNotes && (
-            <ReadOnlyField label="Notas" value={visit.legacyNotes} multiline />
+            <ReadOnlyField label={t.pipeline?.leadDetails?.labels?.notes || "Notas"} value={visit.legacyNotes} multiline />
           )}
         </div>
       </div>
@@ -3799,11 +3810,11 @@ function DatosCancelledPanel({
         <div className="flex gap-3">
           <Button onClick={onUncancel} variant="outline" className="flex-1">
             <RotateCcw className="w-4 h-4" />
-            Retomar
+            {t.pipeline?.leadDetails?.labels?.resume || "Retomar"}
           </Button>
           <Button onClick={onDelete} variant="danger" className="flex-1">
             <Trash2 className="w-4 h-4" />
-            Eliminar
+            {t.common?.delete || "Eliminar"}
           </Button>
         </div>
       )}
@@ -3820,6 +3831,7 @@ function ArchivosPanel({
   onUpdate?: () => void;
   role?: string;
 }) {
+  const { t } = useLocale();
   const router = useRouter();
   const pd = visit.projectDetails || {};
   const bill = visit.bill;
@@ -3833,21 +3845,39 @@ function ArchivosPanel({
   );
   const [fileToDelete, setFileToDelete] = useState<FileEntry | null>(null);
 
+  const docL = t.pipeline?.leadDetails?.documents;
+  const DL = {
+    clientId: t.pipeline?.leadDetails?.labels?.clientId || "ID del Cliente",
+    clientIdBack: t.pipeline?.leadDetails?.labels?.clientIdBack || "Reverso",
+    powerBill: docL?.powerBill || "Recibo de Luz",
+    homeInsurance: docL?.homeInsurance || "Seguro de Hogar",
+    homeTitle: docL?.homeTitle || "Título de Propiedad",
+    noc: docL?.noc || "NOC",
+    exteriorScope: docL?.exteriorScope || "Exterior Scope",
+    roofReport: docL?.roofReport || "Reporte de Techo",
+    panelsPhotos: docL?.panelsPhotos || "Fotos de Paneles",
+    closingForm: docL?.closingForm || "Formulario de Cierre",
+    materialsOrder: docL?.materialsOrder || "Orden de Materiales",
+    propertyPhotos: docL?.propertyPhotos || "Fotos de Propiedad",
+    propertyPhoto: docL?.propertyPhoto || "Foto de Propiedad",
+    hoaImage: docL?.hoaImage || "Imagen HOA",
+  };
+
   const DOCUMENT_OPTIONS = [
-    "ID del Cliente",
-    "Recibo de Luz",
-    "Seguro de Hogar",
-    "Título de Propiedad",
-    "NOC",
-    "Exterior Scope",
-    "Reporte de Techo",
-    "Fotos de Paneles",
-    "Formulario de Cierre",
-    "Orden de Materiales",
-    "Fotos de Propiedad",
-    "Imagen HOA 1",
-    "Imagen HOA 2",
-    "Imagen HOA 3",
+    DL.clientId,
+    DL.powerBill,
+    DL.homeInsurance,
+    DL.homeTitle,
+    DL.noc,
+    DL.exteriorScope,
+    DL.roofReport,
+    DL.panelsPhotos,
+    DL.closingForm,
+    DL.materialsOrder,
+    DL.propertyPhotos,
+    `${DL.hoaImage} 1`,
+    `${DL.hoaImage} 2`,
+    `${DL.hoaImage} 3`,
   ];
 
   useEffect(() => {
@@ -3890,61 +3920,61 @@ function ArchivosPanel({
   const idFront = bill?.additionalFileUrl || parsedIds[0];
   const idBack = bill?.additionalFile2Url || parsedIds[1];
 
-  if (idFront) addFile("ID del Cliente", idFront, "idDocumentUrl");
-  if (idBack) addFile("ID del Cliente (Reverso)", idBack, "idDocumentUrl2");
+  if (idFront) addFile(DL.clientId, idFront, "idDocumentUrl");
+  if (idBack) addFile(`${DL.clientId} (${DL.clientIdBack})`, idBack, "idDocumentUrl2");
 
   const hasBillUrl = pd.electricBillUrl || bill?.imageUrl;
   if (hasBillUrl) {
-    addFile("Recibo de Luz", String(hasBillUrl), "electricBillUrl");
+    addFile(DL.powerBill, String(hasBillUrl), "electricBillUrl");
   }
   addFile(
-    "Seguro de Hogar",
+    DL.homeInsurance,
     pd.homeInsuranceUrl ? String(pd.homeInsuranceUrl) : undefined,
     "homeInsuranceUrl",
   );
   addFile(
-    "Título de Propiedad",
+    DL.homeTitle,
     pd.homeTitleUrl ? String(pd.homeTitleUrl) : undefined,
     "homeTitleUrl",
   );
-  addFile("NOC", pd.nocUrl ? String(pd.nocUrl) : undefined, "nocUrl");
+  addFile(DL.noc, pd.nocUrl ? String(pd.nocUrl) : undefined, "nocUrl");
   addFile(
-    "Exterior Scope",
+    DL.exteriorScope,
     pd.exteriorScopeUrl ? String(pd.exteriorScopeUrl) : undefined,
     "exteriorScopeUrl",
   );
   addFile(
-    "Reporte de Techo",
+    DL.roofReport,
     pd.roofReportUrl ? String(pd.roofReportUrl) : undefined,
     "roofReportUrl",
   );
   addFile(
-    "Fotos de Paneles",
+    DL.panelsPhotos,
     pd.panelsPhotoUrl ? String(pd.panelsPhotoUrl) : undefined,
     "panelsPhotoUrl",
   );
   addFile(
-    "Formulario de Cierre",
+    DL.closingForm,
     pd.closingFormUrl ? String(pd.closingFormUrl) : undefined,
     "closingFormUrl",
   );
   addFile(
-    "Orden de Materiales",
+    DL.materialsOrder,
     pd.materialsOrderUrl ? String(pd.materialsOrderUrl) : undefined,
     "materialsOrderUrl",
   );
   addFile(
-    "Imagen HOA 1",
+    `${DL.hoaImage} 1`,
     pd.hoaImage1Url ? String(pd.hoaImage1Url) : undefined,
     "hoaImage1Url",
   );
   addFile(
-    "Imagen HOA 2",
+    `${DL.hoaImage} 2`,
     pd.hoaImage2Url ? String(pd.hoaImage2Url) : undefined,
     "hoaImage2Url",
   );
   addFile(
-    "Imagen HOA 3",
+    `${DL.hoaImage} 3`,
     pd.hoaImage3Url ? String(pd.hoaImage3Url) : undefined,
     "hoaImage3Url",
   );
@@ -3955,7 +3985,7 @@ function ArchivosPanel({
       if (Array.isArray(photos)) {
         photos.forEach((url: string, i: number) => {
           allFilesFlat.push({
-            name: `Foto de Propiedad ${i + 1}`,
+            name: `${DL.propertyPhoto} ${i + 1}`,
             url,
             fieldKey: "propertyPhotosJson",
           });
@@ -3963,7 +3993,7 @@ function ArchivosPanel({
       }
     } catch {
       allFilesFlat.push({
-        name: "Fotos de Propiedad",
+        name: DL.propertyPhotos,
         url: String(pd.propertyPhotosJson),
         fieldKey: "propertyPhotosJson",
       });
@@ -4092,11 +4122,11 @@ function ArchivosPanel({
           }),
         });
       }
-      toast.success("Archivo eliminado");
+      toast.success(t.pipeline?.leadDetails?.toasts?.fileDeleted || "Archivo eliminado");
       if (onUpdate) onUpdate();
       else router.refresh();
     } catch {
-      toast.error("Error al eliminar");
+      toast.error(t.pipeline?.leadDetails?.toasts?.deleteError || "Error al eliminar");
     }
   };
 
@@ -4107,18 +4137,18 @@ function ArchivosPanel({
 
   const finalDocName = docName === "Otro" ? customName : docName;
   const isOptUploaded = (opt: string) => {
-    if (opt === "Fotos de Propiedad") {
+    if (opt === DL.propertyPhotos) {
       const propertyPhotoCount = allFilesFlat.filter(
         (f) =>
-          f.name === "Fotos de Propiedad" ||
-          f.name.startsWith("Foto de Propiedad"),
+          f.name === DL.propertyPhotos ||
+          f.name.startsWith(DL.propertyPhoto),
       ).length;
       return propertyPhotoCount >= 20;
     }
-    if (opt === "ID del Cliente") {
+    if (opt === DL.clientId) {
       const idCount = allFilesFlat.filter(
         (f) =>
-          f.name === "ID del Cliente" || f.name.startsWith("ID del Cliente "),
+          f.name === DL.clientId || f.name.startsWith(DL.clientId + " "),
       ).length;
       return idCount >= 2;
     }
@@ -4143,28 +4173,28 @@ function ArchivosPanel({
 
       const finalName = finalDocName.trim();
       const fieldMap: Record<string, string> = {
-        "ID del Cliente": "idDocumentUrl",
-        "Recibo de Luz": "electricBillUrl",
-        "Seguro de Hogar": "homeInsuranceUrl",
-        "Título de Propiedad": "homeTitleUrl",
-        NOC: "nocUrl",
-        "Exterior Scope": "exteriorScopeUrl",
-        "Reporte de Techo": "roofReportUrl",
-        "Fotos de Paneles": "panelsPhotoUrl",
-        "Formulario de Cierre": "closingFormUrl",
-        "Orden de Materiales": "materialsOrderUrl",
-        "Imagen HOA 1": "hoaImage1Url",
-        "Imagen HOA 2": "hoaImage2Url",
-        "Imagen HOA 3": "hoaImage3Url",
+        [DL.clientId]: "idDocumentUrl",
+        [DL.powerBill]: "electricBillUrl",
+        [DL.homeInsurance]: "homeInsuranceUrl",
+        [DL.homeTitle]: "homeTitleUrl",
+        [DL.noc]: "nocUrl",
+        [DL.exteriorScope]: "exteriorScopeUrl",
+        [DL.roofReport]: "roofReportUrl",
+        [DL.panelsPhotos]: "panelsPhotoUrl",
+        [DL.closingForm]: "closingFormUrl",
+        [DL.materialsOrder]: "materialsOrderUrl",
+        [`${DL.hoaImage} 1`]: "hoaImage1Url",
+        [`${DL.hoaImage} 2`]: "hoaImage2Url",
+        [`${DL.hoaImage} 3`]: "hoaImage3Url",
       };
 
       const dbField = fieldMap[finalName];
       const isArrayField =
-        finalName === "Fotos de Propiedad" || finalName === "ID del Cliente";
+        finalName === DL.propertyPhotos || finalName === DL.clientId;
 
       if (isArrayField) {
         const targetDbField =
-          finalName === "Fotos de Propiedad"
+          finalName === DL.propertyPhotos
             ? "propertyPhotosJson"
             : "idDocumentUrl";
         let arr: string[] = [];
@@ -4208,11 +4238,11 @@ function ArchivosPanel({
       setDocName("");
       setCustomName("");
       setDocFile(null);
-      toast.success("Documento subido");
+      toast.success(t.pipeline?.leadDetails?.toasts?.docUploaded || "Documento subido");
       if (onUpdate) onUpdate();
       else router.refresh();
     } catch {
-      toast.error("Error al subir documento");
+      toast.error(t.pipeline?.leadDetails?.toasts?.docUploadError || "Error al subir documento");
     } finally {
       setUploading(false);
     }
@@ -4241,7 +4271,7 @@ function ArchivosPanel({
       <div className="space-y-6">
         {canUpload && (
           <div className="mb-6 p-4 glass-panel rounded-xl">
-            <h4 className="text-sm font-semibold mb-3">Agregar Documento</h4>
+            <h4 className="text-sm font-semibold mb-3">{t.pipeline?.leadDetails?.labels?.addDocument || "Agregar Documento"}</h4>
             <div className="flex flex-col gap-2">
               <div className="flex gap-2 flex-wrap">
                 <select
@@ -4249,22 +4279,22 @@ function ArchivosPanel({
                   onChange={(e) => setDocName(e.target.value)}
                   className="flex-1 min-w-[200px] h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm"
                 >
-                  <option value="">Selecciona un documento</option>
+                  <option value="">{t.pipeline?.leadDetails?.labels?.selectDocument || "Selecciona un documento"}</option>
                   {DOCUMENT_OPTIONS.map((opt) => {
                     const uploaded = isOptUploaded(opt);
                     return (
                       <option key={opt} value={opt} disabled={uploaded}>
                         {opt}
-                        {uploaded ? " (Ya subido)" : ""}
+                        {uploaded ? ` (${t.pipeline?.leadDetails?.labels?.alreadyUploaded || "Ya subido"})` : ""}
                       </option>
                     );
                   })}
-                  <option value="Otro">Otro (Especificar)</option>
+                  <option value="Otro">{t.pipeline?.leadDetails?.labels?.otherSpecify || "Otro (Especificar)"}</option>
                 </select>
                 {docName === "Otro" && (
                   <input
                     type="text"
-                    placeholder="Nombre del documento"
+                    placeholder={t.pipeline?.leadDetails?.placeholders?.docName || "Nombre del documento"}
                     value={customName}
                     onChange={(e) => setCustomName(e.target.value)}
                     className="flex-1 min-w-[200px] h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm"
@@ -4287,13 +4317,13 @@ function ArchivosPanel({
                   {uploading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    "Subir"
+                    t.pipeline?.leadDetails?.labels?.upload || "Subir"
                   )}
                 </Button>
               </div>
               {isAlreadyUploaded && (
                 <p className="text-xs text-red-500 font-medium">
-                  ya se encuentra el archivo no se necesita otro
+                  {t.pipeline?.leadDetails?.labels?.fileAlreadyExists || "Ya se encuentra el archivo, no se necesita otro"}
                 </p>
               )}
             </div>
@@ -4301,7 +4331,7 @@ function ArchivosPanel({
         )}
         <div className="flex flex-col items-center justify-center py-12 text-on-surface-variant">
           <FileText className="w-16 h-16 mb-4 opacity-30" />
-          <p className="text-lg font-medium">No hay archivos disponibles</p>
+          <p className="text-lg font-medium">{t.pipeline?.leadDetails?.labels?.noFiles || "No hay archivos disponibles"}</p>
         </div>
       </div>
     );
@@ -4311,7 +4341,7 @@ function ArchivosPanel({
     <div className="space-y-8">
       {canUpload && (
         <div className="mb-6 p-4 glass-panel rounded-xl">
-          <h4 className="text-sm font-semibold mb-3">Agregar Documento</h4>
+          <h4 className="text-sm font-semibold mb-3">{t.pipeline?.leadDetails?.labels?.addDocument || "Agregar Documento"}</h4>
           <div className="flex flex-col gap-2">
             <div className="flex gap-2 flex-wrap">
               <select
@@ -4319,7 +4349,7 @@ function ArchivosPanel({
                 onChange={(e) => setDocName(e.target.value)}
                 className="flex-1 min-w-[200px] h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm"
               >
-                <option value="">Selecciona un documento</option>
+                <option value="">{t.pipeline?.leadDetails?.labels?.selectDocument || "Selecciona un documento"}</option>
                 {DOCUMENT_OPTIONS.map((opt) => {
                   const uploaded = isOptUploaded(opt);
                   return (
@@ -4329,12 +4359,12 @@ function ArchivosPanel({
                     </option>
                   );
                 })}
-                <option value="Otro">Otro (Especificar)</option>
+                <option value="Otro">{t.pipeline?.leadDetails?.labels?.otherSpecify || "Otro (Especificar)"}</option>
               </select>
               {docName === "Otro" && (
                 <input
                   type="text"
-                  placeholder="Nombre del documento"
+                  placeholder={t.pipeline?.leadDetails?.placeholders?.docName || "Nombre del documento"}
                   value={customName}
                   onChange={(e) => setCustomName(e.target.value)}
                   className="flex-1 min-w-[200px] h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant text-sm"
@@ -4386,7 +4416,7 @@ function ArchivosPanel({
                 <button
                   onClick={() => setFileToDelete(file)}
                   className="absolute top-1 left-1 z-10 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                  title="Eliminar archivo"
+                  title={t.pipeline?.leadDetails?.labels?.removeFile || "Eliminar archivo"}
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -4435,10 +4465,10 @@ function ArchivosPanel({
               exit={{ scale: 0.9, opacity: 0 }}
             >
               <h3 className="text-xl font-bold text-on-surface mb-2">
-                Eliminar Documento
+                {t.pipeline?.leadDetails?.labels?.deleteDocumentTitle || "Eliminar Documento"}
               </h3>
               <p className="text-on-surface-variant mb-6 text-sm">
-                ¿Quieres eliminar este documento?
+                {t.pipeline?.leadDetails?.labels?.deleteDocumentConfirm || "¿Quieres eliminar este documento?"}
               </p>
               <div className="flex gap-3 justify-center">
                 <Button
@@ -4446,7 +4476,7 @@ function ArchivosPanel({
                   onClick={() => setFileToDelete(null)}
                   className="flex-1"
                 >
-                  No
+                  {t.common?.no || "No"}
                 </Button>
                 <Button
                   onClick={async () => {
@@ -4455,7 +4485,7 @@ function ArchivosPanel({
                   }}
                   className="flex-1 bg-red-500 hover:bg-red-600 text-white border-0"
                 >
-                  Sí
+                  {t.common?.yes || "Sí"}
                 </Button>
               </div>
             </motion.div>
@@ -4473,6 +4503,7 @@ function HistorialPanel({
   history: HistoryEntry[];
   loading: boolean;
 }) {
+  const { t } = useLocale();
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -4485,7 +4516,7 @@ function HistorialPanel({
     return (
       <div className="flex flex-col items-center justify-center py-12 text-on-surface-variant">
         <Clock className="w-16 h-16 mb-4 opacity-30" />
-        <p className="text-lg font-medium">No hay historial disponible</p>
+        <p className="text-lg font-medium">{t.pipeline?.leadDetails?.labels?.noHistory || "No hay historial disponible"}</p>
       </div>
     );
   }
@@ -4574,6 +4605,7 @@ function UploadField({
   onClear: () => void;
   readOnly?: boolean;
 }) {
+  const { t } = useLocale();
   if (preview) {
     return (
       <div className="space-y-2">
@@ -4609,7 +4641,7 @@ function UploadField({
         <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
           {label}
         </label>
-        <p className="text-sm text-on-surface-variant italic">No subido</p>
+        <p className="text-sm text-on-surface-variant italic">{t.pipeline?.leadDetails?.labels?.notUploaded || "No subido"}</p>
       </div>
     );
   }
@@ -4621,7 +4653,7 @@ function UploadField({
       <label className="w-full h-32 border-2 border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center bg-surface-container-lowest hover:bg-primary/5 transition-colors cursor-pointer group">
         <Upload className="w-6 h-6 text-on-surface-variant group-hover:text-primary transition-colors" />
         <span className="text-xs text-on-surface-variant mt-1">
-          Haz clic para subir archivo
+          {t.pipeline?.leadDetails?.labels?.clickToUpload || "Haz clic para subir archivo"}
         </span>
         <input
           type="file"
@@ -4634,7 +4666,7 @@ function UploadField({
   );
 }
 
-// Two-file upload field used for "ID del Cliente" (front + back of
+// Two-file upload field used for t.pipeline?.leadDetails?.labels?.clientId || "ID del Cliente" (front + back of
 // the client's ID). The first file is required to mark the field as
 // uploaded; the second is optional. Up to 2 files can be stored; once
 // 2 are present the upload zones are hidden.
@@ -4653,10 +4685,11 @@ function IdUploadField({
   onClear: (slot: "first" | "second") => void;
   readOnly?: boolean;
 }) {
+  const { t } = useLocale();
   const renderSlot = (
     slot: IdSlot | undefined,
     slotKey: "first" | "second",
-    position: "Frente" | "Reverso",
+    position: string,
   ) => {
     if (slot?.url) {
       return (
@@ -4690,7 +4723,7 @@ function IdUploadField({
     if (readOnly) {
       return (
         <p className="text-sm text-on-surface-variant italic">
-          {position} no subido
+          {position} {t.pipeline?.leadDetails?.labels?.notUploaded || "no subido"}
         </p>
       );
     }
@@ -4698,7 +4731,7 @@ function IdUploadField({
       <label className="w-full h-28 border-2 border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center bg-surface-container-lowest hover:bg-primary/5 transition-colors cursor-pointer group">
         <Upload className="w-5 h-5 text-on-surface-variant group-hover:text-primary transition-colors" />
         <span className="text-[11px] text-on-surface-variant mt-0.5">
-          Subir {position.toLowerCase()}
+          {t.pipeline?.leadDetails?.labels?.upload || "Subir"} {position.toLowerCase()}
         </span>
         <input
           type="file"
@@ -4726,12 +4759,12 @@ function IdUploadField({
         {label}
       </label>
       <div className="grid grid-cols-2 gap-3">
-        {renderSlot(slot1, "first", "Frente")}
-        {renderSlot(slot2, "second", "Reverso")}
+        {renderSlot(slot1, "first", t.pipeline?.leadDetails?.labels?.clientIdFront || "Frente")}
+        {renderSlot(slot2, "second", t.pipeline?.leadDetails?.labels?.clientIdBack || "Reverso")}
       </div>
       {!readOnly && !first && !second && (
         <p className="text-[11px] text-on-surface-variant">
-          Sube al menos 1 archivo. Puedes agregar un segundo (reverso del ID).
+          {t.pipeline?.leadDetails?.labels?.idUploadHint || "Sube al menos 1 archivo. Puedes agregar un segundo (reverso del ID)."}
         </p>
       )}
     </div>
@@ -4749,6 +4782,7 @@ function ReadOnlyField({
   linkUrl?: string;
   multiline?: boolean;
 }) {
+  const { t } = useLocale();
   return (
     <div>
       <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
@@ -4762,7 +4796,7 @@ function ReadOnlyField({
             rel="noopener noreferrer"
             className="text-primary hover:underline text-sm flex items-center gap-1"
           >
-            <Eye className="w-3 h-3" /> Ver
+            <Eye className="w-3 h-3" /> {t.common?.view || "Ver"}
           </a>
         </div>
       ) : multiline ? (
