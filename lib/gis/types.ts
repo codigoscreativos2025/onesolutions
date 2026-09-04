@@ -24,6 +24,8 @@ export interface GisFieldMap {
   address?: string;
   /** Optional street number field, prepended to `address` (e.g. Pinellas). */
   addressNum?: string;
+  /** Optional street suffix field, appended to `address` (e.g. Osceola "PATH"). */
+  addressSfx?: string;
   mailAddress?: string;
   city?: string;
   zip?: string;

@@ -77,6 +77,8 @@ export const translations = {
     map: {
       title: "Mapa de Parcelas",
       loading: "Cargando parcelas...",
+      noCoverage: "Parcelas no disponibles en esta zona",
+      apiUnavailable: "No se pudieron cargar las parcelas de este condado",
       knockDoor: "Crear Lead",
       continueVisit: "Continuar Visita",
       available: "Disponible",
@@ -1071,6 +1073,8 @@ adminInvoices: {
     map: {
       title: "Parcel Map",
       loading: "Loading parcels...",
+      noCoverage: "Parcels not available in this area",
+      apiUnavailable: "Could not load parcels for this county",
       knockDoor: "Create Lead",
       continueVisit: "Continue Visit",
       available: "Available",

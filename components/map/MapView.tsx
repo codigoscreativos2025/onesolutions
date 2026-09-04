@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 
 import { useLocale } from "@/lib/locale-context";
+import { translations } from "@/lib/i18n";
 import { FL_COUNTIES_FC } from "@/lib/gis/fl-counties";
 
 interface Parcel {
@@ -743,6 +744,22 @@ const loadTile = async (
     if (data.tooLarge) {
       // API can't return this chunk. Mark it as loaded so we don't
       // hammer it, and skip the macro rect for it.
+      return;
+    }
+    if (data.noCoverage || data.apiUnavailable) {
+      // Tell the user parcels are unavailable here (outside covered
+      // counties or the county API is down) instead of a silent empty
+      // map. Read locale at display time so toggling ES/EN is respected.
+      const locale =
+        typeof window !== "undefined"
+          ? (localStorage.getItem("locale") || "es")
+          : "es";
+      const tr = locale === "en" ? translations.en : translations.es;
+      setParcelsHint(
+        data.noCoverage
+          ? tr.map?.noCoverage || "Parcelas no disponibles en esta zona"
+          : tr.map?.apiUnavailable || "No se pudieron cargar las parcelas de este condado"
+      );
       return;
     }
     if (!Array.isArray(data.features)) return;

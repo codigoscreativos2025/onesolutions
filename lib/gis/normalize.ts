@@ -64,9 +64,15 @@ export function normalizeArcGisFeature(
   const ownerName = [owner1, owner2].filter(Boolean).join(" / ") || undefined;
 
   const addressNum = fm.addressNum ? str(props[fm.addressNum]) : "";
-  const addressStreet = fm.address ? str(props[fm.address]) : "";
-  const addressRaw = addressNum && addressStreet
-    ? `${addressNum} ${addressStreet}`.trim()
+  const addressSfx = fm.addressSfx ? str(props[fm.addressSfx]) : "";
+  const addressStreet = [
+    fm.address ? str(props[fm.address]) : "",
+    addressSfx,
+  ].filter(Boolean).join(" ");
+  // Skip placeholder house numbers like "0" (no situs address on the parcel)
+  const houseNum = addressNum && addressNum !== "0" ? addressNum : "";
+  const addressRaw = houseNum && addressStreet
+    ? `${houseNum} ${addressStreet}`.trim()
     : addressStreet;
   const city = fm.city ? str(props[fm.city]) : "";
   const zipCode = fm.zip ? str(props[fm.zip]) : "";

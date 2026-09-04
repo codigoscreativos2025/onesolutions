@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { gisGeoJsonForBbox } from "@/lib/gis";
+import { gisGeoJsonForBbox, resolveProvidersForBbox } from "@/lib/gis";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -54,6 +54,33 @@ export async function GET(request: Request) {
     );
   }
 
+  // Zones outside any county-provider coverage (e.g. other US states or
+  // FL counties without a dedicated parcel API) get a noCoverage flag so
+  // the client can tell the user parcels are unavailable here instead of
+  // silently showing nothing. Statewide (FGDL) is excluded from viewport
+  // rendering by design, so it doesn't count as coverage.
+  const coveredProviders = resolveProvidersForBbox(
+    minLng,
+    minLat,
+    maxLng,
+    maxLat
+  ).filter((c) => c.id !== "fl-statewide");
+
+  if (coveredProviders.length === 0) {
+    return NextResponse.json(
+      {
+        type: "FeatureCollection",
+        features: [],
+        noCoverage: true,
+      },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
+        },
+      }
+    );
+  }
+
   try {
     const bboxWidth = maxLng - minLng;
     const maxAllowableOffset =
@@ -63,6 +90,20 @@ export async function GET(request: Request) {
     const fc = await gisGeoJsonForBbox(minLng, minLat, maxLng, maxLat, {
       maxAllowableOffset,
     });
+    // Inside a covered county but zero results almost certainly means the
+    // county's ArcGIS API is down/moved (e.g. the old Osceola service) —
+    // flag it so the client can show a clear message instead of an
+    // empty map.
+    if (fc.features.length === 0) {
+      return NextResponse.json(
+        { ...fc, apiUnavailable: true },
+        {
+          headers: {
+            "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
+          },
+        }
+      );
+    }
     return NextResponse.json(fc, {
       headers: {
         "Cache-Control": "private, max-age=30, stale-while-revalidate=120",

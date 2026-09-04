@@ -54,6 +54,8 @@ function getProvider(id: GisProviderId) {
     cfg.fieldMap.owner,
     cfg.fieldMap.owner2,
     cfg.fieldMap.address,
+    cfg.fieldMap.addressNum,
+    cfg.fieldMap.addressSfx,
     cfg.fieldMap.mailAddress,
     cfg.fieldMap.city,
     cfg.fieldMap.zip,
