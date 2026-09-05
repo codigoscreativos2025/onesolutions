@@ -64,6 +64,7 @@ export async function POST(request: Request) {
         outcome: "MANUAL_LEAD",
         legacyNotes: notes || null,
         scheduledAt: scheduledDate ? new Date(scheduledDate) : null,
+        leadGeneratedAt: new Date(),
       },
     });
 

@@ -101,6 +101,7 @@ model Visit {
   outcome     String?
   scheduledAt DateTime?
   completedAt DateTime?
+  leadGeneratedAt DateTime?
   legacyNotes  String?
   cancelledAt DateTime?
   cancellationReason String?

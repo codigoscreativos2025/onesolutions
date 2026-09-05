@@ -99,6 +99,27 @@ export default function RankingPage() {
     fetchData(type);
   }, [activeTab, fetchData, role, period]);
 
+  useEffect(() => {
+    if (role === "PARTNER") return;
+    const interval = setInterval(() => {
+      const type = activeTab === "trainers" ? "trainers" : "setters";
+      fetchData(type);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [activeTab, fetchData, role]);
+
+  useEffect(() => {
+    if (role === "PARTNER") return;
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        const type = activeTab === "trainers" ? "trainers" : "setters";
+        fetchData(type);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [activeTab, fetchData, role]);
+
   const userId = session?.user?.id ? parseInt(session.user.id) : null;
   const isTrainers = activeTab === "trainers";
   const showTabSwitcher = role === "ADMIN";

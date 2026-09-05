@@ -71,12 +71,24 @@ export async function PATCH(
 
     const effectiveCloserId = directSale ? parseInt(session.user.id) : parseInt(closerId);
 
+    // Stamp the lead-generation moment (used by ranking period filters).
+    // Only set it the first time the visit becomes a lead so re-submissions
+    // don't move the date.
+    const existingVisit = await prisma.visit.findUnique({
+      where: { id: parseInt(id) },
+      select: { leadGeneratedAt: true },
+    });
+
     const visitUpdateData: Record<string, unknown> = {
       stage: "PROPOSAL_ACCEPTED",
       outcome: "PROPOSAL_ACCEPTED",
       closerId: effectiveCloserId,
       notes,
     };
+
+    if (!existingVisit?.leadGeneratedAt) {
+      visitUpdateData.leadGeneratedAt = new Date();
+    }
 
     if (!directSale && slotId) {
       visitUpdateData.slot = { connect: { id: parseInt(slotId) } };

@@ -13,20 +13,39 @@ export async function GET(request: NextRequest) {
   const type = request.nextUrl.searchParams.get("type") || "trainers";
   const period = request.nextUrl.searchParams.get("period") || "all";
 
-  let dateFilter: Record<string, unknown> = {};
-  if (period !== "all") {
-    const now = new Date();
-    let startDate: Date;
-    if (period === "day") {
-      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    } else if (period === "week") {
-      const day = now.getDay();
-      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
-    } else {
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    }
-    dateFilter = { createdAt: { gte: startDate } };
+  const now = new Date();
+  const nowStr = now.toLocaleString("en-US", { timeZone: "America/New_York" });
+  const localNow = new Date(nowStr);
+
+  function startOfDay(d: Date) {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
   }
+  function startOfWeek(d: Date) {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate() - d.getDay());
+  }
+  function startOfMonth(d: Date) {
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  }
+
+  let doorsStart: Date | null = null;
+  let leadsStart: Date | null = null;
+  let closedStart: Date | null = null;
+
+  if (period !== "all") {
+    if (period === "day") {
+      doorsStart = startOfDay(localNow);
+    } else if (period === "week") {
+      doorsStart = startOfWeek(localNow);
+    } else {
+      doorsStart = startOfMonth(localNow);
+    }
+    leadsStart = doorsStart;
+    closedStart = doorsStart;
+  }
+
+  const doorsFilter = doorsStart
+    ? { createdAt: { gte: doorsStart } }
+    : {};
 
   if (type === "setters") {
     const raw = await prisma.user.findMany({
@@ -42,19 +61,21 @@ export async function GET(request: NextRequest) {
           },
         },
         visitsAsSetter: {
-          where: dateFilter,
-          select: { id: true, stage: true },
+          where: { ...doorsFilter, stage: { not: "CANCELLED" } },
+          select: { id: true, stage: true, leadGeneratedAt: true },
         },
       },
     });
 
     const data = raw.map((user) => {
       const leadsGenerated = user.visitsAsSetter.filter(
-        (v) => v.stage === "PROPOSAL_ACCEPTED" || v.stage === "PROJECT" || v.stage === "CLOSED"
+        (v) =>
+          (v.stage === "PROPOSAL_ACCEPTED" ||
+            v.stage === "PROJECT" ||
+            v.stage === "CLOSED") &&
+          (!leadsStart || (v.leadGeneratedAt && v.leadGeneratedAt >= leadsStart))
       ).length;
-      const doors = user.visitsAsSetter.filter(
-        (v) => v.stage !== "CANCELLED"
-      ).length;
+      const doors = user.visitsAsSetter.length;
       return {
         id: user.id,
         name: user.name,
@@ -89,11 +110,11 @@ export async function GET(request: NextRequest) {
         },
       },
       visitsAsCloser: {
-        where: dateFilter,
-        select: { id: true, completedAt: true, stage: true },
+        where: { ...doorsFilter },
+        select: { id: true, completedAt: true, stage: true, leadGeneratedAt: true },
       },
       visitsAsSetter: {
-        where: dateFilter,
+        where: doorsFilter,
         select: { id: true },
       },
     },
@@ -101,10 +122,14 @@ export async function GET(request: NextRequest) {
 
   const data = raw.map((user) => {
     const projectsClosed = user.visitsAsCloser.filter(
-      (v) => v.stage === "CLOSED" || v.stage === "PROJECT"
+      (v) =>
+        (v.stage === "CLOSED" || v.stage === "PROJECT") &&
+        (!closedStart || (v.completedAt && v.completedAt >= closedStart))
     ).length;
     const leads = user.visitsAsCloser.filter(
-      (v) => v.stage === "PROPOSAL_ACCEPTED"
+      (v) =>
+        v.stage === "PROPOSAL_ACCEPTED" &&
+        (!leadsStart || (v.leadGeneratedAt && v.leadGeneratedAt >= leadsStart))
     ).length;
     const doors = user.visitsAsSetter.length;
     return {
