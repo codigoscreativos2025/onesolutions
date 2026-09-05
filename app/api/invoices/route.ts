@@ -17,8 +17,8 @@ export async function GET(request: Request) {
   const where: Record<string, unknown> = {};
   if (startDate || endDate) {
     where.date = {};
-    if (startDate) (where.date as Record<string, unknown>).gte = new Date(startDate);
-    if (endDate) (where.date as Record<string, unknown>).lte = new Date(endDate);
+    if (startDate) (where.date as Record<string, unknown>).gte = new Date(startDate + "T00:00:00");
+    if (endDate) (where.date as Record<string, unknown>).lte = new Date(endDate + "T23:59:59");
   }
 
   const invoices = await prisma.generatedInvoice.findMany({
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
   const invoice = await prisma.generatedInvoice.create({
     data: {
       invoiceNum,
-      date: new Date(date),
+      date: new Date(date + "T12:00:00"),
       billToName,
       billToEmail,
       total: total || 0,
