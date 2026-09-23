@@ -47,105 +47,81 @@ export async function GET(request: NextRequest) {
     ? { createdAt: { gte: doorsStart } }
     : {};
 
-  if (type === "setters") {
-    const raw = await prisma.user.findMany({
-      where: { role: "SETTER_JR" },
-      select: {
-        id: true,
-        name: true,
-        role: true,
-        phone: true,
-        userBadges: {
-          include: {
-            badge: { select: { id: true, name: true, icon: true } },
-          },
-        },
-        visitsAsSetter: {
-          where: { ...doorsFilter, stage: { not: "CANCELLED" } },
-          select: { id: true, stage: true, leadGeneratedAt: true },
-        },
-      },
-    });
+  const isSetters = type === "setters";
 
-    const data = raw.map((user) => {
-      const leadsGenerated = user.visitsAsSetter.filter(
-        (v) =>
-          (v.stage === "PROPOSAL_ACCEPTED" ||
-            v.stage === "PROJECT" ||
-            v.stage === "CLOSED") &&
-          (!leadsStart || (v.leadGeneratedAt && v.leadGeneratedAt >= leadsStart))
-      ).length;
-      const doors = user.visitsAsSetter.length;
-      return {
-        id: user.id,
-        name: user.name,
-        role: user.role,
-        phone: user.phone,
-        leadsGenerated,
-        doors,
-        badgeCount: user.userBadges.length,
-        badges: user.userBadges.map((ub) => ({ icon: ub.badge.icon, name: ub.badge.name })),
-      };
-    });
+  // En la nueva lógica de ranking:
+  // Mundo Setter (Setter, Trainee, Closer - métricas de setter)
+  // - Puertas Tocadas = count de ParcelVisitHistory
+  // - Leads Creados = count de Visits (cualquier stage excepto CANCELLED)
+  // - Citas Agendadas = count de Visits donde closerId != null
+  
+  // Mundo Closer (Closer, Trainee - métricas de closer)
+  // - Proyectos Cerrados = count de Visits como closer en stage CLOSED/PROJECT
 
-    data.sort((a, b) => b.leadsGenerated - a.leadsGenerated);
-
-    return NextResponse.json(data, {
-      headers: {
-        "Cache-Control": "no-store, no-cache, must-revalidate",
-      },
-    });
-  }
-
-  const raw = await prisma.user.findMany({
-    where: { role: { in: ["SETTER", "CLOSER"] } },
+  const rawUsers = await prisma.user.findMany({
+    where: { 
+      role: isSetters ? { in: ["SETTER_JR", "SETTER", "TRAINEE", "CLOSER"] } : { in: ["CLOSER", "TRAINEE"] },
+      isActive: true
+    },
     select: {
       id: true,
       name: true,
       role: true,
       phone: true,
       userBadges: {
-        include: {
-          badge: { select: { id: true, name: true, icon: true } },
-        },
+        include: { badge: { select: { id: true, name: true, icon: true } } },
+      },
+      parcelHistory: {
+        where: doorsFilter,
+        select: { id: true },
+      },
+      visitsAsSetter: {
+        where: { ...doorsFilter, stage: { not: "CANCELLED" } },
+        select: { id: true, closerId: true },
       },
       visitsAsCloser: {
         where: { ...doorsFilter },
-        select: { id: true, completedAt: true, stage: true, leadGeneratedAt: true },
-      },
-      visitsAsSetter: {
-        where: doorsFilter,
-        select: { id: true },
+        select: { id: true, completedAt: true, stage: true },
       },
     },
   });
 
-  const data = raw.map((user) => {
+  const data = rawUsers.map((user) => {
+    // Setter Metrics
+    const doors = user.parcelHistory.length;
+    const leadsCreated = user.visitsAsSetter.length;
+    const appointmentsScheduled = user.visitsAsSetter.filter((v) => v.closerId !== null).length;
+
+    // Closer Metrics
     const projectsClosed = user.visitsAsCloser.filter(
       (v) =>
         (v.stage === "CLOSED" || v.stage === "PROJECT") &&
         (!closedStart || (v.completedAt && v.completedAt >= closedStart))
     ).length;
-    const leads = user.visitsAsCloser.filter(
-      (v) =>
-        v.stage === "PROPOSAL_ACCEPTED" &&
-        (!leadsStart || (v.leadGeneratedAt && v.leadGeneratedAt >= leadsStart))
-    ).length;
-    const doors = user.visitsAsSetter.length;
+
     return {
       id: user.id,
       name: user.name,
       role: user.role,
       phone: user.phone,
-      projectsClosed,
-      leads,
-      doors,
       badgeCount: user.userBadges.length,
       badges: user.userBadges.map((ub) => ({ icon: ub.badge.icon, name: ub.badge.name })),
+      
+      // We send all metrics, the frontend will decide what to show based on the tab
+      doors,
+      leadsCreated,
+      appointmentsScheduled,
+      projectsClosed,
     };
   });
 
-  data.sort((a, b) => b.projectsClosed - a.projectsClosed);
+  if (isSetters) {
+    // Para el tab de Setters, ordenamos por Citas Agendadas, luego Leads, luego Puertas
+    data.sort((a, b) => b.appointmentsScheduled - a.appointmentsScheduled || b.leadsCreated - a.leadsCreated || b.doors - a.doors);
+  } else {
+    // Para el tab de Closers, ordenamos por Proyectos Cerrados
+    data.sort((a, b) => b.projectsClosed - a.projectsClosed);
+  }
 
   return NextResponse.json(data, {
     headers: {

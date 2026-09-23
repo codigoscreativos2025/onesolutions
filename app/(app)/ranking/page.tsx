@@ -14,9 +14,9 @@ interface RankingItem {
   role: string;
   phone: string | null;
   projectsClosed?: number;
-  leads?: number;
-  doors: number;
-  leadsGenerated?: number;
+  leadsCreated?: number;
+  appointmentsScheduled?: number;
+  doors?: number;
   badgeCount?: number;
   badges?: { icon: string; name: string }[];
 }
@@ -76,16 +76,7 @@ export default function RankingPage() {
         const res = await fetch(`/api/ranking?type=${type}&period=${period}`);
         const json = await res.json();
 
-        // Sort real data
-        const mergedData = json.sort((a: RankingItem, b: RankingItem) => {
-          if (type === "trainers") {
-            return (b.projectsClosed || 0) - (a.projectsClosed || 0);
-          } else {
-            return (b.leadsGenerated || 0) - (a.leadsGenerated || 0);
-          }
-        });
-
-        setData(mergedData);
+        setData(json);
       } finally {
         setLoading(false);
       }
@@ -254,17 +245,6 @@ export default function RankingPage() {
                 {showTabSwitcher && (
                   <>
                     <button
-                      onClick={() => setActiveTab("trainers")}
-                      className={cn(
-                        "px-3 py-1.5 rounded-full text-xs font-semibold transition-colors",
-                        isTrainers
-                          ? "bg-[#f48221] text-[#1d1d1b]"
-                          : "text-[#aaaaaa] hover:text-white",
-                      )}
-                    >
-                      {t.ranking.traineesAndClosers}
-                    </button>
-                    <button
                       onClick={() => setActiveTab("setters")}
                       className={cn(
                         "px-3 py-1.5 rounded-full text-xs font-semibold transition-colors",
@@ -273,15 +253,26 @@ export default function RankingPage() {
                           : "text-[#aaaaaa] hover:text-white",
                       )}
                     >
-                      {t.ranking.setters}
+                      Setters
+                    </button>
+                    <button
+                      onClick={() => setActiveTab("trainers")}
+                      className={cn(
+                        "px-3 py-1.5 rounded-full text-xs font-semibold transition-colors",
+                        isTrainers
+                          ? "bg-[#f48221] text-[#1d1d1b]"
+                          : "text-[#aaaaaa] hover:text-white",
+                      )}
+                    >
+                      Closers
                     </button>
                   </>
                 )}
                 {!showTabSwitcher && (
                   <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[#f48221] text-[#1d1d1b]">
                     {activeTab === "trainers"
-                      ? t.ranking.traineesAndClosers
-                      : t.ranking.setters}
+                      ? "Closers"
+                      : "Setters"}
                   </span>
                 )}
               </div>
@@ -331,12 +322,6 @@ export default function RankingPage() {
               const isTop3 = rank <= 3;
               const [firstName, lastName] = splitName(item.name);
               const isCurrentUser = userId !== null && item.id === userId;
-
-              const col1 = isTrainers
-                ? (item.projectsClosed ?? 0)
-                : (item.leadsGenerated ?? 0);
-              const col2 = isTrainers ? (item.leads ?? 0) : item.doors;
-              const col3 = item.doors;
 
               let rankBg = "";
               if (rank === 1) rankBg = "border-l-4";
@@ -423,24 +408,35 @@ export default function RankingPage() {
                   </div>
 
                   <div className="flex items-stretch flex-shrink-0 ml-auto">
-                    <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
-                      <CheckCircle className="w-4 h-4 text-green-400 mb-1" />
-                      <span className="text-sm font-bold text-white">
-                        {col1}
-                      </span>
-                    </div>
-                    <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
-                      <UserPlus className="w-4 h-4 text-blue-400 mb-1" />
-                      <span className="text-sm font-bold text-white">
-                        {col2}
-                      </span>
-                    </div>
-                    <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
-                      <DoorOpen className="w-4 h-4 text-orange-400 mb-1" />
-                      <span className="text-sm font-bold text-white">
-                        {col3}
-                      </span>
-                    </div>
+                    {isTrainers ? (
+                      <div className="w-[80px] max-sm:w-[70px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
+                        <span className="text-[10px] uppercase text-[#aaaaaa] mb-1 leading-none text-center">Proyectos Cerrados</span>
+                        <span className="text-lg font-bold text-white leading-none">
+                          {item.projectsClosed || 0}
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="w-[70px] max-sm:w-[60px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
+                          <span className="text-[10px] uppercase text-[#aaaaaa] mb-1 leading-none text-center">Puertas</span>
+                          <span className="text-lg font-bold text-white leading-none">
+                            {item.doors || 0}
+                          </span>
+                        </div>
+                        <div className="w-[70px] max-sm:w-[60px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
+                          <span className="text-[10px] uppercase text-[#aaaaaa] mb-1 leading-none text-center">Leads</span>
+                          <span className="text-lg font-bold text-white leading-none">
+                            {item.leadsCreated || 0}
+                          </span>
+                        </div>
+                        <div className="w-[70px] max-sm:w-[60px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
+                          <span className="text-[10px] uppercase text-[#aaaaaa] mb-1 leading-none text-center">Citas</span>
+                          <span className="text-lg font-bold text-white leading-none">
+                            {item.appointmentsScheduled || 0}
+                          </span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </Link>
               );

@@ -258,7 +258,7 @@ export function KanbanBoard({
       const res = await fetch(`/api/visits/${visitId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ setterId: newUserId }),
+        body: JSON.stringify({ setterId: newUserId, closerId: newUserId }),
       });
       if (!res.ok) throw new Error("Failed to transfer");
       const user = transferUsers.find((u) => u.id === newUserId);

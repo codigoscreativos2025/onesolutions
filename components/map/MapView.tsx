@@ -1326,34 +1326,63 @@ const loadViewportParcels = async () => {
         </div>
       )}
       {mapReady && !isAdmin && (
-        <button
-          type="button"
-          onClick={handleFlyToUser}
-          aria-label="Ubicarme"
-          title={
-            locationStatus === "denied"
-              ? "Ubicacion bloqueada. Activala en tu navegador."
-              : locationStatus === "requesting"
-                ? "Solicitando ubicacion..."
-                : "Ubicarme"
-          }
-          className="absolute right-4 bottom-4 z-10 w-11 h-11 rounded-full bg-white border border-outline-variant shadow-lg flex items-center justify-center hover:bg-surface-container-low transition-colors"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke={locationStatus === "denied" ? "#ef4444" : "#1d4ed8"}
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <div className="absolute right-4 bottom-4 z-10 flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              if (fetchParcelsRef.current) fetchParcelsRef.current();
+              if (fetchMarkersRef.current) fetchMarkersRef.current();
+              toast.success("Recargando parcelas...", { duration: 1500 });
+            }}
+            aria-label="Recargar"
+            title="Forzar recarga de parcelas"
+            className="w-11 h-11 rounded-full bg-white border border-outline-variant shadow-lg flex items-center justify-center hover:bg-surface-container-low transition-colors"
           >
-            <circle cx="12" cy="12" r="3" />
-            <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
-          </svg>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#f48221"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
+          </button>
+          
+          <button
+            type="button"
+            onClick={handleFlyToUser}
+            aria-label="Ubicarme"
+            title={
+              locationStatus === "denied"
+                ? "Ubicacion bloqueada. Activala en tu navegador."
+                : locationStatus === "requesting"
+                  ? "Solicitando ubicacion..."
+                  : "Ubicarme"
+            }
+            className="w-11 h-11 rounded-full bg-white border border-outline-variant shadow-lg flex items-center justify-center hover:bg-surface-container-low transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={locationStatus === "denied" ? "#ef4444" : "#1d4ed8"}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+            </svg>
+          </button>
+        </div>
       )}
       <ParcelSheet
         isFetching={isFetchingParcel}
