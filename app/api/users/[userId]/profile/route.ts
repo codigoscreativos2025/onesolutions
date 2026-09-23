@@ -87,21 +87,28 @@ export async function GET(
       },
     });
 
-    const doorsKnocked = await prisma.visit.count({
+    const doorsKnocked = await prisma.parcelVisitHistory.count({
       where: { setterId: userId },
     });
 
     const leadsGenerated = await prisma.visit.count({
       where: {
         setterId: userId,
-        stage: { in: ['PROPOSAL_ACCEPTED', 'CLOSED'] },
+        stage: { not: 'CANCELLED' },
+      },
+    });
+
+    const appointmentsScheduled = await prisma.visit.count({
+      where: {
+        setterId: userId,
+        closerId: { not: null },
       },
     });
 
     const projectsClosed = await prisma.visit.count({
       where: {
         closerId: userId,
-        stage: 'CLOSED',
+        stage: { in: ['PROJECT', 'CLOSED'] },
       },
     });
 
@@ -146,6 +153,7 @@ export async function GET(
         totalVisits: stats._count.id,
         doorsKnocked,
         leadsGenerated,
+        appointmentsScheduled,
         projectsClosed,
       },
       bestMonth,

@@ -47,6 +47,7 @@ interface UserProfile {
     totalVisits: number;
     doorsKnocked: number;
     leadsGenerated: number;
+    appointmentsScheduled: number;
     projectsClosed: number;
   };
   bestMonth: {
@@ -438,6 +439,16 @@ export default function PublicProfilePage() {
               </span>
             </div>
             <p className="text-2xl font-bold">{profile.stats.leadsGenerated}</p>
+          </div>
+
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 min-w-[80px] text-center flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <Calendar className="w-5 h-5 text-yellow-600" />
+              <span className="text-sm font-medium text-yellow-600">
+                Citas Agendadas
+              </span>
+            </div>
+            <p className="text-2xl font-bold">{profile.stats.appointmentsScheduled}</p>
           </div>
 
           <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 min-w-[80px] text-center flex-1">
