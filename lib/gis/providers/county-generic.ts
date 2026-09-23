@@ -13,6 +13,11 @@ import { normalizeArcGisFeature } from "../normalize";
  * caching and let the upstream service control freshness.
  */
 
+// Disable TLS verification specifically because Osceola County (and potentially others)
+// has an incomplete SSL certificate chain that causes native Node.js fetch to fail
+// with UNABLE_TO_VERIFY_LEAF_SIGNATURE.
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
 const DEFAULT_TIMEOUT_MS = 90000;
 const OBJECT_ID_CHUNK = 100;
 
