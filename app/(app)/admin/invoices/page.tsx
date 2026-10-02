@@ -269,7 +269,13 @@ export default function AdminInvoicesPage() {
 
   const getPreviewHtml = useCallback(() => {
     if (!previewRef.current) return "";
-    return previewRef.current.outerHTML;
+    let html = previewRef.current.outerHTML;
+    // Remove Apple Data Detectors and strikethrough tags from being saved
+    html = html.replace(/<a[^>]*x-apple-data-detectors[^>]*>(.*?)<\/a>/gi, '$1');
+    html = html.replace(/<s[^>]*>(.*?)<\/s>/gi, '$1');
+    html = html.replace(/<strike[^>]*>(.*?)<\/strike>/gi, '$1');
+    html = html.replace(/<del[^>]*>(.*?)<\/del>/gi, '$1');
+    return html;
   }, []);
 
   const saveInvoiceToHistory = async () => {
@@ -321,13 +327,32 @@ export default function AdminInvoicesPage() {
     if (!previewRef.current) return;
     const { default: jsPDF } = await import("jspdf");
     const { default: html2canvas } = await import("html2canvas");
-    const canvas = await html2canvas(previewRef.current, { scale: 1.5, backgroundColor: "#ffffff" });
+    
+    // Create a temporary container to strip injected tags before rendering
+    const container = document.createElement("div");
+    container.style.position = "absolute";
+    container.style.left = "-9999px";
+    container.style.top = "-9999px";
+    container.style.width = "800px";
+    container.style.backgroundColor = "white";
+    
+    let html = previewRef.current.outerHTML;
+    html = html.replace(/<a[^>]*x-apple-data-detectors[^>]*>(.*?)<\/a>/gi, '$1');
+    html = html.replace(/<s[^>]*>(.*?)<\/s>/gi, '$1');
+    html = html.replace(/<strike[^>]*>(.*?)<\/strike>/gi, '$1');
+    html = html.replace(/<del[^>]*>(.*?)<\/del>/gi, '$1');
+    container.innerHTML = html;
+    document.body.appendChild(container);
+    
+    const canvas = await html2canvas(container, { scale: 1.5, backgroundColor: "#ffffff" });
     const img = canvas.toDataURL("image/png");
     const pdf = new jsPDF("p", "mm", "a4");
     const w = pdf.internal.pageSize.getWidth();
     const h = (canvas.height * w) / canvas.width;
     pdf.addImage(img, "PNG", 0, 0, w, h);
     pdf.save(`Invoice_${invoiceNum}.pdf`);
+    
+    document.body.removeChild(container);
   };
 
   const handleGenerarFactura = async () => {
@@ -351,7 +376,15 @@ export default function AdminInvoicesPage() {
     container.style.top = "-9999px";
     container.style.width = "800px";
     container.style.backgroundColor = "white";
-    container.innerHTML = htmlContent;
+    
+    // Strip Apple Data Detectors and other injected tags that might cause strikethrough
+    let cleanHtml = htmlContent;
+    cleanHtml = cleanHtml.replace(/<a[^>]*x-apple-data-detectors[^>]*>(.*?)<\/a>/gi, '$1');
+    cleanHtml = cleanHtml.replace(/<s[^>]*>(.*?)<\/s>/gi, '$1');
+    cleanHtml = cleanHtml.replace(/<strike[^>]*>(.*?)<\/strike>/gi, '$1');
+    cleanHtml = cleanHtml.replace(/<del[^>]*>(.*?)<\/del>/gi, '$1');
+
+    container.innerHTML = cleanHtml;
     document.body.appendChild(container);
     
     try {
@@ -410,12 +443,30 @@ export default function AdminInvoicesPage() {
     if (!previewRef.current) throw new Error("No preview");
     const { default: jsPDF } = await import("jspdf");
     const { default: html2canvas } = await import("html2canvas");
-    const canvas = await html2canvas(previewRef.current, { scale: 1.5, backgroundColor: "#ffffff" });
+    
+    const container = document.createElement("div");
+    container.style.position = "absolute";
+    container.style.left = "-9999px";
+    container.style.top = "-9999px";
+    container.style.width = "800px";
+    container.style.backgroundColor = "white";
+    
+    let html = previewRef.current.outerHTML;
+    html = html.replace(/<a[^>]*x-apple-data-detectors[^>]*>(.*?)<\/a>/gi, '$1');
+    html = html.replace(/<s[^>]*>(.*?)<\/s>/gi, '$1');
+    html = html.replace(/<strike[^>]*>(.*?)<\/strike>/gi, '$1');
+    html = html.replace(/<del[^>]*>(.*?)<\/del>/gi, '$1');
+    container.innerHTML = html;
+    document.body.appendChild(container);
+
+    const canvas = await html2canvas(container, { scale: 1.5, backgroundColor: "#ffffff" });
     const img = canvas.toDataURL("image/png");
     const pdf = new jsPDF("p", "mm", "a4");
     const w = pdf.internal.pageSize.getWidth();
     const h = (canvas.height * w) / canvas.width;
     pdf.addImage(img, "PNG", 0, 0, w, h);
+    
+    document.body.removeChild(container);
     return pdf.output("datauristring").split(",")[1];
   };
 

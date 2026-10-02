@@ -7,6 +7,11 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "One Solutions",
   description: "Lead and visit management",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
 };
 
 export default async function RootLayout({
