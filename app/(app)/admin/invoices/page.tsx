@@ -364,7 +364,7 @@ export default function AdminInvoicesPage() {
       }
     });
 
-    const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+    const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
     let node;
     while ((node = walk.nextNode())) {
       if (node.nodeValue && node.nodeValue.trim().length > 0) {
@@ -431,7 +431,7 @@ export default function AdminInvoicesPage() {
     });
 
     // 3. Defeat Opera GX / Safari data detectors by obfuscating text nodes containing numbers or @
-    const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+    const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
     let node;
     while ((node = walk.nextNode())) {
       if (node.nodeValue && node.nodeValue.trim().length > 0) {
@@ -526,7 +526,7 @@ export default function AdminInvoicesPage() {
       }
     });
 
-    const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+    const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
     let node;
     while ((node = walk.nextNode())) {
       if (node.nodeValue && node.nodeValue.trim().length > 0) {
