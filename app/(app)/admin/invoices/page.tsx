@@ -343,7 +343,7 @@ export default function AdminInvoicesPage() {
     container.style.width = "800px";
     container.style.backgroundColor = "white";
     
-    container.innerHTML = `<style>* { text-decoration: none !important; }</style>` + previewRef.current.outerHTML;
+    container.innerHTML = previewRef.current.outerHTML;
     
     const tagsToUnwrap = container.querySelectorAll('a, s, strike, del, u');
     tagsToUnwrap.forEach(el => {
@@ -351,6 +351,16 @@ export default function AdminInvoicesPage() {
       if (parent) {
         while (el.firstChild) parent.insertBefore(el.firstChild, el);
         parent.removeChild(el);
+      }
+    });
+
+    const allElements = container.querySelectorAll('*');
+    allElements.forEach(el => {
+      if (el instanceof HTMLElement) {
+        el.style.textDecoration = 'none';
+        el.style.textDecorationLine = 'none';
+        el.style.setProperty('text-decoration', 'none', 'important');
+        el.style.setProperty('text-decoration-line', 'none', 'important');
       }
     });
 
@@ -389,16 +399,27 @@ export default function AdminInvoicesPage() {
     container.style.width = "800px";
     container.style.backgroundColor = "white";
     
-    // We use a style tag to forcibly remove text-decoration just in case
-    container.innerHTML = `<style>* { text-decoration: none !important; }</style>` + htmlContent;
+    container.innerHTML = htmlContent;
     
-    // Use DOM API to safely unwrap a, s, strike, del, u tags regardless of newlines
+    // 1. Unwrap known format tags
     const tagsToUnwrap = container.querySelectorAll('a, s, strike, del, u');
     tagsToUnwrap.forEach(el => {
       const parent = el.parentNode;
       if (parent) {
         while (el.firstChild) parent.insertBefore(el.firstChild, el);
         parent.removeChild(el);
+      }
+    });
+
+    // 2. Aggressively strip text-decoration from EVERY SINGLE element using inline styles
+    // This is necessary because html2canvas parses inline styles reliably
+    const allElements = container.querySelectorAll('*');
+    allElements.forEach(el => {
+      if (el instanceof HTMLElement) {
+        el.style.textDecoration = 'none';
+        el.style.textDecorationLine = 'none';
+        el.style.setProperty('text-decoration', 'none', 'important');
+        el.style.setProperty('text-decoration-line', 'none', 'important');
       }
     });
 
@@ -468,7 +489,7 @@ export default function AdminInvoicesPage() {
     container.style.width = "800px";
     container.style.backgroundColor = "white";
     
-    container.innerHTML = `<style>* { text-decoration: none !important; }</style>` + previewRef.current.outerHTML;
+    container.innerHTML = previewRef.current.outerHTML;
     
     const tagsToUnwrap = container.querySelectorAll('a, s, strike, del, u');
     tagsToUnwrap.forEach(el => {
@@ -476,6 +497,16 @@ export default function AdminInvoicesPage() {
       if (parent) {
         while (el.firstChild) parent.insertBefore(el.firstChild, el);
         parent.removeChild(el);
+      }
+    });
+
+    const allElements = container.querySelectorAll('*');
+    allElements.forEach(el => {
+      if (el instanceof HTMLElement) {
+        el.style.textDecoration = 'none';
+        el.style.textDecorationLine = 'none';
+        el.style.setProperty('text-decoration', 'none', 'important');
+        el.style.setProperty('text-decoration-line', 'none', 'important');
       }
     });
 
