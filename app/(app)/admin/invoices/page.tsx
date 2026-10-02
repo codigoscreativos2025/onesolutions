@@ -364,6 +364,14 @@ export default function AdminInvoicesPage() {
       }
     });
 
+    const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+    let node;
+    while ((node = walk.nextNode())) {
+      if (node.nodeValue && node.nodeValue.trim().length > 0) {
+        node.nodeValue = node.nodeValue.replace(/([0-9@\(\)\-])/g, '$1\u200B');
+      }
+    }
+
     document.body.appendChild(container);
     
     const canvas = await html2canvas(container, { scale: 1.5, backgroundColor: "#ffffff" });
@@ -412,7 +420,6 @@ export default function AdminInvoicesPage() {
     });
 
     // 2. Aggressively strip text-decoration from EVERY SINGLE element using inline styles
-    // This is necessary because html2canvas parses inline styles reliably
     const allElements = container.querySelectorAll('*');
     allElements.forEach(el => {
       if (el instanceof HTMLElement) {
@@ -422,6 +429,15 @@ export default function AdminInvoicesPage() {
         el.style.setProperty('text-decoration-line', 'none', 'important');
       }
     });
+
+    // 3. Defeat Opera GX / Safari data detectors by obfuscating text nodes containing numbers or @
+    const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+    let node;
+    while ((node = walk.nextNode())) {
+      if (node.nodeValue && node.nodeValue.trim().length > 0) {
+        node.nodeValue = node.nodeValue.replace(/([0-9@\(\)\-])/g, '$1\u200B');
+      }
+    }
 
     document.body.appendChild(container);
     
@@ -509,6 +525,14 @@ export default function AdminInvoicesPage() {
         el.style.setProperty('text-decoration-line', 'none', 'important');
       }
     });
+
+    const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+    let node;
+    while ((node = walk.nextNode())) {
+      if (node.nodeValue && node.nodeValue.trim().length > 0) {
+        node.nodeValue = node.nodeValue.replace(/([0-9@\(\)\-])/g, '$1\u200B');
+      }
+    }
 
     document.body.appendChild(container);
 
@@ -837,16 +861,16 @@ export default function AdminInvoicesPage() {
               <div style={{ flex: 1, fontSize: 13, color: "#777", lineHeight: 1.6 }}>
                 <div style={{ color: "#f19e38", fontSize: 11, fontWeight: "bold", textTransform: "uppercase", marginBottom: 12 }}>BILL TO:</div>
                 {billToName && <div style={{ fontWeight: "bold", color: "#222", fontSize: 14, marginBottom: 5 }}>{billToName}</div>}
-                {billToPhone && <div>{billToPhone}</div>}
-                {billToEmail && <div>{billToEmail}</div>}
+                {billToPhone && <div>{billToPhone.split("").join("\u200B")}</div>}
+                {billToEmail && <div>{billToEmail.split("@").join("\u200B@\u200B")}</div>}
                 {billToAddress && <div>{billToAddress}</div>}
                 {!billToName && <div style={{ color: "#ccc", fontStyle: "italic" }}>Nombre del cliente...</div>}
               </div>
               <div style={{ flex: 1, fontSize: 13, color: "#777", lineHeight: 1.6 }}>
                 <div style={{ color: "#f19e38", fontSize: 11, fontWeight: "bold", textTransform: "uppercase", marginBottom: 12 }}>INVOICE FROM:</div>
                 <div style={{ fontWeight: "bold", color: "#222", fontSize: 14, marginBottom: 5 }}>{fromName}</div>
-                <div>{fromPhone}</div>
-                <div>{fromEmail}</div>
+                <div>{fromPhone.split("").join("\u200B")}</div>
+                <div>{fromEmail.split("@").join("\u200B@\u200B")}</div>
                 <div>{fromAddress}</div>
               </div>
             </div>
