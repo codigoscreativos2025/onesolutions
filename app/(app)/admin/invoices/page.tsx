@@ -269,13 +269,20 @@ export default function AdminInvoicesPage() {
 
   const getPreviewHtml = useCallback(() => {
     if (!previewRef.current) return "";
-    let html = previewRef.current.outerHTML;
-    // Remove Apple Data Detectors and strikethrough tags from being saved
-    html = html.replace(/<a[^>]*x-apple-data-detectors[^>]*>(.*?)<\/a>/gi, '$1');
-    html = html.replace(/<s[^>]*>(.*?)<\/s>/gi, '$1');
-    html = html.replace(/<strike[^>]*>(.*?)<\/strike>/gi, '$1');
-    html = html.replace(/<del[^>]*>(.*?)<\/del>/gi, '$1');
-    return html;
+    const container = document.createElement("div");
+    container.innerHTML = previewRef.current.outerHTML;
+    
+    // Remove tags using DOM API to be safe against newlines
+    const tagsToUnwrap = container.querySelectorAll('a, s, strike, del, u');
+    tagsToUnwrap.forEach(el => {
+      const parent = el.parentNode;
+      if (parent) {
+        while (el.firstChild) parent.insertBefore(el.firstChild, el);
+        parent.removeChild(el);
+      }
+    });
+
+    return container.innerHTML;
   }, []);
 
   const saveInvoiceToHistory = async () => {
@@ -336,12 +343,17 @@ export default function AdminInvoicesPage() {
     container.style.width = "800px";
     container.style.backgroundColor = "white";
     
-    let html = previewRef.current.outerHTML;
-    html = html.replace(/<a[^>]*x-apple-data-detectors[^>]*>(.*?)<\/a>/gi, '$1');
-    html = html.replace(/<s[^>]*>(.*?)<\/s>/gi, '$1');
-    html = html.replace(/<strike[^>]*>(.*?)<\/strike>/gi, '$1');
-    html = html.replace(/<del[^>]*>(.*?)<\/del>/gi, '$1');
-    container.innerHTML = html;
+    container.innerHTML = `<style>* { text-decoration: none !important; }</style>` + previewRef.current.outerHTML;
+    
+    const tagsToUnwrap = container.querySelectorAll('a, s, strike, del, u');
+    tagsToUnwrap.forEach(el => {
+      const parent = el.parentNode;
+      if (parent) {
+        while (el.firstChild) parent.insertBefore(el.firstChild, el);
+        parent.removeChild(el);
+      }
+    });
+
     document.body.appendChild(container);
     
     const canvas = await html2canvas(container, { scale: 1.5, backgroundColor: "#ffffff" });
@@ -377,14 +389,19 @@ export default function AdminInvoicesPage() {
     container.style.width = "800px";
     container.style.backgroundColor = "white";
     
-    // Strip Apple Data Detectors and other injected tags that might cause strikethrough
-    let cleanHtml = htmlContent;
-    cleanHtml = cleanHtml.replace(/<a[^>]*x-apple-data-detectors[^>]*>(.*?)<\/a>/gi, '$1');
-    cleanHtml = cleanHtml.replace(/<s[^>]*>(.*?)<\/s>/gi, '$1');
-    cleanHtml = cleanHtml.replace(/<strike[^>]*>(.*?)<\/strike>/gi, '$1');
-    cleanHtml = cleanHtml.replace(/<del[^>]*>(.*?)<\/del>/gi, '$1');
+    // We use a style tag to forcibly remove text-decoration just in case
+    container.innerHTML = `<style>* { text-decoration: none !important; }</style>` + htmlContent;
+    
+    // Use DOM API to safely unwrap a, s, strike, del, u tags regardless of newlines
+    const tagsToUnwrap = container.querySelectorAll('a, s, strike, del, u');
+    tagsToUnwrap.forEach(el => {
+      const parent = el.parentNode;
+      if (parent) {
+        while (el.firstChild) parent.insertBefore(el.firstChild, el);
+        parent.removeChild(el);
+      }
+    });
 
-    container.innerHTML = cleanHtml;
     document.body.appendChild(container);
     
     try {
@@ -451,12 +468,17 @@ export default function AdminInvoicesPage() {
     container.style.width = "800px";
     container.style.backgroundColor = "white";
     
-    let html = previewRef.current.outerHTML;
-    html = html.replace(/<a[^>]*x-apple-data-detectors[^>]*>(.*?)<\/a>/gi, '$1');
-    html = html.replace(/<s[^>]*>(.*?)<\/s>/gi, '$1');
-    html = html.replace(/<strike[^>]*>(.*?)<\/strike>/gi, '$1');
-    html = html.replace(/<del[^>]*>(.*?)<\/del>/gi, '$1');
-    container.innerHTML = html;
+    container.innerHTML = `<style>* { text-decoration: none !important; }</style>` + previewRef.current.outerHTML;
+    
+    const tagsToUnwrap = container.querySelectorAll('a, s, strike, del, u');
+    tagsToUnwrap.forEach(el => {
+      const parent = el.parentNode;
+      if (parent) {
+        while (el.firstChild) parent.insertBefore(el.firstChild, el);
+        parent.removeChild(el);
+      }
+    });
+
     document.body.appendChild(container);
 
     const canvas = await html2canvas(container, { scale: 1.5, backgroundColor: "#ffffff" });
