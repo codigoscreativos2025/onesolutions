@@ -16,6 +16,7 @@ export async function GET() {
         role: {
           in: ['SETTER', 'CLOSER'],
         },
+        name: { not: "Leads ONE SOLUTIONS" }
       },
       include: {
         visitsAsSetter: {

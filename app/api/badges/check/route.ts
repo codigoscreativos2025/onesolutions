@@ -5,15 +5,59 @@ import { auth } from "@/auth";
 async function checkAndAwardBadges() {
   const badges = await prisma.badge.findMany();
 
+  const doorsBadges = badges.filter(b => b.doorsThreshold !== null).sort((a, b) => b.doorsThreshold! - a.doorsThreshold!);
+  const prospectsBadges = badges.filter(b => b.prospectsThreshold !== null).sort((a, b) => b.prospectsThreshold! - a.prospectsThreshold!);
+  const projectsBadges = badges.filter(b => b.projectsThreshold !== null).sort((a, b) => b.projectsThreshold! - a.projectsThreshold!);
+
   const setters = await prisma.user.findMany({
-    where: { role: { in: ["SETTER", "SETTER_JR"] } },
+    where: { role: { in: ["SETTER", "SETTER_JR", "TRAINEE", "CLOSER"] } },
     select: { id: true, role: true, userBadges: true },
   });
 
   const closers = await prisma.user.findMany({
-    where: { role: "CLOSER" },
+    where: { role: { in: ["CLOSER", "TRAINEE"] } },
     include: { userBadges: true },
   });
+
+  async function updateCategoryBadges(userId: number, currentBadges: any[], categoryBadges: any[], highestBadge: any | undefined, showNotification: boolean) {
+    if (!highestBadge) return;
+
+    const hasHighest = currentBadges.some((ub: any) => ub.badgeId === highestBadge.id);
+
+    if (!hasHighest) {
+      await prisma.userBadge.upsert({
+        where: {
+          userId_badgeId: { userId, badgeId: highestBadge.id },
+        },
+        create: { userId, badgeId: highestBadge.id },
+        update: {},
+      });
+
+      if (showNotification) {
+        await prisma.notification.create({
+          data: {
+            userId,
+            title: "¡Nueva medalla obtenida!",
+            body: `Felicidades, has obtenido la medalla ${highestBadge.icon} ${highestBadge.name}`,
+            link: "/ranking",
+          },
+        });
+      }
+    }
+
+    const lowerBadgeIds = categoryBadges
+      .filter(b => b.id !== highestBadge.id)
+      .map(b => b.id);
+
+    if (lowerBadgeIds.length > 0) {
+      await prisma.userBadge.deleteMany({
+        where: {
+          userId,
+          badgeId: { in: lowerBadgeIds },
+        },
+      });
+    }
+  }
 
   for (const setter of setters) {
     const doorsKnocked = await prisma.visit.count({
@@ -24,41 +68,14 @@ async function checkAndAwardBadges() {
       where: { setterId: setter.id, stage: "PROPOSAL_ACCEPTED" },
     });
 
-    const applicableBadges = badges.filter((b) => b.role === setter.role);
-    for (const badge of applicableBadges) {
-      const hasBadge = setter.userBadges.some(
-        (ub) => ub.badgeId === badge.id,
-      );
-      if (!hasBadge) {
-        const doorsMet = badge.doorsThreshold
-          ? doorsKnocked >= badge.doorsThreshold
-          : true;
-        const prospectsMet = badge.prospectsThreshold
-          ? prospectsGenerated >= badge.prospectsThreshold
-          : true;
+    const highestDoorsBadge = doorsBadges.find(b => doorsKnocked >= b.doorsThreshold!);
+    const highestProspectsBadge = prospectsBadges.find(b => prospectsGenerated >= b.prospectsThreshold!);
 
-        if (doorsMet && prospectsMet) {
-          await prisma.userBadge.upsert({
-            where: {
-              userId_badgeId: { userId: setter.id, badgeId: badge.id },
-            },
-            create: { userId: setter.id, badgeId: badge.id },
-            update: {},
-          });
+    // Solo notificar si no es solo SETTER (manteniendo la logica original)
+    const showNotif = setter.role !== "SETTER";
 
-          if (setter.role !== "SETTER") {
-            await prisma.notification.create({
-              data: {
-                userId: setter.id,
-                title: "¡Nueva medalla obtenida!",
-                body: `Felicidades, has obtenido la medalla ${badge.icon} ${badge.name}`,
-                link: "/ranking",
-              },
-            });
-          }
-        }
-      }
-    }
+    await updateCategoryBadges(setter.id, setter.userBadges, doorsBadges, highestDoorsBadge, showNotif);
+    await updateCategoryBadges(setter.id, setter.userBadges, prospectsBadges, highestProspectsBadge, showNotif);
   }
 
   for (const closer of closers) {
@@ -66,36 +83,9 @@ async function checkAndAwardBadges() {
       where: { closerId: closer.id, stage: "CLOSED" },
     });
 
-    const closerBadges = badges.filter((b) => b.role === "CLOSER");
-    for (const badge of closerBadges) {
-      const hasBadge = closer.userBadges.some(
-        (ub) => ub.badgeId === badge.id,
-      );
-      if (!hasBadge) {
-        const projectsMet = badge.projectsThreshold
-          ? projectsClosed >= badge.projectsThreshold
-          : true;
+    const highestProjectsBadge = projectsBadges.find(b => projectsClosed >= b.projectsThreshold!);
 
-        if (projectsMet) {
-          await prisma.userBadge.upsert({
-            where: {
-              userId_badgeId: { userId: closer.id, badgeId: badge.id },
-            },
-            create: { userId: closer.id, badgeId: badge.id },
-            update: {},
-          });
-
-          await prisma.notification.create({
-            data: {
-              userId: closer.id,
-              title: "¡Nueva medalla obtenida!",
-              body: `Felicidades, has obtenido la medalla ${badge.icon} ${badge.name}`,
-              link: "/ranking",
-            },
-          });
-        }
-      }
-    }
+    await updateCategoryBadges(closer.id, closer.userBadges, projectsBadges, highestProjectsBadge, true);
   }
 }
 

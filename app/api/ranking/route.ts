@@ -61,7 +61,8 @@ export async function GET(request: NextRequest) {
   const rawUsers = await prisma.user.findMany({
     where: { 
       role: isSetters ? { in: ["SETTER_JR", "SETTER", "TRAINEE", "CLOSER"] } : { in: ["CLOSER", "TRAINEE"] },
-      isActive: true
+      isActive: true,
+      name: { not: "Leads ONE SOLUTIONS" }
     },
     select: {
       id: true,
