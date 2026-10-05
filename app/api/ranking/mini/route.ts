@@ -16,7 +16,6 @@ export async function GET() {
         role: {
           in: ['SETTER', 'CLOSER'],
         },
-        name: { not: "Leads ONE SOLUTIONS" }
       },
       include: {
         visitsAsSetter: {
@@ -49,7 +48,9 @@ export async function GET() {
     });
 
     // Calcular métricas y score para cada usuario
-    const ranking = users.map((user) => {
+    const ranking = users
+      .filter(user => user.name && !user.name.toLowerCase().includes("leads one solutions"))
+      .map((user) => {
       const doorsKnocked = user.visitsAsSetter.length;
       const leadsGenerated = user.visitsAsSetter.filter(
         (v) => v.stage === 'PROPOSAL_ACCEPTED' || v.stage === 'CLOSED'

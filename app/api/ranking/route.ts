@@ -61,8 +61,7 @@ export async function GET(request: NextRequest) {
   const rawUsers = await prisma.user.findMany({
     where: { 
       role: isSetters ? { in: ["SETTER_JR", "SETTER", "TRAINEE", "CLOSER"] } : { in: ["CLOSER", "TRAINEE"] },
-      isActive: true,
-      name: { not: "Leads ONE SOLUTIONS" }
+      isActive: true
     },
     select: {
       id: true,
@@ -87,7 +86,9 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  const data = rawUsers.map((user) => {
+  let data = rawUsers
+    .filter(user => user.name && !user.name.toLowerCase().includes("leads one solutions"))
+    .map((user) => {
     // Setter Metrics
     const doors = user.parcelHistory.length;
     const leadsCreated = user.visitsAsSetter.length;
