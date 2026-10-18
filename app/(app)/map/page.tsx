@@ -30,6 +30,31 @@ interface SearchResult {
   };
 }
 
+const COUNTY_BOUNDS: Array<{ name: string; bbox: [number, number, number, number] }> = [
+  { name: "Orange County", bbox: [-81.68, 28.34, -80.98, 28.79] },
+  { name: "Osceola County", bbox: [-81.97, 27.63, -80.85, 28.58] },
+  { name: "Hillsborough County", bbox: [-82.85, 27.57, -82.05, 28.17] },
+  { name: "Pinellas County", bbox: [-82.91, 27.61, -82.59, 28.17] },
+  { name: "Polk County", bbox: [-82.10, 27.64, -81.17, 28.36] },
+  { name: "Lake County", bbox: [-82.05, 28.38, -81.30, 29.35] },
+  { name: "Volusia County", bbox: [-81.66, 28.61, -80.84, 29.43] },
+  { name: "Manatee County", bbox: [-82.91, 27.21, -82.05, 27.78] },
+  { name: "Miami-Dade County", bbox: [-80.87, 25.13, -80.12, 25.97] },
+  { name: "Broward County", bbox: [-80.88, 25.95, -80.07, 26.34] },
+  { name: "Palm Beach County", bbox: [-80.91, 26.31, -80.04, 26.97] },
+  { name: "Lee County", bbox: [-82.46, 26.32, -81.80, 26.79] },
+  { name: "Collier County", bbox: [-81.92, 25.79, -81.13, 26.39] },
+  { name: "Martin County", bbox: [-80.88, 26.86, -80.03, 27.32] },
+  { name: "Nassau County", bbox: [-82.04, 30.27, -81.41, 30.83] },
+];
+
+function getCountyNameForPoint(lat: number, lng: number): string {
+  const match = COUNTY_BOUNDS.find(
+    (c) => lng >= c.bbox[0] && lng <= c.bbox[2] && lat >= c.bbox[1] && lat <= c.bbox[3]
+  );
+  return match ? match.name : "Florida";
+}
+
 export default function MapPage() {
   const { t, locale } = useLocale();
   const searchParams = useSearchParams();
@@ -92,40 +117,18 @@ export default function MapPage() {
     }
   }, [autoOpen, highlightId]);
 
+
   const handleMapMove = useCallback(
     (center: [number, number], zoom: number) => {
       if (zoom < 12) {
         setIsFar(true);
       } else {
         setIsFar(false);
-        // Debounce the reverse geocoding to not spam Nominatim
-        // Store timeout ID in a data attribute or variable outside closure is tricky without useRef,
-        // but we can just use a simple setTimeout trick with a module-level or state-level variable.
-        // Since it is useCallback, let us just trigger the fetch directly but Nominatim has a rate limit of 1 req/sec.
-        // Let`s do a quick naive fetch.
-        fetch(
-          `https://nominatim.openstreetmap.org/reverse?lat=${center[0]}&lon=${center[1]}&format=json&zoom=10`,
-          {
-            headers: { "Accept-Language": locale },
-          },
-        )
-          .then(async (r) => {
-            if (!r.ok) throw new Error("Not ok");
-            return r.json();
-          })
-          .then((data) => {
-            let city =
-              data.address?.city ||
-              data.address?.town ||
-              data.address?.village ||
-              data.address?.county ||
-              "Orange County";
-            setCurrentCity(city);
-          })
-          .catch(() => {});
+        const county = getCountyNameForPoint(center[0], center[1]);
+        setCurrentCity(county);
       }
     },
-    [locale],
+    [],
   );
 
   const handleSearch = async (e: React.FormEvent) => {

@@ -44,7 +44,7 @@ export const GIS_PROVIDERS: Record<GisProviderId, GisCountyConfig> = {
     state: "FL",
     bbox: [-81.97, 27.63, -80.85, 28.58],
     parcelsUrl:
-      "https://gis.osceola.org/hosting/rest/services/Parcels/FeatureServer/3",
+      "https://cw.kissimmee.gov/arcgis/rest/services/Address_Parcels_Centerlines/MapServer/5",
     fieldMap: {
       parcelId: "Strap",
       owner: "Owner1",

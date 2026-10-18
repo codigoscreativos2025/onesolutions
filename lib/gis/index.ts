@@ -74,7 +74,7 @@ function getProvider(id: GisProviderId) {
   const jsonEnvelope = id === "fl-statewide";
   const recordCount =
     id === "orange-fl" ? 200 :
-    id === "miami-dade-fl" || id === "polk-fl" || id === "pinellas-fl" ? 1000 :
+    id === "miami-dade-fl" || id === "polk-fl" || id === "pinellas-fl" || id === "osceola-fl" ? 1000 :
     2000;
   // FDOR and Martin only support WHERE-clause queries (not spatial bbox/point)
   const supportsSpatial = id !== "fl-fdor" && id !== "martin-fl";
