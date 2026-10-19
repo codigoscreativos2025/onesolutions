@@ -1120,23 +1120,57 @@ export default function LeadDetailPage() {
     }
   };
 
-  const handleFileUploadField = async (fieldName: string, file: File) => {
+  const handleFileUploadField = async (
+    fieldName: string,
+    fileOrFiles: File | File[],
+  ) => {
+    const files = Array.isArray(fileOrFiles) ? fileOrFiles : [fileOrFiles];
+    if (files.length === 0) return;
+
     if (fieldName === "idDocumentUrl") {
-      if (!visit?.bill?.additionalFileUrl) {
-        return handleBillFileUpload("additionalFileUrl", file);
+      if (files.length === 1) {
+        if (!visit?.bill?.additionalFileUrl) {
+          return handleBillFileUpload("additionalFileUrl", files[0]);
+        } else {
+          return handleBillFileUpload("additionalFile2Url", files[0]);
+        }
       } else {
-        return handleBillFileUpload("additionalFile2Url", file);
+        await handleBillFileUpload("additionalFileUrl", files[0]);
+        if (files[1]) {
+          await handleBillFileUpload("additionalFile2Url", files[1]);
+        }
+        return;
       }
     }
     if (fieldName === "electricBillUrl") {
-      return handleBillFileUpload("imageUrl", file);
+      return handleBillFileUpload("imageUrl", files[0]);
     }
-    try {
-      const url = await handleUpload(file);
-      let finalVal: string = url;
 
-      if (fieldName === "propertyPhotosJson") {
-        const current = visit?.projectDetails?.[fieldName];
+    const toastId = toast.loading(
+      files.length > 1
+        ? `Subiendo ${files.length} archivos...`
+        : "Subiendo archivo...",
+    );
+
+    try {
+      const fd = new FormData();
+      files.forEach((f) => fd.append("files", f));
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+      const uploadedUrls: string[] = data.urls || (data.url ? [data.url] : []);
+      if (uploadedUrls.length === 0) throw new Error("No URL returned");
+
+      const isMultiple =
+        fieldName === "propertyPhotosJson" ||
+        fieldName.toLowerCase().includes("photo") ||
+        fieldName.toLowerCase().includes("foto");
+
+      let finalVal: string;
+
+      if (isMultiple) {
+        const current =
+          visit?.projectDetails?.[fieldName] || editFields[fieldName];
         let arr: string[] = [];
         if (current) {
           try {
@@ -1147,8 +1181,10 @@ export default function LeadDetailPage() {
             arr = [String(current)];
           }
         }
-        arr.push(url);
+        arr = [...arr, ...uploadedUrls];
         finalVal = JSON.stringify(arr);
+      } else {
+        finalVal = uploadedUrls[0];
       }
 
       const updated = {
@@ -1167,9 +1203,61 @@ export default function LeadDetailPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ visitId, [fieldName]: finalVal }),
       });
-      toast.success(t.pipeline?.leadDetails?.toasts?.fileUploaded || "Archivo subido");
+      toast.dismiss(toastId);
+      toast.success(
+        files.length > 1
+          ? `${files.length} archivos subidos`
+          : (t.pipeline?.leadDetails?.toasts?.fileUploaded || "Archivo subido"),
+      );
     } catch {
-      toast.error(t.pipeline?.leadDetails?.toasts?.fileUploadError || "Error al subir archivo");
+      toast.dismiss(toastId);
+      toast.error(
+        t.pipeline?.leadDetails?.toasts?.fileUploadError ||
+          "Error al subir archivo",
+      );
+    }
+  };
+
+  const handleFileRemoveField = async (
+    fieldName: string,
+    urlToRemove: string,
+  ) => {
+    try {
+      const current =
+        visit?.projectDetails?.[fieldName] || editFields[fieldName];
+      let finalVal: string | null = null;
+      if (current) {
+        try {
+          const parsed = JSON.parse(String(current));
+          if (Array.isArray(parsed)) {
+            const filtered = parsed.filter((u: string) => u !== urlToRemove);
+            finalVal = filtered.length > 0 ? JSON.stringify(filtered) : null;
+          }
+        } catch {
+          if (String(current) !== urlToRemove) {
+            finalVal = String(current);
+          }
+        }
+      }
+
+      const updated = {
+        ...(visit?.projectDetails || {}),
+        [fieldName]: finalVal,
+      };
+      setVisit((prev) => (prev ? { ...prev, projectDetails: updated } : prev));
+      setEditFields((prev) => ({ ...prev, [fieldName]: finalVal || "" }));
+      if (editFieldsRef.current) {
+        editFieldsRef.current[fieldName] = finalVal || "";
+      }
+
+      await fetch("/api/project-details", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visitId, [fieldName]: finalVal }),
+      });
+      toast.success("Foto eliminada");
+    } catch {
+      toast.error("Error al eliminar foto");
     }
   };
 
@@ -1823,6 +1911,7 @@ export default function LeadDetailPage() {
                   fieldMetasByProject={fieldMetasByProject}
                   selectedProjectNames={selectedProjectNames}
                   onFileFieldUpload={handleFileUploadField}
+                  onFileFieldRemove={handleFileRemoveField}
                   onUpload={handleUpload}
                   onRefresh={() => fetchVisitDetails(true)}
                   role={role}
@@ -1862,6 +1951,7 @@ export default function LeadDetailPage() {
                   onCancelProject={handleCancelProjectAction}
                   onReturnLead={handleReturnLead}
                   onFileFieldUpload={handleFileUploadField}
+                  onFileFieldRemove={handleFileRemoveField}
                   onBillFileUpload={handleBillFileUpload}
                   onBillFileClear={handleBillFileClear}
                 />
@@ -2203,6 +2293,7 @@ function FieldRow({
   readOnly,
   isFile,
   onFileUpload,
+  onFileRemove,
   fileUrl,
   required,
 }: {
@@ -2214,7 +2305,8 @@ function FieldRow({
   onBlur?: () => void;
   readOnly?: boolean;
   isFile?: boolean;
-  onFileUpload?: (fieldName: string, file: File) => void;
+  onFileUpload?: (fieldName: string, file: File | File[]) => void;
+  onFileRemove?: (fieldName: string, url: string) => void;
   fileUrl?: string;
   required?: boolean;
 }) {
@@ -2226,7 +2318,13 @@ function FieldRow({
   if (isFile) {
     let urls: string[] = [];
     if (fileUrl) {
-      if (field === "propertyPhotosJson" || field === "idDocumentUrl") {
+      if (
+        field === "propertyPhotosJson" ||
+        field === "idDocumentUrl" ||
+        type === "photos" ||
+        field.toLowerCase().includes("photo") ||
+        field.toLowerCase().includes("foto")
+      ) {
         try {
           const parsed = JSON.parse(fileUrl);
           if (Array.isArray(parsed)) urls = parsed;
@@ -2239,9 +2337,14 @@ function FieldRow({
       }
     }
 
-    let maxFiles = 1;
-    if (field === "propertyPhotosJson") maxFiles = 20;
-    else if (field === "idDocumentUrl") maxFiles = 2;
+    const isMultiple =
+      field === "propertyPhotosJson" ||
+      type === "photos" ||
+      field.toLowerCase().includes("photo") ||
+      field.toLowerCase().includes("foto");
+
+    let maxFiles = isMultiple ? 50 : 1;
+    if (field === "idDocumentUrl") maxFiles = 2;
 
     const canUploadMore = !readOnly && urls.length < maxFiles;
 
@@ -2264,33 +2367,68 @@ function FieldRow({
         <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center flex-wrap gap-1">
           {label}
           <RequiredBadge required={required} />
+          {urls.length > 0 && isMultiple && (
+            <span className="text-[11px] font-normal text-on-surface-variant">
+              ({urls.length} {urls.length === 1 ? "foto" : "fotos"})
+            </span>
+          )}
         </label>
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           {urls.map((u, i) => (
-            <a
+            <div
               key={i}
-              href={u}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline text-sm flex items-center gap-1"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-outline-variant bg-surface-container-low hover:bg-surface-container transition-colors text-xs"
             >
-              <Eye className="w-4 h-4" />{" "}
-              {urls.length > 1
-                ? `${t.common?.view || "Ver"} ${i + 1}`
-                : t.common?.view || "Ver"}
-            </a>
+              <a
+                href={u}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline flex items-center gap-1 max-w-[150px] truncate"
+              >
+                <Eye className="w-3.5 h-3.5 shrink-0" />{" "}
+                <span className="truncate">
+                  {urls.length > 1
+                    ? `${t.common?.view || "Ver"} ${i + 1}`
+                    : t.common?.view || "Ver"}
+                </span>
+              </a>
+              {!readOnly && onFileRemove && (
+                <button
+                  type="button"
+                  onClick={() => onFileRemove(field, u)}
+                  className="text-on-surface-variant hover:text-red-500 transition-colors p-0.5 rounded"
+                  title="Eliminar archivo"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           ))}
           {canUploadMore && (
-            <label className="cursor-pointer text-xs text-on-surface-variant hover:text-primary flex items-center gap-1">
-              <Upload className="w-3 h-3" />
-              {t.common?.upload || "Subir"}
+            <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border border-dashed border-outline-variant hover:border-primary hover:text-primary text-xs text-on-surface-variant transition-colors group">
+              <Upload className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+              <span>
+                {isMultiple
+                  ? urls.length > 0
+                    ? "+ Agregar más fotos"
+                    : "Seleccionar fotos"
+                  : t.common?.upload || "Subir"}
+              </span>
               <input
                 type="file"
-                accept="image/*,.pdf"
-                className="hidden"
+                multiple={isMultiple}
+                accept={
+                  isMultiple
+                    ? "image/*"
+                    : "image/*,.pdf,application/pdf"
+                }
+                className="sr-only"
                 onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (file && onFileUpload) onFileUpload(field, file);
+                  const files = Array.from(e.target.files || []);
+                  if (files.length > 0 && onFileUpload) {
+                    onFileUpload(field, isMultiple ? files : files[0]);
+                  }
+                  e.target.value = "";
                 }}
               />
             </label>
@@ -2743,13 +2881,15 @@ function HoaPanel({
   onFieldChange,
   onSave,
   onFileFieldUpload,
+  onFileFieldRemove,
   readOnly,
 }: {
   pd: Record<string, unknown>;
   editFields?: Record<string, string>;
   onFieldChange: (key: string, v: string) => void;
   onSave: () => void;
-  onFileFieldUpload: (fieldName: string, file: File) => void;
+  onFileFieldUpload: (fieldName: string, file: File | File[]) => void;
+  onFileFieldRemove?: (fieldName: string, url: string) => void;
   readOnly: boolean;
 }) {
   const { t } = useLocale();
@@ -2787,6 +2927,7 @@ function HoaPanel({
               readOnly={readOnly}
               isFile={true}
               onFileUpload={onFileFieldUpload}
+              onFileRemove={onFileFieldRemove}
               fileUrl={pd[key] ? String(pd[key]) : undefined}
               required={false}
             />
@@ -2807,6 +2948,7 @@ function DatosProjectFieldsPanel({
   fieldMetasByProject,
   selectedProjectNames,
   onFileFieldUpload,
+  onFileFieldRemove,
   onUpload,
   onRefresh,
   showBillSection,
@@ -2830,7 +2972,8 @@ function DatosProjectFieldsPanel({
     fields: FieldMeta[];
   }[];
   selectedProjectNames: string[];
-  onFileFieldUpload: (fieldName: string, file: File) => void;
+  onFileFieldUpload: (fieldName: string, file: File | File[]) => void;
+  onFileFieldRemove?: (fieldName: string, url: string) => void;
   onUpload: (file: File) => Promise<string>;
   onRefresh: () => void;
   showBillSection?: boolean;
@@ -2979,6 +3122,7 @@ function DatosProjectFieldsPanel({
                 readOnly={role === "ADMIN" || isPartner}
                 isFile={isFieldFile(key)}
                 onFileUpload={onFileFieldUpload}
+                onFileRemove={onFileFieldRemove}
                 fileUrl={pd[key] ? String(pd[key]) : undefined}
                 required={
                   OPTIONAL_FIELDS.includes(key)
@@ -2999,6 +3143,7 @@ function DatosProjectFieldsPanel({
         onFieldChange={onFieldChange}
         onSave={onSave}
         onFileFieldUpload={onFileFieldUpload}
+        onFileFieldRemove={onFileFieldRemove}
         readOnly={role === "ADMIN" || isPartner}
       />
 
@@ -3054,6 +3199,7 @@ function DatosProjectFieldsPanel({
                           }
                           readOnly={isProjectReadOnly}
                           onFileUpload={onFileFieldUpload}
+                          onFileRemove={onFileFieldRemove}
                           fileUrl={
                             pd[meta.fieldName]
                               ? String(pd[meta.fieldName])
@@ -3098,6 +3244,7 @@ function DatosProjectPanel({
   onCloseProject,
   onCancelProject,
   onFileFieldUpload,
+  onFileFieldRemove,
   onReturnLead,
   closeRequested,
   isPartnerView,
@@ -3121,7 +3268,8 @@ function DatosProjectPanel({
   onRequestClose: () => void;
   onCloseProject: () => void;
   onCancelProject: () => void;
-  onFileFieldUpload: (fieldName: string, file: File) => void;
+  onFileFieldUpload: (fieldName: string, file: File | File[]) => void;
+  onFileFieldRemove?: (fieldName: string, url: string) => void;
   onReturnLead?: () => void;
   closeRequested?: boolean;
   isPartnerView?: boolean;
@@ -3326,6 +3474,7 @@ function DatosProjectPanel({
             isFile
             required={hasPanelSolar}
             onFileUpload={onFileFieldUpload}
+            onFileRemove={onFileFieldRemove}
             fileUrl={
               pd["electricBillUrl"] ? String(pd["electricBillUrl"]) : undefined
             }
@@ -3348,6 +3497,7 @@ function DatosProjectPanel({
               readOnly={closeRequested || role === "ADMIN"}
               isFile={isFieldFile(key)}
               onFileUpload={onFileFieldUpload}
+              onFileRemove={onFileFieldRemove}
               fileUrl={pd[key] ? String(pd[key]) : undefined}
               required={
                 OPTIONAL_FIELDS.includes(key)
@@ -3367,6 +3517,7 @@ function DatosProjectPanel({
         onFieldChange={onFieldChange}
         onSave={onSave}
         onFileFieldUpload={onFileFieldUpload}
+        onFileFieldRemove={onFileFieldRemove}
         readOnly={closeRequested || role === "ADMIN"}
       />
 
@@ -3418,6 +3569,7 @@ function DatosProjectPanel({
                             meta.fieldType === "photos"
                           }
                           onFileUpload={onFileFieldUpload}
+                          onFileRemove={onFileFieldRemove}
                           fileUrl={
                             pd[meta.fieldName]
                               ? String(pd[meta.fieldName])
@@ -3838,7 +3990,7 @@ function ArchivosPanel({
 
   const [docName, setDocName] = useState("");
   const [customName, setCustomName] = useState("");
-  const [docFile, setDocFile] = useState<File | null>(null);
+  const [docFiles, setDocFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [customDocs, setCustomDocs] = useState<{ name: string; url: string }[]>(
     [],
@@ -4131,8 +4283,8 @@ function ArchivosPanel({
   };
 
   const handleDocUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) setDocFile(f);
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) setDocFiles(files);
   };
 
   const finalDocName = docName === "Otro" ? customName : docName;
@@ -4143,7 +4295,7 @@ function ArchivosPanel({
           f.name === DL.propertyPhotos ||
           f.name.startsWith(DL.propertyPhoto),
       ).length;
-      return propertyPhotoCount >= 20;
+      return propertyPhotoCount >= 50;
     }
     if (opt === DL.clientId) {
       const idCount = allFilesFlat.filter(
@@ -4158,18 +4310,24 @@ function ArchivosPanel({
     docName !== "Otro" && docName !== "" && isOptUploaded(docName);
 
   const uploadDocument = async () => {
-    if (!finalDocName.trim() || !docFile || isAlreadyUploaded) return;
+    if (!finalDocName.trim() || docFiles.length === 0 || isAlreadyUploaded) return;
     setUploading(true);
+    const toastId = toast.loading(
+      docFiles.length > 1
+        ? `Subiendo ${docFiles.length} documentos...`
+        : "Subiendo documento...",
+    );
     try {
       const fd = new FormData();
-      fd.append("file", docFile);
+      docFiles.forEach((file) => fd.append("files", file));
       const uploadRes = await fetch("/api/upload", {
         method: "POST",
         body: fd,
       });
       if (!uploadRes.ok) throw new Error("Upload failed");
       const data = await uploadRes.json();
-      const url = data.url;
+      const uploadedUrls: string[] = data.urls || (data.url ? [data.url] : []);
+      if (uploadedUrls.length === 0) throw new Error("No URL returned");
 
       const finalName = finalDocName.trim();
       const fieldMap: Record<string, string> = {
@@ -4207,7 +4365,7 @@ function ArchivosPanel({
             arr = [String(pd[targetDbField])];
           }
         }
-        arr.push(url);
+        arr = [...arr, ...uploadedUrls];
         await fetch("/api/project-details", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -4220,10 +4378,17 @@ function ArchivosPanel({
         await fetch("/api/project-details", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ visitId: visit.id, [dbField]: url }),
+          body: JSON.stringify({ visitId: visit.id, [dbField]: uploadedUrls[0] }),
         });
       } else {
-        const updatedDocs = [...customDocs, { name: finalName, url }];
+        const newDocs = uploadedUrls.map((url, idx) => ({
+          name:
+            docFiles.length > 1
+              ? `${finalName} (${docFiles[idx]?.name || idx + 1})`
+              : finalName,
+          url,
+        }));
+        const updatedDocs = [...customDocs, ...newDocs];
         setCustomDocs(updatedDocs);
         await fetch("/api/project-details", {
           method: "POST",
@@ -4237,12 +4402,21 @@ function ArchivosPanel({
 
       setDocName("");
       setCustomName("");
-      setDocFile(null);
-      toast.success(t.pipeline?.leadDetails?.toasts?.docUploaded || "Documento subido");
+      setDocFiles([]);
+      toast.dismiss(toastId);
+      toast.success(
+        docFiles.length > 1
+          ? `${docFiles.length} documentos subidos`
+          : (t.pipeline?.leadDetails?.toasts?.docUploaded || "Documento subido"),
+      );
       if (onUpdate) onUpdate();
       else router.refresh();
     } catch {
-      toast.error(t.pipeline?.leadDetails?.toasts?.docUploadError || "Error al subir documento");
+      toast.dismiss(toastId);
+      toast.error(
+        t.pipeline?.leadDetails?.toasts?.docUploadError ||
+          "Error al subir documento",
+      );
     } finally {
       setUploading(false);
     }
@@ -4302,24 +4476,36 @@ function ArchivosPanel({
                 )}
                 <input
                   type="file"
-                  onChange={handleDocUpload}
-                  className="text-sm text-on-surface file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-on-primary file:text-xs"
+                  multiple
+                  accept="image/*,.pdf,application/pdf"
+                  onChange={(e) => {
+                    handleDocUpload(e);
+                    e.target.value = "";
+                  }}
+                  className="text-sm text-on-surface file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-on-primary file:text-xs cursor-pointer"
                 />
                 <Button
                   onClick={uploadDocument}
                   disabled={
                     uploading ||
                     !finalDocName.trim() ||
-                    !docFile ||
+                    docFiles.length === 0 ||
                     isAlreadyUploaded
                   }
                 >
                   {uploading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : docFiles.length > 1 ? (
+                    `${t.pipeline?.leadDetails?.labels?.upload || "Subir"} (${docFiles.length})`
                   ) : (
                     t.pipeline?.leadDetails?.labels?.upload || "Subir"
                   )}
                 </Button>
+                {docFiles.length > 0 && (
+                  <span className="text-xs text-primary font-medium flex items-center">
+                    {docFiles.length} {docFiles.length === 1 ? "archivo seleccionado" : "archivos seleccionados"}
+                  </span>
+                )}
               </div>
               {isAlreadyUploaded && (
                 <p className="text-xs text-red-500 font-medium">
@@ -4372,24 +4558,36 @@ function ArchivosPanel({
               )}
               <input
                 type="file"
-                onChange={handleDocUpload}
-                className="text-sm text-on-surface file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-on-primary file:text-xs"
+                multiple
+                accept="image/*,.pdf,application/pdf"
+                onChange={(e) => {
+                  handleDocUpload(e);
+                  e.target.value = "";
+                }}
+                className="text-sm text-on-surface file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-on-primary file:text-xs cursor-pointer"
               />
               <Button
                 onClick={uploadDocument}
                 disabled={
                   uploading ||
                   !finalDocName.trim() ||
-                  !docFile ||
+                  docFiles.length === 0 ||
                   isAlreadyUploaded
                 }
               >
                 {uploading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
+                ) : docFiles.length > 1 ? (
+                  `${t.pipeline?.leadDetails?.labels?.upload || "Subir"} (${docFiles.length})`
                 ) : (
-                  "Subir"
+                  t.pipeline?.leadDetails?.labels?.upload || "Subir"
                 )}
               </Button>
+              {docFiles.length > 0 && (
+                <span className="text-xs text-primary font-medium flex items-center">
+                  {docFiles.length} {docFiles.length === 1 ? "archivo seleccionado" : "archivos seleccionados"}
+                </span>
+              )}
             </div>
             {isAlreadyUploaded && (
               <p className="text-xs text-red-500 font-medium">
@@ -4657,9 +4855,12 @@ function UploadField({
         </span>
         <input
           type="file"
-          accept="image/*,.pdf"
-          onChange={onChange}
-          className="hidden"
+          accept="image/*,.pdf,application/pdf"
+          onChange={(e) => {
+            onChange(e);
+            e.target.value = "";
+          }}
+          className="sr-only"
         />
       </label>
     </div>
@@ -4686,6 +4887,9 @@ function IdUploadField({
   readOnly?: boolean;
 }) {
   const { t } = useLocale();
+  const first = files[0];
+  const second = files[1];
+
   const renderSlot = (
     slot: IdSlot | undefined,
     slotKey: "first" | "second",
@@ -4735,21 +4939,24 @@ function IdUploadField({
         </span>
         <input
           type="file"
-          accept="image/*,.pdf"
+          accept="image/*,.pdf,application/pdf"
+          multiple={slotKey === "first" && !second}
           onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) onUpload(slotKey, f);
-            // reset so the same file can be re-selected after clearing
+            const selectedFiles = Array.from(e.target.files || []);
+            if (selectedFiles.length > 1 && slotKey === "first" && !second) {
+              onUpload("first", selectedFiles[0]);
+              onUpload("second", selectedFiles[1]);
+            } else if (selectedFiles.length > 0) {
+              onUpload(slotKey, selectedFiles[0]);
+            }
             e.target.value = "";
           }}
-          className="hidden"
+          className="sr-only"
         />
       </label>
     );
   };
 
-  const first = files[0];
-  const second = files[1];
   const slot1 = first ? { url: first.url, name: first.name } : undefined;
   const slot2 = second ? { url: second.url, name: second.name } : undefined;
 

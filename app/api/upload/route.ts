@@ -13,29 +13,45 @@ export async function POST(request: Request) {
 
   try {
     const formData = await request.formData();
-    const file = formData.get("file") as File;
+    const rawFiles = [
+      ...formData.getAll("files"),
+      ...formData.getAll("file"),
+    ].filter((f): f is File => f instanceof File && f.size > 0);
 
-    if (!file) {
+    if (rawFiles.length === 0) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
     const uploadDir = process.env.UPLOAD_DIR || "./uploads";
     await mkdir(uploadDir, { recursive: true });
 
-    const ext = path.extname(file.name);
-    const fileName = `${uuidv4()}${ext}`;
-    const filePath = path.join(uploadDir, fileName);
+    const results = await Promise.all(
+      rawFiles.map(async (file) => {
+        const ext = path.extname(file.name) || ".jpg";
+        const fileName = `${uuidv4()}${ext}`;
+        const filePath = path.join(uploadDir, fileName);
 
-    const bytes = await file.arrayBuffer();
-    await writeFile(filePath, Buffer.from(bytes));
+        const bytes = await file.arrayBuffer();
+        await writeFile(filePath, Buffer.from(bytes));
+
+        return {
+          url: `/api/files/${fileName}`,
+          name: file.name,
+          type: file.type,
+        };
+      })
+    );
 
     return NextResponse.json({
       success: true,
-      url: `/api/files/${fileName}`,
-      name: file.name,
-      type: file.type,
+      url: results[0].url,
+      name: results[0].name,
+      type: results[0].type,
+      urls: results.map((r) => r.url),
+      files: results,
     });
-  } catch {
+  } catch (err) {
+    console.error("Failed to upload file:", err);
     return NextResponse.json(
       { error: "Failed to upload file" },
       { status: 500 }

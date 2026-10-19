@@ -593,6 +593,10 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
                         const rawValue = visit.projectDetails?.[key as keyof typeof visit.projectDetails] as string | undefined;
                         const isFile = meta.type === "file" || meta.type === "photos";
                         if (isFile) {
+                          const isPhotos =
+                            meta.type === "photos" ||
+                            key === "propertyPhotosJson" ||
+                            key.toLowerCase().includes("photo");
                           return (
                             <div key={key}>
                               <label className="text-sm font-medium text-gray-600 dark:text-gray-400">{meta.label}</label>
@@ -602,21 +606,41 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
                                     <FileText className="w-3 h-3" /> Ver
                                   </a>
                                 )}
-                                <input type="file" accept="image/*,.pdf" multiple={meta.type === "photos"}
+                                <input
+                                  type="file"
+                                  accept={isPhotos ? "image/*" : "image/*,.pdf,application/pdf"}
+                                  multiple={isPhotos}
                                   onChange={async (e) => {
-                                    const files = e.target.files;
-                                    if (!files || files.length === 0) return;
-                                    const urls: string[] = [];
-                                    for (let i = 0; i < files.length; i++) {
-                                      const fd = new FormData(); fd.append("file", files[i]);
-                                      const ur = await fetch("/api/upload", { method: "POST", body: fd });
-                                      if (ur.ok) { const ud = await ur.json(); urls.push(ud.url); }
+                                    const files = Array.from(e.target.files || []);
+                                    if (files.length === 0) return;
+                                    e.target.value = "";
+                                    const fd = new FormData();
+                                    files.forEach((f) => fd.append("files", f));
+                                    const ur = await fetch("/api/upload", { method: "POST", body: fd });
+                                    if (ur.ok) {
+                                      const ud = await ur.json();
+                                      const urls: string[] = ud.urls || (ud.url ? [ud.url] : []);
+                                      let newVal: string;
+                                      if (isPhotos) {
+                                        let existingArr: string[] = [];
+                                        if (rawValue) {
+                                          try { existingArr = JSON.parse(rawValue); } catch { existingArr = [rawValue]; }
+                                        }
+                                        newVal = JSON.stringify([...existingArr, ...urls]);
+                                      } else {
+                                        newVal = urls[0] || "";
+                                      }
+                                      const updated = { ...visit.projectDetails, [key]: newVal };
+                                      setVisit({ ...visit, projectDetails: updated });
+                                      fetch("/api/project-details", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ visitId: visit.id, [key]: newVal }),
+                                      }).catch(() => {});
                                     }
-                                    const newVal = meta.type === "photos" ? JSON.stringify(urls) : urls[0];
-                                    const updated = { ...visit.projectDetails, [key]: newVal };
-                                    setVisit({ ...visit, projectDetails: updated });
                                   }}
-                                  className="text-xs text-on-surface file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-primary file:text-on-primary file:text-xs" />
+                                  className="text-xs text-on-surface file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-primary file:text-on-primary file:text-xs cursor-pointer"
+                                />
                               </div>
                             </div>
                           );
@@ -639,6 +663,9 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
                         const strVal = value ? String(value) : "";
                         const looksLikeUrl = strVal.startsWith("/uploads/") || strVal.startsWith("http");
                         if (looksLikeUrl) {
+                          const isPhotos =
+                            key === "propertyPhotosJson" ||
+                            key.toLowerCase().includes("photo");
                           return (
                             <div key={key}>
                               <label className="text-sm font-medium text-gray-600 dark:text-gray-400">{key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}</label>
@@ -646,18 +673,39 @@ export function ViewProjectModal({ isOpen, onClose, visitId }: ViewProjectModalP
                                 <a href={strVal.split(/[,\[\]]/).filter(Boolean)[0]?.replace(/[\"]/g, "") || strVal} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm flex items-center gap-1">
                                   <FileText className="w-3 h-3" /> Ver
                                 </a>
-                                <input type="file" accept="image/*,.pdf"
+                                <input
+                                  type="file"
+                                  accept={isPhotos ? "image/*" : "image/*,.pdf,application/pdf"}
+                                  multiple={isPhotos}
                                   onChange={async (e) => {
-                                    const file = e.target.files?.[0];
-                                    if (!file) return;
-                                    const fd = new FormData(); fd.append("file", file);
+                                    const files = Array.from(e.target.files || []);
+                                    if (files.length === 0) return;
+                                    e.target.value = "";
+                                    const fd = new FormData();
+                                    files.forEach((f) => fd.append("files", f));
                                     const ur = await fetch("/api/upload", { method: "POST", body: fd });
-                                    if (ur.ok) { const ud = await ur.json();
-                                      const updated = { ...visit.projectDetails, [key]: ud.url };
+                                    if (ur.ok) {
+                                      const ud = await ur.json();
+                                      const urls: string[] = ud.urls || (ud.url ? [ud.url] : []);
+                                      let newVal: string;
+                                      if (isPhotos) {
+                                        let existingArr: string[] = [];
+                                        try { existingArr = JSON.parse(strVal); } catch { existingArr = [strVal]; }
+                                        newVal = JSON.stringify([...existingArr, ...urls]);
+                                      } else {
+                                        newVal = urls[0] || "";
+                                      }
+                                      const updated = { ...visit.projectDetails, [key]: newVal };
                                       setVisit({ ...visit, projectDetails: updated });
+                                      fetch("/api/project-details", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ visitId: visit.id, [key]: newVal }),
+                                      }).catch(() => {});
                                     }
                                   }}
-                                  className="text-xs text-on-surface file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-primary file:text-on-primary file:text-xs" />
+                                  className="text-xs text-on-surface file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-primary file:text-on-primary file:text-xs cursor-pointer"
+                                />
                               </div>
                             </div>
                           );

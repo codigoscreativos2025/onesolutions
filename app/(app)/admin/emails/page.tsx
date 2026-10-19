@@ -343,7 +343,7 @@ export default function AdminEmailsPage() {
             <label className="flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface cursor-pointer text-sm transition-colors">
               <Paperclip className="w-4 h-4" />
               Adjuntar
-              <input type="file" multiple className="hidden" onChange={handleFileSelect} />
+              <input type="file" multiple className="sr-only" onChange={handleFileSelect} />
             </label>
             <span className="text-xs text-on-surface-variant/50">
               Max {MAX_FILES} archivos · {MAX_FILE_SIZE_MB}MB c/u · {MAX_TOTAL_SIZE_MB}MB total

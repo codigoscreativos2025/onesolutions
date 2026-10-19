@@ -605,31 +605,40 @@ export function ChatInterface({
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !selectedRoom) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0 || !selectedRoom) return;
 
     setSending(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    const uploadRes = await fetch("/api/upload", {
-      method: "POST",
-      body: formData,
-    });
-    const uploadData = await uploadRes.json();
+    try {
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        if (!uploadRes.ok) continue;
+        const uploadData = await uploadRes.json();
 
-    await fetch(`/api/chat/rooms/${selectedRoom.id}/messages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        body: `Archivo: ${file.name}`,
-        fileUrl: uploadData.url,
-        fileName: file.name,
-      }),
-    });
+        await fetch(`/api/chat/rooms/${selectedRoom.id}/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            body: `Archivo: ${file.name}`,
+            fileUrl: uploadData.url,
+            fileName: file.name,
+          }),
+        });
+      }
 
-    fetchMessages(selectedRoom.id);
-    fetchRooms();
-    setSending(false);
+      fetchMessages(selectedRoom.id);
+      fetchRooms();
+    } catch (err) {
+      console.error("Chat upload error:", err);
+    } finally {
+      e.target.value = "";
+      setSending(false);
+    }
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1511,7 +1520,9 @@ export function ChatInterface({
                     <Paperclip className="w-5 h-5" />
                     <input
                       type="file"
-                      className="hidden"
+                      multiple
+                      accept="image/*,.pdf,application/pdf"
+                      className="sr-only"
                       onChange={handleFileUpload}
                     />
                   </label>

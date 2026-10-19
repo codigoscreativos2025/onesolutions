@@ -447,7 +447,7 @@ function UploadField({ label, preview, onChange, onClear }: {
       <label className="w-full h-24 border-2 border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center bg-surface-container-lowest hover:bg-primary/5 transition-colors cursor-pointer group">
         <Upload className="w-6 h-6 text-on-surface-variant group-hover:text-primary transition-colors" />
         <span className="text-xs text-on-surface-variant mt-1">Haz clic para subir archivo</span>
-        <input type="file" accept="image/*,.pdf" onChange={onChange} className="hidden" />
+        <input type="file" accept="image/*,.pdf,application/pdf" onChange={onChange} className="sr-only" />
       </label>
     </div>
   );
