@@ -55,11 +55,27 @@ export async function PATCH(
 
   // Handle bill upsert separately (Prisma doesn't support nested upsert in visit.update for SQLite)
   if (bill) {
+    const billData = bill.upsert?.update || bill.upsert?.create || bill;
     const existingBill = await prisma.bill.findUnique({ where: { visitId } });
     if (existingBill) {
-      await prisma.bill.update({ where: { visitId }, data: bill.upsert?.update || bill.upsert?.create || bill });
+      await prisma.bill.update({ where: { visitId }, data: billData });
     } else {
-      await prisma.bill.create({ data: { ...bill.upsert?.create, visitId } });
+      await prisma.bill.create({ data: { ...billData, visitId } });
+    }
+
+    const newClientName = typeof billData.clientName === "string" ? billData.clientName.trim() : null;
+    if (newClientName) {
+      if (visit.parcelId) {
+        await prisma.parcel.update({
+          where: { id: visit.parcelId },
+          data: { ownerName: newClientName },
+        }).catch(() => {});
+      }
+      await prisma.projectDetails.upsert({
+        where: { visitId },
+        update: { clientName: newClientName },
+        create: { visitId, clientName: newClientName },
+      }).catch(() => {});
     }
   }
 
@@ -359,6 +375,12 @@ export async function PATCH(
       const projectCount = await prisma.visitProject.count({ where: { visitId } });
       if (projectCount === 0) {
         return NextResponse.json({ error: "Debes seleccionar al menos un tipo de proyecto" }, { status: 400 });
+      }
+    }
+
+    if (updateData.stage === "CLOSED" || updateData.stage === "PROJECT") {
+      if (!updateData.completedAt && !visit.completedAt) {
+        updateData.completedAt = new Date();
       }
     }
 

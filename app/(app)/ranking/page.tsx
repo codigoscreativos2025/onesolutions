@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { CheckCircle, UserPlus, DoorOpen } from "lucide-react";
 import { useLocale } from "@/lib/locale-context";
 
 interface RankingItem {
@@ -44,7 +43,15 @@ export default function RankingPage() {
   );
   const [loading, setLoading] = useState(true);
   const [defaultTabSet, setDefaultTabSet] = useState(false);
-  const [period, setPeriod] = useState<"day" | "week" | "month" | "all">("all");
+  const [period, setPeriod] = useState<"day" | "week" | "month" | "quarter" | "custom">("quarter");
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d.toISOString().split("T")[0];
+  });
+  const [endDate, setEndDate] = useState(() => {
+    return new Date().toISOString().split("T")[0];
+  });
 
   const role = session?.user?.role;
 
@@ -73,22 +80,25 @@ export default function RankingPage() {
     async (type: "trainers" | "setters") => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/ranking?type=${type}&period=${period}`);
+        let url = `/api/ranking?type=${type}&period=${period}`;
+        if (period === "custom") {
+          url += `&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`;
+        }
+        const res = await fetch(url);
         const json = await res.json();
-
         setData(json);
       } finally {
         setLoading(false);
       }
     },
-    [period],
+    [period, startDate, endDate],
   );
 
   useEffect(() => {
     if (role === "PARTNER") return;
     const type = activeTab === "trainers" ? "trainers" : "setters";
     fetchData(type);
-  }, [activeTab, fetchData, role, period]);
+  }, [activeTab, fetchData, role, period, startDate, endDate]);
 
   useEffect(() => {
     if (role === "PARTNER") return;
@@ -117,40 +127,6 @@ export default function RankingPage() {
 
   return (
     <div className="pt-4 pb-28 space-y-4">
-      <button
-        onClick={() => (window.location.href = "/ranking")}
-        className="fixed top-4 left-4 z-50 hover:opacity-80 transition-opacity"
-        title="Ranking"
-      >
-        <svg
-          width="28"
-          height="28"
-          viewBox="0 0 32 32"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <circle
-            cx="16"
-            cy="16"
-            r="14"
-            fill="none"
-            stroke="#f48221"
-            strokeWidth="2.5"
-          />
-          <text
-            x="16"
-            y="22"
-            fontFamily="Arial, sans-serif"
-            fontWeight="900"
-            fontSize="18"
-            textAnchor="middle"
-            fill="#1d1d1b"
-            className="dark:fill-white"
-          >
-            S
-          </text>
-        </svg>
-      </button>
-
       <div className="bg-[#1d1d1b] border-2 border-[#f48221] rounded-lg shadow-[0_10px_30px_rgba(244,130,33,0.15)] relative overflow-y-auto overflow-x-hidden max-h-[calc(100vh-140px)] custom-scrollbar">
         <div
           className="absolute top-[120px] left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none select-none z-0"
@@ -237,10 +213,6 @@ export default function RankingPage() {
         <div className="relative z-20">
           <div className="sticky top-0 z-40 bg-[#1d1d1b]">
             <div className="flex items-center gap-3 px-4 py-3 border-b border-[#333]">
-              <div className="w-8 h-8 rounded-full bg-[#f48221] flex items-center justify-center flex-shrink-0">
-                <span className="text-[#1d1d1b] font-black text-sm">S</span>
-              </div>
-
               <div className="flex gap-1">
                 {showTabSwitcher && (
                   <>
@@ -278,8 +250,8 @@ export default function RankingPage() {
               </div>
             </div>
 
-            <div className="flex gap-1.5 px-4 py-2 border-b border-[#333]">
-              {(["day", "week", "month", "all"] as const).map((p) => (
+            <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 border-b border-[#333]">
+              {(["day", "week", "month", "quarter", "custom"] as const).map((p) => (
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
@@ -296,9 +268,34 @@ export default function RankingPage() {
                       ? t.ranking.thisWeek
                       : p === "month"
                         ? t.ranking.thisMonth
-                        : t.ranking.global}
+                        : p === "quarter"
+                          ? (t.ranking.thisQuarter || "Este Trimestre")
+                          : (t.ranking.custom || "Personalizado")}
                 </button>
               ))}
+
+              {period === "custom" && (
+                <div className="flex flex-wrap items-center gap-2 py-1">
+                  <div className="flex items-center gap-1 text-xs text-[#aaaaaa]">
+                    <span>{t.ranking.startDate || "Desde"}:</span>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="bg-[#2a2a28] text-white border border-[#444] rounded px-2 py-0.5 text-xs outline-none focus:border-[#f48221]"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-[#aaaaaa]">
+                    <span>{t.ranking.endDate || "Hasta"}:</span>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="bg-[#2a2a28] text-white border border-[#444] rounded px-2 py-0.5 text-xs outline-none focus:border-[#f48221]"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -409,29 +406,43 @@ export default function RankingPage() {
 
                   <div className="flex items-stretch flex-shrink-0 ml-auto">
                     {isTrainers ? (
-                      <div className="w-[80px] max-sm:w-[70px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
-                        <span className="text-[10px] uppercase text-[#aaaaaa] mb-1 leading-none text-center">Proyectos Cerrados</span>
-                        <span className="text-lg font-bold text-white leading-none">
-                          {item.projectsClosed || 0}
-                        </span>
-                      </div>
-                    ) : (
                       <>
-                        <div className="w-[70px] max-sm:w-[60px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
+                        <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
                           <span className="text-[10px] uppercase text-[#aaaaaa] mb-1 leading-none text-center">Puertas</span>
-                          <span className="text-lg font-bold text-white leading-none">
+                          <span className="text-base sm:text-lg font-bold text-white leading-none">
                             {item.doors || 0}
                           </span>
                         </div>
-                        <div className="w-[70px] max-sm:w-[60px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
+                        <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
                           <span className="text-[10px] uppercase text-[#aaaaaa] mb-1 leading-none text-center">Leads</span>
-                          <span className="text-lg font-bold text-white leading-none">
+                          <span className="text-base sm:text-lg font-bold text-white leading-none">
                             {item.leadsCreated || 0}
                           </span>
                         </div>
-                        <div className="w-[70px] max-sm:w-[60px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
+                        <div className="w-[75px] max-sm:w-[60px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
+                          <span className="text-[10px] uppercase text-[#aaaaaa] mb-1 leading-none text-center">Cerrados</span>
+                          <span className="text-base sm:text-lg font-bold text-[#f48221] leading-none">
+                            {item.projectsClosed || 0}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
+                          <span className="text-[10px] uppercase text-[#aaaaaa] mb-1 leading-none text-center">Puertas</span>
+                          <span className="text-base sm:text-lg font-bold text-white leading-none">
+                            {item.doors || 0}
+                          </span>
+                        </div>
+                        <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
+                          <span className="text-[10px] uppercase text-[#aaaaaa] mb-1 leading-none text-center">Leads</span>
+                          <span className="text-base sm:text-lg font-bold text-white leading-none">
+                            {item.leadsCreated || 0}
+                          </span>
+                        </div>
+                        <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
                           <span className="text-[10px] uppercase text-[#aaaaaa] mb-1 leading-none text-center">Citas</span>
-                          <span className="text-lg font-bold text-white leading-none">
+                          <span className="text-base sm:text-lg font-bold text-[#f48221] leading-none">
                             {item.appointmentsScheduled || 0}
                           </span>
                         </div>

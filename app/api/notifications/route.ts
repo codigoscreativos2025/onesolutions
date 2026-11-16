@@ -5,10 +5,30 @@ import { sendNotification, notifyAdmins } from "@/lib/notificationService";
 import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
 
+const BROADCAST_TITLES = [
+  "🌱 Nuevo Lead Creado",
+  "🏆 Proyecto Cerrado",
+  "🔥 Lead a Potencial",
+  "🔙 Lead Devuelto",
+];
+
 export async function GET() {
   const session = await auth();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const currentUserId = parseInt(session.user.id);
+  const isAdmin = session.user.role === "ADMIN";
+
+  // Purge broadcast notifications for non-admin users to prevent leakage of other users' leads
+  if (!isAdmin) {
+    await prisma.notification.deleteMany({
+      where: {
+        userId: currentUserId,
+        title: { in: BROADCAST_TITLES },
+      },
+    }).catch(() => {});
   }
 
   const cancelledVisits = await prisma.visit.findMany({
@@ -27,13 +47,16 @@ export async function GET() {
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   await prisma.notification.deleteMany({
     where: {
-      userId: parseInt(session.user.id),
+      userId: currentUserId,
       createdAt: { lt: sevenDaysAgo },
     },
   });
 
   const allNotifications = await prisma.notification.findMany({
-    where: { userId: parseInt(session.user.id) },
+    where: {
+      userId: currentUserId,
+      ...(!isAdmin ? { title: { notIn: BROADCAST_TITLES } } : {}),
+    },
     orderBy: { createdAt: "desc" },
     take: 50,
   });
@@ -83,8 +106,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  // Aislamiento: Si no viene un recipient (userId), solo se envía a Admins.
-  // Nunca hacer broadcast a closers genéricamente.
+  // Aislamiento: Si viene un recipient (userId), solo se envía a ese usuario.
   if (userId) {
     const notification = await sendNotification({
       recipientId: parseInt(userId),
@@ -94,7 +116,7 @@ export async function POST(request: Request) {
     });
     return NextResponse.json([notification]);
   } else {
-    // Si no especifican a quién, se asume que es una alerta genérica para el ADMIN (Auditoría)
+    // Si no especifican a quién, solo se envía a administradores para auditoría.
     const notifications = await notifyAdmins({
       title,
       body: notificationBody,

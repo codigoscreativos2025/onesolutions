@@ -893,14 +893,22 @@ export default function LeadDetailPage() {
       }
 
       // Save Bill data
+      const effectiveClientName =
+        (typeof payload.clientName === "string" && payload.clientName.trim()) ||
+        editFieldsRef.current._billClientName?.trim() ||
+        visit.bill?.clientName ||
+        null;
+
+      if (effectiveClientName) {
+        payload.clientName = effectiveClientName;
+      }
+
       const billData: Record<string, string | null> = {
         phone:
           editFieldsRef.current._billPhone?.trim() || visit.bill?.phone || "",
-        clientName:
-          editFieldsRef.current._billClientName?.trim() ||
-          visit.bill?.clientName ||
-          null,
+        clientName: effectiveClientName,
         clientEmail:
+          (typeof payload.clientEmail === "string" && payload.clientEmail.trim()) ||
           editFieldsRef.current._billClientEmail?.trim() ||
           visit.bill?.clientEmail ||
           null,
@@ -944,6 +952,10 @@ export default function LeadDetailPage() {
                   ...prev,
                   projectDetails: { ...prev.projectDetails, ...updated },
                   bill: { ...prev.bill, ...billData } as typeof prev.bill,
+                  parcel: {
+                    ...prev.parcel,
+                    ownerName: effectiveClientName || prev.parcel.ownerName,
+                  },
                 }
               : prev,
           );
@@ -962,6 +974,10 @@ export default function LeadDetailPage() {
             ? {
                 ...prev,
                 bill: { ...prev.bill, ...billData } as typeof prev.bill,
+                parcel: {
+                  ...prev.parcel,
+                  ownerName: effectiveClientName || prev.parcel.ownerName,
+                },
               }
             : prev,
         );
@@ -2788,6 +2804,7 @@ function DatosLeadPanel({
       }
 
       toast.success(t.pipeline?.leadDetails?.toasts?.dataSaved || "Datos guardados");
+      onRefresh();
     } catch {
       toast.error(t.pipeline?.leadDetails?.toasts?.saveError || "Error al guardar");
     } finally {

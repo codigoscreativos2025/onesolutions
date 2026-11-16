@@ -1,9 +1,15 @@
-
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
+
+const BROADCAST_TITLES = [
+  "🌱 Nuevo Lead Creado",
+  "🏆 Proyecto Cerrado",
+  "🔥 Lead a Potencial",
+  "🔙 Lead Devuelto",
+];
 
 export async function GET() {
   const session = await auth();
@@ -13,6 +19,7 @@ export async function GET() {
 
   const userId = parseInt(session.user.id);
   const role = session.user.role;
+  const isAdmin = role === "ADMIN";
 
   // Fetch cancelled visits & rooms to filter out their notifications
   const cancelledVisits = await prisma.visit.findMany({
@@ -39,7 +46,8 @@ export async function GET() {
   const allNotifications = await prisma.notification.findMany({
     where: { 
       userId: userId,
-      isRead: false
+      isRead: false,
+      ...(!isAdmin ? { title: { notIn: BROADCAST_TITLES } } : {}),
     },
     orderBy: { id: "desc" }
   });
@@ -114,4 +122,3 @@ export async function GET() {
     latestUnreadMessageId
   });
 }
-

@@ -62,7 +62,7 @@ export async function PATCH(
         stage: newStage,
         outcome: newStage === "CLOSED" ? "CLOSED" : undefined,
         notes,
-        completedAt: newStage === "CLOSED" ? new Date() : undefined,
+        completedAt: new Date(),
       },
       include: {
         setter: { select: { id: true, email: true, name: true, role: true } },
@@ -101,6 +101,20 @@ export async function PATCH(
           },
         });
       }
+    }
+
+    if (clientName) {
+      if (visit.parcelId) {
+        await prisma.parcel.update({
+          where: { id: visit.parcelId },
+          data: { ownerName: clientName },
+        }).catch(() => {});
+      }
+      await prisma.projectDetails.upsert({
+        where: { visitId: visit.id },
+        update: { clientName },
+        create: { visitId: visit.id, clientName },
+      }).catch(() => {});
     }
 
     if (projectTypeIds && Array.isArray(projectTypeIds) && projectTypeIds.length > 0) {

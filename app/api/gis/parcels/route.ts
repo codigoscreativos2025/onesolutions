@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { gisQueryBbox, gisQueryPoint } from "@/lib/gis";
+import { isParcelsApiDisabled } from "@/lib/parcels-toggle";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +12,10 @@ export async function GET(request: Request) {
   const session = await auth();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (isParcelsApiDisabled()) {
+    return NextResponse.json([]);
   }
 
   const { searchParams } = new URL(request.url);

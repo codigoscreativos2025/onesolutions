@@ -41,8 +41,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "visitId required" }, { status: 400 });
     }
 
+    const parsedVisitId = parseInt(visitId);
     const visit = await prisma.visit.findUnique({
-      where: { id: parseInt(visitId) },
+      where: { id: parsedVisitId },
       include: { slot: true },
     });
 
@@ -105,15 +106,40 @@ export async function POST(request: Request) {
       }
     }
     const existing = await prisma.projectDetails.findUnique({
-      where: { visitId: parseInt(visitId) },
+      where: { visitId: parsedVisitId },
     });
 
     let result;
     try {
       if (existing) {
-        result = await prisma.projectDetails.update({ where: { visitId: parseInt(visitId) }, data: filteredDetails });
+        result = await prisma.projectDetails.update({ where: { visitId: parsedVisitId }, data: filteredDetails });
       } else {
-        result = await prisma.projectDetails.create({ data: { visitId: parseInt(visitId), ...filteredDetails } });
+        result = await prisma.projectDetails.create({ data: { visitId: parsedVisitId, ...filteredDetails } });
+      }
+
+      // Sync lead name to Bill and Parcel
+      const clientName = typeof filteredDetails.clientName === "string" ? filteredDetails.clientName.trim() : null;
+      if (clientName) {
+        await prisma.bill.upsert({
+          where: { visitId: parsedVisitId },
+          update: { clientName },
+          create: { visitId: parsedVisitId, clientName, phone: "" },
+        }).catch((e) => console.error("Error syncing bill clientName:", e));
+
+        if (visit.parcelId) {
+          await prisma.parcel.update({
+            where: { id: visit.parcelId },
+            data: { ownerName: clientName },
+          }).catch((e) => console.error("Error syncing parcel ownerName:", e));
+        }
+      }
+
+      // If closingDate was updated, ensure visit.completedAt is also synced
+      if (filteredDetails.closingDate instanceof Date) {
+        await prisma.visit.update({
+          where: { id: parsedVisitId },
+          data: { completedAt: filteredDetails.closingDate },
+        }).catch((e) => console.error("Error syncing completedAt:", e));
       }
     } catch (prismaError: unknown) {
       const msg = (prismaError as Error).message || String(prismaError);
@@ -142,6 +168,8 @@ export async function PATCH(request: Request) {
     if (!visitId) {
       return NextResponse.json({ error: "visitId required" }, { status: 400 });
     }
+
+    const parsedVisitId = parseInt(visitId);
 
     // Convertir fechas de string a Date
     const processedDetails = { ...details };
@@ -172,9 +200,37 @@ export async function PATCH(request: Request) {
     }
 
     const result = await prisma.projectDetails.update({
-      where: { visitId: parseInt(visitId) },
+      where: { visitId: parsedVisitId },
       data: processedDetails,
     });
+
+    // Sync lead name to Bill and Parcel
+    const clientName = typeof processedDetails.clientName === "string" ? processedDetails.clientName.trim() : null;
+    if (clientName) {
+      await prisma.bill.upsert({
+        where: { visitId: parsedVisitId },
+        update: { clientName },
+        create: { visitId: parsedVisitId, clientName, phone: "" },
+      }).catch((e) => console.error("Error syncing bill clientName in PATCH:", e));
+
+      const v = await prisma.visit.findUnique({
+        where: { id: parsedVisitId },
+        select: { parcelId: true },
+      });
+      if (v?.parcelId) {
+        await prisma.parcel.update({
+          where: { id: v.parcelId },
+          data: { ownerName: clientName },
+        }).catch((e) => console.error("Error syncing parcel ownerName in PATCH:", e));
+      }
+    }
+
+    if (processedDetails.closingDate instanceof Date) {
+      await prisma.visit.update({
+        where: { id: parsedVisitId },
+        data: { completedAt: processedDetails.closingDate },
+      }).catch((e) => console.error("Error syncing completedAt in PATCH:", e));
+    }
 
     return NextResponse.json(result);
   } catch (error) {
