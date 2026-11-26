@@ -14,8 +14,8 @@ export async function POST(
   const userId = parseInt(session.user.id);
   const role = session.user.role;
 
-  // Closers, Trainees (SETTER) y admins pueden crear chats
-  if (role !== 'CLOSER' && role !== 'SETTER' && role !== 'ADMIN') {
+  // Closers, Setters (SETTER_JR), Trainees (SETTER) y admins pueden crear chats
+  if (role !== 'CLOSER' && role !== 'SETTER' && role !== 'SETTER_JR' && role !== 'ADMIN') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -38,39 +38,21 @@ export async function POST(
       return NextResponse.json({ error: 'Visit not found' }, { status: 404 });
     }
 
-    if (visit.stage !== 'PROJECT' && visit.stage !== 'CLOSED') {
-      return NextResponse.json(
-        { error: 'Chat can only be created for projects in progress or closed' },
-        { status: 400 }
-      );
-    }
-
-    // Verificar que el closer o setter tiene permisos sobre esta visita
+    // Verificar que el closer o setter tiene permisos sobre esta visita (admins siempre tienen acceso)
     if (role === 'CLOSER' && visit.closerId !== userId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-    if (role === 'SETTER' && visit.setterId !== userId) {
+    if ((role === 'SETTER' || role === 'SETTER_JR') && visit.setterId !== userId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Verificar que el chat GENERAL no existe ya
+    // Si ya existe el chat GENERAL, devolverlo con 200 OK
     const existingRoom = await prisma.chatRoom.findFirst({
       where: { visitId: visit.id, type: "GENERAL" },
     });
 
     if (existingRoom) {
-      return NextResponse.json(
-        { error: 'Chat already exists for this visit' },
-        { status: 400 }
-      );
-    }
-
-    // Verificar que todos los campos obligatorios estén completos
-    if (!visit.projectDetails) {
-      return NextResponse.json(
-        { error: 'Project details must be completed before creating chat' },
-        { status: 400 }
-      );
+      return NextResponse.json(existingRoom);
     }
 
     // Crear el chat GENERAL

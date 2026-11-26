@@ -33,14 +33,14 @@ function splitName(fullName: string): [string, string] {
   return [parts[0], parts.slice(1).join(" ")];
 }
 
+type TabType = "setters" | "closers" | "trainees";
+
 export default function RankingPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const { t } = useLocale();
   const [data, setData] = useState<RankingItem[] | null>(null);
-  const [activeTab, setActiveTab] = useState<"trainers" | "setters">(
-    "trainers",
-  );
+  const [activeTab, setActiveTab] = useState<TabType>("closers");
   const [loading, setLoading] = useState(true);
   const [defaultTabSet, setDefaultTabSet] = useState(false);
   const [period, setPeriod] = useState<"day" | "week" | "month" | "quarter" | "custom">("quarter");
@@ -66,25 +66,24 @@ export default function RankingPage() {
     if (!defaultTabSet && session?.user?.role) {
       if (session.user.role === "SETTER_JR") {
         setActiveTab("setters");
-      } else if (
-        session.user.role === "SETTER" ||
-        session.user.role === "CLOSER"
-      ) {
-        setActiveTab("trainers");
+      } else if (session.user.role === "CLOSER") {
+        setActiveTab("closers");
+      } else if (session.user.role === "SETTER" || session.user.role === "TRAINEE") {
+        setActiveTab("trainees");
       }
       setDefaultTabSet(true);
     }
   }, [session, defaultTabSet]);
 
   const fetchData = useCallback(
-    async (type: "trainers" | "setters") => {
+    async (type: TabType) => {
       setLoading(true);
       try {
-        let url = `/api/ranking?type=${type}&period=${period}`;
+        let url = `/api/ranking?type=${type}&period=${period}&_t=${Date.now()}`;
         if (period === "custom") {
           url += `&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`;
         }
-        const res = await fetch(url);
+        const res = await fetch(url, { cache: "no-store" });
         const json = await res.json();
         setData(json);
       } finally {
@@ -96,16 +95,14 @@ export default function RankingPage() {
 
   useEffect(() => {
     if (role === "PARTNER") return;
-    const type = activeTab === "trainers" ? "trainers" : "setters";
-    fetchData(type);
+    fetchData(activeTab);
   }, [activeTab, fetchData, role, period, startDate, endDate]);
 
   useEffect(() => {
     if (role === "PARTNER") return;
     const interval = setInterval(() => {
-      const type = activeTab === "trainers" ? "trainers" : "setters";
-      fetchData(type);
-    }, 30000);
+      fetchData(activeTab);
+    }, 15000);
     return () => clearInterval(interval);
   }, [activeTab, fetchData, role]);
 
@@ -113,8 +110,7 @@ export default function RankingPage() {
     if (role === "PARTNER") return;
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
-        const type = activeTab === "trainers" ? "trainers" : "setters";
-        fetchData(type);
+        fetchData(activeTab);
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
@@ -122,8 +118,6 @@ export default function RankingPage() {
   }, [activeTab, fetchData, role]);
 
   const userId = session?.user?.id ? parseInt(session.user.id) : null;
-  const isTrainers = activeTab === "trainers";
-  const showTabSwitcher = role === "ADMIN";
 
   return (
     <div className="pt-4 pb-28 space-y-4">
@@ -213,40 +207,40 @@ export default function RankingPage() {
         <div className="relative z-20">
           <div className="sticky top-0 z-40 bg-[#1d1d1b]">
             <div className="flex items-center gap-3 px-4 py-3 border-b border-[#333]">
-              <div className="flex gap-1">
-                {showTabSwitcher && (
-                  <>
-                    <button
-                      onClick={() => setActiveTab("setters")}
-                      className={cn(
-                        "px-3 py-1.5 rounded-full text-xs font-semibold transition-colors",
-                        !isTrainers
-                          ? "bg-[#f48221] text-[#1d1d1b]"
-                          : "text-[#aaaaaa] hover:text-white",
-                      )}
-                    >
-                      Setters
-                    </button>
-                    <button
-                      onClick={() => setActiveTab("trainers")}
-                      className={cn(
-                        "px-3 py-1.5 rounded-full text-xs font-semibold transition-colors",
-                        isTrainers
-                          ? "bg-[#f48221] text-[#1d1d1b]"
-                          : "text-[#aaaaaa] hover:text-white",
-                      )}
-                    >
-                      Closers
-                    </button>
-                  </>
-                )}
-                {!showTabSwitcher && (
-                  <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[#f48221] text-[#1d1d1b]">
-                    {activeTab === "trainers"
-                      ? "Closers"
-                      : "Setters"}
-                  </span>
-                )}
+              <div className="flex flex-wrap gap-1">
+                <button
+                  onClick={() => setActiveTab("setters")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-xs font-semibold transition-colors",
+                    activeTab === "setters"
+                      ? "bg-[#f48221] text-[#1d1d1b]"
+                      : "text-[#aaaaaa] hover:text-white",
+                  )}
+                >
+                  {t.ranking?.setters || "Setters"}
+                </button>
+                <button
+                  onClick={() => setActiveTab("closers")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-xs font-semibold transition-colors",
+                    activeTab === "closers"
+                      ? "bg-[#f48221] text-[#1d1d1b]"
+                      : "text-[#aaaaaa] hover:text-white",
+                  )}
+                >
+                  {t.ranking?.closers || "Closers"}
+                </button>
+                <button
+                  onClick={() => setActiveTab("trainees")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-xs font-semibold transition-colors",
+                    activeTab === "trainees"
+                      ? "bg-[#f48221] text-[#1d1d1b]"
+                      : "text-[#aaaaaa] hover:text-white",
+                  )}
+                >
+                  {t.ranking?.trainees || "Trainees"}
+                </button>
               </div>
             </div>
 
@@ -405,7 +399,30 @@ export default function RankingPage() {
                   </div>
 
                   <div className="flex items-stretch flex-shrink-0 ml-auto">
-                    {isTrainers ? (
+                    {activeTab === "setters" && (
+                      <>
+                        <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
+                          <span className="text-[10px] uppercase text-[#aaaaaa] mb-1 leading-none text-center">Puertas</span>
+                          <span className="text-base sm:text-lg font-bold text-white leading-none">
+                            {item.doors || 0}
+                          </span>
+                        </div>
+                        <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
+                          <span className="text-[10px] uppercase text-[#aaaaaa] mb-1 leading-none text-center">Leads</span>
+                          <span className="text-base sm:text-lg font-bold text-white leading-none">
+                            {item.leadsCreated || 0}
+                          </span>
+                        </div>
+                        <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
+                          <span className="text-[10px] uppercase text-[#aaaaaa] mb-1 leading-none text-center">Citas</span>
+                          <span className="text-base sm:text-lg font-bold text-[#f48221] leading-none">
+                            {item.appointmentsScheduled || 0}
+                          </span>
+                        </div>
+                      </>
+                    )}
+
+                    {activeTab === "closers" && (
                       <>
                         <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
                           <span className="text-[10px] uppercase text-[#aaaaaa] mb-1 leading-none text-center">Puertas</span>
@@ -426,24 +443,32 @@ export default function RankingPage() {
                           </span>
                         </div>
                       </>
-                    ) : (
+                    )}
+
+                    {activeTab === "trainees" && (
                       <>
-                        <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
-                          <span className="text-[10px] uppercase text-[#aaaaaa] mb-1 leading-none text-center">Puertas</span>
-                          <span className="text-base sm:text-lg font-bold text-white leading-none">
+                        <div className="w-[55px] max-sm:w-[42px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
+                          <span className="text-[9px] uppercase text-[#aaaaaa] mb-1 leading-none text-center">Puertas</span>
+                          <span className="text-sm sm:text-base font-bold text-white leading-none">
                             {item.doors || 0}
                           </span>
                         </div>
-                        <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
-                          <span className="text-[10px] uppercase text-[#aaaaaa] mb-1 leading-none text-center">Leads</span>
-                          <span className="text-base sm:text-lg font-bold text-white leading-none">
+                        <div className="w-[55px] max-sm:w-[42px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
+                          <span className="text-[9px] uppercase text-[#aaaaaa] mb-1 leading-none text-center">Leads</span>
+                          <span className="text-sm sm:text-base font-bold text-white leading-none">
                             {item.leadsCreated || 0}
                           </span>
                         </div>
-                        <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
-                          <span className="text-[10px] uppercase text-[#aaaaaa] mb-1 leading-none text-center">Citas</span>
-                          <span className="text-base sm:text-lg font-bold text-[#f48221] leading-none">
+                        <div className="w-[55px] max-sm:w-[42px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
+                          <span className="text-[9px] uppercase text-[#aaaaaa] mb-1 leading-none text-center">Citas</span>
+                          <span className="text-sm sm:text-base font-bold text-white leading-none">
                             {item.appointmentsScheduled || 0}
+                          </span>
+                        </div>
+                        <div className="w-[65px] max-sm:w-[50px] flex flex-col items-center justify-center border-l border-[#333] px-1 py-2">
+                          <span className="text-[9px] uppercase text-[#aaaaaa] mb-1 leading-none text-center">Cerrados</span>
+                          <span className="text-sm sm:text-base font-bold text-[#f48221] leading-none">
+                            {item.projectsClosed || 0}
                           </span>
                         </div>
                       </>

@@ -117,8 +117,7 @@ export async function GET() {
           include: {
             projectType: {
               select: { id: true, name: true },
-            },
-          },
+            },          },
         },
         projectDetails: true,
         bill: {
@@ -154,30 +153,43 @@ export async function GET() {
       ? (fieldMetasByType[commonsId] || []).map((f) => f.fieldName)
       : [];
 
-    const enriched = visits.map((v) => ({
-      id: v.id,
-      stage: v.stage,
-      createdAt: v.createdAt,
-      contractFields: v.contractFields,
-      parcel: v.parcel,
-      setter: v.setter,
-      closer: v.closer,
-      projects: v.projects,
-      projectDetails: v.projectDetails,
-      progress: computeProgress(
-        { 
-          ...(v.projectDetails as Record<string, unknown> || {}), 
-          _billClientName: v.bill?.clientName, 
-          _billClientEmail: v.bill?.clientEmail, 
-          _billPhone: v.bill?.phone,
-          electricBillUrl: (v.projectDetails as Record<string, unknown>)?.electricBillUrl || v.bill?.imageUrl,
-          idDocumentUrl: (v.projectDetails as Record<string, unknown>)?.idDocumentUrl || v.bill?.additionalFileUrl,
-        },
-        fieldMetasByType,
-        [...v.projects.map((p) => p.projectType.id), ...(commonsId ? [commonsId] : [])],
-        v.stage
-      ),
-    }));    const grouped: Record<string, typeof enriched> = {
+    const enriched = visits.map((v) => {
+      // Calcular la fecha efectiva para ordenamiento:
+      // Para CLOSED/PROJECT: usar closingDate > completedAt > createdAt
+      // Para otras etapas: usar createdAt
+      const effectiveDate = (v.stage === "CLOSED" || v.stage === "PROJECT")
+        ? (v.projectDetails?.closingDate || v.completedAt || v.createdAt)
+        : v.createdAt;
+
+      return {
+        id: v.id,
+        stage: v.stage,
+        createdAt: v.createdAt,
+        completedAt: v.completedAt,
+        effectiveDate: effectiveDate,
+        contractFields: v.contractFields,
+        parcel: v.parcel,
+        setter: v.setter,
+        closer: v.closer,
+        projects: v.projects,
+        projectDetails: v.projectDetails,
+        progress: computeProgress(
+          { 
+            ...(v.projectDetails as Record<string, unknown> || {}), 
+            _billClientName: v.bill?.clientName, 
+            _billClientEmail: v.bill?.clientEmail, 
+            _billPhone: v.bill?.phone,
+            electricBillUrl: (v.projectDetails as Record<string, unknown>)?.electricBillUrl || v.bill?.imageUrl,
+            idDocumentUrl: (v.projectDetails as Record<string, unknown>)?.idDocumentUrl || v.bill?.additionalFileUrl,
+          },
+          fieldMetasByType,
+          [...v.projects.map((p) => p.projectType.id), ...(commonsId ? [commonsId] : [])],
+          v.stage
+        ),
+      };
+    });
+
+    const grouped: Record<string, typeof enriched> = {
       IN_PROGRESS: [],
       PROPOSAL_ACCEPTED: [],
       PROJECT: [],
@@ -189,6 +201,15 @@ export async function GET() {
       if (v.stage in grouped) {
         grouped[v.stage].push(v);
       }
+    }
+
+    // Ordenar CLOSED y PROJECT por effectiveDate desc (más reciente arriba)
+    for (const stage of ["CLOSED", "PROJECT"]) {
+      grouped[stage].sort((a, b) => {
+        const aDate = new Date(a.effectiveDate ?? a.createdAt).getTime();
+        const bDate = new Date(b.effectiveDate ?? b.createdAt).getTime();
+        return bDate - aDate;
+      });
     }
 
     return NextResponse.json(grouped);

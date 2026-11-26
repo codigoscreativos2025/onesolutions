@@ -267,12 +267,13 @@ export async function PATCH(
         0
       );
       const closerPct = Math.max(0, 100 - traineeTotal);
-      const closerUser = user;
-      if (closerUser && closerPct > 0) {
+      // Atribuir la comisión al closer real de la visita, NO al admin/usuario que aprueba el cierre
+      const closerUserId = existingVisit.closerId ?? userId;
+      if (closerPct > 0) {
         await prisma.closerCommission.create({
           data: {
             visitId: visit.id,
-            userId: closerUser.id,
+            userId: closerUserId,
             percentage: closerPct,
             role: "CLOSER",
           },

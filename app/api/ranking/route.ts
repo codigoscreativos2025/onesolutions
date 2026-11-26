@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyApiAuth } from "@/lib/auth-utils";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   const authRes = await verifyApiAuth();
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: authRes.error }, { status: authRes.status });
   }
 
-  const type = request.nextUrl.searchParams.get("type") || "trainers";
+  const type = request.nextUrl.searchParams.get("type") || "closers";
   const period = request.nextUrl.searchParams.get("period") || "quarter";
 
   const now = new Date();
@@ -71,7 +72,26 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const dateFilter = (rangeStart || rangeEnd)
+  const historyDateFilter = (rangeStart || rangeEnd)
+    ? {
+        OR: [
+          {
+            visitedAt: {
+              ...(rangeStart ? { gte: rangeStart } : {}),
+              ...(rangeEnd ? { lte: rangeEnd } : {}),
+            },
+          },
+          {
+            createdAt: {
+              ...(rangeStart ? { gte: rangeStart } : {}),
+              ...(rangeEnd ? { lte: rangeEnd } : {}),
+            },
+          },
+        ],
+      }
+    : {};
+
+  const visitsDateFilter = (rangeStart || rangeEnd)
     ? {
         createdAt: {
           ...(rangeStart ? { gte: rangeStart } : {}),
@@ -80,21 +100,23 @@ export async function GET(request: NextRequest) {
       }
     : {};
 
-  const isSetters = type === "setters";
-
-  // En la nueva lógica de ranking:
-  // Mundo Setter (Setter, Trainee, Closer - métricas de setter)
-  // - Puertas Tocadas = count de ParcelVisitHistory en el rango
-  // - Leads Creados = count de Visits (cualquier stage excepto CANCELLED) en el rango
-  // - Citas Agendadas = count de Visits donde closerId != null en el rango
-  
-  // Mundo Closer (Closer, Trainee - métricas de closer)
-  // - Proyectos Cerrados = count de Visits como closer en stage CLOSED/PROJECT según la fecha real de cierre (completedAt / closingDate)
+  // Clasificación de tabs:
+  // - "setters": SETTER_JR (Junior Setters)
+  // - "closers" | "trainers": CLOSER
+  // - "trainees": SETTER, TRAINEE
+  let roleCondition: { in: string[] };
+  if (type === "setters") {
+    roleCondition = { in: ["SETTER_JR"] };
+  } else if (type === "trainees") {
+    roleCondition = { in: ["SETTER", "TRAINEE"] };
+  } else {
+    roleCondition = { in: ["CLOSER"] };
+  }
 
   const rawUsers = await prisma.user.findMany({
     where: { 
-      role: isSetters ? { in: ["SETTER_JR", "SETTER", "TRAINEE", "CLOSER"] } : { in: ["CLOSER", "TRAINEE"] },
-      isActive: true
+      role: roleCondition,
+      isActive: true,
     },
     select: {
       id: true,
@@ -105,11 +127,11 @@ export async function GET(request: NextRequest) {
         include: { badge: { select: { id: true, name: true, icon: true } } },
       },
       parcelHistory: {
-        where: dateFilter,
+        where: historyDateFilter,
         select: { id: true },
       },
       visitsAsSetter: {
-        where: { ...dateFilter, stage: { not: "CANCELLED" } },
+        where: { ...visitsDateFilter, stage: { not: "CANCELLED" } },
         select: { id: true, closerId: true },
       },
       visitsAsCloser: {
@@ -121,8 +143,29 @@ export async function GET(request: NextRequest) {
           completedAt: true,
           stage: true,
           createdAt: true,
+          closerId: true,
+          setterId: true,
           projectDetails: {
             select: { closingDate: true },
+          },
+        },
+      },
+      commissions: {
+        select: {
+          visitId: true,
+          role: true,
+          visit: {
+            select: {
+              id: true,
+              completedAt: true,
+              stage: true,
+              createdAt: true,
+              closerId: true,
+              setterId: true,
+              projectDetails: {
+                select: { closingDate: true },
+              },
+            },
           },
         },
       },
@@ -141,9 +184,31 @@ export async function GET(request: NextRequest) {
       const appointmentsScheduled = user.visitsAsSetter.filter((v) => v.closerId !== null).length;
 
       // Closer Metrics
-      // Determinar la fecha real del cierre (completedAt -> closingDate -> createdAt)
-      const projectsClosed = user.visitsAsCloser.filter((v) => {
-        const rawClose = v.completedAt || v.projectDetails?.closingDate || v.createdAt;
+      // Recopilar todas las visitas cerradas atribuidas al usuario
+      const closedVisitsMap = new Map<number, {
+        id: number;
+        completedAt: Date | null;
+        stage: string;
+        createdAt: Date;
+        projectDetails: { closingDate: Date | null } | null;
+      }>();
+
+      // 1. Como closer directo de la visita
+      for (const v of user.visitsAsCloser) {
+        closedVisitsMap.set(v.id, v);
+      }
+
+      // 2. Por comisión asignada en el cierre
+      for (const comm of user.commissions) {
+        if (comm.visit && (comm.visit.stage === "CLOSED" || comm.visit.stage === "PROJECT")) {
+          closedVisitsMap.set(comm.visit.id, comm.visit);
+        }
+      }
+
+      // Filtrar por fecha real de cierre:
+      // Prioridad: closingDate (fecha oficial del contrato/venta) -> completedAt -> createdAt
+      const projectsClosed = Array.from(closedVisitsMap.values()).filter((v) => {
+        const rawClose = v.projectDetails?.closingDate || v.completedAt || v.createdAt;
         if (!rawClose) return false;
         const closeDate = new Date(rawClose);
         if (rangeStart && closeDate < rangeStart) return false;
@@ -166,16 +231,25 @@ export async function GET(request: NextRequest) {
       };
     });
 
-  if (isSetters) {
-    // Para el tab de Setters, ordenamos por Citas Agendadas, luego Leads, luego Puertas
+  if (type === "setters") {
+    // Para Setters: Citas Agendadas, luego Leads, luego Puertas
     data.sort(
       (a, b) =>
         b.appointmentsScheduled - a.appointmentsScheduled ||
         b.leadsCreated - a.leadsCreated ||
         b.doors - a.doors
     );
+  } else if (type === "trainees") {
+    // Para Trainees: Proyectos Cerrados, luego Citas, luego Leads, luego Puertas
+    data.sort(
+      (a, b) =>
+        b.projectsClosed - a.projectsClosed ||
+        b.appointmentsScheduled - a.appointmentsScheduled ||
+        b.leadsCreated - a.leadsCreated ||
+        b.doors - a.doors
+    );
   } else {
-    // Para el tab de Closers, lo que define su posición sigue siendo Proyectos Cerrados
+    // Para Closers: Proyectos Cerrados, luego Puertas, luego Leads
     data.sort(
       (a, b) =>
         b.projectsClosed - a.projectsClosed ||
@@ -186,7 +260,9 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(data, {
     headers: {
-      "Cache-Control": "no-store, no-cache, must-revalidate",
+      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0",
     },
   });
 }

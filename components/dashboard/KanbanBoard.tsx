@@ -67,6 +67,8 @@ interface KanbanVisit {
   id: number;
   stage: string;
   createdAt: string;
+  completedAt?: string | null;
+  effectiveDate?: string | null;
   assignedAt?: string | null;
   contractFields?: string | null;
   parcel: { id: string; address: string; ownerName: string | null };
@@ -874,9 +876,15 @@ function KanbanCard({
         </div>
         <span className="text-outline-variant">|</span>
         <span className="truncate max-w-[100px]">
-          {visit.createdAt
-            ? new Date(visit.createdAt).toLocaleDateString()
-            : "—"}
+          {(() => {
+            const displayDate =
+              (visit.stage === "CLOSED" || visit.stage === "PROJECT")
+                ? (visit.projectDetails?.closingDate
+                    ? String(visit.projectDetails.closingDate)
+                    : visit.effectiveDate || visit.completedAt || visit.createdAt)
+                : visit.createdAt;
+            return displayDate ? new Date(displayDate).toLocaleDateString() : "—";
+          })()}
         </span>
       </div>
 

@@ -88,6 +88,17 @@ export async function POST(
         },
       });
 
+      // Registrar tocado de puerta en el historial inmediatamente
+      await tx.parcelVisitHistory.create({
+        data: {
+          parcelId: parcel.id,
+          setterId: userId,
+          visitedAt: new Date(),
+          status: "DOOR_KNOCK",
+          notes: "Puerta tocada",
+        },
+      });
+
       return tx.parcel.update({
         where: { id: parcel.id },
         data: {
@@ -119,7 +130,7 @@ export async function POST(
     console.error("Error claiming parcel:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to claim parcel" },
-      { status: 500 }
+      { status: 400 }
     );
   }
 }

@@ -2062,19 +2062,10 @@ export default function LeadDetailPage() {
 
         {activeTab === "chat" && (
           <TabContent key="chat">
-            {visit.stage !== "PROJECT" && visit.stage !== "CLOSED" ? (
-              <div className="flex flex-col items-center justify-center py-12 glass-panel rounded-xl">
-                <MessageSquare className="w-16 h-16 mb-4 opacity-30" />
-                <p className="text-lg font-medium text-on-surface">
-                  {t.pipeline?.leadDetails?.labels?.chatOnlyInProject || "Chat solo disponible en la etapa En Proyecto"}
-                </p>
-              </div>
-            ) : (
-              <ChatInterface
-                initialRoomId={visit.chatRoom?.id ?? null}
-                hideRoomList
-              />
-            )}
+            <ChatInterface
+              initialRoomId={visit.chatRoom?.id ?? null}
+              hideRoomList
+            />
           </TabContent>
         )}
 

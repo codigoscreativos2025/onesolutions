@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import React from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useSession } from "next-auth/react";
@@ -2172,6 +2173,34 @@ function AdminRoomSelector({
   onOpenRoom: (room?: Room) => void;
 }) {
   const { t } = useLocale();
+  const [creatingChat, setCreatingChat] = React.useState(false);
+
+  const handleOpenInternal = async () => {
+    if (!group) return;
+    if (group.general) {
+      onOpenRoom(group.general);
+      return;
+    }
+    // Si no existe el chat, crearlo primero
+    setCreatingChat(true);
+    try {
+      const res = await fetch(`/api/visits/${group.visit.id}/create-chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error("Error creando chat:", err);
+        return;
+      }
+      const newRoom: Room = await res.json();
+      onOpenRoom(newRoom);
+    } catch (e) {
+      console.error("Error creando chat:", e);
+    } finally {
+      setCreatingChat(false);
+    }
+  };
   if (!group) {
     return (
       <div className="flex-1 flex items-center justify-center text-on-surface-variant">
@@ -2196,15 +2225,17 @@ function AdminRoomSelector({
       </div>
 
       <button
-        onClick={() => onOpenRoom(group.general)}
-        disabled={!group.general}
+        onClick={handleOpenInternal}
+        disabled={creatingChat}
         className="w-full max-w-sm p-4 rounded-xl border border-green-500/40 bg-green-500/10 text-left hover:bg-green-500/20 transition-colors flex items-center gap-3 disabled:opacity-50"
       >
         <MessageSquare className="w-6 h-6 text-green-600" />
         <div>
           <p className="font-semibold text-green-700">{t.chat?.internal || "Interno"}</p>
           <p className="text-xs text-on-surface-variant">
-            {t.chat?.internalDesc || "Chat con setter/closer/trainee"}
+            {creatingChat
+              ? "Creando chat..."
+              : (t.chat?.internalDesc || "Chat con setter/closer/trainee")}
           </p>
         </div>
       </button>
